@@ -9,7 +9,4 @@ public enum Verdict {
     RE, //RUNTIME ERROR
     SV, //SECURITY VIOLATION
     FLAGGED_CHEATING //CHEAT
-
-
-
 }
