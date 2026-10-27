@@ -63,11 +63,12 @@ public class MinioStorageService implements StorageService {
     @Override
     public InputStream downloadFile(String objectName) {
         ensureBucketExists();
+        String resolvedName = extractObjectName(objectName);
         try {
             return minioClient.getObject(
                     GetObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(objectName)
+                            .object(resolvedName)
                             .build()
             );
         } catch (Exception e) {
@@ -78,11 +79,12 @@ public class MinioStorageService implements StorageService {
     @Override
     public void deleteFile(String objectName) {
         ensureBucketExists();
+        String resolvedName = extractObjectName(objectName);
         try {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(objectName)
+                            .object(resolvedName)
                             .build()
             );
         } catch (Exception e) {
@@ -93,11 +95,12 @@ public class MinioStorageService implements StorageService {
     @Override
     public boolean fileExists(String objectName) {
         ensureBucketExists();
+        String resolvedName = extractObjectName(objectName);
         try {
             minioClient.statObject(
                     StatObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(objectName)
+                            .object(resolvedName)
                             .build()
             );
             return true;

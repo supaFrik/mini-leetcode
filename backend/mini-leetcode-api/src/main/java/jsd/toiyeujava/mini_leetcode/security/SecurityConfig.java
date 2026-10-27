@@ -64,6 +64,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/health", "/actuator/info").permitAll()
+                        // Submissions require auth
+                        .requestMatchers("/api/v1/submissions/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/problems/*/submit").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/problems/*/submissions/**").authenticated()
                         // Problems public reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/problems/**").permitAll()
                         // Testcase management (more specific paths must come before general problem routes)

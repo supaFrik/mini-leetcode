@@ -297,13 +297,11 @@ CREATE TABLE proctoring_logs (
 ## 4. ĐẶC TẢ API CONTRACTS (RESTFUL STANDARD)
 
 ### 4.1 Submissions API (Asynchronous Submission Flow)
-- **`POST /api/v1/submissions`**
+- **`POST /api/v1/problems/{problemId}/submit`**
   - **Header:** `Authorization: Bearer <jwt_token>`
   - **Request Body:**
     ```json
     {
-      "problemId": 101,
-      "contestId": null,
       "language": "JAVA",
       "code": "class Solution { public int[] twoSum(int[] nums, int target) { ... } }"
     }
@@ -311,13 +309,27 @@ CREATE TABLE proctoring_logs (
   - **Response 202 Accepted:**
     ```json
     {
-      "code": 202,
-      "message": "Submission received and queued for evaluation.",
+      "success": true,
+      "statusCode": 200,
+      "message": "Submission accepted and queued for judging",
       "data": {
-        "submissionId": 8092,
+        "id": 8092,
+        "problemId": 101,
+        "problemTitle": "Two Sum",
+        "userId": 1,
+        "username": "coder_pro",
+        "language": "JAVA",
         "status": "PENDING",
-        "initialRetryDelayMs": 1000
-      }
+        "verdict": null,
+        "executionTimeMs": null,
+        "memoryUsedKb": null,
+        "passTestCases": 0,
+        "totalTestCases": 0,
+        "errorMessage": null,
+        "createdAt": "2026-10-27T14:48:15",
+        "updatedAt": "2026-10-27T14:48:15"
+      },
+      "timestamp": "2026-10-27T14:48:15Z"
     }
     ```
 
@@ -325,24 +337,34 @@ CREATE TABLE proctoring_logs (
   - **Response 200 OK (Completed):**
     ```json
     {
-      "code": 200,
+      "success": true,
+      "statusCode": 200,
       "message": "Success",
       "data": {
         "id": 8092,
+        "problemId": 101,
+        "problemTitle": "Two Sum",
+        "userId": 1,
+        "username": "coder_pro",
+        "language": "JAVA",
         "status": "COMPLETED",
         "verdict": "AC",
         "executionTimeMs": 42,
         "memoryUsedKb": 38400,
-        "passedRatio": "15/15",
-        "errorMessage": null
-      }
+        "passTestCases": 15,
+        "totalTestCases": 15,
+        "errorMessage": null,
+        "createdAt": "2026-10-27T14:48:15",
+        "updatedAt": "2026-10-27T14:48:19"
+      },
+      "timestamp": "2026-10-27T14:48:19Z"
     }
     ```
 
 ### 4.2 Proctoring & State Tracking API
-- **`POST /api/v1/contests/{contestId}/events`**
+- **`POST /api/v1/contests/{contestId}/proctoring/events`**
   - **Header:** `Authorization: Bearer <jwt_token>`
-  - **Mục đích:** Báo cáo sự kiện mất/nhận focus để Server tính toán thời gian vi phạm.
+  - **Mục đích:** Báo cáo sự kiện mất/nhận focus để Server tính toán thời gian vi phạm với thời gian ân hạn 1.5s.
   - **Request Body (Khi rời khỏi cửa sổ):**
     ```json
     {
@@ -360,14 +382,19 @@ CREATE TABLE proctoring_logs (
   - **Response 200 OK:**
     ```json
     {
-      "code": 200,
-      "message": "Event processed by server",
+      "success": true,
+      "statusCode": 200,
+      "message": "Proctoring event processed",
       "data": {
-        "violationRegistered": true,
-        "currentViolations": 2,
-        "maxViolations": 3,
+        "contestId": 4,
+        "userId": 1,
+        "status": "IN_PROGRESS",
+        "violationCount": 2,
+        "maxViolationsAllowed": 3,
         "isDisqualified": false,
-        "message": "Cảnh báo: Bạn đã rời khỏi màn hình 3.5 giây. Số lần vi phạm: 2/3."
-      }
+        "awayDurationMs": 3500,
+        "message": "Violation recorded: away for 3500ms (2/3)"
+      },
+      "timestamp": "2026-10-27T14:48:19Z"
     }
     ```

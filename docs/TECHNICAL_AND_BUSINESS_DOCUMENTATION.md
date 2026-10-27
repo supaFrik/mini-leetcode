@@ -34,7 +34,7 @@ Mini LeetCode Platform là nền tảng thi đấu và rèn luyện thuật toá
 
 1. **Chế độ Luyện tập Tự do (Practice Mode):**
    - Cho phép học viên tự do lựa chọn bài tập theo độ khó (`EASY`, `MEDIUM`, `HARD`), thẻ phân loại (`tag`), tìm kiếm từ khóa.
-   - Thử nghiệm giải thuật với các ngôn ngữ phổ biến (Java 21, Python 3, C++20).
+   - Thử nghiệm giải thuật với các ngôn ngữ phổ biến (Java 17 LTS, Python 3).
    - Nhận phản hồi tức thời về thời gian thực thi (Runtime ms), mức tiêu thụ RAM (Memory KB) và thông tin so sánh kết quả (Diff Output) trên các testcase công khai.
 
 2. **Chế độ Thi đấu Đánh giá có Giám sát (Exam / Contest Mode):**
@@ -167,19 +167,31 @@ stateDiagram-v2
 
 ## 4. KIẾN TRÚC KỸ THUẬT HỆ THỐNG (SYSTEM ARCHITECTURE)
 
-### 4.1. Cấu trúc Maven Multi-Module Monolith
-
-Hệ thống được tổ chức thành 4 modules vật lý phân định ranh giới một chiều:
+### 4.1. Cấu trúc Monorepo & Maven Multi-Module
+Hệ thống được tổ chức theo cấu trúc **Monorepo** với 3 phân vùng độc lập:
 
 ```
-mini_leetcode/ (Parent POM - Quản lý versions tập trung)
-├── mini-leetcode-common/      # Java Enums thuần, Base Exceptions (Zero dependencies)
-├── mini-leetcode-core/        # JPA Entities, Repositories, Services, Flyway, MinIO Storage
-├── mini-leetcode-api/         # REST Controllers, JWT Filter, OpenAPI 3.1, Actuator (Executable JAR)
-└── mini-leetcode-judge/       # Sandbox Worker, Redis Streams Consumer, Docker Runner (Executable JAR)
+Mini Leetcode/
+├── backend/                        # Java 17 LTS Maven Multi-Module
+│   ├── pom.xml                     # Parent POM quản lý versions tập trung
+│   ├── mini-leetcode-common/       # Java Enums thuần, Base Exceptions (Zero dependencies)
+│   ├── mini-leetcode-core/         # JPA Entities, Repositories, Services, Flyway, MinIO Storage
+│   ├── mini-leetcode-api/          # REST Controllers, JWT Filter, OpenAPI 3.1 (Executable JAR)
+│   └── mini-leetcode-judge/        # Sandbox Worker, Redis Queue Consumer, Docker Runner
+├── frontend/                       # Client Tier (Next.js 14 / React + Monaco Editor)
+│   ├── README.md                   # Onboarding & Hướng dẫn tích hợp Frontend
+│   └── .env.example                # Cấu hình API URL môi trường client
+├── docs/                           # Hồ sơ Kiến trúc, Đặc tả Nghiệp vụ & ADRs
+│   ├── ADR-001_MODULAR_MONOLITH_ARCHITECTURE.md
+│   ├── ADR-002_MAVEN_MULTI_MODULE_MONOLITH.md
+│   ├── ADR-003_PACKAGE_BY_FEATURE_STRUCTURE.md
+│   ├── ADR-004_PRAGMATIC_SANDBOX_DESIGN.md
+│   └── team-pipeline/              # Đội ngũ Team Agent Pipeline
+├── docker-compose.yml              # MySQL 8.0, Redis 7, MinIO (elestio/minio) + Provisioner
+└── .gitignore                      # Cấu hình bỏ qua tệp tin toàn diện Monorepo
 ```
 
-- **Nguyên tắc ranh giới:** `api` phụ thuộc vào `core`, `core` phụ thuộc vào `common`. `api` **tuyệt đối không phụ thuộc vào `judge`**. Trình biên dịch Java (javac) là người gác cổng bảo vệ ranh giới.
+- **Nguyên tắc ranh giới:** `api` phụ thuộc vào `core`, `core` phụ thuộc vào `common`. `api` **tuyệt đối không phụ thuộc vào `judge`**. Trình biên dịch Java (`javac`) là người gác cổng bảo vệ ranh giới. Frontend giao tiếp với Backend 100% qua chuẩn REST API và JWT Token.
 
 ---
 
@@ -257,7 +269,7 @@ Hệ thống phân định ranh giới và trách nhiệm độc lập thành **
 
 ---
 
-### 4.5. Bảo mật Phiên làm việc (RFC 6819 Token Family Revocation & Pessimistic Lock)
+### 4.6. Bảo mật Phiên làm việc (RFC 6819 Token Family Revocation & Pessimistic Lock)
 
 - **Access Token:** Ngắn hạn (30 phút), chứa claims (`userId`, `username`, `role`), ký bằng HMAC-SHA256.
 - **Refresh Token:** Dài hạn (7 ngày), được băm SHA-256 (`token_hash`) trước khi ghi vào database MySQL.
@@ -447,17 +459,20 @@ Hạ tầng bao gồm:
 - **MinIO Provisioner:** Container tự động tạo bucket `testcases` và `submissions` ngay khi khởi động.
 
 ### 7.2. Biên dịch & Chạy Kiểm thử Toàn bộ Hệ thống
-Từ thư mục gốc `mini_leetcode/`:
+Từ thư mục gốc dự án:
 
 ```bash
-# Biên dịch và chạy 79 bài test kiểm thử tự động
+# Di chuyển vào backend
+cd backend
+
+# Biên dịch và chạy 79 bài test kiểm thử tự động với Java 17 LTS
 .\mvnw clean test
 
 # Đóng gói sản phẩm JAR cho Web API
 .\mvnw clean package -DskipTests
 ```
 
-File thực thi được tạo tại: `mini-leetcode-api/target/mini-leetcode-api-0.0.1-SNAPSHOT.jar`.
+File thực thi được tạo tại: `backend/mini-leetcode-api/target/mini-leetcode-api-0.0.1-SNAPSHOT.jar`.
 
 ### 7.3. Giám sát Sức khỏe Runtime (Observability Probes)
 - **Health Check:** `GET http://localhost:8080/actuator/health`

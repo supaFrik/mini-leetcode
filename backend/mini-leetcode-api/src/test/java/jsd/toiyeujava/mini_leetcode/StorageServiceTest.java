@@ -205,4 +205,29 @@ class StorageServiceTest {
         storageService.deleteFileByUri(null);
         storageService.deleteFileByUri("   ");
     }
+
+    @Test
+    @DisplayName("Verification Gate 3: downloadFile handles full minio:// URI transparently")
+    void downloadFile_withFullUri_stripsSchemeAndBucket() throws Exception {
+        when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(true);
+        GetObjectResponse mockResponse = mock(GetObjectResponse.class);
+        when(minioClient.getObject(any(GetObjectArgs.class))).thenReturn(mockResponse);
+
+        InputStream result = storageService.downloadFile("minio://testcases/submissions/10/1/uuid.java");
+
+        assertThat(result).isSameAs(mockResponse);
+        ArgumentCaptor<GetObjectArgs> captor = ArgumentCaptor.forClass(GetObjectArgs.class);
+        verify(minioClient).getObject(captor.capture());
+        assertThat(captor.getValue().object()).isEqualTo("submissions/10/1/uuid.java");
+    }
+
+    @Test
+    @DisplayName("Verification Gate 3: extractObjectName and downloadFileByUri handle null or blank")
+    void extractObjectName_and_downloadFileByUri_edgeCases() {
+        assertThat(storageService.extractObjectName(null)).isEmpty();
+        assertThat(storageService.extractObjectName("   ")).isEmpty();
+        assertThat(storageService.extractObjectName("raw/path/file.txt")).isEqualTo("raw/path/file.txt");
+        assertThat(storageService.downloadFileByUri(null)).isNull();
+        assertThat(storageService.downloadFileByUri("")).isNull();
+    }
 }

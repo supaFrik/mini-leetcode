@@ -9,9 +9,9 @@ public interface StorageService {
     boolean fileExists(String objectName);
     String getBucketName();
 
-    default void deleteFileByUri(String uri) {
+    default String extractObjectName(String uri) {
         if (uri == null || uri.isBlank()) {
-            return;
+            return "";
         }
         String objectName = uri;
         int protocolIdx = uri.indexOf("://");
@@ -20,6 +20,22 @@ public interface StorageService {
             int slashIdx = path.indexOf('/');
             objectName = slashIdx != -1 ? path.substring(slashIdx + 1) : path;
         }
+        return objectName;
+    }
+
+    default InputStream downloadFileByUri(String uri) {
+        if (uri == null || uri.isBlank()) {
+            return null;
+        }
+        String objectName = extractObjectName(uri);
+        return downloadFile(objectName);
+    }
+
+    default void deleteFileByUri(String uri) {
+        if (uri == null || uri.isBlank()) {
+            return;
+        }
+        String objectName = extractObjectName(uri);
         if (!objectName.isBlank()) {
             try {
                 deleteFile(objectName);
