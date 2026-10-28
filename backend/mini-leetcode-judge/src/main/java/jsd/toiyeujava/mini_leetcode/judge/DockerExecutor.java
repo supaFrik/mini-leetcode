@@ -100,7 +100,7 @@ public class DockerExecutor {
                 }
             }
         } catch (IOException e) {
-            // luồng bị đóng khi container bị kill, giữ phần đã đọc được
+            // luồng bị đóng khi container bị kill, giữ phần đã đọc đc
         }
         return buffer.toString(StandardCharsets.UTF_8);
     }
