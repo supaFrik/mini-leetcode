@@ -1,24 +1,24 @@
 package jsd.toiyeujava.mini_leetcode.judge;
 
-import jsd.toiyeujava.mini_leetcode.entity.Verdict;
+import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
 
 public final class VerdictMapper {
 
     private VerdictMapper() {
     }
 
-    public static Verdict map(ExecutionResult result, String expectedOutput) {
+    public static SubmissionVerdict map(ExecutionResult result, String expectedOutput) {
         if (result.timedOut()) {
-            return Verdict.TLE;
+            return SubmissionVerdict.TLE;
         }
         if (result.oomKilled()) {
-            return Verdict.MLE;
+            return SubmissionVerdict.MLE;
         }
         if (result.exitCode() != 0) {
-            return Verdict.RE;
+            return SubmissionVerdict.RE;
         }
         return OutputComparator.matches(result.stdout(), expectedOutput)
-                ? Verdict.AC
-                : Verdict.WA;
+                ? SubmissionVerdict.AC
+                : SubmissionVerdict.WA;
     }
 }
