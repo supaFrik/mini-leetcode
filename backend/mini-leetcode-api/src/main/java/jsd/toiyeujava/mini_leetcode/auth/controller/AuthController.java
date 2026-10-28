@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jsd.toiyeujava.mini_leetcode.auth.dto.*;
 import jsd.toiyeujava.mini_leetcode.auth.service.AuthService;
-import jsd.toiyeujava.mini_leetcode.auth.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

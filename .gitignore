@@ -106,3 +106,4 @@ runner-tmp/
 *.temp
 /docs/history/
 /.agents/
+docs/generate_docx.py
