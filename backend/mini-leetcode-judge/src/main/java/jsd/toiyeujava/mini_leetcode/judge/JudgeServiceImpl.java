@@ -31,6 +31,7 @@ public class JudgeServiceImpl implements JudgeService {
 
     private static final Path TEMP_ROOT = Path.of("temp-submissions");
     private static final int MAX_ERROR_MESSAGE_CHARS = 2000;
+    private static final int DEFAULT_MEMORY_LIMIT_MB = 256;
 
     private final SubmissionService submissionService;
     private final ProblemRepository problemRepository;
@@ -108,12 +109,14 @@ public class JudgeServiceImpl implements JudgeService {
         int passed = 0;
         int maxTimeMs = 0;
         int maxMemoryKb = 0;
+        int memoryLimitMb = problem.getMemoryLimitMb() != null ? problem.getMemoryLimitMb() : DEFAULT_MEMORY_LIMIT_MB;
 
         for (TestCase testCase : testCases) {
             ExecutionResult result = dockerExecutor.execute(
                     workDir, runtime,
                     readText(testCase.getInputFileUri()),
-                    problem.getTimeLimitMs());
+                    problem.getTimeLimitMs(),
+                    memoryLimitMb);
             SubmissionVerdict verdict = VerdictMapper.map(
                     result, readText(testCase.getExpectedOutputUri()));
 

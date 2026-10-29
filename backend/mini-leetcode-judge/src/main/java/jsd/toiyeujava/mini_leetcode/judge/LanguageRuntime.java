@@ -23,6 +23,10 @@ public enum LanguageRuntime {
             List.of("java", "-Xmx192m", "-XX:+UseSerialGC", "-XX:+ExitOnOutOfMemoryError", "-cp", "/workspace", "Solution"),
             3);
 
+    private static final int DEFAULT_MEMORY_LIMIT_MB = 256;
+    private static final int MIN_HEAP_MB = 32;
+    private static final double HEAP_RATIO = 0.75;
+
     private final String image;
     private final String sourceFileName;
     private final List<String> compileCommand;
@@ -52,6 +56,15 @@ public enum LanguageRuntime {
     }
 
     public List<String> runCommand() {
+        return runCommand(DEFAULT_MEMORY_LIMIT_MB);
+    }
+
+    public List<String> runCommand(int memoryLimitMb) {
+        if (this == JAVA) {
+            // Tỷ lệ heap cố định 75% memory limit với sàn tối thiểu 32MB để chừa chỗ cho metaspace, stack, JIT
+            int heapMb = Math.max(MIN_HEAP_MB, (int) (memoryLimitMb * HEAP_RATIO));
+            return List.of("java", "-Xmx" + heapMb + "m", "-XX:+UseSerialGC", "-XX:+ExitOnOutOfMemoryError", "-cp", "/workspace", "Solution");
+        }
         return runCommand;
     }
 

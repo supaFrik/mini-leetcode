@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class DockerExecutor {
 
-    private static final String MEMORY_LIMIT = "256m";
+    private static final int DEFAULT_MEMORY_LIMIT_MB = 256;
     private static final String CPU_LIMIT = "1";
     private static final String PIDS_LIMIT = "64";
     private static final int MAX_OUTPUT_BYTES = 1024 * 1024;
@@ -71,16 +71,24 @@ public class DockerExecutor {
     }
 
     /**
-     * Pha CHẠY (mỗi testcase một container mới). Mount chỉ đọc, input đưa qua stdin.
+     * Pha CHẠY với giới hạn bộ nhớ mặc định 256MB.
+     */
+    public ExecutionResult execute(Path workDir, LanguageRuntime runtime, String input, long timeLimitMs)
+            throws IOException, InterruptedException {
+        return execute(workDir, runtime, input, timeLimitMs, DEFAULT_MEMORY_LIMIT_MB);
+    }
+
+    /**
+     * Pha CHẠY (mỗi testcase một container mới) với giới hạn bộ nhớ cấu hình theo bài toán.
      * TODO: peakMemoryKb chưa đo nên luôn là 0.
      * runtimeMs tính từ FinishedAt - StartedAt của container (loại trừ thời gian tạo container,
      * nhưng vẫn bao gồm thời gian khởi động JVM với Java).
      */
-    public ExecutionResult execute(Path workDir, LanguageRuntime runtime, String input, long timeLimitMs)
+    public ExecutionResult execute(Path workDir, LanguageRuntime runtime, String input, long timeLimitMs, int memoryLimitMb)
             throws IOException, InterruptedException {
         String containerName = "judge-" + UUID.randomUUID();
         try {
-            Process process = new ProcessBuilder(buildRunCommand(containerName, workDir, runtime))
+            Process process = new ProcessBuilder(buildRunCommand(containerName, workDir, runtime, memoryLimitMb))
                     .redirectError(ProcessBuilder.Redirect.DISCARD)
                     .start();
 
@@ -139,16 +147,21 @@ public class DockerExecutor {
     }
 
     public List<String> buildRunCommand(String containerName, Path workDir, LanguageRuntime runtime) {
-        return buildCommand(containerName, workDir, runtime, true, runtime.runCommand());
+        return buildRunCommand(containerName, workDir, runtime, DEFAULT_MEMORY_LIMIT_MB);
+    }
+
+    public List<String> buildRunCommand(String containerName, Path workDir, LanguageRuntime runtime, int memoryLimitMb) {
+        return buildCommand(containerName, workDir, runtime, true, runtime.runCommand(memoryLimitMb), memoryLimitMb);
     }
 
     public List<String> buildCompileCommand(String containerName, Path workDir, LanguageRuntime runtime) {
-        return buildCommand(containerName, workDir, runtime, false, runtime.compileCommand());
+        return buildCommand(containerName, workDir, runtime, false, runtime.compileCommand(), DEFAULT_MEMORY_LIMIT_MB);
     }
 
     private List<String> buildCommand(String containerName, Path workDir, LanguageRuntime runtime,
-                                      boolean runPhase, List<String> commandInContainer) {
+                                      boolean runPhase, List<String> commandInContainer, int memoryLimitMb) {
         String mount = workDir.toAbsolutePath() + ":/workspace" + (runPhase ? ":ro" : "");
+        String memLimit = memoryLimitMb + "m";
         List<String> command = new ArrayList<>(List.of("docker", "run"));
         if (runPhase) {
             command.add("-i");
@@ -166,8 +179,8 @@ public class DockerExecutor {
                 "--read-only",
                 "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
                 "--ulimit", "nofile=256:256",
-                "--memory", MEMORY_LIMIT,
-                "--memory-swap", MEMORY_LIMIT,
+                "--memory", memLimit,
+                "--memory-swap", memLimit,
                 "--cpus", CPU_LIMIT,
                 "--pids-limit", PIDS_LIMIT,
                 "-v", mount,

@@ -40,4 +40,20 @@ class LanguageRuntimeTest {
         assertThat(LanguageRuntime.PYTHON.oomExitCode()).isEmpty();
         assertThat(LanguageRuntime.JAVA.oomExitCode()).contains(3);
     }
+
+    @Test
+    @DisplayName("Java calculates -Xmx based on memory limit with floor, Python ignores it")
+    void runCommand_CustomMemoryLimit_JavaCalculatesHeapAndPythonIgnores() {
+        assertThat(LanguageRuntime.PYTHON.runCommand(512))
+                .containsExactly("python", "/workspace/solution.py");
+
+        assertThat(LanguageRuntime.JAVA.runCommand(256))
+                .contains("-Xmx192m");
+
+        assertThat(LanguageRuntime.JAVA.runCommand(512))
+                .contains("-Xmx384m");
+
+        assertThat(LanguageRuntime.JAVA.runCommand(32))
+                .contains("-Xmx32m");
+    }
 }

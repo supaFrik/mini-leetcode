@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -62,7 +63,7 @@ class JudgeServiceTest {
     }
 
     private Problem problem() {
-        return Problem.builder().id(10L).timeLimitMs(1000).build();
+        return Problem.builder().id(10L).timeLimitMs(1000).memoryLimitMb(256).build();
     }
 
     private TestCase testCase(String inputUri, String expectedUri) {
@@ -89,7 +90,7 @@ class JudgeServiceTest {
         stubFile("out1", "42");
         stubFile("in2", "2");
         stubFile("out2", "42");
-        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong()))
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt()))
                 .thenReturn(new ExecutionResult(0, false, false, "42\n", 120, 0));
 
         judgeService.judge(message(SubmissionLanguage.PYTHON));
@@ -110,7 +111,7 @@ class JudgeServiceTest {
         stubFile("out1", "42");
         stubFile("in2", "2");
         stubFile("out2", "42");
-        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong()))
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt()))
                 .thenReturn(
                         new ExecutionResult(0, false, false, "42", 100, 0),
                         new ExecutionResult(0, false, false, "41", 200, 0));
@@ -118,7 +119,7 @@ class JudgeServiceTest {
         judgeService.judge(message(SubmissionLanguage.PYTHON));
 
         verify(dockerExecutor, times(2))
-                .execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong());
+                .execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt());
         verify(submissionService).updateSubmissionVerdict(
                 eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.WA),
                 eq(200), eq(0), eq(1), eq(3), isNull());
@@ -150,7 +151,7 @@ class JudgeServiceTest {
         stubProblemAndTestCases(List.of(testCase("in1", "out1")));
         when(submissionService.getSubmissionCode(1L)).thenReturn("print(42)");
         stubFile("in1", "1");
-        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong()))
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt()))
                 .thenThrow(new IOException("docker unavailable"));
 
         judgeService.judge(message(SubmissionLanguage.PYTHON));
@@ -167,7 +168,7 @@ class JudgeServiceTest {
         stubFile("out1", "42");
         when(dockerExecutor.compile(any(Path.class), eq(LanguageRuntime.JAVA)))
                 .thenReturn(new CompileResult(true, ""));
-        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.JAVA), anyString(), anyLong()))
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.JAVA), anyString(), anyLong(), anyInt()))
                 .thenReturn(new ExecutionResult(0, false, false, "42\n", 300, 0));
 
         judgeService.judge(message(SubmissionLanguage.JAVA));
@@ -192,6 +193,24 @@ class JudgeServiceTest {
                 eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.CE),
                 eq(0), eq(0), eq(0), eq(1), eq("Solution.java:1: error: ';' expected"));
         verify(dockerExecutor, never())
-                .execute(any(Path.class), any(LanguageRuntime.class), anyString(), anyLong());
+                .execute(any(Path.class), any(LanguageRuntime.class), anyString(), anyLong(), anyInt());
+    }
+
+    @Test
+    @DisplayName("Passes the problem memory limit to DockerExecutor")
+    void judge_ProblemWithCustomMemoryLimit_PassesMemoryLimitToExecutor() throws Exception {
+        Problem customProblem = Problem.builder().id(10L).timeLimitMs(1000).memoryLimitMb(512).build();
+        when(problemRepository.findById(10L)).thenReturn(Optional.of(customProblem));
+        when(testCaseRepository.findByProblemIdOrderByOrderIndexAsc(10L))
+                .thenReturn(List.of(testCase("in1", "out1")));
+        when(submissionService.getSubmissionCode(1L)).thenReturn("print(42)");
+        stubFile("in1", "1");
+        stubFile("out1", "42");
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), eq(1000L), eq(512)))
+                .thenReturn(new ExecutionResult(0, false, false, "42\n", 50, 0));
+
+        judgeService.judge(message(SubmissionLanguage.PYTHON));
+
+        verify(dockerExecutor).execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), eq(1000L), eq(512));
     }
 }
