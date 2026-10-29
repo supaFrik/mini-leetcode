@@ -1,5 +1,7 @@
 package jsd.toiyeujava.mini_leetcode.judge;
 
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -7,10 +9,33 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class DockerExecutorTest {
+
+    @BeforeAll
+    static void assumeDockerAvailable() {
+        // Bỏ qua các integration test gọi Docker nếu Docker daemon không khả dụng
+        Assumptions.assumeTrue(isDockerAvailable(), "Docker daemon is not available, skipping integration tests");
+    }
+
+    private static boolean isDockerAvailable() {
+        try {
+            Process process = new ProcessBuilder("docker", "info")
+                    .redirectErrorStream(true)
+                    .start();
+            boolean finished = process.waitFor(5, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                return false;
+            }
+            return process.exitValue() == 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     @TempDir
     Path workDir;
