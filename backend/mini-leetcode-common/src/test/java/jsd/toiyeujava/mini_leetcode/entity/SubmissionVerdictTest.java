@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class SubmissionVerdictTest {
 
     @Test
-    @DisplayName("SubmissionVerdict phải chứa đầy đủ các phán quyết cốt lõi của Online Judge")
+    @DisplayName("SubmissionVerdict must contain all the core Online Judge verdicts")
     void testVerdictsExist() {
         assertNotNull(SubmissionVerdict.valueOf("AC"));
         assertNotNull(SubmissionVerdict.valueOf("WA"));
@@ -21,7 +21,7 @@ class SubmissionVerdictTest {
     }
 
     @Test
-    @DisplayName("isAccepted() chỉ trả về true duy nhất đối với AC")
+    @DisplayName("isAccepted() returns true only for AC")
     void testIsAccepted() {
         assertTrue(SubmissionVerdict.AC.isAccepted(), "AC phải là accepted");
         assertFalse(SubmissionVerdict.WA.isAccepted(), "WA không phải là accepted");
@@ -29,7 +29,7 @@ class SubmissionVerdictTest {
     }
 
     @Test
-    @DisplayName("Mỗi Verdict phải có description rõ nghĩa")
+    @DisplayName("Every verdict must have a meaningful description")
     void testDescriptionNotNullOrBlank() {
         for (SubmissionVerdict verdict : SubmissionVerdict.values()) {
             assertNotNull(verdict.getDescription(), "Description không được null cho " + verdict.name());

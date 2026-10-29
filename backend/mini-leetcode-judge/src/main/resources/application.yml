@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: mini_leetcode_judge
+  main:
+    web-application-type: none
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:leetcode}
+    password: ${DB_PASSWORD:leetcode_password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_password}
+
+app:
+  minio:
+    url: ${MINIO_URL:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadminpassword}
+    bucket-name: ${MINIO_BUCKET_NAME:testcases}

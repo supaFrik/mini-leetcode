@@ -13,35 +13,35 @@ class VerdictMapperTest {
     }
 
     @Test
-    @DisplayName("Output khớp expected thì trả về AC")
+    @DisplayName("Returns AC when output matches expected")
     void map_OutputMatches_ReturnsAccepted() {
         assertThat(VerdictMapper.map(result(0, false, false, "42\n"), "42"))
                 .isEqualTo(SubmissionVerdict.AC);
     }
 
     @Test
-    @DisplayName("Output khác expected thì trả về WA")
+    @DisplayName("Returns WA when output differs from expected")
     void map_OutputDiffers_ReturnsWrongAnswer() {
         assertThat(VerdictMapper.map(result(0, false, false, "41"), "42"))
                 .isEqualTo(SubmissionVerdict.WA);
     }
 
     @Test
-    @DisplayName("Hết giờ thì trả về TLE dù exit code là 137")
+    @DisplayName("Returns TLE when timed out, even if exit code is 137")
     void map_TimedOutWithExitCode137_ReturnsTimeLimitExceeded() {
         assertThat(VerdictMapper.map(result(137, true, false, ""), "42"))
                 .isEqualTo(SubmissionVerdict.TLE);
     }
 
     @Test
-    @DisplayName("Bị OOM kill thì trả về MLE")
+    @DisplayName("Returns MLE when the container was OOM killed")
     void map_OomKilled_ReturnsMemoryLimitExceeded() {
         assertThat(VerdictMapper.map(result(137, false, true, ""), "42"))
                 .isEqualTo(SubmissionVerdict.MLE);
     }
 
     @Test
-    @DisplayName("Exit code khác 0 (không phải TLE/MLE) thì trả về RE")
+    @DisplayName("Returns RE when exit code is non-zero and it is not TLE or MLE")
     void map_NonZeroExitCode_ReturnsRuntimeError() {
         assertThat(VerdictMapper.map(result(1, false, false, ""), "42"))
                 .isEqualTo(SubmissionVerdict.RE);
