@@ -90,7 +90,7 @@ public class JudgeServiceImpl implements JudgeService {
                     outcome.maxMemoryKb(),
                     outcome.passed(),
                     testCases.size(),
-                    null);
+                    outcome.errorMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             submissionService.failSubmission(submissionId, "Judging was interrupted");
@@ -109,6 +109,7 @@ public class JudgeServiceImpl implements JudgeService {
         int passed = 0;
         int maxTimeMs = 0;
         int maxMemoryKb = 0;
+        String errorMessage = null;
         int memoryLimitMb = problem.getMemoryLimitMb() != null ? problem.getMemoryLimitMb() : DEFAULT_MEMORY_LIMIT_MB;
 
         for (TestCase testCase : testCases) {
@@ -125,11 +126,15 @@ public class JudgeServiceImpl implements JudgeService {
 
             if (verdict != SubmissionVerdict.AC) {
                 finalVerdict = verdict;
+                // Khi gặp Runtime Error, lưu trữ stderr (giữ cả đầu và đuôi) làm thông báo lỗi
+                if (verdict == SubmissionVerdict.RE) {
+                    errorMessage = truncateHeadTail(result.stderr());
+                }
                 break;
             }
             passed++;
         }
-        return new JudgeOutcome(finalVerdict, passed, maxTimeMs, maxMemoryKb);
+        return new JudgeOutcome(finalVerdict, passed, maxTimeMs, maxMemoryKb, errorMessage);
     }
 
     // TODO: đọc cả file testcase vào RAM, chỉ ổn với testcase nhỏ (repo yêu cầu streaming I/O).
@@ -149,6 +154,21 @@ public class JudgeServiceImpl implements JudgeService {
         return text.substring(0, MAX_ERROR_MESSAGE_CHARS);
     }
 
+    /**
+     * Cắt chuỗi lỗi giữ cả đầu và đuôi:
+     * - Python traceback chứa lỗi cụ thể ở dòng cuối cùng
+     * - Java traceback chứa exception name ở đầu
+     */
+    private String truncateHeadTail(String text) {
+        if (text == null || text.length() <= MAX_ERROR_MESSAGE_CHARS) {
+            return text;
+        }
+        String separator = "\n...\n";
+        int headLength = 1000;
+        int tailLength = MAX_ERROR_MESSAGE_CHARS - headLength - separator.length();
+        return text.substring(0, headLength) + separator + text.substring(text.length() - tailLength);
+    }
+
     private void deleteQuietly(Path dir) {
         if (!Files.exists(dir)) {
             return;
@@ -160,6 +180,6 @@ public class JudgeServiceImpl implements JudgeService {
         }
     }
 
-    private record JudgeOutcome(SubmissionVerdict verdict, int passed, int maxTimeMs, int maxMemoryKb) {
+    private record JudgeOutcome(SubmissionVerdict verdict, int passed, int maxTimeMs, int maxMemoryKb, String errorMessage) {
     }
 }

@@ -26,10 +26,11 @@ public class DockerExecutor {
     private static final String CPU_LIMIT = "1";
     private static final String PIDS_LIMIT = "64";
     private static final int MAX_OUTPUT_BYTES = 1024 * 1024;
+    private static final int MAX_STDERR_BYTES = 8 * 1024;
     private static final long COMPILE_TIMEOUT_MS = 30_000;
     private static final long STARTUP_ALLOWANCE_MS = 5_000;
 
-    // Executor riêng cho blocking process I/O (stdout, stdin) thay vì dùng ForkJoinPool.commonPool
+    // Executor riêng cho blocking process I/O (stdout, stdin, stderr) thay vì dùng ForkJoinPool.commonPool
     private final AtomicInteger threadCounter = new AtomicInteger();
     private final ExecutorService ioExecutor = Executors.newCachedThreadPool(r -> {
         Thread thread = new Thread(r, "docker-io-" + threadCounter.incrementAndGet());
@@ -89,11 +90,13 @@ public class DockerExecutor {
         String containerName = "judge-" + UUID.randomUUID();
         try {
             Process process = new ProcessBuilder(buildRunCommand(containerName, workDir, runtime, memoryLimitMb))
-                    .redirectError(ProcessBuilder.Redirect.DISCARD)
                     .start();
 
             CompletableFuture<String> stdoutFuture =
-                    CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream()), ioExecutor);
+                    CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream(), MAX_OUTPUT_BYTES), ioExecutor);
+            // Đọc stderr bất đồng bộ với giới hạn 8KB, drain sạch để tiến trình không bị nghẽn pipe
+            CompletableFuture<String> stderrFuture =
+                    CompletableFuture.supplyAsync(() -> readLimited(process.getErrorStream(), MAX_STDERR_BYTES), ioExecutor);
 
             // Ghi stdin bất đồng bộ: tránh block khi pipe đầy (chương trình không đọc input).
             // IOException khi pipe vỡ (container bị kill) là bình thường, bỏ qua.
@@ -114,6 +117,7 @@ public class DockerExecutor {
                 process.waitFor();
             }
             String stdout = stdoutFuture.join();
+            String stderr = stderrFuture.join();
 
             String raw = runDocker("inspect", containerName,
                     "--format", "{{.State.OOMKilled}} {{.State.ExitCode}} {{.State.StartedAt}} {{.State.FinishedAt}}");
@@ -140,7 +144,7 @@ public class DockerExecutor {
 
             boolean timedOut = !finished || (runtimeMs > timeLimitMs);
 
-            return new ExecutionResult(exitCode, timedOut, oomKilled, stdout, runtimeMs, 0);
+            return new ExecutionResult(exitCode, timedOut, oomKilled, stdout, runtimeMs, 0, stderr);
         } finally {
             runDocker("rm", "-f", containerName);
         }
@@ -200,12 +204,16 @@ public class DockerExecutor {
     }
 
     private String readLimited(InputStream in) {
+        return readLimited(in, MAX_OUTPUT_BYTES);
+    }
+
+    private String readLimited(InputStream in, int maxBytes) {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         byte[] chunk = new byte[8192];
         try {
             int n;
             while ((n = in.read(chunk)) != -1) {
-                int room = MAX_OUTPUT_BYTES - buffer.size();
+                int room = maxBytes - buffer.size();
                 if (room > 0) {
                     buffer.write(chunk, 0, Math.min(n, room));
                 }

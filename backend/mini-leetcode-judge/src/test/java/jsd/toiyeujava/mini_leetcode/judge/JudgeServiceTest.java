@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -24,6 +25,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -212,5 +214,51 @@ class JudgeServiceTest {
         judgeService.judge(message(SubmissionLanguage.PYTHON));
 
         verify(dockerExecutor).execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), eq(1000L), eq(512));
+    }
+
+    @Test
+    @DisplayName("Records stderr as error message when execution results in Runtime Error")
+    void judge_RuntimeErrorWithStderr_RecordsErrorMessage() throws Exception {
+        stubProblemAndTestCases(List.of(testCase("in1", "out1")));
+        when(submissionService.getSubmissionCode(1L)).thenReturn("1 / 0");
+        stubFile("in1", "1");
+        stubFile("out1", "42");
+        String stderr = "Traceback (most recent call last):\n  ZeroDivisionError: division by zero\n";
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt()))
+                .thenReturn(new ExecutionResult(1, false, false, "", 50, 0, stderr));
+
+        judgeService.judge(message(SubmissionLanguage.PYTHON));
+
+        verify(submissionService).updateSubmissionVerdict(
+                eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.RE),
+                eq(50), eq(0), eq(0), eq(1), eq(stderr));
+    }
+
+    @Test
+    @DisplayName("Truncates long stderr preserving both head and tail within 2000 chars")
+    void judge_RuntimeErrorWithLongStderr_TruncatesPreservingHeadAndTail() throws Exception {
+        stubProblemAndTestCases(List.of(testCase("in1", "out1")));
+        when(submissionService.getSubmissionCode(1L)).thenReturn("crash");
+        stubFile("in1", "1");
+        stubFile("out1", "42");
+        String head = "START_OF_ERROR_HEADER_";
+        String tail = "_END_OF_ERROR_TRACEBACK";
+        String longStderr = head + "A".repeat(3000) + tail;
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt()))
+                .thenReturn(new ExecutionResult(1, false, false, "", 50, 0, longStderr));
+
+        judgeService.judge(message(SubmissionLanguage.PYTHON));
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(submissionService).updateSubmissionVerdict(
+                eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.RE),
+                eq(50), eq(0), eq(0), eq(1), captor.capture());
+
+        String recordedError = captor.getValue();
+        assertThat(recordedError).isNotNull();
+        assertThat(recordedError.length()).isLessThanOrEqualTo(2000);
+        assertThat(recordedError).startsWith(head);
+        assertThat(recordedError).endsWith(tail);
+        assertThat(recordedError).contains("\n...\n");
     }
 }
