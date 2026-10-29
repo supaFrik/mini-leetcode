@@ -1,0 +1,7 @@
+URL	Phải thấy
+http://localhost:3000	                Mặc định của Next.js (Chưa có ý tưởng mọe gì màn hình home)
+http://localhost:3000/login             TODO
+http://localhost:3000/problems	        Cơ bản màn hình list of problems
+http://localhost:3000/problems/two-sum	TODO
+http://localhost:3000/exam	            TODO
+http://localhost:3000/exam/1/problems/1	Tính năng của anti-cheat

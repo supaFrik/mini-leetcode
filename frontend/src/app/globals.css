@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 220 15% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 10%;
+    --primary: 142 71% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 15% 10%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 8% 40%;
+    --accent: 220 14% 92%;
+    --accent-foreground: 220 15% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --ring: 142 71% 36%;
+    --radius: 0.5rem;
+  }
+
+  /* Màu dark lấy xấp xỉ từ Figma. Hãy đối chiếu lại bằng Figma Dev Mode. */
+  .dark {
+    --background: 216 9% 11%;
+    --foreground: 210 20% 96%;
+    --card: 216 9% 14%;
+    --card-foreground: 210 20% 96%;
+    --popover: 216 9% 14%;
+    --popover-foreground: 210 20% 96%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 144 80% 6%;
+    --secondary: 216 9% 19%;
+    --secondary-foreground: 210 20% 96%;
+    --muted: 216 9% 19%;
+    --muted-foreground: 215 10% 62%;
+    --accent: 216 9% 21%;
+    --accent-foreground: 210 20% 96%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 216 8% 21%;
+    --input: 216 8% 21%;
+    --ring: 142 71% 45%;
+  }
+
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-track { background: transparent; }
+}
