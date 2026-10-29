@@ -98,6 +98,10 @@ public class DockerExecutor {
             }
             boolean oomKilled = Boolean.parseBoolean(state[0]);
             int exitCode = Integer.parseInt(state[1]);
+            // Nếu exit code trùng mã OOM của runtime (ví dụ JVM ExitOnOutOfMemoryError), phân loại là MLE
+            if (runtime.oomExitCode().map(code -> code == exitCode).orElse(false)) {
+                oomKilled = true;
+            }
             String startedAtRaw = state[2];
             String finishedAtRaw = state[3];
 

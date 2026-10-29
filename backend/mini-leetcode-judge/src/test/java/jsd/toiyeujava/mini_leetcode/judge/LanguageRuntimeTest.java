@@ -33,4 +33,11 @@ class LanguageRuntimeTest {
         assertThat(LanguageRuntime.PYTHON.needsCompile()).isFalse();
         assertThat(LanguageRuntime.JAVA.needsCompile()).isTrue();
     }
+
+    @Test
+    @DisplayName("Java defines an OOM exit code for ExitOnOutOfMemoryError, Python does not")
+    void oomExitCode_PythonAndJava_OnlyJavaDefinesExitCode() {
+        assertThat(LanguageRuntime.PYTHON.oomExitCode()).isEmpty();
+        assertThat(LanguageRuntime.JAVA.oomExitCode()).contains(3);
+    }
 }
