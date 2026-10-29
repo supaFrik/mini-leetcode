@@ -24,7 +24,7 @@ export interface Page<T> {
 
 // ===== Enum =====
 export type Role = "USER" | "INSTRUCTOR" | "ADMIN";
-export type Language = "JAVA" | "PYTHON" | "CPP";
+export type Language = "JAVA" | "PYTHON";
 export type Difficulty = "EASY" | "MEDIUM" | "HARD";
 export type ProblemLifecycle = "DRAFT" | "REVIEWING" | "PUBLISHED" | "ARCHIVED";
 export type UserProgress = "DONE" | "IN_PROGRESS" | "NEVER";

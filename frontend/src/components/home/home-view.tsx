@@ -65,13 +65,14 @@ export function HomeView() {
         <div className="space-y-4">
           <p className="font-mono text-xs text-primary">{user ? `Xin chào, ${user.username}` : "Mini LeetCode"}</p>
           <h1 className="text-3xl font-semibold leading-tight md:text-4xl">Luyện thuật toán, thi có giám sát, chấm tự động trong vài giây.</h1>
-          <p className="max-w-xl text-muted-foreground">Giải đề bằng Java, Python hoặc C++, xem ngay thời gian chạy, bộ nhớ và so sánh output. Khi cần đánh giá năng lực, vào phòng thi với đồng hồ và giám sát từ máy chủ.</p>
+          <p className="max-w-xl text-muted-foreground">Giải đề bằng Java hoặc Python, xem ngay thời gian chạy, bộ nhớ và so sánh output. Khi cần đánh giá năng lực, vào phòng thi với đồng hồ và giám sát từ máy chủ.</p>
           <div className="flex flex-wrap gap-3">
             <Button asChild><Link href="/problems">Bắt đầu luyện tập<ArrowRight className="h-4 w-4" /></Link></Button>
             <Button asChild variant="outline"><Link href="/exam">Vào phòng thi</Link></Button>
           </div>
         </div>
-        <div> //placeholder cho bên phải
+        {/* placeholder cho bên phải */}
+        <div className="hidden md:block">
         </div>
       </section>
 

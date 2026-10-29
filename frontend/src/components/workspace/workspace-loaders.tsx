@@ -15,6 +15,23 @@ import type { ContestInfo, ProblemFull, TestCase } from "@/types/api";
 // và cổng quy chế hiện lại. Biến module sống qua điều hướng trong app nhưng mất khi F5 (F5 phải qua cổng lại).
 const startedContests = new Set<number>();
 
+function isContestStarted(id: number): boolean {
+  if (startedContests.has(id)) return true;
+  if (typeof window !== "undefined") {
+    try { return sessionStorage.getItem(`exam_started_${id}`) === "true"; }
+    catch { return false; }
+  }
+  return false;
+}
+
+function markContestStarted(id: number): void {
+  startedContests.add(id);
+  if (typeof window !== "undefined") {
+    try { sessionStorage.setItem(`exam_started_${id}`, "true"); }
+    catch { /* bỏ qua */ }
+  }
+}
+
 function Message({ title, children }: { title: string; children?: React.ReactNode }) {
   return <div className="mx-auto grid h-full max-w-md place-content-center gap-3 p-6 text-center"><p className="font-medium">{title}</p>{children}</div>;
 }
@@ -49,7 +66,7 @@ export function PracticeLoader({ slug }: { slug: string }) {
 }
 
 export function ExamLoader({ contestId, problemId }: { contestId: number; problemId: string }) {
-  const [started, setStarted] = useState(() => startedContests.has(contestId));
+  const [started, setStarted] = useState(() => isContestStarted(contestId));
   const { user } = useUser();
   const { data, error, retry } = useLoaded<{ contest: ContestInfo; problem: ProblemFull; cases: TestCase[] }>(async () => {
     const contest = await fetchContest(contestId);
@@ -77,6 +94,6 @@ export function ExamLoader({ contestId, problemId }: { contestId: number; proble
     );
   }
   if (!contest.problems.some((p) => p.id === problem.id)) return <Message title="Đề bài này không thuộc kỳ thi" />;
-  if (!started) return <ExamGate contest={contest} onStart={() => { startedContests.add(contestId); setStarted(true); }} />;
+  if (!started) return <ExamGate contest={contest} onStart={() => { markContestStarted(contestId); setStarted(true); }} />;
   return <Workspace key={`${contest.id}-${problem.id}`} problem={problem} testCases={cases} mode="exam" contest={contest} role={user.role} />;
 }

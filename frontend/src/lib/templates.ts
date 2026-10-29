@@ -3,10 +3,9 @@ import type { Language } from "@/types/api";
 export const LANGUAGES: { value: Language; label: string; dot: string }[] = [
   { value: "JAVA", label: "Java", dot: "bg-cyan-400" },
   { value: "PYTHON", label: "Python", dot: "bg-yellow-400" },
-  { value: "CPP", label: "C++", dot: "bg-blue-400" },
 ];
-export const MONACO_LANG: Record<Language, string> = { JAVA: "java", PYTHON: "python", CPP: "cpp" };
-export const FILE_NAME: Record<Language, string> = { JAVA: "Solution.java", PYTHON: "solution.py", CPP: "solution.cpp" };
+export const MONACO_LANG: Record<Language, string> = { JAVA: "java", PYTHON: "python" };
+export const FILE_NAME: Record<Language, string> = { JAVA: "Solution.java", PYTHON: "solution.py" };
 
 // Judge chạy chương trình đọc stdin / ghi stdout, nên template là chương trình hoàn chỉnh.
 export const TEMPLATES: Record<Language, string> = {
@@ -26,14 +25,6 @@ def main():
     # TODO: xử lý và print kết quả
 
 main()
-`,
-  CPP: `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    // TODO: đọc input, in output
-    return 0;
-}
 `,
 };
 

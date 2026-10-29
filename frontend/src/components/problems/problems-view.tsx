@@ -15,8 +15,8 @@ import { Pagination } from "./pagination";
 import { LANG_PREF_KEY } from "@/lib/templates";
 import type { Language, Page, ProblemSummary } from "@/types/api";
 
-// Chỉ các ngôn ngữ backend hỗ trợ (enum JAVA | PYTHON | CPP)
-const LANGS: [string, Language][] = [["Python", "PYTHON"], ["Java", "JAVA"], ["C++", "CPP"]];
+// Chỉ các ngôn ngữ backend hỗ trợ (enum JAVA | PYTHON)
+const LANGS: [string, Language][] = [["Java", "JAVA"], ["Python", "PYTHON"]];
 const TAGS = ["Array", "Two Pointers", "Hash Table", "Math", "Dynamic Programming", "Sorting", "Graph", "Design"];
 
 function Segmented({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: [string, string][] }) {
