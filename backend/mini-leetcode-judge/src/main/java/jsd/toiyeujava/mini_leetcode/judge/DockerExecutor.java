@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +23,7 @@ public class DockerExecutor {
     private static final String PIDS_LIMIT = "64";
     private static final int MAX_OUTPUT_BYTES = 1024 * 1024;
     private static final long COMPILE_TIMEOUT_MS = 30_000;
+    private static final long STARTUP_ALLOWANCE_MS = 5_000;
 
     /**
      * Pha COMPILE (chỉ Java, một lần mỗi bài nộp). Mount ghi được vì javac phải ghi Solution.class.
@@ -53,12 +56,12 @@ public class DockerExecutor {
     /**
      * Pha CHẠY (mỗi testcase một container mới). Mount chỉ đọc, input đưa qua stdin.
      * TODO: peakMemoryKb chưa đo nên luôn là 0.
-     * TODO: runtimeMs là wall-clock, gồm cả thời gian khởi động container (và JVM với Java).
+     * runtimeMs tính từ FinishedAt - StartedAt của container (loại trừ thời gian tạo container,
+     * nhưng vẫn bao gồm thời gian khởi động JVM với Java).
      */
     public ExecutionResult execute(Path workDir, LanguageRuntime runtime, String input, long timeLimitMs)
             throws IOException, InterruptedException {
         String containerName = "judge-" + UUID.randomUUID();
-        long start = System.nanoTime();
         try {
             Process process = new ProcessBuilder(buildRunCommand(containerName, workDir, runtime))
                     .redirectError(ProcessBuilder.Redirect.DISCARD)
@@ -77,25 +80,38 @@ public class DockerExecutor {
                 }
             });
 
-            boolean finished = process.waitFor(timeLimitMs, TimeUnit.MILLISECONDS);
+            // Hard timeout cộng thêm thời gian khởi động container
+            long hardTimeoutMs = timeLimitMs + STARTUP_ALLOWANCE_MS;
+            boolean finished = process.waitFor(hardTimeoutMs, TimeUnit.MILLISECONDS);
             if (!finished) {
                 runDocker("kill", containerName);
                 process.destroyForcibly();
                 process.waitFor();
             }
-            int runtimeMs = (int) ((System.nanoTime() - start) / 1_000_000);
             String stdout = stdoutFuture.join();
 
             String raw = runDocker("inspect", containerName,
-                    "--format", "{{.State.OOMKilled}} {{.State.ExitCode}}");
+                    "--format", "{{.State.OOMKilled}} {{.State.ExitCode}} {{.State.StartedAt}} {{.State.FinishedAt}}");
             String[] state = raw.split(" ");
-            if (state.length != 2) {
+            if (state.length != 4) {
                 throw new IllegalStateException("docker inspect failed: " + raw);
             }
             boolean oomKilled = Boolean.parseBoolean(state[0]);
             int exitCode = Integer.parseInt(state[1]);
+            String startedAtRaw = state[2];
+            String finishedAtRaw = state[3];
 
-            return new ExecutionResult(exitCode, !finished, oomKilled, stdout, runtimeMs, 0);
+            if ("0001-01-01T00:00:00Z".equals(startedAtRaw) || startedAtRaw.startsWith("0001-01-01")) {
+                throw new IllegalStateException("Container never started (StartedAt=" + startedAtRaw + ")");
+            }
+
+            Instant startedAt = Instant.parse(startedAtRaw);
+            Instant finishedAt = Instant.parse(finishedAtRaw);
+            int runtimeMs = (int) Math.max(0, Duration.between(startedAt, finishedAt).toMillis());
+
+            boolean timedOut = !finished || (runtimeMs > timeLimitMs);
+
+            return new ExecutionResult(exitCode, timedOut, oomKilled, stdout, runtimeMs, 0);
         } finally {
             runDocker("rm", "-f", containerName);
         }
