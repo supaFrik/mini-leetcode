@@ -1,5 +1,6 @@
 package jsd.toiyeujava.mini_leetcode.judge;
 
+import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -13,7 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class DockerExecutor {
@@ -24,6 +28,19 @@ public class DockerExecutor {
     private static final int MAX_OUTPUT_BYTES = 1024 * 1024;
     private static final long COMPILE_TIMEOUT_MS = 30_000;
     private static final long STARTUP_ALLOWANCE_MS = 5_000;
+
+    // Executor riêng cho blocking process I/O (stdout, stdin) thay vì dùng ForkJoinPool.commonPool
+    private final AtomicInteger threadCounter = new AtomicInteger();
+    private final ExecutorService ioExecutor = Executors.newCachedThreadPool(r -> {
+        Thread thread = new Thread(r, "docker-io-" + threadCounter.incrementAndGet());
+        thread.setDaemon(true);
+        return thread;
+    });
+
+    @PreDestroy
+    public void destroy() {
+        ioExecutor.shutdown();
+    }
 
     /**
      * Pha COMPILE (chỉ Java, một lần mỗi bài nộp). Mount ghi được vì javac phải ghi Solution.class.
@@ -38,7 +55,7 @@ public class DockerExecutor {
                     .start();
 
             CompletableFuture<String> outputFuture =
-                    CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream()));
+                    CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream()), ioExecutor);
 
             boolean finished = process.waitFor(COMPILE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             if (!finished) {
@@ -68,7 +85,7 @@ public class DockerExecutor {
                     .start();
 
             CompletableFuture<String> stdoutFuture =
-                    CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream()));
+                    CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream()), ioExecutor);
 
             // Ghi stdin bất đồng bộ: tránh block khi pipe đầy (chương trình không đọc input).
             // IOException khi pipe vỡ (container bị kill) là bình thường, bỏ qua.
@@ -78,7 +95,7 @@ public class DockerExecutor {
                 } catch (IOException ignored) {
                     // pipe vỡ khi container bị kill trước khi đọc hết stdin
                 }
-            });
+            }, ioExecutor);
 
             // Hard timeout cộng thêm thời gian khởi động container
             long hardTimeoutMs = timeLimitMs + STARTUP_ALLOWANCE_MS;
@@ -105,7 +122,7 @@ public class DockerExecutor {
             String startedAtRaw = state[2];
             String finishedAtRaw = state[3];
 
-            if ("0001-01-01T00:00:00Z".equals(startedAtRaw) || startedAtRaw.startsWith("0001-01-01")) {
+            if (startedAtRaw.startsWith("0001-01-01")) {
                 throw new IllegalStateException("Container never started (StartedAt=" + startedAtRaw + ")");
             }
 
