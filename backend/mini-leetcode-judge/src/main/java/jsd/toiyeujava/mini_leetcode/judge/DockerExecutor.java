@@ -152,10 +152,20 @@ public class DockerExecutor {
         List<String> command = new ArrayList<>(List.of("docker", "run"));
         if (runPhase) {
             command.add("-i");
+            // Chạy non-root user (1000:1000) ở pha run để hạn chế tối đa quyền của code thí sinh.
+            // TODO: Pha compile giữ user mặc định (root) vì javac cần quyền ghi Solution.class vào mount /workspace.
+            // Hệ quả: trên host Linux, file .class do root tạo có thể khiến deleteQuietly thất bại nếu worker không chạy root.
+            command.addAll(List.of("--user", "1000:1000"));
         }
         command.addAll(List.of(
                 "--name", containerName,
                 "--network", "none",
+                // Hardening sandbox: tước bỏ đặc quyền, ngăn leo thang quyền, filesystem chỉ đọc, cấp /tmp trên RAM, giới hạn file descriptor
+                "--cap-drop", "ALL",
+                "--security-opt", "no-new-privileges:true",
+                "--read-only",
+                "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
+                "--ulimit", "nofile=256:256",
                 "--memory", MEMORY_LIMIT,
                 "--memory-swap", MEMORY_LIMIT,
                 "--cpus", CPU_LIMIT,
