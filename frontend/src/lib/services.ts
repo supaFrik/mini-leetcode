@@ -22,7 +22,7 @@ type Raw = any;
 // ---------- Auth ----------
 export async function login(username: string, password: string) {
   if (USE_MOCK) { const t = mock.login(username); setTokens(t.accessToken, t.refreshToken); return; }
-  const d = await api<Raw>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ username, password }) });
+  const d = await api<Raw>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ username, usernameOrEmail: username, password }) });
   const access = d?.accessToken ?? d?.token;
   if (!access) throw new Error("Phản hồi đăng nhập không có accessToken");
   setTokens(access, d.refreshToken);

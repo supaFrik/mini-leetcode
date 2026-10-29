@@ -164,7 +164,14 @@ public class DockerExecutor {
 
     private List<String> buildCommand(String containerName, Path workDir, LanguageRuntime runtime,
                                       boolean runPhase, List<String> commandInContainer, int memoryLimitMb) {
-        String mount = workDir.toAbsolutePath() + ":/workspace" + (runPhase ? ":ro" : "");
+        String hostWorkDir = System.getenv("HOST_WORK_DIR");
+        String hostPathStr;
+        if (hostWorkDir != null && !hostWorkDir.isBlank()) {
+            hostPathStr = hostWorkDir.replaceAll("[/\\\\]+$", "") + "/" + workDir.getFileName().toString();
+        } else {
+            hostPathStr = workDir.toAbsolutePath().toString();
+        }
+        String mount = hostPathStr.replace('\\', '/') + ":/workspace" + (runPhase ? ":ro" : "");
         String memLimit = memoryLimitMb + "m";
         List<String> command = new ArrayList<>(List.of("docker", "run"));
         if (runPhase) {

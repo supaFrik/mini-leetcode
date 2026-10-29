@@ -79,7 +79,10 @@ export async function request<T>(path: string, init: RequestInit = {}, canRetry 
     }
     throw new ApiError(res.status, body as ProblemDetail | null);
   }
-  return { data: (body as ApiResponse<T>)?.data as T, status: res.status, headers: res.headers };
+  const resultData = (body && typeof body === "object" && "data" in body && (body as ApiResponse<T>).data !== undefined)
+    ? (body as ApiResponse<T>).data
+    : (body as T);
+  return { data: resultData, status: res.status, headers: res.headers };
 }
 
 export async function api<T>(path: string, init?: RequestInit) {

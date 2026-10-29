@@ -98,6 +98,133 @@ services:
       exit 0;
       "
 
+  mini-leetcode-api:
+    image: minileetcode-mini-leetcode-api:latest
+    build:
+      context: ./backend
+      dockerfile: mini-leetcode-api/Dockerfile
+    container_name: mini_leetcode_api
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio_provisioner:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: leetcode
+      SPRING_DATASOURCE_PASSWORD: leetcode_password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: redis_password
+      APP_MINIO_URL: http://minio:9000
+      APP_MINIO_ACCESS_KEY: minioadmin
+      APP_MINIO_SECRET_KEY: minioadminpassword
+      APP_MINIO_BUCKET_NAME: testcases
+      DB_URL: jdbc:mysql://mysql:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: leetcode
+      DB_PASSWORD: leetcode_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadminpassword
+      MINIO_BUCKET_NAME: testcases
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    networks:
+      - mini_leetcode_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1024M
+
+  mini-leetcode-judge:
+    image: minileetcode-mini-leetcode-judge:latest
+    build:
+      context: ./backend
+      dockerfile: mini-leetcode-judge/Dockerfile
+    container_name: mini_leetcode_judge
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio_provisioner:
+        condition: service_completed_successfully
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./temp-submissions:/app/temp-submissions
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: leetcode
+      SPRING_DATASOURCE_PASSWORD: leetcode_password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: redis_password
+      APP_MINIO_URL: http://minio:9000
+      APP_MINIO_ACCESS_KEY: minioadmin
+      APP_MINIO_SECRET_KEY: minioadminpassword
+      APP_MINIO_BUCKET_NAME: testcases
+      DB_URL: jdbc:mysql://mysql:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: leetcode
+      DB_PASSWORD: leetcode_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadminpassword
+      MINIO_BUCKET_NAME: testcases
+      HOST_WORK_DIR: ${PWD}/temp-submissions
+    networks:
+      - mini_leetcode_net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1024M
+
+  frontend:
+    image: minileetcode-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_USE_MOCK: "false"
+        NEXT_PUBLIC_ENABLE_RUN: "false"
+        NEXT_PUBLIC_ENABLE_DRAFT_SYNC: "false"
+    container_name: mini_leetcode_frontend
+    restart: unless-stopped
+    depends_on:
+      mini-leetcode-api:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-3001}:3000"
+    environment:
+      PORT: 3000
+      BACKEND_URL: http://mini-leetcode-api:8080
+    networks:
+      - mini_leetcode_net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
 networks:
   mini_leetcode_net:
     driver: bridge

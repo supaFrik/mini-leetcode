@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { postProctoringEvent } from "@/lib/services";
+import { toast } from "@/lib/toast";
 import type { ProctoringEventType, ProctoringLogItem } from "@/types/api";
 
 /**
@@ -79,6 +80,7 @@ export function useProctoring({ contestId, enabled, initialCount, max, initialDi
   const reportPaste = useCallback(() => {
     if (Date.now() - lastPaste.current < 500) return;
     lastPaste.current = Date.now();
+    toast("Không được phép dán code trong phòng thi. Hành vi này đã được ghi nhận.", "error");
     void send("CLIPBOARD_PASTE");
   }, [send]);
 

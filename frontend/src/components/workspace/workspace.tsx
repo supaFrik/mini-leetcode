@@ -101,6 +101,16 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
     return () => window.removeEventListener("keydown", onKey);
   }, [maximized]);
 
+  useEffect(() => {
+    if (!examMode) return;
+    const onPaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      proctor.reportPaste();
+    };
+    window.addEventListener("paste", onPaste, true);
+    return () => window.removeEventListener("paste", onPaste, true);
+  }, [examMode, proctor]);
+
   // Instructor: INSTRUCTOR gửi duyệt (REVIEWING), ADMIN phát hành (PUBLISHED) theo vòng đời đề bài
   const publish = async () => {
     const target = role === "ADMIN" ? "PUBLISHED" : "REVIEWING";

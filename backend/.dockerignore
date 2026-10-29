@@ -1,0 +1,10 @@
+**/.idea/
+**/.vscode/
+**/.git/
+**/temp-submissions/
+**/target/classes/
+**/target/generated-sources/
+**/target/generated-test-sources/
+**/target/maven-status/
+**/target/maven-archiver/
+**/target/test-classes/
