@@ -67,11 +67,15 @@ public class DockerExecutor {
             CompletableFuture<String> stdoutFuture =
                     CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream()));
 
-            try (var stdin = process.getOutputStream()) {
-                stdin.write(input.getBytes(StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                // chương trình có thể thoát trước khi đọc hết input, ko phải lỗi của judge
-            }
+            // Ghi stdin bất đồng bộ: tránh block khi pipe đầy (chương trình không đọc input).
+            // IOException khi pipe vỡ (container bị kill) là bình thường, bỏ qua.
+            CompletableFuture.runAsync(() -> {
+                try (var stdin = process.getOutputStream()) {
+                    stdin.write(input.getBytes(StandardCharsets.UTF_8));
+                } catch (IOException ignored) {
+                    // pipe vỡ khi container bị kill trước khi đọc hết stdin
+                }
+            });
 
             boolean finished = process.waitFor(timeLimitMs, TimeUnit.MILLISECONDS);
             if (!finished) {
