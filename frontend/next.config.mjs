@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Trình duyệt chỉ gọi localhost:3000/api/... , Next chuyển tiếp sang backend → không dính CORS.
   async rewrites() {
     return [
       {
@@ -9,4 +10,5 @@ const nextConfig = {
     ];
   },
 };
+
 export default nextConfig;

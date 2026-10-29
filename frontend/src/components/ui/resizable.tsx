@@ -5,15 +5,14 @@ import * as ResizablePrimitive from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
 
+// Bản này viết cho react-resizable-panels v2 (API: PanelGroup / Panel / PanelResizeHandle).
+// Phiên bản v4 đổi tên API, nên README yêu cầu cài đúng: npm i react-resizable-panels@^2.1.9
 const ResizablePanelGroup = ({
   className,
   ...props
 }: React.ComponentProps<typeof ResizablePrimitive.PanelGroup>) => (
   <ResizablePrimitive.PanelGroup
-    className={cn(
-      "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
-      className
-    )}
+    className={cn("flex h-full w-full data-[panel-group-direction=vertical]:flex-col", className)}
     {...props}
   />
 )

@@ -1,19 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
+import { getServerOffset } from "@/lib/api";
 
-export function useCountdown(endTimeMs: number, serverOffsetMs = 0) {
-  const [left, setLeft] = useState<number | null>(null);   // null lúc đầu để tránh lệch hydration
+// Đếm ngược theo GIỜ SERVER (giờ máy + độ lệch), không tin đồng hồ máy thí sinh.
+// Trả về null ở lần render đầu để tránh lệch hydration.
+export function useCountdown(endTimeMs: number | null) {
+  const [left, setLeft] = useState<number | null>(null);
   useEffect(() => {
-    const tick = () => setLeft(Math.max(0, endTimeMs - (Date.now() + serverOffsetMs)));
+    if (!endTimeMs) { setLeft(null); return; }
+    const tick = () => setLeft(Math.max(0, endTimeMs - (Date.now() + getServerOffset())));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [endTimeMs, serverOffsetMs]);
+  }, [endTimeMs]);
   return left;
-}
-
-export function formatMs(ms: number) {
-  const s = Math.floor(ms / 1000), pad = (n: number) => String(n).padStart(2, "0");
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
-  return h > 0 ? `${h}:${pad(m)}:${pad(s % 60)}` : `${pad(m)}:${pad(s % 60)}`;
 }
