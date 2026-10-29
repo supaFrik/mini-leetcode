@@ -6,6 +6,10 @@ spring:
   jpa:
     open-in-view: false
   data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_password}
     web:
       pageable:
         max-page-size: 100
@@ -21,10 +25,6 @@ app:
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadminpassword}
     bucket-name: ${MINIO_BUCKET_NAME:testcases}
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD:redis_password}
 
 springdoc:
   api-docs:
