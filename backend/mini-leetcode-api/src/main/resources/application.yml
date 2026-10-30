@@ -31,6 +31,13 @@ app:
     legacy-queue-key: ${JUDGE_LEGACY_QUEUE_KEY:queue.submissions}
     consumer-group: ${JUDGE_CONSUMER_GROUP:judge-group}
     consumer-name: ${JUDGE_CONSUMER_NAME:}
+  bootstrap:
+    # Tạo tài khoản admin đầu tiên khi khởi động (chỉ khi user chưa tồn tại).
+    # Để trống để tắt. Mật khẩu phải được cấu hình qua biến môi trường.
+    admin:
+      username: ${BOOTSTRAP_ADMIN_USERNAME:}
+      email: ${BOOTSTRAP_ADMIN_EMAIL:}
+      password: ${BOOTSTRAP_ADMIN_PASSWORD:}
 
 springdoc:
   api-docs:
