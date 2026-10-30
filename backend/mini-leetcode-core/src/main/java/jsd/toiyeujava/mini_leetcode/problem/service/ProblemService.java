@@ -87,7 +87,7 @@ public class ProblemService {
                 .build();
 
         problem = problemRepository.save(problem);
-        return ProblemResponse.fromEntity(problem);
+        return ProblemResponse.fromEntity(problem, countOfTestCases(problem.getId()), null);
     }
 
     @Transactional
@@ -124,7 +124,7 @@ public class ProblemService {
         }
 
         problem = problemRepository.save(problem);
-        return ProblemResponse.fromEntity(problem);
+        return ProblemResponse.fromEntity(problem, countOfTestCases(problem.getId()), null);
     }
 
     /**
@@ -159,7 +159,15 @@ public class ProblemService {
 
         problem.setStatus(target);
         problem = problemRepository.save(problem);
-        return ProblemResponse.fromEntity(problem);
+        return ProblemResponse.fromEntity(problem, countOfTestCases(problem.getId()), null);
+    }
+
+    /** Số testcase của một bài (một truy vấn COUNT, không N+1). */
+    private long countOfTestCases(Long problemId) {
+        if (testCaseRepository == null) {
+            return 0L;
+        }
+        return testCaseRepository.countByProblemId(problemId);
     }
 
     /** Bài có ít nhất một testcase công khai (is_hidden = false) không? */

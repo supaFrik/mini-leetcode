@@ -146,6 +146,10 @@ services:
       JUDGE_LEGACY_QUEUE_KEY: ${JUDGE_LEGACY_QUEUE_KEY:-queue.submissions}
       JUDGE_CONSUMER_GROUP: ${JUDGE_CONSUMER_GROUP:-judge-group}
       JUDGE_CONSUMER_NAME: ${JUDGE_CONSUMER_NAME:-}
+      # Tài khoản admin đầu tiên (AdminBootstrapRunner). Để trống để tắt.
+      BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
     networks:
       - mini_leetcode_net
     healthcheck:
@@ -240,7 +244,9 @@ services:
       mini-leetcode-api:
         condition: service_healthy
     ports:
-      - "${FRONTEND_PORT:-3001}:3000"
+      # Host port is configurable; 3000 on this host is taken by Grafana, and
+      # the E2E suite already runs the dev server on 3005.
+      - "${FRONTEND_PORT:-3100}:3000"
     environment:
       PORT: 3000
       BACKEND_URL: http://mini-leetcode-api:8080
