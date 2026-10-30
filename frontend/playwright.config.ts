@@ -18,6 +18,20 @@ const baseURL = process.env.BASE_URL || `http://localhost:${port}`;
 // don't try to start one.
 const manageServer = !process.env.BASE_URL;
 
+/**
+ * The suite drives the app through Playwright route interception, so the
+ * in-browser mock server MUST be off — otherwise the app never issues the
+ * network requests the tests are intercepting. A `NEXT_PUBLIC_USE_MOCK=true`
+ * left in the shell environment would silently invalidate every assertion,
+ * so the flag is pinned here rather than left to the ambient environment.
+ */
+const e2eEnv = {
+  ...process.env,
+  NEXT_PUBLIC_USE_MOCK: "false",
+  NEXT_PUBLIC_ENABLE_RUN: process.env.NEXT_PUBLIC_ENABLE_RUN ?? "true",
+  NEXT_PUBLIC_ENABLE_DRAFT_SYNC: process.env.NEXT_PUBLIC_ENABLE_DRAFT_SYNC ?? "false",
+};
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -55,6 +69,7 @@ export default defineConfig({
         timeout: 300000,
         stdout: "pipe",
         stderr: "pipe",
+        env: e2eEnv,
       }
     : undefined,
 });

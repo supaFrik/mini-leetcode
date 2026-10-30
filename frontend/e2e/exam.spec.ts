@@ -19,7 +19,7 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
   test("navigates contest listing, views overview, and accepts ExamGate rules", async ({ page }) => {
     // 1. Contest Listing
     await page.goto("/exam", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Kỳ thi" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Live" })).toBeVisible();
     await expect(page.getByText("Mini LeetCode Weekly Contest 101")).toBeVisible();
 
     // 2. Contest Overview
@@ -31,18 +31,18 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
     // 3. Problem A in contest
     const problemRow = page.getByText("Two Sum");
     await expect(problemRow).toBeVisible();
-    await page.getByRole("link", { name: "Làm bài" }).first().click();
+    await page.getByRole("link", { name: "Enter Problem" }).first().click();
 
     await page.waitForURL("/exam/101/problems/1");
 
     // 4. ExamGate & Rules Verification
     await expect(page.getByRole("heading", { name: "Mini LeetCode Weekly Contest 101" })).toBeVisible();
-    await expect(page.getByText("Quy chế phòng thi", { exact: true })).toBeVisible();
-    await expect(page.getByText(/Không rời tab hoặc đổi cửa sổ/)).toBeVisible();
-    await expect(page.getByText(/Không thoát chế độ toàn màn hình/)).toBeVisible();
-    await expect(page.getByText(/Không dán \(paste\) code/)).toBeVisible();
+    await expect(page.getByText("Exam regulations", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Do not switch tabs or windows/)).toBeVisible();
+    await expect(page.getByText(/Do not exit fullscreen mode/)).toBeVisible();
+    await expect(page.getByText(/Do not paste code from external sources/)).toBeVisible();
 
-    const startBtn = page.getByRole("button", { name: "Bắt đầu làm bài" });
+    const startBtn = page.getByRole("button", { name: "Start Exam" });
     await expect(startBtn).toBeDisabled();
 
     // Accept rules agreement
@@ -53,8 +53,8 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
     await startBtn.click();
 
     // ExamGate clears, problem workspace is displayed
-    await expect(page.getByText("Quy chế phòng thi", { exact: true })).not.toBeVisible();
-    await expect(page.getByText(/Vi phạm 0\/3/)).toBeVisible();
+    await expect(page.getByText("Exam regulations", { exact: true })).not.toBeVisible();
+    await expect(page.getByText(/Violations 0\/3/)).toBeVisible();
   });
 
   test("enforces fullscreen mode with overlay and re-entry mechanism", async ({ page }) => {
@@ -65,20 +65,20 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
     await page.goto("/exam/101/problems/1", { waitUntil: "domcontentloaded" });
 
     // Ensure workspace is active
-    await expect(page.getByText(/Vi phạm 0\/3/)).toBeVisible();
+    await expect(page.getByText(/Violations 0\/3/)).toBeVisible();
 
     // Simulate user exiting fullscreen mode
     await triggerFullscreenExit(page);
 
     // FullscreenOverlay displays
-    await expect(page.getByText("Bạn đã thoát chế độ toàn màn hình")).toBeVisible();
-    await expect(page.getByText("Vui lòng quay lại toàn màn hình để tiếp tục làm bài.")).toBeVisible();
+    await expect(page.getByText("Fullscreen Mode Exited")).toBeVisible();
+    await expect(page.getByText("Please return to fullscreen mode to continue the exam.")).toBeVisible();
 
-    // Click "Vào lại toàn màn hình"
-    await page.getByRole("button", { name: "Vào lại toàn màn hình" }).click();
+    // Click "Re-enter Fullscreen"
+    await page.getByRole("button", { name: "Re-enter Fullscreen" }).click();
 
     // Overlay clears
-    await expect(page.getByText("Bạn đã thoát chế độ toàn màn hình")).not.toBeVisible();
+    await expect(page.getByText("Fullscreen Mode Exited")).not.toBeVisible();
   });
 
   test("triggers proctoring events: paste blocking warning toast and tab blur dialog", async ({ page }) => {
@@ -86,7 +86,7 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
       sessionStorage.setItem("exam_started_101", "true");
     });
     await page.goto("/exam/101/problems/1", { waitUntil: "domcontentloaded" });
-    await expect(page.getByText(/Vi phạm 0\/3/)).toBeVisible();
+    await expect(page.getByText(/Violations 0\/3/)).toBeVisible();
 
     // 1. Paste Prevention & Warning Toast
     await page.evaluate(() => {
@@ -94,7 +94,7 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
     });
 
     // Verify paste warning toast
-    await expect(page.getByText("Không được phép dán code trong phòng thi")).toBeVisible();
+    await expect(page.getByText("Pasting code is prohibited during exams.")).toBeVisible();
 
     // 2. Tab Blur / Visibility Change with Grace Period (> 1.5s)
     await page.evaluate(() => {
@@ -107,12 +107,12 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
     });
 
     // Violation warning dialog appears
-    await expect(page.getByText("Cảnh báo vi phạm quy chế thi")).toBeVisible();
-    await expect(page.getByText(/Bạn đã rời khỏi giao diện thi/)).toBeVisible();
+    await expect(page.getByText("Exam Regulation Warning")).toBeVisible();
+    await expect(page.getByText(/You have left the exam window/)).toBeVisible();
 
     // Dismiss dialog
-    await page.getByRole("button", { name: "Tôi hiểu và tiếp tục" }).click();
-    await expect(page.getByText("Cảnh báo vi phạm quy chế thi")).not.toBeVisible();
+    await page.getByRole("button", { name: "I understand and agree to continue" }).click();
+    await expect(page.getByText("Exam Regulation Warning")).not.toBeVisible();
   });
 
   test("locks editor and submission upon 3-strike disqualification", async ({ page }) => {
@@ -126,9 +126,9 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
     await page.goto("/exam/101/problems/1", { waitUntil: "domcontentloaded" });
 
     // DisqualifiedOverlay displays
-    await expect(page.getByText("Bài thi đã bị khoá")).toBeVisible();
-    await expect(page.getByText(/Bài thi của bạn đã bị khóa do vi phạm quy chế thi/)).toBeVisible();
-    await expect(page.getByRole("link", { name: "Về trang kỳ thi" })).toBeVisible();
+    await expect(page.getByText("Exam Locked")).toBeVisible();
+    await expect(page.getByText(/Your exam session has been locked due to exceeding allowed violations/)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Return to Contest" })).toBeVisible();
   });
 
   test("displays countdown timer and enforces submission locking on expiration", async ({ page }) => {
@@ -156,9 +156,9 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
     await page.goto("/exam/105/problems/1", { waitUntil: "domcontentloaded" });
 
     // TimeUpOverlay renders locking submissions
-    await expect(page.getByText("Đã hết giờ làm bài")).toBeVisible();
-    await expect(page.getByText(/Hệ thống đã khoá việc nộp bài/)).toBeVisible();
-    await expect(page.getByRole("link", { name: "Xem bảng xếp hạng" })).toBeVisible();
+    await expect(page.getByText("Contest Time Expired")).toBeVisible();
+    await expect(page.getByText(/The contest has ended. Your latest draft has been saved./)).toBeVisible();
+    await expect(page.getByRole("link", { name: "View Leaderboard" })).toBeVisible();
   });
 
   test("displays live ICPC ranking leaderboard with candidate rows, user indicator, and refresh action", async ({ page }) => {
@@ -166,26 +166,26 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
 
     // Header and contest title
     await expect(page.getByRole("heading", { name: "Mini LeetCode Weekly Contest 101" })).toBeVisible();
-    await expect(page.getByText("Đang diễn ra")).toBeVisible();
+    await expect(page.getByText("Live")).toBeVisible();
 
     // Ranking Table Headers
-    await expect(page.getByRole("columnheader", { name: "Hạng" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Thí sinh" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Rank" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Participant" })).toBeVisible();
     await expect(page.getByRole("columnheader", { name: "AC" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Phạt (phút)" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Penalty (min)" })).toBeVisible();
 
     // Candidate Rows
     await expect(page.getByText("algorithm_master")).toBeVisible();
     await expect(page.getByText("speed_coder")).toBeVisible();
 
-    // Authenticated user row with (bạn) indicator
+    // Authenticated user row with (you) indicator
     await expect(page.getByRole("cell", { name: /student/ })).toBeVisible();
-    await expect(page.getByText("(bạn)")).toBeVisible();
+    await expect(page.getByText("(you)")).toBeVisible();
 
     // Refresh action
-    const refreshBtn = page.getByRole("button", { name: "Làm mới" });
+    const refreshBtn = page.getByRole("button", { name: "Refresh" });
     await expect(refreshBtn).toBeVisible();
     await refreshBtn.click();
-    await expect(page.getByText(/Cập nhật/)).toBeVisible();
+    await expect(page.getByText(/Updated/)).toBeVisible();
   });
 });

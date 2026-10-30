@@ -25,12 +25,12 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
     const checkbox = page.getByRole("checkbox");
     if (await checkbox.isVisible({ timeout: 10000 }).catch(() => false)) {
       await checkbox.check();
-      const startBtn = page.getByRole("button", { name: "Bắt đầu làm bài" });
+      const startBtn = page.getByRole("button", { name: "Start Exam" });
       await expect(startBtn).toBeEnabled({ timeout: 5000 });
       await startBtn.click();
     }
     if (waitForWorkspace) {
-      await expect(page.getByText(/Vi phạm 0\/3/)).toBeVisible({ timeout: 15000 });
+      await expect(page.getByText(/Violations 0\/3/)).toBeVisible({ timeout: 15000 });
     }
   }
 
@@ -47,8 +47,8 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await page.evaluate(() => window.dispatchEvent(new Event("focus")));
 
       // Verify NO strike recorded
-      await expect(page.getByText("Cảnh báo vi phạm quy chế thi")).not.toBeVisible();
-      await expect(page.getByText(/Vi phạm 0\/3/)).toBeVisible();
+      await expect(page.getByText("Exam Regulation Warning")).not.toBeVisible();
+      await expect(page.getByText(/Violations 0\/3/)).toBeVisible();
 
       // Another sub-1.5s blur: 800ms
       await page.evaluate(() => window.dispatchEvent(new Event("blur")));
@@ -56,8 +56,8 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await page.evaluate(() => window.dispatchEvent(new Event("focus")));
 
       // Still NO strike recorded
-      await expect(page.getByText("Cảnh báo vi phạm quy chế thi")).not.toBeVisible();
-      await expect(page.getByText(/Vi phạm 0\/3/)).toBeVisible();
+      await expect(page.getByText("Exam Regulation Warning")).not.toBeVisible();
+      await expect(page.getByText(/Violations 0\/3/)).toBeVisible();
 
       const serverState = mockApi.proctoringViolations.get("101:user");
       expect(serverState?.warnings ?? 0).toBe(0);
@@ -74,8 +74,8 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
         await page.waitForTimeout(100);
       }
 
-      await expect(page.getByText("Cảnh báo vi phạm quy chế thi")).not.toBeVisible();
-      await expect(page.getByText(/Vi phạm 0\/3/)).toBeVisible();
+      await expect(page.getByText("Exam Regulation Warning")).not.toBeVisible();
+      await expect(page.getByText(/Violations 0\/3/)).toBeVisible();
 
       const serverState = mockApi.proctoringViolations.get("101:user");
       expect(serverState?.warnings ?? 0).toBe(0);
@@ -90,13 +90,13 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await page.evaluate(() => window.dispatchEvent(new Event("focus")));
 
       // ViolationDialog MUST appear
-      const dialog = page.getByText("Cảnh báo vi phạm quy chế thi");
+      const dialog = page.getByText("Exam Regulation Warning");
       await expect(dialog).toBeVisible();
-      await expect(page.getByText(/Bạn đã rời khỏi giao diện thi 1\/3 lần/)).toBeVisible();
-      await expect(page.getByText(/Vi phạm 1\/3/)).toBeVisible();
+      await expect(page.getByText(/You have left the exam window 1\/3 times/)).toBeVisible();
+      await expect(page.getByText(/Violations 1\/3/)).toBeVisible();
 
       // Dismiss dialog
-      await page.getByRole("button", { name: "Tôi hiểu và tiếp tục" }).click();
+      await page.getByRole("button", { name: "I understand and agree to continue" }).click();
       await expect(dialog).not.toBeVisible();
 
       // Check server state
@@ -111,8 +111,8 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await page.evaluate(() => window.dispatchEvent(new Event("blur")));
       await page.waitForTimeout(1600);
       await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-      await expect(page.getByText("Cảnh báo vi phạm quy chế thi")).toBeVisible();
-      await page.getByRole("button", { name: "Tôi hiểu và tiếp tục" }).click();
+      await expect(page.getByText("Exam Regulation Warning")).toBeVisible();
+      await page.getByRole("button", { name: "I understand and agree to continue" }).click();
 
       // Second violation: blur 1600ms
       await page.evaluate(() => window.dispatchEvent(new Event("blur")));
@@ -120,12 +120,12 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await page.evaluate(() => window.dispatchEvent(new Event("focus")));
 
       // Dialog for 2/3 must state that next violation will disqualify
-      await expect(page.getByText("Cảnh báo vi phạm quy chế thi")).toBeVisible();
-      await expect(page.getByText(/Bạn đã rời khỏi giao diện thi 2\/3 lần/)).toBeVisible();
-      await expect(page.getByText(/Lần vi phạm tiếp theo bạn sẽ bị loại khỏi kỳ thi/)).toBeVisible();
-      await expect(page.getByText(/Vi phạm 2\/3/)).toBeVisible();
+      await expect(page.getByText("Exam Regulation Warning")).toBeVisible();
+      await expect(page.getByText(/You have left the exam window 2\/3 times/)).toBeVisible();
+      await expect(page.getByText(/You will be disqualified on your next violation/)).toBeVisible();
+      await expect(page.getByText(/Violations 2\/3/)).toBeVisible();
 
-      await page.getByRole("button", { name: "Tôi hiểu và tiếp tục" }).click();
+      await page.getByRole("button", { name: "I understand and agree to continue" }).click();
     });
   });
 
@@ -138,7 +138,7 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
 
       // Focus editor and attempt Ctrl+V
       const monacoEditor = page.locator(".monaco-editor");
-      const fallbackTextarea = page.locator('textarea[aria-label="Mã nguồn"]');
+      const fallbackTextarea = page.locator('textarea[aria-label="Source code"]');
 
       if (await monacoEditor.isVisible()) {
         await monacoEditor.click();
@@ -149,14 +149,14 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await page.keyboard.press("Control+v");
 
       // Verify paste toast displayed
-      await expect(page.getByText("Không được phép dán code trong phòng thi")).toBeVisible();
+      await expect(page.getByText("Pasting code is prohibited during exams")).toBeVisible();
     });
 
     test("intercepts Shift+Insert keyboard shortcut and emits warning toast", async ({ page }) => {
       await enterExamWorkspace(page);
 
       const monacoEditor = page.locator(".monaco-editor");
-      const fallbackTextarea = page.locator('textarea[aria-label="Mã nguồn"]');
+      const fallbackTextarea = page.locator('textarea[aria-label="Source code"]');
 
       if (await monacoEditor.isVisible()) {
         await monacoEditor.click();
@@ -166,7 +166,7 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
 
       await page.keyboard.press("Shift+Insert");
 
-      await expect(page.getByText("Không được phép dán code trong phòng thi")).toBeVisible();
+      await expect(page.getByText("Pasting code is prohibited during exams")).toBeVisible();
     });
 
     test("suppresses right-click context menu in exam mode", async ({ page }) => {
@@ -174,7 +174,7 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
 
       // Check contextmenu event cancellation in editor
       const isDefaultPrevented = await page.evaluate(() => {
-        const target = document.querySelector(".monaco-editor") || document.querySelector('textarea[aria-label="Mã nguồn"]') || document.body;
+        const target = document.querySelector(".monaco-editor") || document.querySelector('textarea[aria-label="Source code"]') || document.body;
         const event = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
         target.dispatchEvent(event);
         return event.defaultPrevented;
@@ -194,14 +194,14 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       });
 
       expect(pasteDispatched).toBe(true);
-      await expect(page.getByText("Không được phép dán code trong phòng thi")).toBeVisible();
+      await expect(page.getByText("Pasting code is prohibited during exams")).toBeVisible();
     });
 
     test("intercepts drag-and-drop code injection into editor", async ({ page }) => {
       await enterExamWorkspace(page);
 
       const dropPrevented = await page.evaluate(() => {
-        const editor = document.querySelector(".monaco-editor") || document.querySelector('textarea[aria-label="Mã nguồn"]');
+        const editor = document.querySelector(".monaco-editor") || document.querySelector('textarea[aria-label="Source code"]');
         if (!editor) return false;
         const ev = new Event("drop", { bubbles: true, cancelable: true });
         editor.dispatchEvent(ev);
@@ -209,7 +209,7 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       });
 
       expect(dropPrevented).toBe(true);
-      await expect(page.getByText("Không được phép dán code trong phòng thi")).toBeVisible();
+      await expect(page.getByText("Pasting code is prohibited during exams")).toBeVisible();
     });
   });
 
@@ -229,9 +229,9 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       }
 
       // DisqualifiedOverlay MUST appear
-      const overlay = page.getByRole("alertdialog", { name: "Bài thi đã bị khoá" });
+      const overlay = page.getByRole("alertdialog", { name: "Exam Locked" });
       await expect(overlay).toBeVisible();
-      await expect(page.getByText(/Bài thi của bạn đã bị khóa do vi phạm quy chế thi/)).toBeVisible();
+      await expect(page.getByText(/Your exam session has been locked due to exceeding allowed violations/)).toBeVisible();
 
       // Verify submit button is disabled in DOM
       const submitBtn = page.locator('button:has-text("Submit Solution")');
@@ -263,21 +263,21 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await page.goto("/exam/101/problems/1", { waitUntil: "domcontentloaded" });
 
       // Immediate locking overlay
-      await expect(page.getByText("Bài thi đã bị khoá")).toBeVisible();
+      await expect(page.getByText("Exam Locked")).toBeVisible();
 
       // Hard reload page
       await page.reload({ waitUntil: "domcontentloaded" });
 
       // Still locked immediately
-      await expect(page.getByText("Bài thi đã bị khoá")).toBeVisible();
-      await expect(page.getByRole("link", { name: "Về trang kỳ thi" })).toBeVisible();
+      await expect(page.getByText("Exam Locked")).toBeVisible();
+      await expect(page.getByRole("link", { name: "Return to Contest" })).toBeVisible();
 
-      // Navigation back to exam overview shows "Bị loại" and "Đã khoá"
-      await page.getByRole("link", { name: "Về trang kỳ thi" }).click();
+      // Navigation back to exam overview shows "Disqualified" and "Locked"
+      await page.getByRole("link", { name: "Return to Contest" }).click();
       await page.waitForURL("/exam/101");
 
-      await expect(page.getByText(/Bạn đã bị loại khỏi kỳ thi này/)).toBeVisible();
-      await expect(page.getByRole("button", { name: "Đã khoá" }).first()).toBeVisible();
+      await expect(page.getByText(/You have been disqualified from this contest/)).toBeVisible();
+      await expect(page.getByRole("button", { name: "Locked" }).first()).toBeVisible();
     });
   });
 
@@ -305,16 +305,16 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await enterExamWorkspace(page, 106, 1, false);
 
       // TimeUpOverlay appears
-      const overlay = page.getByRole("alertdialog", { name: "Đã hết giờ làm bài" });
+      const overlay = page.getByRole("alertdialog", { name: "Contest Time Expired" });
       await expect(overlay).toBeVisible();
-      await expect(page.getByText(/Hệ thống đã khoá việc nộp bài/)).toBeVisible();
+      await expect(page.getByText(/The contest has ended/)).toBeVisible();
 
       // Submit button must be disabled
       const submitBtn = page.locator('button:has-text("Submit Solution")');
       await expect(submitBtn).toBeDisabled();
 
       // Link to leaderboard must be available
-      await expect(page.getByRole("link", { name: "Xem bảng xếp hạng" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "View Leaderboard" })).toBeVisible();
     });
 
     test("blocks late in-flight submissions attempted after expiration", async ({ page }) => {
@@ -371,8 +371,8 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       const studentRow = page.locator("tr", { has: page.getByText("student") });
       await expect(studentRow).toBeVisible();
 
-      // Must display 'Bị loại' badge
-      await expect(studentRow.getByText("Bị loại")).toBeVisible();
+      // Must display 'Disqualified' badge
+      await expect(studentRow.getByText("Disqualified")).toBeVisible();
 
       // Rank must be '—' (null rank)
       await expect(studentRow.locator("td").first()).toHaveText("—");
@@ -383,13 +383,13 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       // Other non-disqualified contestants must retain their ranks
       const topRow = page.locator("tr", { has: page.getByText("algorithm_master") });
       await expect(topRow.locator("td").first()).toHaveText("1");
-      await expect(topRow.getByText("Bị loại")).not.toBeVisible();
+      await expect(topRow.getByText("Disqualified")).not.toBeVisible();
     });
 
     test("supports manual refresh action and maintains live leaderboard responsiveness", async ({ page }) => {
       await page.goto("/exam/101/leaderboard", { waitUntil: "domcontentloaded" });
 
-      const refreshBtn = page.getByRole("button", { name: "Làm mới" });
+      const refreshBtn = page.getByRole("button", { name: "Refresh" });
       await expect(refreshBtn).toBeVisible();
 
       let leaderboardRequests = 0;
@@ -401,7 +401,7 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await page.waitForTimeout(500);
 
       expect(leaderboardRequests).toBeGreaterThanOrEqual(1);
-      await expect(page.getByText(/Cập nhật/)).toBeVisible();
+      await expect(page.getByText(/Updated/)).toBeVisible();
     });
   });
 });

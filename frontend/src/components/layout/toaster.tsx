@@ -1,34 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
-import { X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { dismissToast, subscribeToasts, type ToastItem } from "@/lib/toast";
 
-export function Toaster() {
-  const [items, setItems] = useState<ToastItem[]>([]);
-  useEffect(() => subscribeToasts(setItems), []);
-  return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2">
-      {items.map((t) => (
-        <div
-          key={t.id}
-          role={t.kind === "error" ? "alert" : "status"}
-          className={cn(
-            "pointer-events-auto flex items-start gap-3 rounded-md border border-border bg-card px-4 py-3 text-body-md text-ink shadow-floating",
-            t.kind === "error" && "border-destructive/30 bg-destructive/5 text-destructive",
-            t.kind === "success" && "border-border"
-          )}
-        >
-          <span className="flex-1">{t.message}</span>
-          <button
-            aria-label="Dismiss notification"
-            onClick={() => dismissToast(t.id)}
-            className="text-mute transition-colors hover:text-ink"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
+/**
+ * App shell toaster — re-exports the shadcn toast (`@/components/ui/toast`)
+ * so the existing `@/components/layout/toaster` import path keeps working.
+ */
+export { Toaster } from "@/components/ui/toast";

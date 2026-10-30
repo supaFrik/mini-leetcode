@@ -132,7 +132,7 @@ test.describe("Authentication and Registration E2E Suite", () => {
 
       // Header shows student username and user role
       await expect(page.getByText("student", { exact: true })).toBeVisible();
-      await expect(page.getByText("#USER")).toBeVisible();
+      await expect(page.getByText("USER", { exact: true })).toBeVisible();
     });
 
     test("persists authenticated session across full page reloads", async ({ page }) => {
@@ -166,8 +166,8 @@ test.describe("Authentication and Registration E2E Suite", () => {
       await page.goto("/login");
       await page.evaluate(() => localStorage.clear());
 
-      // Attempt navigating to protected /problems route
-      await page.goto("/problems");
+      // Attempt navigating to a protected route (submissions requires a session)
+      await page.goto("/submissions");
 
       // AuthGuard redirects back to /login with next query parameter
       await page.waitForURL((url) => url.pathname.includes("/login"));
