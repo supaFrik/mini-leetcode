@@ -261,6 +261,9 @@ public class AdversarialReviewerTest {
                 .slug("777")
                 .description("Problem with numeric title")
                 .difficulty(Difficulty.MEDIUM)
+                // Bài phải PUBLISHED để người dùng thường đọc được (bài chưa
+                // publish bị ẩn khỏi các endpoint công khai).
+                .status(ProblemStatus.PUBLISHED)
                 .createdBy(creator)
                 .build());
 

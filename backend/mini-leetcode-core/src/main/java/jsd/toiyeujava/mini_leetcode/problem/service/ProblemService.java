@@ -177,8 +177,18 @@ public class ProblemService {
 
     @Transactional(readOnly = true)
     public ProblemResponse getProblemById(Long id, Long userId) {
+        return getProblemById(id, userId, true);
+    }
+
+    /**
+     * @param staff {@code true} khi người gọi là giảng viên/admin — được thấy cả
+     *              bài chưa publish. Người dùng thường chỉ thấy bài {@code PUBLISHED}.
+     */
+    @Transactional(readOnly = true)
+    public ProblemResponse getProblemById(Long id, Long userId, boolean staff) {
         Problem problem = problemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + id));
+        assertVisible(problem, staff);
         return ProblemResponse.fromEntity(problem, resolveProgress(userId, List.of(problem), solvedIds(userId), attemptedIds(userId)).get(id));
     }
 
@@ -189,9 +199,25 @@ public class ProblemService {
 
     @Transactional(readOnly = true)
     public ProblemResponse getProblemBySlug(String slug, Long userId) {
+        return getProblemBySlug(slug, userId, true);
+    }
+
+    @Transactional(readOnly = true)
+    public ProblemResponse getProblemBySlug(String slug, Long userId, boolean staff) {
         Problem problem = problemRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with slug: " + slug));
+        assertVisible(problem, staff);
         return ProblemResponse.fromEntity(problem, resolveProgress(userId, List.of(problem), solvedIds(userId), attemptedIds(userId)).get(problem.getId()));
+    }
+
+    /**
+     * Bài chưa publish mà người gọi không phải staff thì trả 404 chứ không 403 —
+     * không tiết lộ sự tồn tại của bài đang soạn.
+     */
+    private void assertVisible(Problem problem, boolean staff) {
+        if (!staff && problem.getStatus() != ProblemStatus.PUBLISHED) {
+            throw new ResourceNotFoundException("Problem not found with id: " + problem.getId());
+        }
     }
 
     private Set<Long> solvedIds(Long userId) {
@@ -206,6 +232,17 @@ public class ProblemService {
 
     @Transactional(readOnly = true)
     public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,                                             List<String> tags, UserProgress progress, Long userId, Pageable pageable) {
+        return getProblems(difficulty, status, search, tags, progress, userId, pageable, true);
+    }
+
+    /**
+     * @param staff {@code true} khi người gọi là giảng viên/admin — được thấy cả
+     *              bài chưa publish. Người dùng thường chỉ thấy bài {@code PUBLISHED}.
+     */
+    @Transactional(readOnly = true)
+    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
+                                             List<String> tags, UserProgress progress, Long userId,
+                                             Pageable pageable, boolean staff) {
         // Bộ lọc tiến độ phụ thuộc vào user, nên phải tính TRƯỚC khi phân trang —
         // lọc sau khi đã cắt trang sẽ cho kết quả sai (trang thiếu hoặc sai số lượng).
         Set<Long> solvedIds = Set.of();
@@ -220,6 +257,11 @@ public class ProblemService {
         Specification<Problem> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            if (!staff) {
+                // Người dùng thường chỉ thấy bài đã publish, bất kể bộ lọc status
+                // có yêu cầu trạng thái khác hay không.
+                predicates.add(cb.equal(root.get("status"), ProblemStatus.PUBLISHED));
+            }
             if (difficulty != null) {
                 predicates.add(cb.equal(root.get("difficulty"), difficulty));
             }

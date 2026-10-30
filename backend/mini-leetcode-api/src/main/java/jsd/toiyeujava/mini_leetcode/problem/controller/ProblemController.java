@@ -13,6 +13,7 @@ import jsd.toiyeujava.mini_leetcode.problem.dto.UpdateProblemRequest;
 import jsd.toiyeujava.mini_leetcode.problem.dto.TransitionProblemRequest;
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
+import jsd.toiyeujava.mini_leetcode.entity.Role;
 import jsd.toiyeujava.mini_leetcode.entity.UserProgress;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
@@ -110,8 +111,17 @@ public class ProblemController {
         Page<ProblemResponse> page = problemService.getProblems(
                 difficulty, status, search, tags, progress,
                 currentUser != null ? currentUser.getId() : null,
-                pageable);
+                pageable, isStaff(currentUser));
         return ResponseEntity.ok(page);
+    }
+
+    /** Giảng viên và admin được thấy cả bài chưa publish. */
+    private boolean isStaff(UserPrincipal principal) {
+        if (principal == null) {
+            return false;
+        }
+        Role role = principal.getRole();
+        return role == Role.INSTRUCTOR || role == Role.ADMIN;
     }
 
     @GetMapping("/tags")
@@ -134,15 +144,16 @@ public class ProblemController {
             @PathVariable String idOrSlug,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         Long userId = currentUser != null ? currentUser.getId() : null;
+        boolean staff = isStaff(currentUser);
         ProblemResponse response;
         if (idOrSlug.matches("^\\d+$")) {
             try {
-                response = problemService.getProblemById(Long.parseLong(idOrSlug), userId);
+                response = problemService.getProblemById(Long.parseLong(idOrSlug), userId, staff);
             } catch (ResourceNotFoundException e) {
-                response = problemService.getProblemBySlug(idOrSlug, userId);
+                response = problemService.getProblemBySlug(idOrSlug, userId, staff);
             }
         } else {
-            response = problemService.getProblemBySlug(idOrSlug, userId);
+            response = problemService.getProblemBySlug(idOrSlug, userId, staff);
         }
         return ResponseEntity.ok(response);
     }
@@ -157,7 +168,7 @@ public class ProblemController {
             @PathVariable String slug,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         ProblemResponse response = problemService.getProblemBySlug(
-                slug, currentUser != null ? currentUser.getId() : null);
+                slug, currentUser != null ? currentUser.getId() : null, isStaff(currentUser));
         return ResponseEntity.ok(response);
     }
 

@@ -151,24 +151,31 @@ class ProblemAndTestCaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REVIEWING"));
 
-        // 5. Search & Pagination
+        // 4b. A problem that is not PUBLISHED is invisible to anonymous callers.
+        mockMvc.perform(get("/api/v1/problems/two-sum"))
+                .andExpect(status().isNotFound());
+
+        // 5. Search & Pagination (staff view - sees unpublished problems)
         mockMvc.perform(get("/api/v1/problems")
                         .param("difficulty", "EASY")
                         .param("page", "0")
-                        .param("size", "10"))
+                        .param("size", "10")
+                        .header("Authorization", "Bearer " + instructorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.content[0].slug").value("two-sum"))
                 .andExpect(jsonPath("$.page.totalElements").value(1));
 
-        // 6. Get Problem by Slug
-        mockMvc.perform(get("/api/v1/problems/two-sum"))
+        // 6. Get Problem by Slug (staff can read an unpublished problem)
+        mockMvc.perform(get("/api/v1/problems/two-sum")
+                        .header("Authorization", "Bearer " + instructorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(p1Id))
                 .andExpect(jsonPath("$.title").value("Two Sum"));
 
-        // 7. Get Problem by ID
-        mockMvc.perform(get("/api/v1/problems/" + p1Id))
+        // 7. Get Problem by ID (staff)
+        mockMvc.perform(get("/api/v1/problems/" + p1Id)
+                        .header("Authorization", "Bearer " + instructorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.slug").value("two-sum"));
 
@@ -214,6 +221,18 @@ class ProblemAndTestCaseIntegrationTest {
                         .content("{\"status\":\"REVIEWING\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
+
+        // 8d. Now that the problem is PUBLISHED, anonymous callers can see it again.
+        mockMvc.perform(get("/api/v1/problems/two-sum"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("two-sum"));
+
+        mockMvc.perform(get("/api/v1/problems")
+                        .param("difficulty", "EASY")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].slug").value("two-sum"));
 
         // 9. Upload hidden TestCase (isHidden = true, orderIndex = 2)
         MockMultipartFile inputFile2 = new MockMultipartFile(
@@ -269,6 +288,57 @@ class ProblemAndTestCaseIntegrationTest {
         mockMvc.perform(get("/api/v1/problems/non-existent-problem-slug"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("Visibility: non-staff only sees PUBLISHED problems; staff sees unpublished too")
+    void visibility_publishedOnlyForNonStaff() throws Exception {
+        CreateProblemRequest createP = new CreateProblemRequest("Hidden Draft", "Desc", Difficulty.EASY, 1000, 256, null);
+        MvcResult pResult = mockMvc.perform(post("/api/v1/problems")
+                        .header("Authorization", "Bearer " + instructorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createP)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andReturn();
+        long pId = objectMapper.readTree(pResult.getResponse().getContentAsString()).get("id").asLong();
+
+        // 1. Anonymous -> collection excludes the draft
+        mockMvc.perform(get("/api/v1/problems").param("size", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + pId + ")]").isEmpty());
+
+        // 2. Normal user -> collection excludes the draft
+        mockMvc.perform(get("/api/v1/problems").param("size", "50")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + pId + ")]").isEmpty());
+
+        // 3. Normal user -> single resource is hidden as 404 (not 403, no existence leak)
+        mockMvc.perform(get("/api/v1/problems/" + pId)
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/v1/problems/hidden-draft"))
+                .andExpect(status().isNotFound());
+
+        // 4. Instructor -> sees the unpublished draft
+        mockMvc.perform(get("/api/v1/problems/" + pId)
+                        .header("Authorization", "Bearer " + instructorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+
+        // 5. Admin -> sees the unpublished draft too
+        mockMvc.perform(get("/api/v1/problems/hidden-draft")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+
+        // 6. A non-staff cannot bypass visibility by asking for another status.
+        mockMvc.perform(get("/api/v1/problems").param("status", "DRAFT").param("size", "50")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + pId + ")]").isEmpty());
     }
 
     @Test
