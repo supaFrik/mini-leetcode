@@ -25,6 +25,9 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     long countByProblemIdAndVerdict(Long problemId, SubmissionVerdict verdict);
 
+    /** Số bài nộp của một bài — dùng để chặn xoá cứng khi bài đã có lịch sử. */
+    long countByProblemId(Long problemId);
+
     /** Các bài nộp (không phải "run") trong một kỳ thi, dùng để tính bảng xếp hạng. */
     List<Submission> findByContestId(Long contestId);
 

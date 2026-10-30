@@ -9,6 +9,7 @@ import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.testcase.entity.TestCase;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
+import jsd.toiyeujava.mini_leetcode.exception.StateConflictException;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemTagRepository;
 import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
@@ -301,5 +302,62 @@ class ProblemServiceTest {
 
         // The specification must be built without throwing and must reach the repository.
         verify(problemRepository).findAll(any(Specification.class), any(PageRequest.class));
+    }
+
+    @Test
+    @DisplayName("getProblems: reports test case count per problem, defaulting to zero")
+    void getProblems_reportsTestCaseCount() {
+        Problem p = Problem.builder().id(1L).title("Two Sum").slug("two-sum").difficulty(Difficulty.EASY).build();
+        Page<Problem> page = new PageImpl<>(List.of(p));
+        when(problemRepository.findAll(any(Specification.class), any(PageRequest.class))).thenReturn(page);
+        when(testCaseRepository.countByProblemIds(List.of(1L))).thenReturn(List.<Object[]>of(new Object[]{1L, 4L}));
+
+        Page<ProblemResponse> result = problemService.getProblems(
+                null, null, null, List.of(), null, null, PageRequest.of(0, 10));
+
+        assertThat(result.getContent().get(0).testCaseCount()).isEqualTo(4L);
+    }
+
+    @Test
+    @DisplayName("getProblems: a problem with no test cases reports a count of zero")
+    void getProblems_testCaseCountDefaultsToZero() {
+        Problem p = Problem.builder().id(1L).title("Two Sum").slug("two-sum").difficulty(Difficulty.EASY).build();
+        Page<Problem> page = new PageImpl<>(List.of(p));
+        when(problemRepository.findAll(any(Specification.class), any(PageRequest.class))).thenReturn(page);
+        when(testCaseRepository.countByProblemIds(List.of(1L))).thenReturn(List.of());
+
+        Page<ProblemResponse> result = problemService.getProblems(
+                null, null, null, List.of(), null, null, PageRequest.of(0, 10));
+
+        assertThat(result.getContent().get(0).testCaseCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("deleteProblem: refuses to hard delete a problem that has submission history")
+    void deleteProblem_withSubmissions_throwsConflict() {
+        Problem problem = Problem.builder().id(1L).build();
+        when(problemRepository.findById(1L)).thenReturn(Optional.of(problem));
+        when(submissionRepository.countByProblemId(1L)).thenReturn(3L);
+
+        assertThatThrownBy(() -> problemService.deleteProblem(1L))
+                .isInstanceOf(StateConflictException.class)
+                .hasMessageContaining("submission history");
+
+        verify(problemRepository, never()).delete(any(Problem.class));
+    }
+
+    @Test
+    @DisplayName("deleteProblem: deletes a problem that has no submission history")
+    void deleteProblem_withoutSubmissions_deletes() {
+        Problem problem = Problem.builder().id(1L).build();
+        when(problemRepository.findById(1L)).thenReturn(Optional.of(problem));
+        when(submissionRepository.countByProblemId(1L)).thenReturn(0L);
+        when(testCaseRepository.findByProblemIdOrderByOrderIndexAsc(1L)).thenReturn(List.of());
+        doNothing().when(testCaseRepository).deleteAll(anyList());
+        doNothing().when(problemRepository).delete(problem);
+
+        problemService.deleteProblem(1L);
+
+        verify(problemRepository).delete(problem);
     }
 }

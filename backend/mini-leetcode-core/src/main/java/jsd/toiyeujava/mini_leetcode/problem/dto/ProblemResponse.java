@@ -24,16 +24,25 @@ public record ProblemResponse(
         /** Chủ đề của bài (Array, String, Hash Table...). Rỗng nếu bài chưa gán chủ đề. */
         List<String> tags,
         /**
+         * Số testcase của bài (một truy vấn COUNT, không N+1).
+         * Bằng 0 khi bài chưa có testcase nào.
+         */
+        long testCaseCount,
+        /**
          * Tiến độ của người dùng hiện tại với bài này.
          * {@code null} khi khách chưa đăng nhập — không ai để so sánh.
          */
         UserProgress progress
 ) {
     public static ProblemResponse fromEntity(Problem p) {
-        return fromEntity(p, null);
+        return fromEntity(p, 0L, null);
     }
 
     public static ProblemResponse fromEntity(Problem p, UserProgress progress) {
+        return fromEntity(p, 0L, progress);
+    }
+
+    public static ProblemResponse fromEntity(Problem p, long testCaseCount, UserProgress progress) {
         return new ProblemResponse(
                 p.getId(),
                 p.getTitle(),
@@ -48,6 +57,7 @@ public record ProblemResponse(
                 p.getCreatedAt(),
                 p.getUpdatedAt(),
                 p.getTags() != null ? List.copyOf(p.getTags()) : List.of(),
+                testCaseCount,
                 progress
         );
     }

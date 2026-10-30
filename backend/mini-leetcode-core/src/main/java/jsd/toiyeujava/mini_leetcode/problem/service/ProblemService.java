@@ -304,8 +304,26 @@ public class ProblemService {
 
         Page<Problem> page = problemRepository.findAll(spec, pageable);
         Map<Long, UserProgress> progressByProblem = resolveProgress(userId, page.getContent(), solvedIds, attemptedIds);
+        Map<Long, Long> testCaseCounts = countTestCases(page.getContent());
 
-        return page.map(p -> ProblemResponse.fromEntity(p, progressByProblem.get(p.getId())));
+        return page.map(p -> ProblemResponse.fromEntity(p, testCaseCounts.getOrDefault(p.getId(), 0L),
+                progressByProblem.get(p.getId())));
+    }
+
+    /**
+     * Số testcase của từng bài trong trang — một truy vấn GROUP BY cho cả trang,
+     * không phải một câu COUNT cho mỗi bài. Bài không có testcase thì mặc định 0.
+     */
+    private Map<Long, Long> countTestCases(List<Problem> problems) {
+        Map<Long, Long> counts = new HashMap<>();
+        if (problems.isEmpty() || testCaseRepository == null) {
+            return counts;
+        }
+        List<Long> ids = problems.stream().map(Problem::getId).toList();
+        for (Object[] row : testCaseRepository.countByProblemIds(ids)) {
+            counts.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+        }
+        return counts;
     }
 
     /**
@@ -351,6 +369,13 @@ public class ProblemService {
     public void deleteProblem(Long id) {
         Problem problem = problemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + id));
+
+        // Bài đã có bài nộp thì không được xoá cứng: lịch sử nộp bài trỏ tới
+        // bài này và sẽ mất dữ liệu chấm điểm. Muốn gỡ thì chuyển sang ARCHIVED.
+        if (submissionRepository != null && submissionRepository.countByProblemId(id) > 0) {
+            throw new StateConflictException(
+                    "Cannot hard delete problem " + id + ": it has submission history. Archive it instead.");
+        }
 
         if (testCaseRepository != null && storageService != null) {
             List<TestCase> testCases = testCaseRepository.findByProblemIdOrderByOrderIndexAsc(id);
