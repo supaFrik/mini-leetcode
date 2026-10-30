@@ -9,6 +9,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "problems")
@@ -48,6 +50,17 @@ public class Problem {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private ProblemStatus status = ProblemStatus.DRAFT;
+
+    /**
+     * Chủ đề của bài tập (Array, String, Hash Table...).
+     * Dùng bảng nối {@code problem_tags} để lọc được ở tầng SQL.
+     */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "problem_tags", joinColumns = @JoinColumn(name = "problem_id"))
+    @Column(name = "tag", nullable = false, length = 50)
+    @OrderColumn(name = "sort_order")
+    @Builder.Default
+    private List<String> tags = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)

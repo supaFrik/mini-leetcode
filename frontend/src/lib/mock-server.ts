@@ -88,6 +88,18 @@ export async function listProblems(q: { page: number; q: string; difficulty: str
     totalElements: all.length, totalPages: Math.max(1, Math.ceil(all.length / size)), number: q.page - 1, size,
   };
 }
+/** Danh sách chủ đề đang có trong catalogue, kèm số bài tương ứng. */
+export async function listTags(): Promise<{ tag: string; count: number }[]> {
+  await sleep(); ensureOnline();
+  const counts = new Map<string, number>();
+  for (const p of PROBLEMS) {
+    for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
 export async function getProblem(idOrSlug: string): Promise<ProblemFull> {
   await sleep(); ensureOnline();
   const p = PROBLEMS.find((x) => String(x.id) === idOrSlug || x.slug === idOrSlug);

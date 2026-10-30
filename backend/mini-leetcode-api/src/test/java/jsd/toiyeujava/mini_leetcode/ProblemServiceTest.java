@@ -10,6 +10,8 @@ import jsd.toiyeujava.mini_leetcode.testcase.entity.TestCase;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
+import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemTagRepository;
+import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
 import jsd.toiyeujava.mini_leetcode.testcase.repository.TestCaseRepository;
 import jsd.toiyeujava.mini_leetcode.problem.service.ProblemService;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
@@ -45,11 +47,18 @@ class ProblemServiceTest {
     @Mock
     private StorageService storageService;
 
+    @Mock
+    private ProblemTagRepository problemTagRepository;
+
+    @Mock
+    private SubmissionRepository submissionRepository;
+
     private ProblemService problemService;
 
     @BeforeEach
     void setUp() {
-        problemService = new ProblemService(problemRepository, testCaseRepository, storageService);
+        problemService = new ProblemService(problemRepository, testCaseRepository, storageService,
+                problemTagRepository, submissionRepository);
     }
 
     @Test
@@ -236,7 +245,7 @@ class ProblemServiceTest {
         Page<Problem> page = new PageImpl<>(List.of(p));
         when(problemRepository.findAll(any(Specification.class), any(PageRequest.class))).thenReturn(page);
 
-        Page<ProblemResponse> result = problemService.getProblems(Difficulty.EASY, ProblemStatus.PUBLISHED, "two", PageRequest.of(0, 10));
+        Page<ProblemResponse> result = problemService.getProblems(Difficulty.EASY, ProblemStatus.PUBLISHED, "two", List.of(), null, null, PageRequest.of(0, 10));
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).title()).isEqualTo("Two Sum");

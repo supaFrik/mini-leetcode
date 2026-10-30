@@ -1,17 +1,23 @@
 package jsd.toiyeujava.mini_leetcode.problem.service;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jsd.toiyeujava.mini_leetcode.problem.dto.CreateProblemRequest;
 import jsd.toiyeujava.mini_leetcode.problem.dto.ProblemResponse;
 import jsd.toiyeujava.mini_leetcode.problem.dto.UpdateProblemRequest;
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
+import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
+import jsd.toiyeujava.mini_leetcode.entity.UserProgress;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.testcase.entity.TestCase;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
+import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemTagRepository;
+import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
 import jsd.toiyeujava.mini_leetcode.testcase.repository.TestCaseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,8 +29,12 @@ import org.springframework.util.StringUtils;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
@@ -37,19 +47,25 @@ public class ProblemService {
     private final ProblemRepository problemRepository;
     private final TestCaseRepository testCaseRepository;
     private final StorageService storageService;
+    private final ProblemTagRepository problemTagRepository;
+    private final SubmissionRepository submissionRepository;
 
     public ProblemService(ProblemRepository problemRepository) {
-        this(problemRepository, null, null);
+        this(problemRepository, null, null, null, null);
     }
 
     @Autowired
     public ProblemService(
             ProblemRepository problemRepository,
             TestCaseRepository testCaseRepository,
-            StorageService storageService) {
+            StorageService storageService,
+            ProblemTagRepository problemTagRepository,
+            SubmissionRepository submissionRepository) {
         this.problemRepository = problemRepository;
         this.testCaseRepository = testCaseRepository;
         this.storageService = storageService;
+        this.problemTagRepository = problemTagRepository;
+        this.submissionRepository = submissionRepository;
     }
 
     @Transactional
@@ -110,20 +126,52 @@ public class ProblemService {
 
     @Transactional(readOnly = true)
     public ProblemResponse getProblemById(Long id) {
+        return getProblemById(id, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ProblemResponse getProblemById(Long id, Long userId) {
         Problem problem = problemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + id));
-        return ProblemResponse.fromEntity(problem);
+        return ProblemResponse.fromEntity(problem, resolveProgress(userId, List.of(problem), solvedIds(userId), attemptedIds(userId)).get(id));
     }
 
     @Transactional(readOnly = true)
     public ProblemResponse getProblemBySlug(String slug) {
-        Problem problem = problemRepository.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Problem not found with slug: " + slug));
-        return ProblemResponse.fromEntity(problem);
+        return getProblemBySlug(slug, null);
     }
 
     @Transactional(readOnly = true)
-    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search, Pageable pageable) {
+    public ProblemResponse getProblemBySlug(String slug, Long userId) {
+        Problem problem = problemRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Problem not found with slug: " + slug));
+        return ProblemResponse.fromEntity(problem, resolveProgress(userId, List.of(problem), solvedIds(userId), attemptedIds(userId)).get(problem.getId()));
+    }
+
+    private Set<Long> solvedIds(Long userId) {
+        if (userId == null || submissionRepository == null) return Set.of();
+        return new HashSet<>(submissionRepository.findSolvedProblemIdsByUserId(userId, SubmissionVerdict.AC));
+    }
+
+    private Set<Long> attemptedIds(Long userId) {
+        if (userId == null || submissionRepository == null) return Set.of();
+        return new HashSet<>(submissionRepository.findAttemptedProblemIdsByUserId(userId));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
+                                             List<String> tags, UserProgress progress, Long userId, Pageable pageable) {
+        // Bộ lọc tiến độ phụ thuộc vào user, nên phải tính TRƯỚC khi phân trang —
+        // lọc sau khi đã cắt trang sẽ cho kết quả sai (trang thiếu hoặc sai số lượng).
+        Set<Long> solvedIds = Set.of();
+        Set<Long> attemptedIds = Set.of();
+        if (userId != null && submissionRepository != null) {
+            solvedIds = new HashSet<>(submissionRepository.findSolvedProblemIdsByUserId(userId, SubmissionVerdict.AC));
+            attemptedIds = new HashSet<>(submissionRepository.findAttemptedProblemIdsByUserId(userId));
+        }
+        final Set<Long> solved = solvedIds;
+        final Set<Long> attempted = attemptedIds;
+
         Specification<Problem> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -139,11 +187,71 @@ public class ProblemService {
                 Predicate descMatch = cb.like(cb.lower(root.get("description")), searchPattern);
                 predicates.add(cb.or(titleMatch, descMatch));
             }
+            if (tags != null && !tags.isEmpty()) {
+                // AND giữa các chủ đề: bài phải thuộc TẤT CẢ chủ đề được chọn.
+                // distinct() bắt buộc vì join bảng nốu sinh ra bản ghi trùng.
+                for (String tag : tags) {
+                    Join<Problem, String> tagJoin = root.join("tags", JoinType.INNER);
+                    predicates.add(cb.equal(tagJoin, tag));
+                }
+                query.distinct(true);
+            }
+            if (progress != null && userId != null) {
+                switch (progress) {
+                    case DONE -> predicates.add(root.get("id").in(solved));
+                    case IN_PROGRESS -> predicates.add(cb.and(
+                            root.get("id").in(attempted),
+                            cb.not(root.get("id").in(solved))));
+                    case NEVER -> predicates.add(cb.not(root.get("id").in(attempted)));
+                }
+            }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        return problemRepository.findAll(spec, pageable).map(ProblemResponse::fromEntity);
+        Page<Problem> page = problemRepository.findAll(spec, pageable);
+        Map<Long, UserProgress> progressByProblem = resolveProgress(userId, page.getContent(), solvedIds, attemptedIds);
+
+        return page.map(p -> ProblemResponse.fromEntity(p, progressByProblem.get(p.getId())));
+    }
+
+    /**
+     * Tiến độ của user với từng bài trong trang: có bài nộp AC → DONE,
+     * có bài nộp (chưa AC) → IN_PROGRESS, chưa nộp gì → NEVER.
+     */
+    private Map<Long, UserProgress> resolveProgress(Long userId, List<Problem> problems,
+                                                     Set<Long> solvedIds, Set<Long> attemptedIds) {
+        if (userId == null || problems.isEmpty() || submissionRepository == null) {
+            return Map.of();
+        }
+
+        Map<Long, UserProgress> map = new HashMap<>();
+        for (Problem p : problems) {
+            Long id = p.getId();
+            if (solvedIds.contains(id)) {
+                map.put(id, UserProgress.DONE);
+            } else if (attemptedIds.contains(id)) {
+                map.put(id, UserProgress.IN_PROGRESS);
+            } else {
+                map.put(id, UserProgress.NEVER);
+            }
+        }
+        return map;
+    }
+
+    /** Danh sách chủ đề đang có trong catalogue, kèm số bài tương ứng. */
+    @Transactional(readOnly = true)
+    public List<TagCount> getTagCounts() {
+        if (problemTagRepository == null) {
+            return List.of();
+        }
+        return problemTagRepository.findTagCounts().stream()
+                .map(row -> new TagCount(String.valueOf(row[0]), ((Number) row[1]).intValue()))
+                .toList();
+    }
+
+    /** Số bài tập thuộc một chủ đề. */
+    public record TagCount(String tag, int count) {
     }
 
     @Transactional

@@ -41,14 +41,42 @@ const normProblem = (r: Raw): ProblemFull => ({
   status: r.status, likes: r.likes, dislikes: r.dislikes,
 });
 
+/**
+ * Backend trả về Page theo dạng lồng: `{ content: [...], page: { number, size, totalElements, totalPages } }`
+ * (xem ProblemController trả `ResponseEntity.ok(Page<ProblemResponse>)` và test
+ * `jsonPath("$.page.totalElements")`). Còn mock-server trả dạng phẳng.
+ * Hàm này gộp cả hai về một shape phẳng duy nhất để UI đọc nhất quán.
+ */
+const normPage = <T,>(r: Raw): Page<T> => {
+  const content: T[] = Array.isArray(r?.content) ? r.content : [];
+  const meta = r?.page ?? r ?? {};
+  const size = Number(meta.size ?? content.length ?? 0);
+  const number = Number(meta.number ?? 0);
+  const totalElements = Number(meta.totalElements ?? content.length);
+  const totalPages = Number(meta.totalPages ?? (size > 0 ? Math.ceil(totalElements / size) : 1));
+  return { content, totalElements, totalPages, number, size };
+};
+
 export interface ProblemQuery { page: number; q: string; difficulty: string; progress: string; tags: string[] }
 export async function fetchProblems(p: ProblemQuery): Promise<Page<ProblemSummary>> {
   if (USE_MOCK) return mock.listProblems(p);
   const qs = new URLSearchParams({ page: String(p.page - 1), size: "8" }); // backend đếm trang từ 0
   if (p.q) qs.set("search", p.q);
   if (p.difficulty) qs.set("difficulty", p.difficulty);
-  const page = await api<Page<Raw>>(`/api/v1/problems?${qs}`);
+  // Backend lọc chủ đề ở tầng SQL: bài phải thuộc TẤT CẢ tag được gửi lên.
+  if (p.tags.length) qs.set("tags", p.tags.join(","));
+  // `progress` chỉ có ý nghĩa với người đã đăng nhập; backend tự tính từ submissions.
+  if (p.progress) qs.set("progress", p.progress);
+  const raw = await api<Raw>(`/api/v1/problems?${qs}`);
+  const page = normPage<Raw>(raw);
   return { ...page, content: page.content.map(normProblem) };
+}
+
+/** Danh sách chủ đề đang có trong catalogue, kèm số bài. */
+export async function fetchProblemTags(): Promise<{ tag: string; count: number }[]> {
+  if (USE_MOCK) return mock.listTags();
+  const raw = await api<Raw[]>("/api/v1/problems/tags");
+  return (raw ?? []).map((t) => ({ tag: String(t.tag), count: Number(t.count) }));
 }
 export async function fetchProblem(idOrSlug: string): Promise<ProblemFull> {
   if (USE_MOCK) return mock.getProblem(idOrSlug);
@@ -93,7 +121,7 @@ export async function fetchSubmission(id: number): Promise<Submission> {
 }
 export async function fetchMySubmissions(page: number, size = 15): Promise<Page<Submission>> {
   if (USE_MOCK) return mock.mySubmissions(page - 1, size);
-  return api<Page<Submission>>(`/api/v1/submissions/my?page=${page - 1}&size=${size}`);
+  return normPage<Submission>(await api<Raw>(`/api/v1/submissions/my?page=${page - 1}&size=${size}`));
 }
 export async function fetchSubmissionCode(id: number): Promise<string> {
   if (USE_MOCK) return mock.submissionCode(id);

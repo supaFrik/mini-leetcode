@@ -12,6 +12,7 @@ import jsd.toiyeujava.mini_leetcode.problem.dto.ProblemResponse;
 import jsd.toiyeujava.mini_leetcode.problem.dto.UpdateProblemRequest;
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
+import jsd.toiyeujava.mini_leetcode.entity.UserProgress;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.auth.repository.UserRepository;
@@ -26,6 +27,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/problems")
@@ -61,7 +64,7 @@ public class ProblemController {
     }
 
     @GetMapping
-    @Operation(summary = "Search and list problems", description = "Returns a paginated list of problems with optional filtering by difficulty, status, or search query")
+    @Operation(summary = "Search and list problems", description = "Returns a paginated list of problems with optional filtering by difficulty, status, topic tag, or search query")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Successfully retrieved page of problems")
     })
@@ -72,8 +75,13 @@ public class ProblemController {
             @RequestParam(required = false) ProblemStatus status,
             @Parameter(description = "Keyword search in title or description")
             @RequestParam(required = false) String search,
+            @Parameter(description = "Filter by topic tags; a problem must carry ALL of them (comma separated)")
+            @RequestParam(required = false) List<String> tags,
+            @Parameter(description = "Filter by the current user's progress (DONE, IN_PROGRESS, NEVER)")
+            @RequestParam(required = false) UserProgress progress,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-            jakarta.servlet.http.HttpServletRequest httpRequest) {
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
         if (httpRequest != null) {
             String pageParam = httpRequest.getParameter("page");
             if (pageParam != null) {
@@ -98,8 +106,20 @@ public class ProblemController {
         if (clampedSize != pageable.getPageSize()) {
             pageable = org.springframework.data.domain.PageRequest.of(pageable.getPageNumber(), clampedSize, pageable.getSort());
         }
-        Page<ProblemResponse> page = problemService.getProblems(difficulty, status, search, pageable);
+        Page<ProblemResponse> page = problemService.getProblems(
+                difficulty, status, search, tags, progress,
+                currentUser != null ? currentUser.getId() : null,
+                pageable);
         return ResponseEntity.ok(page);
+    }
+
+    @GetMapping("/tags")
+    @Operation(summary = "List topic tags in use", description = "Returns every topic tag currently attached to a published problem, with its problem count")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved tag list")
+    })
+    public ResponseEntity<List<ProblemService.TagCount>> getTags() {
+        return ResponseEntity.ok(problemService.getTagCounts());
     }
 
     @GetMapping("/{idOrSlug}")
@@ -110,16 +130,18 @@ public class ProblemController {
     })
     public ResponseEntity<ProblemResponse> getProblem(
             @Parameter(description = "Numeric ID or string slug of the problem")
-            @PathVariable String idOrSlug) {
+            @PathVariable String idOrSlug,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        Long userId = currentUser != null ? currentUser.getId() : null;
         ProblemResponse response;
         if (idOrSlug.matches("^\\d+$")) {
             try {
-                response = problemService.getProblemById(Long.parseLong(idOrSlug));
+                response = problemService.getProblemById(Long.parseLong(idOrSlug), userId);
             } catch (ResourceNotFoundException e) {
-                response = problemService.getProblemBySlug(idOrSlug);
+                response = problemService.getProblemBySlug(idOrSlug, userId);
             }
         } else {
-            response = problemService.getProblemBySlug(idOrSlug);
+            response = problemService.getProblemBySlug(idOrSlug, userId);
         }
         return ResponseEntity.ok(response);
     }
@@ -130,8 +152,11 @@ public class ProblemController {
             @ApiResponse(responseCode = "200", description = "Problem found"),
             @ApiResponse(responseCode = "404", description = "Problem not found")
     })
-    public ResponseEntity<ProblemResponse> getProblemBySlug(@PathVariable String slug) {
-        ProblemResponse response = problemService.getProblemBySlug(slug);
+    public ResponseEntity<ProblemResponse> getProblemBySlug(
+            @PathVariable String slug,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        ProblemResponse response = problemService.getProblemBySlug(
+                slug, currentUser != null ? currentUser.getId() : null);
         return ResponseEntity.ok(response);
     }
 

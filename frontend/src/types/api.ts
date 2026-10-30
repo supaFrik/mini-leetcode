@@ -41,7 +41,8 @@ export interface ProblemSummary {
   title: string;
   difficulty: Difficulty;
   tags: string[];
-  progress?: UserProgress; // tiến độ của user: backend CHƯA có
+  /** Tiến độ của user hiện tại. `undefined` khi chưa đăng nhập. */
+  progress?: UserProgress;
 }
 export interface ProblemFull extends ProblemSummary {
   description: string; // Markdown

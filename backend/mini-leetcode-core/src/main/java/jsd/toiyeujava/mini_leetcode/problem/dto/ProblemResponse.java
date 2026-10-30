@@ -1,10 +1,12 @@
 package jsd.toiyeujava.mini_leetcode.problem.dto;
 
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
-import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
+import jsd.toiyeujava.mini_leetcode.entity.UserProgress;
+import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ProblemResponse(
         Long id,
@@ -18,9 +20,20 @@ public record ProblemResponse(
         Long createdById,
         String createdByUsername,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        /** Chủ đề của bài (Array, String, Hash Table...). Rỗng nếu bài chưa gán chủ đề. */
+        List<String> tags,
+        /**
+         * Tiến độ của người dùng hiện tại với bài này.
+         * {@code null} khi khách chưa đăng nhập — không ai để so sánh.
+         */
+        UserProgress progress
 ) {
     public static ProblemResponse fromEntity(Problem p) {
+        return fromEntity(p, null);
+    }
+
+    public static ProblemResponse fromEntity(Problem p, UserProgress progress) {
         return new ProblemResponse(
                 p.getId(),
                 p.getTitle(),
@@ -33,7 +46,9 @@ public record ProblemResponse(
                 p.getCreatedBy() != null ? p.getCreatedBy().getId() : null,
                 p.getCreatedBy() != null ? p.getCreatedBy().getUsername() : null,
                 p.getCreatedAt(),
-                p.getUpdatedAt()
+                p.getUpdatedAt(),
+                p.getTags() != null ? List.copyOf(p.getTags()) : List.of(),
+                progress
         );
     }
 }
