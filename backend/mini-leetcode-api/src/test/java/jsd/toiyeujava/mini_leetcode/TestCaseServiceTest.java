@@ -4,6 +4,8 @@ import jsd.toiyeujava.mini_leetcode.testcase.dto.TestCaseResponse;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.testcase.entity.TestCase;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
+import jsd.toiyeujava.mini_leetcode.exception.StateConflictException;
+import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.testcase.repository.TestCaseRepository;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
@@ -190,5 +192,99 @@ class TestCaseServiceTest {
         // Correct problem ID
         testCaseService.deleteTestCase(1L, 10L);
         verify(testCaseRepository).delete(tc);
+    }
+
+    @Test
+    @DisplayName("updateTestCase: writes new object keys and keeps the old URI until commit")
+    void updateTestCase_usesImmutableKeys() {
+        Problem problem = Problem.builder().id(1L).status(ProblemStatus.DRAFT).build();
+        TestCase tc = TestCase.builder()
+                .id(10L)
+                .problem(problem)
+                .inputFileUri("minio://testcases/old_input.txt")
+                .expectedOutputUri("minio://testcases/old_output.txt")
+                .isHidden(true)
+                .orderIndex(2)
+                .build();
+
+        when(testCaseRepository.findById(10L)).thenReturn(Optional.of(tc));
+        when(storageService.uploadFile(anyString(), any(InputStream.class), anyLong(), any()))
+                .thenAnswer(i -> "minio://testcases/" + i.getArgument(0));
+        when(testCaseRepository.save(any(TestCase.class))).thenAnswer(i -> i.getArgument(0));
+
+        MockMultipartFile inFile = new MockMultipartFile("inputFile", "in.txt", "text/plain", "new input".getBytes());
+        MockMultipartFile outFile = new MockMultipartFile("outputFile", "out.txt", "text/plain", "new output".getBytes());
+
+        TestCaseResponse response = testCaseService.updateTestCase(1L, 10L, inFile, outFile, false, 5);
+
+        // New URIs point at new object keys, never overwriting the old ones.
+        assertThat(response.inputFileUri()).contains("input_").doesNotContain("old_input");
+        assertThat(response.expectedOutputUri()).contains("output_").doesNotContain("old_output");
+        assertThat(response.isHidden()).isFalse();
+        assertThat(response.orderIndex()).isEqualTo(5);
+        assertThat(response.fileSizeBytes()).isEqualTo(inFile.getSize() + outFile.getSize());
+    }
+
+    @Test
+    @DisplayName("updateTestCase: changing only metadata keeps the existing files")
+    void updateTestCase_metadataOnly_keepsFiles() {
+        Problem problem = Problem.builder().id(1L).status(ProblemStatus.DRAFT).build();
+        TestCase tc = TestCase.builder()
+                .id(10L)
+                .problem(problem)
+                .inputFileUri("minio://testcases/old_input.txt")
+                .expectedOutputUri("minio://testcases/old_output.txt")
+                .isHidden(true)
+                .orderIndex(2)
+                .build();
+
+        when(testCaseRepository.findById(10L)).thenReturn(Optional.of(tc));
+        when(testCaseRepository.save(any(TestCase.class))).thenAnswer(i -> i.getArgument(0));
+
+        TestCaseResponse response = testCaseService.updateTestCase(1L, 10L, null, null, false, null);
+
+        assertThat(response.inputFileUri()).isEqualTo("minio://testcases/old_input.txt");
+        assertThat(response.expectedOutputUri()).isEqualTo("minio://testcases/old_output.txt");
+        assertThat(response.isHidden()).isFalse();
+        verify(storageService, never()).uploadFile(anyString(), any(InputStream.class), anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("updateTestCase: rejects updates on a PUBLISHED problem (frozen test cases)")
+    void updateTestCase_publishedProblem_throwsConflict() {
+        Problem problem = Problem.builder().id(1L).status(ProblemStatus.PUBLISHED).build();
+        TestCase tc = TestCase.builder().id(10L).problem(problem).build();
+
+        when(testCaseRepository.findById(10L)).thenReturn(Optional.of(tc));
+
+        MockMultipartFile file = new MockMultipartFile("inputFile", "in.txt", "text/plain", "data".getBytes());
+
+        assertThatThrownBy(() -> testCaseService.updateTestCase(1L, 10L, file, file, null, null))
+                .isInstanceOf(StateConflictException.class);
+    }
+
+    @Test
+    @DisplayName("addTestCase: rejects new test cases on a PUBLISHED problem (frozen)")
+    void addTestCase_publishedProblem_throwsConflict() {
+        Problem problem = Problem.builder().id(1L).status(ProblemStatus.PUBLISHED).build();
+        when(problemRepository.findById(1L)).thenReturn(Optional.of(problem));
+
+        MockMultipartFile file = new MockMultipartFile("inputFile", "in.txt", "text/plain", "data".getBytes());
+
+        assertThatThrownBy(() -> testCaseService.addTestCase(1L, file, file, false, 0))
+                .isInstanceOf(StateConflictException.class);
+    }
+
+    @Test
+    @DisplayName("deleteTestCase: rejects deletion on a PUBLISHED problem (frozen)")
+    void deleteTestCase_publishedProblem_throwsConflict() {
+        Problem problem = Problem.builder().id(1L).status(ProblemStatus.PUBLISHED).build();
+        TestCase tc = TestCase.builder().id(10L).problem(problem).build();
+        when(testCaseRepository.findById(10L)).thenReturn(Optional.of(tc));
+
+        assertThatThrownBy(() -> testCaseService.deleteTestCase(1L, 10L))
+                .isInstanceOf(StateConflictException.class);
+
+        verify(testCaseRepository, never()).delete(any(TestCase.class));
     }
 }

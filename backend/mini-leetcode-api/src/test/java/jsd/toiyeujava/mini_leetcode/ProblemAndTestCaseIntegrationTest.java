@@ -206,34 +206,6 @@ class ProblemAndTestCaseIntegrationTest {
                 .andExpect(jsonPath("$.inputFileUri").isNotEmpty())
                 .andExpect(jsonPath("$.expectedOutputUri").isNotEmpty());
 
-        // 8b. Now that a public test case exists, publishing succeeds.
-        mockMvc.perform(post("/api/v1/problems/" + p1Id + "/transitions")
-                        .header("Authorization", "Bearer " + instructorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"PUBLISHED\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("PUBLISHED"));
-
-        // 8c. Illegal edge: PUBLISHED -> REVIEWING is not allowed -> 409 Conflict
-        mockMvc.perform(post("/api/v1/problems/" + p1Id + "/transitions")
-                        .header("Authorization", "Bearer " + instructorToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"status\":\"REVIEWING\"}"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409));
-
-        // 8d. Now that the problem is PUBLISHED, anonymous callers can see it again.
-        mockMvc.perform(get("/api/v1/problems/two-sum"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.slug").value("two-sum"));
-
-        mockMvc.perform(get("/api/v1/problems")
-                        .param("difficulty", "EASY")
-                        .param("page", "0")
-                        .param("size", "10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].slug").value("two-sum"));
-
         // 9. Upload hidden TestCase (isHidden = true, orderIndex = 2)
         MockMultipartFile inputFile2 = new MockMultipartFile(
                 "inputFile", "input_2.txt", "text/plain", "3 2 4\n6".getBytes());
@@ -249,6 +221,47 @@ class ProblemAndTestCaseIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.isHidden").value(true))
                 .andExpect(jsonPath("$.orderIndex").value(2));
+
+        // 9b. Now that a public test case exists, publishing succeeds.
+        mockMvc.perform(post("/api/v1/problems/" + p1Id + "/transitions")
+                        .header("Authorization", "Bearer " + instructorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PUBLISHED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"));
+
+        // 9c. Illegal edge: PUBLISHED -> REVIEWING is not allowed -> 409 Conflict
+        mockMvc.perform(post("/api/v1/problems/" + p1Id + "/transitions")
+                        .header("Authorization", "Bearer " + instructorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REVIEWING\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409));
+
+        // 9d. Now that the problem is PUBLISHED, anonymous callers can see it again.
+        mockMvc.perform(get("/api/v1/problems/two-sum"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("two-sum"));
+
+        mockMvc.perform(get("/api/v1/problems")
+                        .param("difficulty", "EASY")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].slug").value("two-sum"));
+
+        // 9e. Test cases of a PUBLISHED problem are frozen: cannot add more.
+        MockMultipartFile frozenIn = new MockMultipartFile(
+                "inputFile", "input_3.txt", "text/plain", "1".getBytes());
+        MockMultipartFile frozenOut = new MockMultipartFile(
+                "outputFile", "output_3.txt", "text/plain", "2".getBytes());
+
+        mockMvc.perform(multipart("/api/v1/problems/" + p1Id + "/test-cases")
+                        .file(frozenIn)
+                        .file(frozenOut)
+                        .header("Authorization", "Bearer " + instructorToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409));
 
         // 10. Normal User gets testcases -> ONLY sees public testcases (count = 1)
         MvcResult userTcResult = mockMvc.perform(get("/api/v1/problems/" + p1Id + "/test-cases")

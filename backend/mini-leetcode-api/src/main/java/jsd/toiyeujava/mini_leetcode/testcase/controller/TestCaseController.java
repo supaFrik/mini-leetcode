@@ -75,6 +75,35 @@ public class TestCaseController {
         return ResponseEntity.ok(responses);
     }
 
+    @PutMapping(value = "/{testCaseId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @Operation(summary = "Update a test case",
+            description = "Replaces the input/output files and/or the visibility and order of a test case. "
+                    + "Object keys are immutable: new files are written under new keys and the old objects are "
+                    + "removed only after the database transaction commits. Test cases of a PUBLISHED problem are frozen.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Test case updated"),
+            @ApiResponse(responseCode = "400", description = "Missing or empty files, or test case belongs to another problem"),
+            @ApiResponse(responseCode = "404", description = "Problem or test case not found"),
+            @ApiResponse(responseCode = "409", description = "Test case is frozen because the problem is published"),
+            @ApiResponse(responseCode = "403", description = "Forbidden")
+    })
+    public ResponseEntity<TestCaseResponse> updateTestCase(
+            @PathVariable Long problemId,
+            @PathVariable Long testCaseId,
+            @Parameter(description = "New input data file (optional; keeps the current file when omitted)")
+            @RequestPart(value = "inputFile", required = false) MultipartFile inputFile,
+            @Parameter(description = "New expected output data file (optional; keeps the current file when omitted)")
+            @RequestPart(value = "outputFile", required = false) MultipartFile outputFile,
+            @Parameter(description = "Whether this test case is hidden from contestants")
+            @RequestParam(value = "isHidden", required = false) Boolean isHidden,
+            @Parameter(description = "New ordering index of this test case")
+            @RequestParam(value = "orderIndex", required = false) Integer orderIndex) {
+        TestCaseResponse response = testCaseService.updateTestCase(
+                problemId, testCaseId, inputFile, outputFile, isHidden, orderIndex);
+        return ResponseEntity.ok(response);
+    }
+
     @DeleteMapping("/{testCaseId}")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Delete a test case", description = "Removes a test case by ID. Requires INSTRUCTOR or ADMIN role.",
