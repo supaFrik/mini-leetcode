@@ -17,25 +17,25 @@ test.describe("Authentication and Registration E2E Suite", () => {
       await page.waitForLoadState("domcontentloaded");
 
       // 1. Submit empty form -> checks username length < 3
-      await page.getByRole("button", { name: "Đăng ký" }).click();
-      await expect(page.getByText("Tên đăng nhập tối thiểu 3 ký tự.")).toBeVisible();
+      await page.getByRole("button", { name: "Sign Up" }).click();
+      await expect(page.getByText("Username must be at least 3 characters.")).toBeVisible();
 
       // 2. Fill short username (< 3 chars)
-      await page.getByLabel("Tên đăng nhập").fill("ab");
-      await page.getByRole("button", { name: "Đăng ký" }).click();
-      await expect(page.getByText("Tên đăng nhập tối thiểu 3 ký tự.")).toBeVisible();
+      await page.getByLabel("Username").fill("ab");
+      await page.getByRole("button", { name: "Sign Up" }).click();
+      await expect(page.getByText("Username must be at least 3 characters.")).toBeVisible();
 
       // 3. Fill valid username, but leave email empty or invalid
-      await page.getByLabel("Tên đăng nhập").fill("validuser");
+      await page.getByLabel("Username").fill("validuser");
       await page.getByLabel("Email").fill("not-an-email");
-      await page.getByRole("button", { name: "Đăng ký" }).click();
-      await expect(page.getByText("Email không đúng định dạng.")).toBeVisible();
+      await page.getByRole("button", { name: "Sign Up" }).click();
+      await expect(page.getByText("Invalid email format.")).toBeVisible();
 
       // 4. Fill valid email, but short password (< 8 chars)
       await page.getByLabel("Email").fill("valid@example.com");
-      await page.getByLabel("Mật khẩu", { exact: true }).fill("12345");
-      await page.getByRole("button", { name: "Đăng ký" }).click();
-      await expect(page.getByText("Mật khẩu tối thiểu 8 ký tự.")).toBeVisible();
+      await page.getByLabel("Password", { exact: true }).fill("12345");
+      await page.getByRole("button", { name: "Sign Up" }).click();
+      await expect(page.getByText("Password must be at least 8 characters.")).toBeVisible();
     });
 
     test("handles RFC 7807 409 Conflict when username is already taken", async ({ page }) => {
@@ -43,10 +43,10 @@ test.describe("Authentication and Registration E2E Suite", () => {
       await page.waitForLoadState("domcontentloaded");
 
       // 'student' is an existing registered user in mock-api
-      await page.getByLabel("Tên đăng nhập").fill("student");
+      await page.getByLabel("Username").fill("student");
       await page.getByLabel("Email").fill("student_new@example.com");
-      await page.getByLabel("Mật khẩu", { exact: true }).fill("Password123!");
-      await page.getByRole("button", { name: "Đăng ký" }).click();
+      await page.getByLabel("Password", { exact: true }).fill("Password123!");
+      await page.getByRole("button", { name: "Sign Up" }).click();
 
       // RFC 7807 409 conflict detail banner
       const alert = page.locator('p[role="alert"]').filter({ hasText: "is already taken" });

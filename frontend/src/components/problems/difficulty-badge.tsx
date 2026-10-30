@@ -1,13 +1,28 @@
 import { cn } from "@/lib/utils";
 import type { Difficulty } from "@/types/api";
 
+/**
+ * Difficulty keeps its semantic colours — a learner reads green/amber/red
+ * instantly, and folding it into the ink ladder would cost that signal. The
+ * colours are desaturated to sit on the near-white canvas without shouting.
+ */
 const STYLE: Record<Difficulty, string> = {
-  EASY: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-  MEDIUM: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
-  HARD: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
+  EASY: "border-easy/25 bg-easy/10 text-easy",
+  MEDIUM: "border-medium/25 bg-medium/10 text-[#8a5a00]",
+  HARD: "border-hard/25 bg-hard/10 text-hard",
 };
 const LABEL: Record<Difficulty, string> = { EASY: "Easy", MEDIUM: "Medium", HARD: "Hard" };
 
 export function DifficultyBadge({ value, className }: { value: Difficulty; className?: string }) {
-  return <span className={cn("rounded border px-2 py-0.5 font-mono text-xs", STYLE[value], className)}>{LABEL[value]}</span>;
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center rounded-full border px-2.5 py-0.5 font-mono text-body-sm font-medium",
+        STYLE[value],
+        className
+      )}
+    >
+      {LABEL[value]}
+    </span>
+  );
 }

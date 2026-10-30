@@ -9,6 +9,18 @@
 # testing
 /coverage
 
+# playwright (e2e)
+/playwright-report/
+/test-results/
+/test-results-*/
+/blob-report/
+/playwright/.cache/
+
+# scratch output from local test/build runs
+/tmp-*.txt
+/tmp-*.log
+/b*.log
+
 # next.js
 /.next/
 /out/

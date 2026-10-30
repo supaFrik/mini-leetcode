@@ -4,7 +4,9 @@ import jsd.toiyeujava.mini_leetcode.contest.dto.ProctoringEventRequest;
 import jsd.toiyeujava.mini_leetcode.contest.dto.ProctoringEventResponse;
 import jsd.toiyeujava.mini_leetcode.contest.entity.Contest;
 import jsd.toiyeujava.mini_leetcode.contest.entity.ContestParticipant;
+import jsd.toiyeujava.mini_leetcode.contest.entity.ProctoringEvent;
 import jsd.toiyeujava.mini_leetcode.contest.repository.ContestParticipantRepository;
+import jsd.toiyeujava.mini_leetcode.contest.repository.ProctoringEventRepository;
 import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
 import jsd.toiyeujava.mini_leetcode.entity.ParticipantStatus;
 import jsd.toiyeujava.mini_leetcode.entity.ProctoringEventType;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -26,6 +29,27 @@ public class ProctoringServiceImpl implements ProctoringService {
     private static final long GRACE_PERIOD_MS = 1500L; // 1.5 seconds
 
     private final ContestParticipantRepository participantRepository;
+    private final ProctoringEventRepository proctoringEventRepository;
+
+    private void recordEvent(Contest contest, ContestParticipant participant, ProctoringEventType type,
+                             int violationCount, Long awayDurationMs) {
+        if (contest == null || participant.getUser() == null) {
+            return;
+        }
+        try {
+            proctoringEventRepository.save(ProctoringEvent.builder()
+                    .contest(contest)
+                    .user(participant.getUser())
+                    .eventType(type)
+                    .violationCount(violationCount)
+                    .awayDurationMs(awayDurationMs)
+                    .build());
+        } catch (Exception e) {
+            // Không để lỗi ghi log làm hỏng việc chấn điểm vi phạm.
+            log.warn("Failed to persist proctoring event for contest={} user={} type={}: {}",
+                    contest.getId(), participant.getUser().getId(), type, e.getMessage());
+        }
+    }
 
     @Override
     @Transactional
@@ -74,8 +98,8 @@ public class ProctoringServiceImpl implements ProctoringService {
             );
         }
 
-        if (contest != null && contest.getStatus() != ContestStatus.RUNNING) {
-            throw new AccessDeniedException("Contest is not currently active (status: " + contest.getStatus() + ")");
+        if (contest != null && contest.resolveStatus() != ContestStatus.RUNNING) {
+            throw new AccessDeniedException("Contest is not currently active (status: " + contest.resolveStatus() + ")");
         }
 
         if (request == null || request.eventType() == null) {
@@ -95,6 +119,7 @@ public class ProctoringServiceImpl implements ProctoringService {
                         userId, contestId, newViolations, maxViolations);
             }
             participantRepository.save(participant);
+            recordEvent(contest, participant, request.eventType(), newViolations, null);
 
             String msg = disqualified
                     ? "Disqualified: unauthorized clipboard paste detected (" + newViolations + "/" + maxViolations + ")"
@@ -117,6 +142,7 @@ public class ProctoringServiceImpl implements ProctoringService {
                 participant.setLastAwayStartTime(now);
                 participantRepository.save(participant);
             }
+            recordEvent(contest, participant, request.eventType(), currentViolations, null);
             return new ProctoringEventResponse(
                     contestId,
                     userId,
@@ -148,6 +174,7 @@ public class ProctoringServiceImpl implements ProctoringService {
 
             if (durationMs < GRACE_PERIOD_MS) {
                 participantRepository.save(participant);
+                recordEvent(contest, participant, request.eventType(), currentViolations, durationMs);
                 return new ProctoringEventResponse(
                         contestId,
                         userId,
@@ -172,6 +199,7 @@ public class ProctoringServiceImpl implements ProctoringService {
             }
 
             participantRepository.save(participant);
+            recordEvent(contest, participant, request.eventType(), newViolations, durationMs);
 
             String msg = disqualified
                     ? "Disqualified: exceeded maximum permitted window switches (" + newViolations + "/" + maxViolations + ")"

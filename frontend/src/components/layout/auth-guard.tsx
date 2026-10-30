@@ -22,6 +22,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
     setOk(true);
   }, [router, pathname]);
-  if (!ok) return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Đang tải…</div>;
+  if (!ok) return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Loading…</div>;
   return <>{children}</>;
 }

@@ -80,7 +80,7 @@ export function useProctoring({ contestId, enabled, initialCount, max, initialDi
   const reportPaste = useCallback(() => {
     if (Date.now() - lastPaste.current < 500) return;
     lastPaste.current = Date.now();
-    toast("Không được phép dán code trong phòng thi. Hành vi này đã được ghi nhận.", "error");
+    toast("Pasting code is prohibited during exams. This incident has been recorded.", "error");
     void send("CLIPBOARD_PASTE");
   }, [send]);
 

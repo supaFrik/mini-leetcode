@@ -50,8 +50,8 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ProblemDetail handleNotFoundException(ResourceNotFoundException ex) {
+    @ExceptionHandler({ResourceNotFoundException.class, org.springframework.web.servlet.resource.NoResourceFoundException.class})
+    public ProblemDetail handleNotFoundException(Exception ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Resource Not Found");
         problem.setType(URI.create("https://api.mini-leetcode.com/errors/not-found"));

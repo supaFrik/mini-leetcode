@@ -25,6 +25,12 @@ app:
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadminpassword}
     bucket-name: ${MINIO_BUCKET_NAME:testcases}
+  judge:
+    # Phải khớp với cấu hình của module mini-leetcode-judge (consumer).
+    stream-key: ${JUDGE_STREAM_KEY:stream:submissions}
+    legacy-queue-key: ${JUDGE_LEGACY_QUEUE_KEY:queue.submissions}
+    consumer-group: ${JUDGE_CONSUMER_GROUP:judge-group}
+    consumer-name: ${JUDGE_CONSUMER_NAME:}
 
 springdoc:
   api-docs:

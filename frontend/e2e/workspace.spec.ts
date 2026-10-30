@@ -20,14 +20,14 @@ test.describe("Problem Solving Workspace E2E Suite", () => {
     await expect(page.getByText("Description")).toBeVisible();
     await expect(page.getByText("Given an array of integers nums and an integer target")).toBeVisible();
 
-    // Verify testcase examples section
-    await expect(page.getByRole("heading", { name: "Test Cases & Examples" })).toBeVisible();
+    // The "Test Cases & Examples" section was removed from the description panel
+    await expect(page.getByRole("heading", { name: "Test Cases & Examples" })).toHaveCount(0);
   });
 
   test("interacts with code editor and updates template on language change", async ({ page }) => {
     await page.goto("/problems/two-sum", { waitUntil: "domcontentloaded" });
 
-    const langSelect = page.getByLabel("Ngôn ngữ");
+    const langSelect = page.getByLabel("Language");
     await expect(langSelect).toBeVisible();
 
     // Default language is Java -> Solution.java
@@ -43,7 +43,7 @@ test.describe("Problem Solving Workspace E2E Suite", () => {
 
     // Type custom code into editor (supporting Monaco editor and fallback textarea)
     const monacoEditor = page.locator(".monaco-editor");
-    const fallbackTextarea = page.locator('textarea[aria-label="Mã nguồn"]');
+    const fallbackTextarea = page.locator('textarea[aria-label="Source code"]');
 
     if (await monacoEditor.isVisible()) {
       await monacoEditor.click();
@@ -70,7 +70,7 @@ test.describe("Problem Solving Workspace E2E Suite", () => {
     await expect(page.getByText("Accepted", { exact: true })).toBeVisible();
     await expect(page.getByText(/Runtime:\s+\d+\s+ms/)).toBeVisible();
     await expect(page.getByText(/Passed \(2\/2\)/)).toBeVisible();
-    await expect(page.getByText("Run: chỉ testcase công khai")).toBeVisible();
+    await expect(page.getByText("Run: public testcases only")).toBeVisible();
   });
 
   test("executes code Submit action and verifies accepted verdict", async ({ page }) => {

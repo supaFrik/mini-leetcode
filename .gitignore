@@ -100,6 +100,18 @@ coverage/
 .nyc_output/
 *.lcov
 
+# Playwright (e2e) artifacts
+**/playwright-report/
+**/test-results/
+**/test-results-*/
+**/blob-report/
+**/playwright/.cache/
+
+# scratch output from local test/build runs
+/tmp-*.txt
+/tmp-*.log
+/b*.log
+
 temp-submissions/
 runner-tmp/
 *.tmp

@@ -3,6 +3,10 @@ spring:
     name: mini_leetcode_judge
   main:
     web-application-type: none
+  task:
+    scheduling:
+      pool:
+        size: 2
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${DB_USERNAME:leetcode}
@@ -21,6 +25,18 @@ spring:
       password: ${REDIS_PASSWORD:redis_password}
 
 app:
+  judge:
+    # Phải khớp với cấu hình của module mini-leetcode-api (producer).
+    stream-key: ${JUDGE_STREAM_KEY:stream:submissions}
+    legacy-queue-key: ${JUDGE_LEGACY_QUEUE_KEY:queue.submissions}
+    consumer-group: ${JUDGE_CONSUMER_GROUP:judge-group}
+    consumer-name: ${JUDGE_CONSUMER_NAME:}
+    block-timeout-ms: ${JUDGE_BLOCK_TIMEOUT_MS:5000}
+    recovery-interval-ms: ${JUDGE_RECOVERY_INTERVAL_MS:30000}
+    min-idle-ms: ${JUDGE_MIN_IDLE_MS:120000}
+    recovery-batch-size: ${JUDGE_RECOVERY_BATCH_SIZE:50}
+    parallel-testcases: ${JUDGE_PARALLEL_TESTCASES:false}
+    max-parallel-testcases: ${JUDGE_MAX_PARALLEL_TESTCASES:4}
   minio:
     url: ${MINIO_URL:http://localhost:9000}
     access-key: ${MINIO_ACCESS_KEY:minioadmin}

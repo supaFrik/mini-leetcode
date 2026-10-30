@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -117,7 +118,30 @@ public class TestCaseService {
                 ? testCaseRepository.findByProblemIdOrderByOrderIndexAsc(problemId)
                 : testCaseRepository.findByProblemIdAndIsHiddenFalseOrderByOrderIndexAsc(problemId);
 
-        return testCases.stream().map(TestCaseResponse::fromEntity).toList();
+        return testCases.stream().map(tc -> {
+            String inContent = null;
+            String outContent = null;
+            if (!tc.getIsHidden() || includeHidden) {
+                inContent = readContentQuietly(tc.getInputFileUri());
+                outContent = readContentQuietly(tc.getExpectedOutputUri());
+            }
+            return TestCaseResponse.fromEntity(tc, inContent, outContent);
+        }).toList();
+    }
+
+    private String readContentQuietly(String uri) {
+        if (uri == null || uri.isBlank()) {
+            return null;
+        }
+        try (InputStream is = storageService.downloadFileByUri(uri)) {
+            if (is == null) {
+                return null;
+            }
+            byte[] bytes = is.readNBytes(8192);
+            return new String(bytes, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Transactional

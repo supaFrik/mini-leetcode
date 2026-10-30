@@ -7,25 +7,37 @@ export const LANGUAGES: { value: Language; label: string; dot: string }[] = [
 export const MONACO_LANG: Record<Language, string> = { JAVA: "java", PYTHON: "python" };
 export const FILE_NAME: Record<Language, string> = { JAVA: "Solution.java", PYTHON: "solution.py" };
 
-// Judge chạy chương trình đọc stdin / ghi stdout, nên template là chương trình hoàn chỉnh.
 export const TEMPLATES: Record<Language, string> = {
   JAVA: `import java.util.*;
 
 public class Solution {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        // TODO: đọc input, in output
+        if (!sc.hasNextLine()) return;
+
+        // TODO: Read input from stdin, process, and print to stdout
+        // Example for reading line 1 (array) and line 2 (target):
+        // String[] parts = sc.nextLine().trim().split("\\\\s+");
+        // int[] nums = Arrays.stream(parts).mapToInt(Integer::parseInt).toArray();
+        // int target = Integer.parseInt(sc.nextLine().trim());
     }
 }
 `,
   PYTHON: `import sys
 
 def main():
-    data = sys.stdin.read().split()
-    # TODO: xử lý và print kết quả
+    lines = sys.stdin.read().splitlines()
+    if not lines:
+        return
 
-main()
+    # TODO: Read input from stdin, process, and print to stdout
+    # Example for reading line 1 (array) and line 2 (target):
+    # nums = [int(x) for x in lines[0].split()]
+    # target = int(lines[1].strip())
+
+if __name__ == '__main__':
+    main()
 `,
 };
 
-export const LANG_PREF_KEY = "pref:lang"; // ngôn ngữ làm bài ưu tiên (localStorage)
+export const LANG_PREF_KEY = "pref:lang";

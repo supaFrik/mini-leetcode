@@ -73,8 +73,12 @@ public class SubmissionServiceImpl implements SubmissionService {
             Contest contest = contestRepository.findById(request.contestId())
                     .orElseThrow(() -> new ResourceNotFoundException("Contest not found with id: " + request.contestId()));
 
-            if (contest.getStatus() != ContestStatus.RUNNING) {
-                throw new AccessDeniedException("Contest is not currently active (status: " + contest.getStatus() + ")");
+            // Dùng resolveStatus() thay vì getStatus(): kỳ thi đã qua end_time vẫn còn
+            // status = RUNNING trong DB, nếu chỉ đọc status thì thí sinh vẫn nộp được bài
+            // sau khi kỳ thi đã kết thúc (lỗ hổng chống gian lận).
+            ContestStatus effectiveStatus = contest.resolveStatus();
+            if (effectiveStatus != ContestStatus.RUNNING) {
+                throw new AccessDeniedException("Contest is not currently active (status: " + effectiveStatus + ")");
             }
 
             ContestParticipant participant = contestParticipantRepository.findByContestIdAndUserId(request.contestId(), userId)
@@ -215,6 +219,44 @@ public class SubmissionServiceImpl implements SubmissionService {
                 0,
                 message
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isTerminal(Long submissionId) {
+        if (submissionId == null) {
+            return false;
+        }
+        return submissionRepository.findById(submissionId)
+                .map(submission -> submission.getStatus() == SubmissionStatus.COMPLETED
+                        || submission.getStatus() == SubmissionStatus.FAILED)
+                .orElse(false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasBeenJudged(Long submissionId) {
+        if (submissionId == null) {
+            return false;
+        }
+        return submissionRepository.findById(submissionId)
+                .map(submission -> submission.getStatus() != null
+                        && submission.getStatus() != SubmissionStatus.PENDING)
+                .orElse(false);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markRetried(Long submissionId) {
+        if (submissionId == null) {
+            return;
+        }
+        Submission submission = submissionRepository.findById(submissionId).orElse(null);
+        if (submission == null) {
+            return;
+        }
+        submission.setRetryCount((submission.getRetryCount() == null ? 0 : submission.getRetryCount()) + 1);
+        submissionRepository.save(submission);
     }
 }
 

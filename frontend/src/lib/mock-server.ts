@@ -54,11 +54,11 @@ const PROGRESS = ["DONE", "IN_PROGRESS", "NEVER"] as const;
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 const TWO_SUM_MD = [
-  "Cho hai số nguyên `a` và `b`. Hãy in ra tổng `a + b`.", "",
-  "### Input", "Một dòng chứa hai số nguyên `a`, `b` cách nhau bởi dấu cách.", "",
-  "### Output", "In ra một số nguyên là `a + b`.", "",
-  "### Ràng buộc", "- `-10^9 ≤ a, b ≤ 10^9`", "",
-  "### Ví dụ", "```", "Input:  1 2", "Output: 3", "```",
+  "Given two integers `a` and `b`, print their sum `a + b`.", "",
+  "### Input", "A single line containing two space-separated integers `a` and `b`.", "",
+  "### Output", "Print a single integer representing `a + b`.", "",
+  "### Constraints", "- `-10^9 ≤ a, b ≤ 10^9`", "",
+  "### Example", "```", "Input:  1 2", "Output: 3", "```",
 ].join("\n");
 
 const PROBLEMS: ProblemFull[] = Array.from({ length: 36 }, (_, i) => {
@@ -67,7 +67,7 @@ const PROBLEMS: ProblemFull[] = Array.from({ length: 36 }, (_, i) => {
   return {
     id, title, slug: i < TITLES.length ? slugify(title) : `placeholder-${id}`,
     difficulty: DIFFS[i % 3], tags: TAGSETS[i % TAGSETS.length], progress: PROGRESS[i % 3],
-    description: i === 0 ? TWO_SUM_MD : `Đề bài **${title}** (dữ liệu mẫu).\n\nĐọc hai số nguyên \`a\`, \`b\` từ input và in ra \`a + b\`.`,
+    description: i === 0 ? TWO_SUM_MD : `Problem **${title}** (sample data).\n\nRead two integers \`a\`, \`b\` from input and output \`a + b\`.`,
     timeLimitMs: 1000, memoryLimitMb: 256, status: "PUBLISHED", likes: 40 + ((id * 7) % 60), dislikes: 5 + ((id * 3) % 30),
   };
 });
@@ -106,7 +106,7 @@ const BASE_CASES: [string, string][] = [["1 2", "3"], ["5 7", "12"], ["-3 3", "0
 function casesFor(problemId: number): TestCase[] {
   const base = BASE_CASES.map(([input, expectedOutput], idx) => ({
     id: problemId * 100 + idx + 1, input, expectedOutput, isHidden: idx >= 3, orderIndex: idx,
-    explanation: idx === 0 ? "Hai số 1 và 2 có tổng bằng 3." : undefined,
+    explanation: idx === 0 ? "The numbers 1 and 2 sum up to 3." : undefined,
   }));
   return [...base, ...store.get<Record<number, TestCase[]>>("mock:extraCases", {})[problemId] ?? []];
 }
@@ -233,7 +233,7 @@ function contestWindow(id: number) {
   throw notFound(`Contest not found with id: ${id}`);
 }
 const registered = (id: number) => store.get<number[]>("mock:reg", [1, 3]).includes(id); // kỳ thi 1 và 3 mặc định đã đăng ký
-const TITLES_C: Record<number, string> = { 1: "Midterm Exam – Cấu trúc dữ liệu", 2: "Weekly Contest #12", 3: "Weekly Contest #11" };
+const TITLES_C: Record<number, string> = { 1: "Midterm Exam – Data Structures", 2: "Weekly Contest #12", 3: "Weekly Contest #11" };
 
 export async function getContest(id: number): Promise<ContestInfo> {
   await sleep(120); ensureOnline();

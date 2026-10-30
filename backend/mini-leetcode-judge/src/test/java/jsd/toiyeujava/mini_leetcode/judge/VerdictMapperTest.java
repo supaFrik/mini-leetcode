@@ -46,4 +46,23 @@ class VerdictMapperTest {
         assertThat(VerdictMapper.map(result(1, false, false, ""), "42"))
                 .isEqualTo(SubmissionVerdict.RE);
     }
+
+    @Test
+    @DisplayName("Returns MLE when peak memory reached the limit even without OOM kill")
+    void map_PeakMemoryReachesLimit_ReturnsMemoryLimitExceeded() {
+        // Peak = 256 MB, giới hạn = 256 MB, nhưng Docker không báo OOMKilled.
+        ExecutionResult result = new ExecutionResult(0, false, false, "42\n", 10, 256 * 1024);
+
+        assertThat(VerdictMapper.map(result, "42", 256 * 1024))
+                .isEqualTo(SubmissionVerdict.MLE);
+    }
+
+    @Test
+    @DisplayName("Keeps AC when peak memory stays below the limit")
+    void map_PeakMemoryBelowLimit_StaysAccepted() {
+        ExecutionResult result = new ExecutionResult(0, false, false, "42\n", 10, 100 * 1024);
+
+        assertThat(VerdictMapper.map(result, "42", 256 * 1024))
+                .isEqualTo(SubmissionVerdict.AC);
+    }
 }

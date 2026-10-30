@@ -10,7 +10,10 @@ services:
       MYSQL_USER: leetcode
       MYSQL_PASSWORD: leetcode_password
     ports:
-      - "3306:3306"
+      # Host port is configurable: a native MySQL/ServBay install may already own 3306.
+      # Container-internal traffic always uses the `mysql:3306` hostname, so changing
+      # this only affects host-side access (e.g. `mysql -h localhost -P 3307`).
+      - "${MYSQL_HOST_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -137,6 +140,12 @@ services:
       MINIO_SECRET_KEY: minioadminpassword
       MINIO_BUCKET_NAME: testcases
       JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      # Hàng đợi bài nộp dùng Redis Streams + consumer group.
+      # Các biến này PHẢI khớp với service mini-leetcode-judge.
+      JUDGE_STREAM_KEY: ${JUDGE_STREAM_KEY:-stream:submissions}
+      JUDGE_LEGACY_QUEUE_KEY: ${JUDGE_LEGACY_QUEUE_KEY:-queue.submissions}
+      JUDGE_CONSUMER_GROUP: ${JUDGE_CONSUMER_GROUP:-judge-group}
+      JUDGE_CONSUMER_NAME: ${JUDGE_CONSUMER_NAME:-}
     networks:
       - mini_leetcode_net
     healthcheck:
@@ -179,6 +188,19 @@ services:
       APP_MINIO_ACCESS_KEY: minioadmin
       APP_MINIO_SECRET_KEY: minioadminpassword
       APP_MINIO_BUCKET_NAME: testcases
+      # Hàng đợi bài nộp dùng Redis Streams + consumer group.
+      # Các biến này PHẢI khớp với service mini-leetcode-api.
+      JUDGE_STREAM_KEY: ${JUDGE_STREAM_KEY:-stream:submissions}
+      JUDGE_LEGACY_QUEUE_KEY: ${JUDGE_LEGACY_QUEUE_KEY:-queue.submissions}
+      JUDGE_CONSUMER_GROUP: ${JUDGE_CONSUMER_GROUP:-judge-group}
+      JUDGE_CONSUMER_NAME: ${JUDGE_CONSUMER_NAME:-}
+      JUDGE_BLOCK_TIMEOUT_MS: ${JUDGE_BLOCK_TIMEOUT_MS:-5000}
+      # Chu kỳ quét XPENDING và ngưỡng idle để XCLAIM bài nộp "zombie".
+      JUDGE_RECOVERY_INTERVAL_MS: ${JUDGE_RECOVERY_INTERVAL_MS:-30000}
+      JUDGE_MIN_IDLE_MS: ${JUDGE_MIN_IDLE_MS:-120000}
+      # Chạy song song các testcase (mặc định tắt để giữ hành vi fail-fast).
+      JUDGE_PARALLEL_TESTCASES: ${JUDGE_PARALLEL_TESTCASES:-false}
+      JUDGE_MAX_PARALLEL_TESTCASES: ${JUDGE_MAX_PARALLEL_TESTCASES:-4}
       DB_URL: jdbc:mysql://mysql:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: leetcode
       DB_PASSWORD: leetcode_password
@@ -189,7 +211,10 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadminpassword
       MINIO_BUCKET_NAME: testcases
-      HOST_WORK_DIR: ${PWD}/temp-submissions
+      # Đường dẫn trên HOST của thư mục temp-submissions. Docker daemon phân giải đường dẫn trong
+      # `docker run -v`, nên giá trị này phải là đường dẫn nhìn thấy từ HOST.
+      # Để trống để judge worker tự phát hiện qua /proc/self/mountinfo (ổn định hơn ${PWD}).
+      HOST_WORK_DIR: ${HOST_WORK_DIR:-}
     networks:
       - mini_leetcode_net
     deploy:
@@ -205,8 +230,10 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_USE_MOCK: "false"
-        NEXT_PUBLIC_ENABLE_RUN: "false"
+        NEXT_PUBLIC_ENABLE_RUN: "true"
         NEXT_PUBLIC_ENABLE_DRAFT_SYNC: "false"
+        # Next.js đọc rewrites lúc build -> phải truyền BACKEND_URL qua build args
+        BACKEND_URL: "http://mini-leetcode-api:8080"
     container_name: mini_leetcode_frontend
     restart: unless-stopped
     depends_on:

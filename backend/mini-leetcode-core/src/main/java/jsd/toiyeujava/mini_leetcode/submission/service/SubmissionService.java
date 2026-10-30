@@ -34,5 +34,24 @@ public interface SubmissionService {
     );
 
     Submission failSubmission(Long submissionId, String errorMessage);
+
+    /**
+     * Kiểm tra bài nộp đã có verdict cuối cùng hay chưa.
+     *
+     * <p>Dùng để chống chấm lại khi message trong Redis Stream được giao lại
+     * (ví dụ sau {@code XCLAIM}) cho một bài nộp đã được chấm thành công.
+     */
+    boolean isTerminal(Long submissionId);
+
+    /**
+     * Kiểm tra bài nộp đã từng được chấm hay chưa.
+     *
+     * <p>Dùng để phân biệt lần chấm đầu tiên với lần chấm lại (sau khi worker
+     * chết giữa chừng và message được {@code XCLAIM}).
+     */
+    boolean hasBeenJudged(Long submissionId);
+
+    /** Tăng bộ đếm số lần bài nộp bị chấm lại (do worker chết giữa chừng). */
+    void markRetried(Long submissionId);
 }
 

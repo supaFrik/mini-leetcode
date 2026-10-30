@@ -6,9 +6,12 @@ export function OfflineBanner() {
   const online = useOnline();
   if (online) return null;
   return (
-    <div role="alert" className="flex items-center justify-center gap-2 bg-amber-500 px-4 py-1.5 text-center text-sm font-medium text-black">
+    <div
+      role="alert"
+      className="flex items-center justify-center gap-2 bg-warning px-4 py-1.5 text-center text-body-md font-medium text-ink"
+    >
       <WifiOff className="h-4 w-4 shrink-0" />
-      Mất kết nối mạng. Bài làm đang được lưu cục bộ. Vui lòng kiểm tra đường truyền.
+      You are currently offline. Your work is being saved locally. Please check your internet connection.
     </div>
   );
 }

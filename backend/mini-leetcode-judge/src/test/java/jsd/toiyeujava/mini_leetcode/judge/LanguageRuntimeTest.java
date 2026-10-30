@@ -42,18 +42,49 @@ class LanguageRuntimeTest {
     }
 
     @Test
-    @DisplayName("Java calculates -Xmx based on memory limit with floor, Python ignores it")
-    void runCommand_CustomMemoryLimit_JavaCalculatesHeapAndPythonIgnores() {
-        assertThat(LanguageRuntime.PYTHON.runCommand(512))
-                .containsExactly("python", "/workspace/solution.py");
-
+    @DisplayName("Runs the mounted wrapper script instead of passing the command inline")
+    void runCommand_InvokesMountedScript() {
+        assertThat(LanguageRuntime.PYTHON.runCommand(256))
+                .containsExactly("sh", "/workspace/run.sh");
         assertThat(LanguageRuntime.JAVA.runCommand(256))
+                .containsExactly("sh", "/workspace/run.sh");
+    }
+
+    @Test
+    @DisplayName("The wrapper script runs the user command and reports the cgroup peak memory on stderr")
+    void runScript_ContainsCommandAndMemoryProbe() {
+        String script = LanguageRuntime.PYTHON.runScript(256);
+
+        assertThat(script).startsWith("#!/bin/sh\n");
+        assertThat(script).contains("'python' '/workspace/solution.py'");
+        assertThat(script).contains("/sys/fs/cgroup/memory.peak");
+        assertThat(script).contains(LanguageRuntime.MEMORY_SENTINEL);
+        // stdout phải sạch: peak memory chỉ in ra stderr.
+        assertThat(script).contains(">&2");
+        assertThat(script).contains("exit $rc");
+    }
+
+    @Test
+    @DisplayName("Java calculates -Xmx based on memory limit with floor, Python ignores it")
+    void runScript_CustomMemoryLimit_JavaCalculatesHeapAndPythonIgnores() {
+        assertThat(LanguageRuntime.PYTHON.runScript(512))
+                .doesNotContain("-Xmx");
+
+        assertThat(LanguageRuntime.JAVA.runScript(256))
                 .contains("-Xmx192m");
 
-        assertThat(LanguageRuntime.JAVA.runCommand(512))
+        assertThat(LanguageRuntime.JAVA.runScript(512))
                 .contains("-Xmx384m");
 
-        assertThat(LanguageRuntime.JAVA.runCommand(32))
+        assertThat(LanguageRuntime.JAVA.runScript(32))
                 .contains("-Xmx32m");
+    }
+
+    @Test
+    @DisplayName("Quotes arguments so the shell cannot reinterpret them")
+    void shellQuote_EscapesSingleQuotes() {
+        assertThat(LanguageRuntime.shellQuote("plain")).isEqualTo("'plain'");
+        assertThat(LanguageRuntime.shellQuote("it's")).isEqualTo("'it'\\''s'");
+        assertThat(LanguageRuntime.shellQuote(null)).isEqualTo("''");
     }
 }

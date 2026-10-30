@@ -36,8 +36,8 @@ public class SubmissionController {
     private final SubmissionService submissionService;
     private final SubmissionProducer submissionProducer;
 
-    @PostMapping("/problems/{problemId}/submit")
-    @Operation(summary = "Submit code for a problem", description = "Accepts code, persists as PENDING, enqueues to Redis queue, and returns 202 ACCEPTED")
+    @PostMapping({"/problems/{problemId}/submit", "/problems/{problemId}/run"})
+    @Operation(summary = "Submit or run code for a problem", description = "Accepts code, persists as PENDING, enqueues to Redis queue, and returns 202 ACCEPTED")
     public ResponseEntity<ApiResponse<SubmissionResponse>> submitCode(
             @PathVariable Long problemId,
             @Valid @RequestBody SubmitCodeRequest request,
@@ -76,6 +76,7 @@ public class SubmissionController {
     }
 
     @GetMapping("/submissions/{id}")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     @Operation(summary = "Get submission details", description = "Returns submission status, verdict, runtime, and memory metrics")
     public ResponseEntity<ApiResponse<SubmissionResponse>> getSubmission(
             @PathVariable Long id,

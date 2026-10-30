@@ -8,6 +8,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "contests")
@@ -55,4 +56,27 @@ public class Contest {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    /**
+     * Trạng thái hiệu lực của kỳ thi.
+     *
+     * <p>Cột {@code status} trong DB là nguồn chính (được quản lý bởi giảng viên / seed data).
+     * Ngoại lệ duy nhất: kỳ thi đang {@code RUNNING} nhưng đã qua {@code endTime} sẽ được coi là
+     * {@code COMPLETED} để không cho nộp bài sau khi kỳ thi đã kết thúc.
+     *
+     * <p>Mọi mốc thời gian trong DB được lưu theo UTC (kết nối JDBC dùng {@code serverTimezone=UTC}),
+     * nên phép so sánh dùng {@link java.time.ZoneOffset#UTC} thay vì múi giờ mặc định của JVM.
+     * Nhờ vậy kết luận "kỳ thi đã kết thúc" luôn nhất quán với những gì client nhìn thấy.
+     */
+    @Transient
+    public ContestStatus resolveStatus() {
+        if (status == null) {
+            return ContestStatus.SCHEDULED;
+        }
+        if (status == ContestStatus.RUNNING && endTime != null
+                && !LocalDateTime.now(ZoneOffset.UTC).isBefore(endTime)) {
+            return ContestStatus.COMPLETED;
+        }
+        return status;
+    }
 }

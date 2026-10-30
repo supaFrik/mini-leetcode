@@ -5,6 +5,7 @@
  *   cần thống nhất với Kỹ sư 1 (xem README_FRONTEND.md).
  */
 import { api, ApiError, request, USE_MOCK } from "./api";
+import { parseApiDate } from "./datetime";
 import { setTokens } from "./auth";
 import * as mock from "./mock-server";
 import type { PollFetch } from "./polling";
@@ -24,7 +25,7 @@ export async function login(username: string, password: string) {
   if (USE_MOCK) { const t = mock.login(username); setTokens(t.accessToken, t.refreshToken); return; }
   const d = await api<Raw>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ username, usernameOrEmail: username, password }) });
   const access = d?.accessToken ?? d?.token;
-  if (!access) throw new Error("Phản hồi đăng nhập không có accessToken");
+  if (!access) throw new Error("Login response missing accessToken");
   setTokens(access, d.refreshToken);
 }
 export async function register(username: string, email: string, password: string) {
@@ -106,7 +107,7 @@ export async function fetchSubmissionResults(id: number): Promise<CaseResult[] |
 }
 
 // ---------- Contests ----------
-// [ĐỀ XUẤT] GET /api/v1/contests, /contests/{id}, /contests/{id}/leaderboard
+// GET /api/v1/contests, /contests/{id}, /contests/{id}/leaderboard
 export async function fetchContests(): Promise<ContestInfo[]> {
   if (USE_MOCK) return mock.listContests();
   const d = await api<Raw>("/api/v1/contests");
@@ -128,22 +129,32 @@ export async function postProctoringEvent(contestId: number, eventType: Proctori
     body: JSON.stringify({ eventType, clientTimestamp: Date.now() }),
   });
 }
-// [ĐỀ XUẤT] POST /api/v1/contests/{id}/register
+// POST /api/v1/contests/{id}/register
 export async function registerContest(id: number): Promise<void> {
   if (USE_MOCK) return mock.registerContest(id);
   await api(`/api/v1/contests/${id}/register`, { method: "POST" });
 }
-// [ĐỀ XUẤT] GET /api/v1/contests/{id}/proctoring/report (INSTRUCTOR, ADMIN): báo cáo vi phạm của thí sinh
+// POST /api/v1/contests/{id}/finalize: chốt bài thi, khoá nộp bài tiếp theo.
+export async function finalizeContestSubmission(id: number): Promise<ContestInfo | null> {
+  if (USE_MOCK) return mock.getContest(id);
+  try {
+    return await api<ContestInfo>(`/api/v1/contests/${id}/finalize`, { method: "POST" });
+  } catch {
+    // Chốt bài là hành động "best effort": lỗi không được chặn luồng hiển thị phía client.
+    return null;
+  }
+}
+// GET /api/v1/contests/{id}/proctoring/report (INSTRUCTOR, ADMIN): báo cáo vi phạm của thí sinh
 export async function fetchProctoringReport(id: number): Promise<ProctorReportRow[]> {
   if (USE_MOCK) return mock.proctoringReport(id);
   return api<ProctorReportRow[]>(`/api/v1/contests/${id}/proctoring/report`);
 }
-// [ĐỀ XUẤT] POST /api/v1/contests/{id}/participants/{userId}/unlock (ADMIN): mở khoá thí sinh bị loại
+// POST /api/v1/contests/{id}/participants/{userId}/unlock (ADMIN): mở khoá thí sinh bị loại
 export async function unlockParticipant(contestId: number, userId: number): Promise<void> {
   if (USE_MOCK) return mock.unlockParticipant(contestId, userId);
   await api(`/api/v1/contests/${contestId}/participants/${userId}/unlock`, { method: "POST" });
 }
-// [ĐỀ XUẤT] GET /api/v1/contests/{id}/plagiarism: kết quả đối soát đạo văn (Jaccard) của Kỹ sư 2
+// GET /api/v1/contests/{id}/plagiarism: kết quả đối soát đạo văn (Jaccard) của Kỹ sư 2
 export async function fetchPlagiarism(id: number): Promise<PlagiarismRow[]> {
   if (USE_MOCK) return mock.plagiarism(id);
   return api<PlagiarismRow[]>(`/api/v1/contests/${id}/plagiarism`);
@@ -155,7 +166,7 @@ export function resetMockExam(contestId: number) { mock.resetExam(contestId); }
 export async function loadDraft(cid: number, pid: number, lang: Language): Promise<Draft | null> {
   if (USE_MOCK) return mock.loadDraft(cid, pid, lang);
   const d = await api<Raw>(`/api/v1/contests/${cid}/problems/${pid}/draft?language=${lang}`);
-  return d?.code != null ? { value: d.code, savedAt: d.updatedAt ? Date.parse(d.updatedAt) : 0 } : null;
+  return d?.code != null ? { value: d.code, savedAt: d.updatedAt ? parseApiDate(d.updatedAt) : 0 } : null;
 }
 export async function saveDraft(cid: number, pid: number, lang: Language, value: string): Promise<void> {
   if (USE_MOCK) return mock.saveDraft(cid, pid, lang, value);

@@ -37,35 +37,35 @@ test.describe("Problem Exploration E2E Suite", () => {
     await page.goto("/problems", { waitUntil: "domcontentloaded" });
 
     // 1. Filter by EASY
-    await page.getByRole("button", { name: /Filter/i }).click();
+    await page.getByRole("button", { name: /^Filter/i }).click();
     await page.getByRole("button", { name: "Easy", exact: true }).click();
     await page.getByRole("button", { name: "Apply" }).click();
 
     // Verify URL and filter indicator
     await expect(page).toHaveURL(/difficulty=EASY/);
-    await expect(page.getByText("Độ khó: EASY")).toBeVisible();
+    await expect(page.getByText("Difficulty: EASY")).toBeVisible();
     await expect(page.getByText("Two Sum")).toBeVisible();
     await expect(page.getByText("Valid Parentheses")).toBeVisible();
 
     // 2. Filter by HARD
-    await page.getByRole("button", { name: /Filter/i }).click();
+    await page.getByRole("button", { name: /^Filter/i }).click();
     await page.getByRole("button", { name: "Hard", exact: true }).click();
     await page.getByRole("button", { name: "Apply" }).click();
 
     await expect(page).toHaveURL(/difficulty=HARD/);
-    await expect(page.getByText("Độ khó: HARD")).toBeVisible();
+    await expect(page.getByText("Difficulty: HARD")).toBeVisible();
     await expect(page.getByText("Median of Two Sorted Arrays")).toBeVisible();
     await expect(page.getByText("Merge k Sorted Lists")).toBeVisible();
 
     // 3. Reset filters
-    await page.getByRole("button", { name: /Bỏ lọc Độ khó: HARD/i }).click();
+    await page.getByRole("button", { name: /Remove filter Difficulty: HARD/i }).click();
     await expect(page.getByText("Two Sum")).toBeVisible();
   });
 
   test("searches problems by keywords with instant query results", async ({ page }) => {
     await page.goto("/problems", { waitUntil: "domcontentloaded" });
 
-    const searchInput = page.getByLabel("Tìm trong danh sách");
+    const searchInput = page.getByLabel("Search problems").first();
     await expect(searchInput).toBeVisible();
 
     // Search for "Parentheses"
@@ -81,10 +81,10 @@ test.describe("Problem Exploration E2E Suite", () => {
     await searchInput.fill("NonExistentKeywordXYZ");
     await searchInput.press("Enter");
 
-    await expect(page.getByText("Không có bài nào khớp bộ lọc.")).toBeVisible();
+    await expect(page.getByText("No problems match the current filter.")).toBeVisible();
 
     // Clear search
-    await page.getByRole("button", { name: "Xoá bộ lọc" }).click();
+    await page.getByRole("button", { name: "Clear filters" }).click();
     await expect(page.getByText("Two Sum")).toBeVisible();
   });
 

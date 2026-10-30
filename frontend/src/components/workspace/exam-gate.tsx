@@ -8,14 +8,17 @@ import type { ContestInfo } from "@/types/api";
 
 function Row({ ok, warn, children }: { ok: boolean; warn?: boolean; children: React.ReactNode }) {
   return (
-    <li className="flex items-center gap-2">
-      <span className={`grid h-4 w-4 place-items-center rounded-full text-white ${ok ? "bg-primary" : warn ? "bg-amber-500" : "bg-destructive"}`}>{ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}</span>
+    <li className="flex items-center gap-2 text-body-md">
+      <span
+        className={`grid h-4 w-4 place-items-center rounded-full text-white ${ok ? "bg-success" : warn ? "bg-warning" : "bg-destructive"}`}
+      >
+        {ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+      </span>
       {children}
     </li>
   );
 }
 
-// requestFullscreen() chỉ được phép khi gọi trực tiếp từ một cú click → cần màn hình "Bắt đầu làm bài".
 export function ExamGate({ contest, onStart }: { contest: ContestInfo; onStart: () => void }) {
   const online = useOnline();
   const [agree, setAgree] = useState(false);
@@ -23,33 +26,52 @@ export function ExamGate({ contest, onStart }: { contest: ContestInfo; onStart: 
   useEffect(() => setFsOk(document.fullscreenEnabled), []);
 
   const start = async () => {
-    try { await document.documentElement.requestFullscreen(); } catch { /* trình duyệt từ chối: giao diện sẽ yêu cầu vào lại */ }
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch {
+      /* browser declined */
+    }
     onStart();
   };
   return (
-    <div className="mx-auto grid min-h-full max-w-xl content-center gap-4 p-6">
-      <h1 className="text-2xl font-semibold">{contest.title}</h1>
-      <p className="text-sm text-muted-foreground">Kết thúc lúc {fmtDateTime(contest.endTime)}. Đồng hồ tính theo giờ máy chủ.</p>
-      <div className="space-y-2 rounded-lg border bg-card p-4 text-sm">
-        <p className="font-medium">Quy chế phòng thi</p>
-        <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
-          <li>Không rời tab hoặc đổi cửa sổ. Rời quá 1,5 giây tính là 1 lần vi phạm.</li>
-          <li>Không thoát chế độ toàn màn hình. Thoát quá 1,5 giây tính là 1 lần vi phạm.</li>
-          <li>Không dán (paste) code từ bên ngoài. Mỗi lần dán tính ngay 1 lần vi phạm.</li>
-          <li>Vi phạm {contest.maxViolationsAllowed} lần sẽ bị loại khỏi kỳ thi và không thể nộp bài.</li>
-          <li>Bài làm được tự động lưu cục bộ và đồng bộ lên máy chủ mỗi 15 giây.</li>
-        </ul>
-        {(contest.myViolations ?? 0) > 0 && <p className="pt-1 text-amber-600 dark:text-amber-400">Bạn đã có {contest.myViolations}/{contest.maxViolationsAllowed} lần vi phạm.</p>}
+    <div className="mx-auto grid min-h-full max-w-xl content-center gap-5 p-6">
+      <div>
+        <h1 className="text-heading-lg text-ink">{contest.title}</h1>
+        <p className="mt-1 text-body-md text-body">
+          Ends at {fmtDateTime(contest.endTime)}. Timer is synchronized with server time.
+        </p>
       </div>
-      <ul className="space-y-1.5 rounded-lg border bg-card p-4 text-sm" aria-label="Kiểm tra trước khi thi">
-        <Row ok={online}>{online ? "Kết nối mạng ổn định" : "Đang mất mạng, hãy kiểm tra đường truyền"}</Row>
-        <Row ok={fsOk} warn>{fsOk ? "Trình duyệt hỗ trợ toàn màn hình" : "Trình duyệt không hỗ trợ toàn màn hình (vẫn được vào thi)"}</Row>
+      <div className="space-y-2 rounded-xl border border-border bg-card p-5 text-body-md">
+        <p className="font-medium text-ink">Exam regulations</p>
+        <ul className="list-disc space-y-1 pl-5 text-body">
+          <li>Do not switch tabs or windows. Leaving for more than 1.5 seconds counts as 1 violation.</li>
+          <li>Do not exit fullscreen mode. Exiting for more than 1.5 seconds counts as 1 violation.</li>
+          <li>Do not paste code from external sources. Any paste action immediately triggers a violation.</li>
+          <li>
+            Exceeding {contest.maxViolationsAllowed} violations results in immediate disqualification and locks
+            submissions.
+          </li>
+          <li>Your code is automatically saved locally and synchronized with the server every 15 seconds.</li>
+        </ul>
+        {(contest.myViolations ?? 0) > 0 && (
+          <p className="pt-1 text-[#8a5a00]">
+            You currently have {contest.myViolations}/{contest.maxViolationsAllowed} recorded violations.
+          </p>
+        )}
+      </div>
+      <ul className="space-y-1.5 rounded-xl border border-border bg-card p-5" aria-label="Pre-exam System Check">
+        <Row ok={online}>{online ? "Stable internet connection" : "Offline: Please check your internet connection"}</Row>
+        <Row ok={fsOk} warn>
+          {fsOk ? "Browser supports fullscreen mode" : "Fullscreen mode not supported (allowed to proceed)"}
+        </Row>
       </ul>
-      <label className="flex items-start gap-2 text-sm">
-        <input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-        Tôi đã đọc và đồng ý tuân thủ quy chế phòng thi.
+      <label className="flex items-start gap-2 text-body-md text-body">
+        <input type="checkbox" className="mt-1 accent-[#171717]" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+        I have read and agree to comply with the exam regulations.
       </label>
-      <Button onClick={start} disabled={!agree || !online}>Bắt đầu làm bài</Button>
+      <Button onClick={start} disabled={!agree || !online} className="w-fit">
+        Start Exam
+      </Button>
     </div>
   );
 }

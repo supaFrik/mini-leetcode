@@ -190,4 +190,83 @@ class DockerExecutorTest {
 
         assertThat(result.oomKilled()).isTrue();
     }
+
+    // ── Peak memory (cgroup) ─────────────────────────────────────────────────
+
+    /**
+     * Peak memory phải được đo thật từ cgroup của container, không phải 0.
+     * Chương trình cấp phát ~150 MB rồi in kết quả ra stdout.
+     * Kỳ vọng: peakMemoryKb > 0 và nhỏ hơn giới hạn 256 MB.
+     */
+    @Test
+    @Timeout(60)
+    @DisplayName("[Peak memory] Python allocation reports a non-zero peak below the memory limit")
+    void execute_PythonAllocatesMemory_ReportsNonZeroPeakMemory() throws Exception {
+        String source = """
+                b = bytearray(150 * 1024 * 1024)
+                print("allocated", len(b))
+                """;
+        Files.writeString(workDir.resolve(LanguageRuntime.PYTHON.sourceFileName()), source);
+
+        ExecutionResult result = dockerExecutor.execute(workDir, LanguageRuntime.PYTHON, "", 30_000, 256);
+
+        System.out.println("[Peak memory test] peakMemoryKb=" + result.peakMemoryKb());
+
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.peakMemoryKb()).isPositive();
+        // Peak phải lớn hơn 100 MB (đã cấp phát) và nhỏ hơn trần 256 MB.
+        assertThat(result.peakMemoryKb()).isGreaterThan(100 * 1024);
+        assertThat(result.peakMemoryKb()).isLessThan(256 * 1024);
+    }
+
+    /**
+     * Sentinel peak memory phải được gỡ khỏi stderr mà người dùng thấy.
+     */
+    @Test
+    @Timeout(60)
+    @DisplayName("[Peak memory] The memory sentinel is stripped from user-visible stderr")
+    void execute_ProgramWritesToStderr_SentinelIsNotLeaked() throws Exception {
+        String source = """
+                import sys
+                sys.stderr.write("real error message\\n")
+                print("out")
+                """;
+        Files.writeString(workDir.resolve(LanguageRuntime.PYTHON.sourceFileName()), source);
+
+        ExecutionResult result = dockerExecutor.execute(workDir, LanguageRuntime.PYTHON, "", 30_000, 256);
+
+        assertThat(result.stderr()).contains("real error message");
+        assertThat(result.stderr()).doesNotContain(LanguageRuntime.MEMORY_SENTINEL);
+        assertThat(result.stdout()).contains("out");
+    }
+
+    /**
+     * Java cũng phải đo được peak memory qua cgroup.
+     */
+    @Test
+    @Timeout(90)
+    @DisplayName("[Peak memory] Java allocation reports a non-zero peak memory")
+    void execute_JavaAllocatesMemory_ReportsNonZeroPeakMemory() throws Exception {
+        String source = """
+                public class Solution {
+                    public static void main(String[] args) {
+                        byte[] sink = new byte[120 * 1024 * 1024];
+                        sink[0] = 1;
+                        System.out.println("allocated " + sink.length);
+                    }
+                }
+                """;
+        Files.writeString(workDir.resolve(LanguageRuntime.JAVA.sourceFileName()), source);
+
+        CompileResult compile = dockerExecutor.compile(workDir, LanguageRuntime.JAVA);
+        assertThat(compile.success()).as("compile output: %s", compile.output()).isTrue();
+
+        ExecutionResult result = dockerExecutor.execute(workDir, LanguageRuntime.JAVA, "", 30_000, 256);
+
+        System.out.println("[Peak memory Java test] peakMemoryKb=" + result.peakMemoryKb());
+
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.peakMemoryKb()).isPositive();
+        assertThat(result.stderr()).doesNotContain(LanguageRuntime.MEMORY_SENTINEL);
+    }
 }

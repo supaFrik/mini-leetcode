@@ -274,6 +274,76 @@ class SubmissionServiceTest {
     }
 
     @Test
+    @DisplayName("createSubmission: từ chối nộp bài khi contest đã qua end_time dù cột status vẫn là RUNNING")
+    void createSubmission_ExamMode_ContestPastEndTime_StillRejected() {
+        SubmitCodeRequest request = new SubmitCodeRequest(
+                SubmissionLanguage.PYTHON,
+                "print('test')",
+                10L
+        );
+
+        // Cột status trong DB vẫn là RUNNING nhưng mốc kết thúc đã qua.
+        // resolveStatus() phải coi kỳ thi này là COMPLETED để chặn nộp bài.
+        jsd.toiyeujava.mini_leetcode.contest.entity.Contest contest = jsd.toiyeujava.mini_leetcode.contest.entity.Contest.builder()
+                .id(10L)
+                .title("Midterm Exam")
+                .status(jsd.toiyeujava.mini_leetcode.entity.ContestStatus.RUNNING)
+                .startTime(java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).minusHours(2))
+                .endTime(java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).minusMinutes(10))
+                .build();
+
+        when(problemRepository.findById(100L)).thenReturn(Optional.of(testProblem));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(contestRepository.findById(10L)).thenReturn(Optional.of(contest));
+
+        assertThatThrownBy(() -> submissionService.createSubmission(100L, 1L, request))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("Contest is not currently active");
+
+        verifyNoInteractions(storageService);
+        verify(submissionRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("createSubmission: cho phép nộp bài khi contest còn hiệu lực (RUNNING và chưa qua end_time)")
+    void createSubmission_ExamMode_ContestStillRunning_Allowed() {
+        SubmitCodeRequest request = new SubmitCodeRequest(
+                SubmissionLanguage.PYTHON,
+                "print('test')",
+                10L
+        );
+
+        jsd.toiyeujava.mini_leetcode.contest.entity.Contest contest = jsd.toiyeujava.mini_leetcode.contest.entity.Contest.builder()
+                .id(10L)
+                .title("Midterm Exam")
+                .status(jsd.toiyeujava.mini_leetcode.entity.ContestStatus.RUNNING)
+                .startTime(java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).minusMinutes(10))
+                .endTime(java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).plusMinutes(50))
+                .build();
+
+        jsd.toiyeujava.mini_leetcode.contest.entity.ContestParticipant participant = jsd.toiyeujava.mini_leetcode.contest.entity.ContestParticipant.builder()
+                .id(20L)
+                .contest(contest)
+                .user(testUser)
+                .status(jsd.toiyeujava.mini_leetcode.entity.ParticipantStatus.IN_PROGRESS)
+                .violationCount(0)
+                .build();
+
+        when(problemRepository.findById(100L)).thenReturn(Optional.of(testProblem));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(contestRepository.findById(10L)).thenReturn(Optional.of(contest));
+        when(contestParticipantRepository.findByContestIdAndUserId(10L, 1L)).thenReturn(Optional.of(participant));
+        when(storageService.uploadFile(anyString(), any(InputStream.class), anyLong(), anyString()))
+                .thenReturn("submissions/100/1/uuid.py");
+        when(submissionRepository.save(any(Submission.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Submission result = submissionService.createSubmission(100L, 1L, request);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getContestId()).isEqualTo(10L);
+    }
+
+    @Test
     @DisplayName("createSubmission: ném lỗi ResourceNotFoundException khi không tìm thấy Problem")
     void createSubmission_ProblemNotFound() {
         SubmitCodeRequest request = new SubmitCodeRequest(SubmissionLanguage.PYTHON, "print('hello')");
@@ -356,6 +426,91 @@ class SubmissionServiceTest {
         assertThat(failed.getErrorMessage()).isEqualTo("Failed to enqueue submission: Redis connection timeout");
         assertThat(failed.getVerdict()).isNull();
         verify(submissionRepository).save(any(Submission.class));
+    }
+
+    // ── Chống chấm lại (idempotency) ────────────────────────────────────────
+
+    @Test
+    @DisplayName("isTerminal: trả về true cho bài nộp đã COMPLETED")
+    void isTerminal_Completed_ReturnsTrue() {
+        Submission existing = Submission.builder()
+                .id(501L)
+                .status(SubmissionStatus.COMPLETED)
+                .build();
+        when(submissionRepository.findById(501L)).thenReturn(Optional.of(existing));
+
+        assertThat(submissionService.isTerminal(501L)).isTrue();
+    }
+
+    @Test
+    @DisplayName("isTerminal: trả về true cho bài nộp đã FAILED")
+    void isTerminal_Failed_ReturnsTrue() {
+        Submission existing = Submission.builder()
+                .id(501L)
+                .status(SubmissionStatus.FAILED)
+                .build();
+        when(submissionRepository.findById(501L)).thenReturn(Optional.of(existing));
+
+        assertThat(submissionService.isTerminal(501L)).isTrue();
+    }
+
+    @Test
+    @DisplayName("isTerminal: trả về false cho bài nộp đang PENDING hoặc JUDGING")
+    void isTerminal_NotFinished_ReturnsFalse() {
+        Submission pending = Submission.builder().id(501L).status(SubmissionStatus.PENDING).build();
+        Submission judging = Submission.builder().id(502L).status(SubmissionStatus.JUDGING).build();
+        when(submissionRepository.findById(501L)).thenReturn(Optional.of(pending));
+        when(submissionRepository.findById(502L)).thenReturn(Optional.of(judging));
+
+        assertThat(submissionService.isTerminal(501L)).isFalse();
+        assertThat(submissionService.isTerminal(502L)).isFalse();
+    }
+
+    @Test
+    @DisplayName("hasBeenJudged: PENDING là lần chấm đầu, các trạng thái khác là đã chấm")
+    void hasBeenJudged_DependsOnStatus() {
+        when(submissionRepository.findById(501L))
+                .thenReturn(Optional.of(Submission.builder().id(501L).status(SubmissionStatus.PENDING).build()));
+        when(submissionRepository.findById(502L))
+                .thenReturn(Optional.of(Submission.builder().id(502L).status(SubmissionStatus.JUDGING).build()));
+        when(submissionRepository.findById(503L))
+                .thenReturn(Optional.of(Submission.builder().id(503L).status(SubmissionStatus.COMPLETED).build()));
+
+        assertThat(submissionService.hasBeenJudged(501L)).isFalse();
+        assertThat(submissionService.hasBeenJudged(502L)).isTrue();
+        assertThat(submissionService.hasBeenJudged(503L)).isTrue();
+    }
+
+    @Test
+    @DisplayName("markRetried: tăng bộ đếm retry_count")
+    void markRetried_IncrementsRetryCount() {
+        Submission existing = Submission.builder()
+                .id(501L)
+                .status(SubmissionStatus.JUDGING)
+                .retryCount(0)
+                .build();
+        when(submissionRepository.findById(501L)).thenReturn(Optional.of(existing));
+        when(submissionRepository.save(any(Submission.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        submissionService.markRetried(501L);
+
+        assertThat(existing.getRetryCount()).isEqualTo(1);
+        verify(submissionRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("markRetried: bộ đếm null được coi là 0")
+    void markRetried_NullCounter_TreatedAsZero() {
+        Submission existing = Submission.builder()
+                .id(501L)
+                .status(SubmissionStatus.JUDGING)
+                .build();
+        when(submissionRepository.findById(501L)).thenReturn(Optional.of(existing));
+        when(submissionRepository.save(any(Submission.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        submissionService.markRetried(501L);
+
+        assertThat(existing.getRetryCount()).isEqualTo(1);
     }
 
     @Test

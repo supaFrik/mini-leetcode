@@ -1,0 +1,77 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "name": "mini-leetcode",
+  "homepage": "http://localhost:3001",
+  "items": [
+    {
+      "name": "problem-detail",
+      "type": "registry:block",
+      "title": "Problem Detail",
+      "description": "Online-judge problem detail block: header with difficulty and limits, markdown description, public test cases, and a verdict result panel with per-case diff. Composed from local ui/* primitives and self-contained types.",
+      "dependencies": ["react-markdown", "remark-gfm", "lucide-react"],
+      "registryDependencies": ["button", "badge", "tabs", "input", "textarea"],
+      "files": [
+        {
+          "path": "registry/problem-detail/problem-detail.tsx",
+          "type": "registry:block",
+          "target": "components/blocks/problem-detail.tsx"
+        },
+        {
+          "path": "registry/problem-detail/problem-header.tsx",
+          "type": "registry:component",
+          "target": "components/blocks/problem-header.tsx"
+        },
+        {
+          "path": "registry/problem-detail/problem-description.tsx",
+          "type": "registry:component",
+          "target": "components/blocks/problem-description.tsx"
+        },
+        {
+          "path": "registry/problem-detail/problem-test-cases.tsx",
+          "type": "registry:component",
+          "target": "components/blocks/problem-test-cases.tsx"
+        },
+        {
+          "path": "registry/problem-detail/problem-result.tsx",
+          "type": "registry:component",
+          "target": "components/blocks/problem-result.tsx"
+        },
+        {
+          "path": "registry/problem-detail/problem-diff-view.tsx",
+          "type": "registry:component",
+          "target": "components/blocks/problem-diff-view.tsx"
+        },
+        {
+          "path": "registry/problem-detail/problem-types.ts",
+          "type": "registry:lib",
+          "target": "components/blocks/problem-types.ts"
+        },
+        {
+          "path": "registry/problem-detail/problem-detail-demo.tsx",
+          "type": "registry:block",
+          "target": "components/blocks/problem-detail-demo.tsx"
+        }
+      ]
+    },
+    {
+      "name": "auth-page",
+      "type": "registry:block",
+      "title": "Auth Page",
+      "description": "Split-screen authentication page: ambient video backdrop with animated SVG paths and a testimonial on the left, social sign-in placeholders and a credentials form on the right.",
+      "dependencies": ["framer-motion", "lucide-react"],
+      "registryDependencies": ["button", "input"],
+      "files": [
+        {
+          "path": "registry/auth-page/auth-page.tsx",
+          "type": "registry:component",
+          "target": "components/blocks/auth-page.tsx"
+        },
+        {
+          "path": "registry/auth-page/auth-page-demo.tsx",
+          "type": "registry:block",
+          "target": "components/blocks/auth-page-demo.tsx"
+        }
+      ]
+    }
+  ]
+}

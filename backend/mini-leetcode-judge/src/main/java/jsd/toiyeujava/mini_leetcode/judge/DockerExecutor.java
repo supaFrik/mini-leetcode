@@ -1,12 +1,15 @@
 package jsd.toiyeujava.mini_leetcode.judge;
 
 import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -22,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class DockerExecutor {
 
+    private static final Logger log = LoggerFactory.getLogger(DockerExecutor.class);
+
     private static final int DEFAULT_MEMORY_LIMIT_MB = 256;
     private static final String CPU_LIMIT = "1";
     private static final String PIDS_LIMIT = "64";
@@ -29,6 +34,12 @@ public class DockerExecutor {
     private static final int MAX_STDERR_BYTES = 8 * 1024;
     private static final long COMPILE_TIMEOUT_MS = 30_000;
     private static final long STARTUP_ALLOWANCE_MS = 5_000;
+
+    // Thư mục chứa file nộp bài tạm; giống với TEMP_ROOT của JudgeServiceImpl.
+    private static final String TEMP_ROOT_NAME = "temp-submissions";
+
+    // Base path trên HOST mà Docker daemon dùng để bind-mount. Cached sau lần phát hiện đầu.
+    private volatile String cachedHostBaseDir;
 
     // Executor riêng cho blocking process I/O (stdout, stdin, stderr) thay vì dùng ForkJoinPool.commonPool
     private final AtomicInteger threadCounter = new AtomicInteger();
@@ -81,7 +92,10 @@ public class DockerExecutor {
 
     /**
      * Pha CHẠY (mỗi testcase một container mới) với giới hạn bộ nhớ cấu hình theo bài toán.
-     * TODO: peakMemoryKb chưa đo nên luôn là 0.
+     * <p>
+     * peakMemoryKb được đo từ {@code /sys/fs/cgroup/memory.peak} của container
+     * (đọc từ bên trong container qua wrapper {@code sh -c}); trả về 0 nếu
+     * container bị kill trước khi kịp báo (ví dụ hết thời gian).
      * runtimeMs tính từ FinishedAt - StartedAt của container (loại trừ thời gian tạo container,
      * nhưng vẫn bao gồm thời gian khởi động JVM với Java).
      */
@@ -89,9 +103,11 @@ public class DockerExecutor {
             throws IOException, InterruptedException {
         String containerName = "judge-" + UUID.randomUUID();
         try {
-            Process process = new ProcessBuilder(buildRunCommand(containerName, workDir, runtime, memoryLimitMb))
+            writeRunScript(workDir, runtime, memoryLimitMb);
+            List<String> runCommand = buildRunCommand(containerName, workDir, runtime, memoryLimitMb);
+            log.info("Starting sandbox container {} with command: {}", containerName, String.join(" ", runCommand));
+            Process process = new ProcessBuilder(runCommand)
                     .start();
-
             CompletableFuture<String> stdoutFuture =
                     CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream(), MAX_OUTPUT_BYTES), ioExecutor);
             // Đọc stderr bất đồng bộ với giới hạn 8KB, drain sạch để tiến trình không bị nghẽn pipe
@@ -118,12 +134,18 @@ public class DockerExecutor {
             }
             String stdout = stdoutFuture.join();
             String stderr = stderrFuture.join();
+            int runExitCode = process.exitValue();
 
             String raw = runDocker("inspect", containerName,
                     "--format", "{{.State.OOMKilled}} {{.State.ExitCode}} {{.State.StartedAt}} {{.State.FinishedAt}}");
             String[] state = raw.split(" ");
             if (state.length != 4) {
-                throw new IllegalStateException("docker inspect failed: " + raw);
+                // Container không tồn tại (thường do `docker run` thất bại trước khi tạo container,
+                // ví dụ mount path sai). Lỗi thật nằm ở stderr của docker CLI, nên phải gom lại.
+                throw new IllegalStateException("docker inspect failed: " + raw
+                        + " | docker run exitCode: " + runExitCode
+                        + " | docker run stdout: " + truncateForLog(stdout)
+                        + " | docker run stderr: " + truncateForLog(stderr));
             }
             boolean oomKilled = Boolean.parseBoolean(state[0]);
             int exitCode = Integer.parseInt(state[1]);
@@ -144,7 +166,13 @@ public class DockerExecutor {
 
             boolean timedOut = !finished || (runtimeMs > timeLimitMs);
 
-            return new ExecutionResult(exitCode, timedOut, oomKilled, stdout, runtimeMs, 0, stderr);
+            // Wrapper `sh -c` in peak memory của cgroup lên stderr; tách nó ra khỏi
+            // stderr để thông báo lỗi cho người dùng không bị nhiễu.
+            MemoryProbe probe = MemoryProbe.parse(stderr);
+            String userStderr = probe.cleanStderr();
+
+            return new ExecutionResult(exitCode, timedOut, oomKilled, stdout, runtimeMs,
+                    probe.peakMemoryKb() == null ? 0 : probe.peakMemoryKb(), userStderr);
         } finally {
             runDocker("rm", "-f", containerName);
         }
@@ -152,6 +180,18 @@ public class DockerExecutor {
 
     public List<String> buildRunCommand(String containerName, Path workDir, LanguageRuntime runtime) {
         return buildRunCommand(containerName, workDir, runtime, DEFAULT_MEMORY_LIMIT_MB);
+    }
+
+    /**
+     * Ghi script chạy (có wrapper đo peak memory) vào thư mục làm việc.
+     *
+     * <p>Script được ghi ra file (thay vì truyền làm tham số {@code sh -c})
+     * vì trên Windows {@code ProcessBuilder} truyền tham số qua command line
+     * của Windows, nơi các dấu nháy của POSIX shell sẽ bị diễn giải lại và
+     * làm hỏng script.
+     */
+    private void writeRunScript(Path workDir, LanguageRuntime runtime, int memoryLimitMb) throws IOException {
+        Files.writeString(workDir.resolve(LanguageRuntime.RUN_SCRIPT_FILE), runtime.runScript(memoryLimitMb));
     }
 
     public List<String> buildRunCommand(String containerName, Path workDir, LanguageRuntime runtime, int memoryLimitMb) {
@@ -164,14 +204,7 @@ public class DockerExecutor {
 
     private List<String> buildCommand(String containerName, Path workDir, LanguageRuntime runtime,
                                       boolean runPhase, List<String> commandInContainer, int memoryLimitMb) {
-        String hostWorkDir = System.getenv("HOST_WORK_DIR");
-        String hostPathStr;
-        if (hostWorkDir != null && !hostWorkDir.isBlank()) {
-            hostPathStr = hostWorkDir.replaceAll("[/\\\\]+$", "") + "/" + workDir.getFileName().toString();
-        } else {
-            hostPathStr = workDir.toAbsolutePath().toString();
-        }
-        String mount = hostPathStr.replace('\\', '/') + ":/workspace" + (runPhase ? ":ro" : "");
+        String mount = resolveHostPath(workDir) + ":/workspace" + (runPhase ? ":ro" : "");
         String memLimit = memoryLimitMb + "m";
         List<String> command = new ArrayList<>(List.of("docker", "run"));
         if (runPhase) {
@@ -198,6 +231,127 @@ public class DockerExecutor {
                 runtime.image()));
         command.addAll(commandInContainer);
         return command;
+    }
+
+    /**
+     * Xác định đường dẫn trên HOST để bind-mount vào /workspace của sandbox container.
+     *
+     * <p>Đường dẫn trong {@code -v} do Docker daemon trên HOST phân giải, nên nó phải là đường dẫn
+     * nhìn thấy được từ HOST — không phải đường dẫn bên trong container của judge worker.
+     * Vì vậy ta tự phát hiện bằng cách đọc bảng mount của chính container đang chạy
+     * ({@code /proc/self/mountinfo}) để tìm mount có đích khớp thư mục temp-submissions.
+     */
+    private String resolveHostPath(Path workDir) {
+        String hostBase = resolveHostBaseDir();
+        if (hostBase != null) {
+            return (hostBase + "/" + workDir.getFileName()).replace('\\', '/');
+        }
+        // Fallback: nếu không phát hiện được (chạy ngoài Docker), dùng đường dẫn tuyệt đối trong container.
+        return workDir.toAbsolutePath().toString().replace('\\', '/');
+    }
+
+    private String resolveHostBaseDir() {
+        String cached = cachedHostBaseDir;
+        if (cached != null) {
+            return cached;
+        }
+        String detected = detectHostBaseDirFromDaemon();
+        if (detected == null) {
+            detected = detectHostBaseDirFromEnv();
+        }
+        if (detected != null) {
+            cachedHostBaseDir = detected;
+            log.info("Resolved sandbox bind-mount host base dir: {}", detected);
+        } else {
+            log.warn("Could not detect host base dir for temp-submissions; "
+                    + "sandbox containers may not see submitted source files. "
+                    + "Set HOST_WORK_DIR explicitly to the host path of the temp-submissions directory.");
+        }
+        return detected;
+    }
+
+    /**
+     * Hỏi chính Docker daemon về đường dẫn HOST thật sự của thư mục temp-submissions.
+     *
+     * <p>Cách này đáng tin cậy hơn việc đọc {@code /proc/self/mountinfo}: trên Docker Desktop
+     * (Windows/macOS), trường "source" của mountinfo bị biến đổi thành dạng 9p khó hiểu
+     * (ví dụ {@code C:\134}) và không dùng làm đường dẫn cho {@code docker run -v} được.
+     * {@code docker inspect} trả về đúng đường dẫn mà daemon dùng để bind-mount.
+     */
+    private String detectHostBaseDirFromDaemon() {
+        try {
+            String selfId = readSelfContainerId();
+            if (selfId == null) {
+                return null;
+            }
+            String output = runDocker("inspect",
+                    "--format", "{{range .Mounts}}{{.Destination}}|{{.Source}}{{println}}{{end}}",
+                    selfId);
+            for (String line : output.split("\\R")) {
+                String trimmed = line.trim();
+                if (trimmed.isEmpty()) {
+                    continue;
+                }
+                int separator = trimmed.indexOf('|');
+                if (separator < 0) {
+                    continue;
+                }
+                String destination = trimmed.substring(0, separator);
+                String source = trimmed.substring(separator + 1).trim();
+                if (destination.endsWith("/" + TEMP_ROOT_NAME) && !source.isEmpty()) {
+                    return stripTrailingSeparators(source);
+                }
+            }
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            log.warn("Failed to detect host base dir via docker inspect: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Lấy ID container của chính judge worker. Ưu tiên hostname (mặc định là container ID),
+     * fallback sang đọc {@code /etc/hostname} hoặc {@code /proc/self/cgroup}.
+     */
+    private String readSelfContainerId() throws IOException {
+        Path hostname = Path.of("/etc/hostname");
+        if (Files.isReadable(hostname)) {
+            String value = Files.readString(hostname).trim();
+            if (!value.isEmpty()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Fallback khi không hỏi được Docker daemon: dùng biến môi trường HOST_WORK_DIR.
+     * Giá trị này phải là đường dẫn trên HOST (được Docker Desktop/daemon phân giải).
+     */
+    private String detectHostBaseDirFromEnv() {
+        String hostWorkDir = System.getenv("HOST_WORK_DIR");
+        if (hostWorkDir == null || hostWorkDir.isBlank()) {
+            return null;
+        }
+        return stripTrailingSeparators(hostWorkDir);
+    }
+
+    private String stripTrailingSeparators(String path) {
+        return path.replaceAll("[/\\\\]+$", "");
+    }
+
+    /** Rút gọn output dài để ghi log, không làm mất thông tin quan trọng ở đầu/cuối. */
+    private static String truncateForLog(String text) {
+        if (text == null) {
+            return "";
+        }
+        String trimmed = text.trim();
+        if (trimmed.length() <= 800) {
+            return trimmed;
+        }
+        return trimmed.substring(0, 400) + " ... " + trimmed.substring(trimmed.length() - 400);
     }
 
     private String runDocker(String... args) throws IOException, InterruptedException {

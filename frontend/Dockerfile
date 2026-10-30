@@ -16,6 +16,11 @@ ENV NEXT_PUBLIC_USE_MOCK=$NEXT_PUBLIC_USE_MOCK
 ENV NEXT_PUBLIC_ENABLE_RUN=$NEXT_PUBLIC_ENABLE_RUN
 ENV NEXT_PUBLIC_ENABLE_DRAFT_SYNC=$NEXT_PUBLIC_ENABLE_DRAFT_SYNC
 
+# Rewrites trong next.config.mjs được đọc lúc BUILD, nên BACKEND_URL phải
+# được truyền vào tại build time (không phải runtime env của container).
+ARG BACKEND_URL=http://mini-leetcode-api:8080
+ENV BACKEND_URL=$BACKEND_URL
+
 RUN npm run build
 
 FROM node:20-alpine AS runner

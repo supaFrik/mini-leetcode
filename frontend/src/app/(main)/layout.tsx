@@ -11,7 +11,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <OfflineBanner />
         <SiteHeader />
         <main className="min-h-0 flex-1 overflow-auto">{children}</main>
-        <footer className="flex h-12 shrink-0 items-center border-t px-6 text-xs text-muted-foreground">© 2026 Mini LeetCode.</footer>
+        <footer className="flex h-12 shrink-0 items-center border-t border-border bg-background px-6 text-body-sm text-mute">
+          © 2026 Mini LeetCode.
+        </footer>
         <Toaster />
       </div>
     </AuthGuard>

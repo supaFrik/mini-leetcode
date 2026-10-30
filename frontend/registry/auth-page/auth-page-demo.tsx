@@ -1,0 +1,31 @@
+"use client";
+
+import { useState } from "react";
+import { AuthPage } from "./auth-page";
+
+/**
+ * Standalone demo of the `auth-page` block.
+ */
+export default function AuthPageDemo() {
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <AuthPage
+      mode="login"
+      username={username}
+      email={email}
+      password={password}
+      showPassword={showPassword}
+      onUsernameChange={setUsername}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
+      onToggleShowPassword={() => setShowPassword(!showPassword)}
+      onSubmit={() => {
+        /* Demo only: no network call. */
+      }}
+    />
+  );
+}

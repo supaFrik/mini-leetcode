@@ -12,9 +12,15 @@ public record TestCaseResponse(
         Boolean isHidden,
         Integer orderIndex,
         Long fileSizeBytes,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String input,
+        String expectedOutput
 ) {
     public static TestCaseResponse fromEntity(TestCase tc) {
+        return fromEntity(tc, null, null);
+    }
+
+    public static TestCaseResponse fromEntity(TestCase tc, String input, String expectedOutput) {
         return new TestCaseResponse(
                 tc.getId(),
                 tc.getProblem() != null ? tc.getProblem().getId() : null,
@@ -23,7 +29,9 @@ public record TestCaseResponse(
                 tc.getIsHidden(),
                 tc.getOrderIndex(),
                 tc.getFileSizeBytes(),
-                tc.getCreatedAt()
+                tc.getCreatedAt(),
+                input,
+                expectedOutput
         );
     }
 }

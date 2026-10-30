@@ -25,6 +25,21 @@ app:
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadminpassword}
     bucket-name: ${MINIO_BUCKET_NAME:testcases}
+  judge:
+    # Tên stream chứa bài nộp chờ chấm (dùng chung cho API producer và Judge consumer).
+    stream-key: ${JUDGE_STREAM_KEY:stream:submissions}
+    # Key Redis List theo cơ chế cũ, chỉ dùng một lần để migrate dữ liệu tồn đọng.
+    legacy-queue-key: ${JUDGE_LEGACY_QUEUE_KEY:queue.submissions}
+    consumer-group: ${JUDGE_CONSUMER_GROUP:judge-group}
+    # Rỗng => tự sinh từ hostname + uuid ngắn.
+    consumer-name: ${JUDGE_CONSUMER_NAME:}
+    block-timeout-ms: ${JUDGE_BLOCK_TIMEOUT_MS:5000}
+    recovery-interval-ms: ${JUDGE_RECOVERY_INTERVAL_MS:30000}
+    min-idle-ms: ${JUDGE_MIN_IDLE_MS:120000}
+    recovery-batch-size: ${JUDGE_RECOVERY_BATCH_SIZE:50}
+    # Bật chạy song song testcase (đổi ngữ nghĩa verdict so với fail-fast tuần tự).
+    parallel-testcases: ${JUDGE_PARALLEL_TESTCASES:false}
+    max-parallel-testcases: ${JUDGE_MAX_PARALLEL_TESTCASES:4}
 
 springdoc:
   api-docs:

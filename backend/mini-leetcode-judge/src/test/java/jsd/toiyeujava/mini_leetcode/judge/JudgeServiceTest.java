@@ -7,6 +7,7 @@ import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionTaskMessage;
+import jsd.toiyeujava.mini_leetcode.submission.queue.JudgeProperties;
 import jsd.toiyeujava.mini_leetcode.submission.service.SubmissionService;
 import jsd.toiyeujava.mini_leetcode.testcase.entity.TestCase;
 import jsd.toiyeujava.mini_leetcode.testcase.repository.TestCaseRepository;
@@ -57,7 +58,8 @@ class JudgeServiceTest {
     @BeforeEach
     void setUp() {
         judgeService = new JudgeServiceImpl(
-                submissionService, problemRepository, testCaseRepository, storageService, dockerExecutor);
+                submissionService, problemRepository, testCaseRepository, storageService,
+                dockerExecutor, new JudgeProperties());
     }
 
     private SubmissionTaskMessage message(SubmissionLanguage language) {
@@ -260,5 +262,114 @@ class JudgeServiceTest {
         assertThat(recordedError).startsWith(head);
         assertThat(recordedError).endsWith(tail);
         assertThat(recordedError).contains("\n...\n");
+    }
+
+    // ── Chống chấm lại (idempotency) ────────────────────────────────────────
+
+    @Test
+    @DisplayName("Skips judging entirely when the submission already has a final verdict")
+    void judge_AlreadyTerminalSubmission_SkipsWithoutRunningDocker() {
+        when(submissionService.isTerminal(1L)).thenReturn(true);
+
+        judgeService.judge(message(SubmissionLanguage.PYTHON));
+
+        verifyNoInteractions(dockerExecutor);
+        verify(submissionService, never()).updateSubmissionVerdict(
+                anyLong(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Increments the retry counter when a re-delivered submission is judged again")
+    void judge_RedeliveredSubmission_IncrementsRetryCounter() throws Exception {
+        when(submissionService.isTerminal(1L)).thenReturn(false);
+        when(submissionService.hasBeenJudged(1L)).thenReturn(true);
+        stubProblemAndTestCases(List.of(testCase("in1", "out1")));
+        when(submissionService.getSubmissionCode(1L)).thenReturn("print(42)");
+        stubFile("in1", "1");
+        stubFile("out1", "42");
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt()))
+                .thenReturn(new ExecutionResult(0, false, false, "42\n", 50, 0));
+
+        judgeService.judge(message(SubmissionLanguage.PYTHON));
+
+        verify(submissionService).markRetried(1L);
+    }
+
+    @Test
+    @DisplayName("Does not increment the retry counter on the first judging attempt")
+    void judge_FirstAttempt_DoesNotIncrementRetryCounter() throws Exception {
+        when(submissionService.isTerminal(1L)).thenReturn(false);
+        when(submissionService.hasBeenJudged(1L)).thenReturn(false);
+        stubProblemAndTestCases(List.of(testCase("in1", "out1")));
+        when(submissionService.getSubmissionCode(1L)).thenReturn("print(42)");
+        stubFile("in1", "1");
+        stubFile("out1", "42");
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt()))
+                .thenReturn(new ExecutionResult(0, false, false, "42\n", 50, 0));
+
+        judgeService.judge(message(SubmissionLanguage.PYTHON));
+
+        verify(submissionService, never()).markRetried(anyLong());
+    }
+
+    // ── Chế độ chạy song song ────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("Runs all test cases in parallel mode and reports the highest-priority verdict")
+    void judge_ParallelMode_RunsAllTestCasesAndPrefersTle() throws Exception {
+        JudgeProperties properties = new JudgeProperties();
+        properties.setParallelTestcases(true);
+        properties.setMaxParallelTestcases(2);
+        JudgeServiceImpl parallelService = new JudgeServiceImpl(
+                submissionService, problemRepository, testCaseRepository, storageService,
+                dockerExecutor, properties);
+
+        stubProblemAndTestCases(List.of(testCase("in1", "out1"), testCase("in2", "out2")));
+        when(submissionService.getSubmissionCode(1L)).thenReturn("print(42)");
+        stubFile("in1", "1");
+        stubFile("out1", "42");
+        stubFile("in2", "2");
+        stubFile("out2", "42");
+        // Testcase 1: WA. Testcase 2: TLE. Ưu tiên cao nhất là TLE.
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt()))
+                .thenReturn(
+                        new ExecutionResult(0, false, false, "41", 100, 0),
+                        new ExecutionResult(0, true, false, "", 200, 0));
+
+        parallelService.judge(message(SubmissionLanguage.PYTHON));
+
+        // Cả hai testcase đều được chạy (không fail-fast).
+        verify(dockerExecutor, times(2))
+                .execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt());
+        verify(submissionService).updateSubmissionVerdict(
+                eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.TLE),
+                eq(200), eq(0), eq(0), eq(2), isNull());
+    }
+
+    @Test
+    @DisplayName("Counts individually accepted test cases in parallel mode")
+    void judge_ParallelMode_CountsAcceptedTestCases() throws Exception {
+        JudgeProperties properties = new JudgeProperties();
+        properties.setParallelTestcases(true);
+        JudgeServiceImpl parallelService = new JudgeServiceImpl(
+                submissionService, problemRepository, testCaseRepository, storageService,
+                dockerExecutor, properties);
+
+        stubProblemAndTestCases(List.of(testCase("in1", "out1"), testCase("in2", "out2")));
+        when(submissionService.getSubmissionCode(1L)).thenReturn("print(42)");
+        stubFile("in1", "1");
+        stubFile("out1", "42");
+        stubFile("in2", "2");
+        stubFile("out2", "42");
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt()))
+                .thenReturn(
+                        new ExecutionResult(0, false, false, "42\n", 100, 0),
+                        new ExecutionResult(0, false, false, "42\n", 120, 0));
+
+        parallelService.judge(message(SubmissionLanguage.PYTHON));
+
+        verify(submissionService).updateSubmissionVerdict(
+                eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.AC),
+                eq(120), eq(0), eq(2), eq(2), isNull());
     }
 }

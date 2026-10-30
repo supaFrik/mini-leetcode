@@ -100,9 +100,18 @@ sequenceDiagram
 ## 4. HỢP ĐỒNG HÀNG ĐỢI REDIS (QUEUE CONTRACT GIỮA KỸ SƯ 1 & KỸ SƯ 2)
 
 ### 4.1 Cấu hình Hàng đợi
-- **Tên hàng đợi Redis List**: `queue.submissions`
-- **Lệnh Publisher (Web API)**: `RPUSH queue.submissions <json_payload>`
-- **Lệnh Consumer (Judge Worker)**: `BLPOP queue.submissions 5`
+- **Tên hàng đợi Redis Stream**: `stream:submissions` (consumer group: `judge-group`)
+- **Lệnh Publisher (Web API)**: `XADD stream:submissions * payload <json_payload>`
+- **Lệnh Consumer (Judge Worker)**: `XREADGROUP GROUP judge-group <consumer> COUNT 1 BLOCK 5000 STREAMS stream:submissions >`
+- **Lệnh Acknowledge (sau khi chấm xong)**: `XACK stream:submissions judge-group <record_id>` + `XDEL stream:submissions <record_id>`
+- **Lệnh thu hồi job zombie (Zombie Reclaimer)**: `XPENDING` để tìm message pending quá hạn, `XCLAIM` để giao lại cho worker đang chạy
+- **Key List cũ (chỉ dùng một lần để migrate)**: `queue.submissions` — Judge Worker drain sang stream khi khởi động
+
+> [!NOTE]
+> Redis Streams thay cho Redis List (`RPUSH`/`BLPOP`) vì `BLPOP` xoá message **trước** khi chấm.
+> Nếu worker chết giữa chừng thì bài nộp bị mất vĩnh viễn và treo ở trạng thái `PENDING`.
+> Với Streams, message chỉ bị gỡ khỏi pending list khi worker chủ động `XACK`, nên
+> `ZombieJobReclaimer` có thể `XCLAIM` lại và chấm tiếp.
 
 ### 4.2 Cấu trúc Thông điệp JSON (`SubmissionTaskMessage`)
 ```json
@@ -116,11 +125,13 @@ sequenceDiagram
 
 > [!TIP]
 > **Hướng dẫn cho Kỹ sư 2 (Sandbox Specialist)**:
-> 1. Khi nhận được JSON trên qua `BLPOP`, Worker chỉ cần lấy `submissionId = 501`.
+> 1. Khi nhận được JSON trên qua `XREADGROUP`, Worker chỉ cần lấy `submissionId = 501`.
 > 2. Truy vấn Database bảng `submissions` để lấy `code_storage_uri`.
 > 3. Tải code từ MinIO và testcases từ `test_cases` về thư mục `temp-submissions/501/`.
 > 4. Chạy Docker container với cờ `--network none --memory 256m --memory-swap 256m --pids-limit 64 -v ...:/workspace:ro`.
 > 5. Cập nhật kết quả vào MySQL và lưu cache Redis: `SET cache:submission:501 <json_result> EX 300`.
+> 6. `XACK` + `XDEL` message **chỉ sau khi** đã có verdict cuối cùng. Nếu chấm lỗi hệ thống
+>    (Redis/Docker sập), **không** ack — để `ZombieJobReclaimer` `XCLAIM` lại và thử tiếp.
 
 ---
 

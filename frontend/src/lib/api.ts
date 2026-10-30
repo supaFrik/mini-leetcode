@@ -89,5 +89,5 @@ export async function api<T>(path: string, init?: RequestInit) {
   return (await request<T>(path, init)).data;
 }
 
-export const errorMessage = (e: unknown, fallback = "Đã có lỗi xảy ra. Vui lòng thử lại.") =>
-  e instanceof ApiError ? e.message : e instanceof TypeError ? "Không thể kết nối máy chủ. Hãy kiểm tra đường truyền." : fallback;
+export const errorMessage = (e: unknown, fallback = "An unexpected error occurred. Please try again.") =>
+  e instanceof ApiError ? e.message : e instanceof TypeError ? "Unable to connect to the server. Please check your network connection." : fallback;

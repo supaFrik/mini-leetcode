@@ -21,6 +21,7 @@ public record SubmissionResponse(
         Integer memoryUsedKb,
         Integer passTestCases,
         Integer totalTestCases,
+        Integer retryCount,
         String errorMessage,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
@@ -43,6 +44,7 @@ public record SubmissionResponse(
                 s.getMemoryUsedKb(),
                 s.getPassTestCases(),
                 s.getTotalTestCases(),
+                s.getRetryCount(),
                 s.getErrorMessage(),
                 s.getCreatedAt(),
                 s.getUpdatedAt()

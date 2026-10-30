@@ -75,6 +75,7 @@ export interface Submission {
   memoryUsedKb: number | null;
   passTestCases: number;
   totalTestCases: number;
+  retryCount?: number | null; // số lần bài nộp bị chấm lại (worker chết giữa chừng)
   errorMessage: string | null;
   memoryPercentile?: number; // backend CHƯA có
   createdAt?: string;

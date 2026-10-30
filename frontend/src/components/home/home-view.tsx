@@ -8,28 +8,51 @@ import { VerdictBadge } from "@/components/shared/verdict-badge";
 import { useCountdown } from "@/hooks/use-countdown";
 import { useUser } from "@/hooks/use-user";
 import { fmtDateTime, fmtDuration } from "@/lib/format";
+import { parseApiDate } from "@/lib/datetime";
 import { fetchContests, fetchMySubmissions, fetchProblems } from "@/lib/services";
 import type { ContestInfo, Page, ProblemSummary, Submission } from "@/types/api";
 
-interface HomeData { problems: Page<ProblemSummary> | null; subs: Page<Submission> | null; contests: ContestInfo[] | null }
+interface HomeData {
+  problems: Page<ProblemSummary> | null;
+  subs: Page<Submission> | null;
+  contests: ContestInfo[] | null;
+}
 
 function RunningContest({ c }: { c: ContestInfo }) {
-  const left = useCountdown(Date.parse(c.endTime));
+  const left = useCountdown(parseApiDate(c.endTime));
   return (
-    <Link href={`/exam/${c.id}`} className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3 hover:bg-accent/40">
+    <Link
+      href={`/exam/${c.id}`}
+      className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:bg-hairline-soft"
+    >
       <div className="min-w-0">
-        <p className="truncate font-medium">{c.title}</p>
-        <p className="text-xs text-muted-foreground">Kết thúc {fmtDateTime(c.endTime)}</p>
+        <p className="truncate font-medium text-ink">{c.title}</p>
+        <p className="text-body-sm text-mute">Ends {fmtDateTime(c.endTime)}</p>
       </div>
-      <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-primary/15 px-2.5 py-1 font-mono text-sm"><Timer className="h-4 w-4" />{left == null ? "--:--" : fmtDuration(left)}</span>
+      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-hairline-soft px-2.5 py-1 font-mono text-body-md text-ink">
+        <Timer className="h-3.5 w-3.5" />
+        {left == null ? "--:--" : fmtDuration(left)}
+      </span>
     </Link>
   );
 }
 
 const FEATURES = [
-  { icon: Shield, title: "Chấm bài cô lập", text: "Mỗi bài nộp chạy trong container dùng một lần: không mạng, giới hạn RAM, CPU và tiến trình. Kết quả trả về trong vài giây." },
-  { icon: Timer, title: "Phòng thi có giám sát", text: "Đồng hồ theo giờ máy chủ, phát hiện rời tab, thoát toàn màn hình và dán code. Máy chủ là bên duy nhất tính vi phạm." },
-  { icon: Trophy, title: "Bảng xếp hạng ACM/ICPC", text: "Xếp theo số bài AC rồi đến thời gian phạt, cập nhật liên tục trong suốt kỳ thi." },
+  {
+    icon: Shield,
+    title: "Isolated Evaluation",
+    text: "Every submission executes inside a disposable sandbox container with strictly isolated networking, CPU, RAM, and process boundaries. Verdicts return in seconds.",
+  },
+  {
+    icon: Timer,
+    title: "Proctored Exam Arena",
+    text: "Server-synchronized countdown, focus-loss detection, fullscreen monitoring, and paste blocking. The server is the authoritative judge.",
+  },
+  {
+    icon: Trophy,
+    title: "ACM/ICPC Leaderboard",
+    text: "Ranked by solved problem count and penalty time, dynamically updated throughout the contest.",
+  },
 ];
 
 export function HomeView() {
@@ -38,103 +61,206 @@ export function HomeView() {
 
   useEffect(() => {
     let off = false;
-    // allSettled: một phần lỗi (ví dụ backend chưa có API kỳ thi) không làm hỏng cả trang chủ
     Promise.allSettled([
       fetchProblems({ page: 1, q: "", difficulty: "", progress: "", tags: [] }),
       fetchMySubmissions(1, 50),
       fetchContests(),
     ]).then(([p, s, c]) => {
       if (off) return;
-      setData({ problems: p.status === "fulfilled" ? p.value : null, subs: s.status === "fulfilled" ? s.value : null, contests: c.status === "fulfilled" ? c.value : null });
+      setData({
+        problems: p.status === "fulfilled" ? p.value : null,
+        subs: s.status === "fulfilled" ? s.value : null,
+        contests: c.status === "fulfilled" ? c.value : null,
+      });
     });
-    return () => { off = true; };
+    return () => {
+      off = true;
+    };
   }, []);
 
   const total = data?.problems?.totalElements;
   const subs = data?.subs?.content ?? [];
   const solved = new Set(subs.filter((s) => s.verdict === "AC").map((s) => s.problemId)).size;
   const acRate = subs.length ? Math.round((subs.filter((s) => s.verdict === "AC").length / subs.length) * 100) : null;
-  const pick = data?.problems?.content.length ? data.problems.content[new Date().getDate() % data.problems.content.length] : null;
+  const pick = data?.problems?.content.length
+    ? data.problems.content[new Date().getDate() % data.problems.content.length]
+    : null;
   const running = data?.contests?.filter((c) => c.status === "RUNNING") ?? [];
   const pct = total ? Math.min(100, Math.round((solved / total) * 100)) : 0;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 p-6">
-      {/* Hero */}
-      <section className="grid items-center gap-6 rounded-2xl border bg-gradient-to-br from-primary/15 via-card to-card p-8 md:grid-cols-[1.2fr_1fr]">
-        <div className="space-y-4">
-          <p className="font-mono text-xs text-primary">{user ? `Xin chào, ${user.username}` : "Mini LeetCode"}</p>
-          <h1 className="text-3xl font-semibold leading-tight md:text-4xl">Luyện thuật toán, thi có giám sát, chấm tự động trong vài giây.</h1>
-          <p className="max-w-xl text-muted-foreground">Giải đề bằng Java hoặc Python, xem ngay thời gian chạy, bộ nhớ và so sánh output. Khi cần đánh giá năng lực, vào phòng thi với đồng hồ và giám sát từ máy chủ.</p>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild><Link href="/problems">Bắt đầu luyện tập<ArrowRight className="h-4 w-4" /></Link></Button>
-            <Button asChild variant="outline"><Link href="/exam">Vào phòng thi</Link></Button>
+    <div className="mx-auto max-w-container space-y-16 px-4 py-12 sm:px-6 lg:px-8">
+      {/* ---------------- Hero: the one place colour is allowed ---------------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-background">
+        <div className="mesh-hero absolute inset-0" aria-hidden="true" />
+        <div className="relative grid items-center gap-10 p-8 md:grid-cols-[1.15fr_1fr] md:p-12 lg:p-16">
+          <div className="space-y-6">
+            <h1 className="max-w-[18ch] text-display-xl text-ink">
+              Master algorithms. Compete under proctor.
+            </h1>
+            <p className="max-w-[52ch] text-body-lg text-body">
+              Solve algorithmic challenges in Java or Python, review execution runtime and memory
+              usage, and inspect diffs. Enter proctored contest rooms with server-synchronized timing.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button asChild size="pill-lg" variant="pill">
+                <Link href="/problems">
+                  Browse Problems
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild size="pill-lg" variant="pill-outline">
+                <Link href="/exam">Join Contest</Link>
+              </Button>
+            </div>
+            {user ? (
+              <p className="font-mono text-body-sm text-mute">
+                Signed in as <span className="text-ink">{user.username}</span>
+              </p>
+            ) : null}
+          </div>
+
+          {/* Proof, not a claim: the product's own mechanism, shown working. */}
+          <div className="rounded-xl border border-border bg-card p-5 shadow-whisper">
+            <p className="eyebrow">How a submission is graded</p>
+            <ol className="mt-4 space-y-3">
+              {[
+                ["Source compiled in a disposable container", "java", "17"],
+                ["Public testcases replayed", "cases", "5 / 5"],
+                ["Hidden testcases replayed", "cases", "12 / 12"],
+              ].map(([label, k, v]) => (
+                <li key={label} className="flex items-center justify-between gap-4 border-b border-border pb-3 last:border-b-0 last:pb-0">
+                  <span className="text-body-md text-body">{label}</span>
+                  <span className="rounded-full bg-hairline-soft px-2.5 py-1 font-mono text-body-sm text-ink">{v}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-4 flex items-center justify-between rounded-lg bg-hairline-soft px-3 py-2.5">
+              <span className="text-body-md text-ink">Verdict</span>
+              <span className="rounded-full border border-success/30 bg-success/10 px-2.5 py-0.5 font-mono text-body-sm text-success">Accepted</span>
+            </div>
           </div>
         </div>
-        {/* placeholder cho bên phải */}
-        <div className="hidden md:block">
+      </section>
+
+      {/* ---------------- Your progress ---------------- */}
+      <section aria-label="Your progress">
+        <h2 className="text-heading-md text-ink">Your progress</h2>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {!data ? (
+            Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="h-28 animate-pulse rounded-xl border border-border bg-hairline-soft" />
+            ))
+          ) : (
+            <>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <p className="eyebrow">Solved</p>
+                <p className="mt-2 text-heading-lg text-ink">
+                  {data.subs ? solved : "—"}
+                  <span className="text-body-lg text-mute">{total != null ? ` / ${total}` : ""}</span>
+                </p>
+                <div
+                  className="mt-3 h-1 w-full overflow-hidden rounded-full bg-hairline-soft"
+                  role="progressbar"
+                  aria-valuenow={pct}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <div className="h-full rounded-full bg-ink transition-[width] duration-500 ease-smooth" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <p className="eyebrow">Submissions</p>
+                <p className="mt-2 text-heading-lg text-ink">{data.subs ? data.subs.totalElements : "—"}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <p className="eyebrow">AC rate, last 50</p>
+                <p className="mt-2 text-heading-lg text-ink">{acRate != null ? `${acRate}%` : "—"}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <p className="eyebrow">Active contests</p>
+                <p className="mt-2 text-heading-lg text-ink">{data.contests ? running.length : "—"}</p>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
-      {/* Thống kê cá nhân */}
-      <section aria-label="Tiến độ của bạn" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {!data
-          ? Array.from({ length: 4 }, (_, i) => <div key={i} className="h-24 animate-pulse rounded-lg border bg-muted/30" />)
-          : (
-            <>
-              <div className="rounded-lg border bg-card p-4">
-                <p className="text-xs text-muted-foreground">Đã giải</p>
-                <p className="mt-1 text-2xl font-semibold">{data.subs ? solved : "—"}<span className="text-base text-muted-foreground">{total != null ? ` / ${total}` : ""}</span></p>
-                <div className="mt-2 h-1.5 rounded-full bg-secondary" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
+      {/* ---------------- Recommendation + recent ---------------- */}
+      <div className="grid gap-8 lg:grid-cols-2">
+        <section className="space-y-4">
+          <h2 className="text-heading-md text-ink">Daily recommendation</h2>
+          {pick ? (
+            <Link
+              href={`/problems/${pick.slug}`}
+              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-5 transition-colors hover:bg-hairline-soft"
+            >
+              <div>
+                <p className="font-medium text-ink">{pick.id}. {pick.title}</p>
+                <p className="mt-1 text-body-sm text-mute">{pick.tags.join(" · ")}</p>
               </div>
-              <div className="rounded-lg border bg-card p-4"><p className="text-xs text-muted-foreground">Bài đã nộp</p><p className="mt-1 text-2xl font-semibold">{data.subs ? data.subs.totalElements : "—"}</p></div>
-              <div className="rounded-lg border bg-card p-4"><p className="text-xs text-muted-foreground">Tỷ lệ AC (50 bài gần nhất)</p><p className="mt-1 text-2xl font-semibold">{acRate != null ? `${acRate}%` : "—"}</p></div>
-              <div className="rounded-lg border bg-card p-4"><p className="text-xs text-muted-foreground">Kỳ thi đang diễn ra</p><p className="mt-1 text-2xl font-semibold">{data.contests ? running.length : "—"}</p></div>
-            </>
+              <DifficultyBadge value={pick.difficulty} />
+            </Link>
+          ) : (
+            <p className="rounded-xl border border-border bg-card p-5 text-body-md text-mute">
+              {data ? "Could not load problems list." : "Loading…"}
+            </p>
           )}
-      </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Bài gợi ý + kỳ thi */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold">Bài gợi ý hôm nay</h2>
-          {pick
-            ? (
-              <Link href={`/problems/${pick.slug}`} className="flex items-center justify-between gap-3 rounded-lg border bg-card p-4 hover:bg-accent/40">
-                <div><p className="font-semibold">{pick.id}. {pick.title}</p><p className="mt-1 text-xs text-muted-foreground">{pick.tags.join(" · ")}</p></div>
-                <DifficultyBadge value={pick.difficulty} />
-              </Link>
-            )
-            : <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">{data ? "Chưa tải được danh sách bài tập." : "Đang tải…"}</p>}
-
-          <h2 className="pt-2 text-sm font-semibold">Kỳ thi đang diễn ra</h2>
-          {running.length > 0 ? running.map((c) => <RunningContest key={c.id} c={c} />)
-            : <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">{data ? (data.contests ? "Hiện không có kỳ thi nào đang diễn ra." : "Chưa tải được danh sách kỳ thi.") : "Đang tải…"}</p>}
+          <h2 className="pt-4 text-heading-md text-ink">Active contests</h2>
+          {running.length > 0 ? (
+            running.map((c) => <RunningContest key={c.id} c={c} />)
+          ) : (
+            <p className="rounded-xl border border-border bg-card p-5 text-body-md text-mute">
+              {data ? (data.contests ? "No active contests at the moment." : "Could not load contests list.") : "Loading…"}
+            </p>
+          )}
         </section>
 
-        {/* Bài nộp gần đây */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between"><h2 className="text-sm font-semibold">Bài nộp gần đây</h2><Link href="/submissions" className="text-xs text-primary hover:underline">Xem tất cả</Link></div>
-          <div className="overflow-hidden rounded-lg border bg-card">
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-heading-md text-ink">Recent submissions</h2>
+            <Link href="/submissions" className="text-body-md text-link transition-colors hover:text-link-deep">
+              View all
+            </Link>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
             {subs.slice(0, 5).map((s) => (
-              <Link key={s.id} href={`/submissions/${s.id}`} className="flex items-center justify-between gap-3 border-b px-4 py-3 text-sm last:border-b-0 hover:bg-accent/40">
-                <span className="min-w-0 truncate">{s.problemTitle ?? `Đề #${s.problemId}`}</span>
-                <span className="flex shrink-0 items-center gap-3"><span className="hidden text-xs text-muted-foreground sm:inline">{fmtDateTime(s.createdAt)}</span><VerdictBadge verdict={s.verdict} status={s.status} /></span>
+              <Link
+                key={s.id}
+                href={`/submissions/${s.id}`}
+                className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5 text-body-md last:border-b-0 transition-colors hover:bg-hairline-soft"
+              >
+                <span className="min-w-0 truncate text-ink">{s.problemTitle ?? `Problem #${s.problemId}`}</span>
+                <span className="flex shrink-0 items-center gap-3">
+                  <span className="hidden text-body-sm text-mute sm:inline">{fmtDateTime(s.createdAt)}</span>
+                  <VerdictBadge verdict={s.verdict} status={s.status} />
+                </span>
               </Link>
             ))}
-            {subs.length === 0 && <p className="p-4 text-sm text-muted-foreground">{data ? "Bạn chưa nộp bài nào. Hãy thử một đề Easy." : "Đang tải…"}</p>}
+            {subs.length === 0 && (
+              <p className="p-5 text-body-md text-mute">
+                You haven&apos;t submitted any solutions yet. Try an Easy problem to get started.
+              </p>
+            )}
           </div>
         </section>
       </div>
 
-      <section aria-label="Tính năng" className="grid gap-4 md:grid-cols-3">
-        {FEATURES.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="rounded-lg border bg-card p-5">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary/15 text-primary"><Icon className="h-5 w-5" /></span>
-            <h3 className="mt-3 font-semibold">{title}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{text}</p>
-          </div>
-        ))}
+      {/* ---------------- Feature grid ---------------- */}
+      <section aria-label="Features">
+        <h2 className="text-heading-md text-ink">Built for serious practice</h2>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {FEATURES.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="rounded-xl border border-border bg-card p-6">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-hairline-soft text-ink">
+                <Icon className="h-4 w-4" />
+              </span>
+              <h3 className="mt-4 text-heading-md text-ink">{title}</h3>
+              <p className="mt-2 text-body-md text-body">{text}</p>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );

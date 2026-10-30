@@ -22,4 +22,7 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     List<Submission> findByStatus(SubmissionStatus status);
 
     long countByProblemIdAndVerdict(Long problemId, SubmissionVerdict verdict);
+
+    /** Các bài nộp (không phải "run") trong một kỳ thi, dùng để tính bảng xếp hạng. */
+    List<Submission> findByContestId(Long contestId);
 }
