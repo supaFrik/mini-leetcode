@@ -130,6 +130,11 @@ const LIFECYCLE_EDGES: Record<string, string[]> = {
   ARCHIVED: ["DRAFT"],
 };
 
+/** Các trạng thái hợp lệ có thể chuyển tới từ trạng thái hiện tại. */
+export function allowedTransitions(from: string): string[] {
+  return LIFECYCLE_EDGES[from] ?? [];
+}
+
 export async function transitionProblem(id: number, target: ProblemLifecycle): Promise<ProblemFull> {
   await sleep(); ensureOnline();
   const p = PROBLEMS.find((x) => x.id === id);
@@ -151,6 +156,58 @@ export async function transitionProblem(id: number, target: ProblemLifecycle): P
     });
   }
   return updateProblem(id, { status: target });
+}
+
+/* -------------------- ADMIN -------------------- */
+
+/**
+ * Danh sách bài cho trang quản trị. Khác với `listProblems`, staff thấy được
+ * cả bài chưa publish, và lọc theo trạng thái vòng đời.
+ */
+export async function listAdminProblems(q: { page: number; q: string; difficulty: string; status: string; tags: string[] }): Promise<Page<ProblemFull>> {
+  await sleep(); ensureOnline();
+  const size = 20;
+  const wanted = q.tags.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 0);
+  const all = PROBLEMS.map(withEdits).filter((p) =>
+    (!q.q || p.title.toLowerCase().includes(q.q.toLowerCase()) || p.description.toLowerCase().includes(q.q.toLowerCase())) &&
+    (!q.difficulty || p.difficulty === q.difficulty) &&
+    (!q.status || (p.status ?? "PUBLISHED") === q.status) &&
+    (wanted.length === 0 || p.tags.some((t) => wanted.includes(t.toLowerCase().trim())))
+  );
+  const start = (q.page - 1) * size;
+  return {
+    content: all.slice(start, start + size),
+    totalElements: all.length, totalPages: Math.max(1, Math.ceil(all.length / size)), number: q.page - 1, size,
+  };
+}
+
+export async function createProblem(draft: {
+  title: string; description: string; difficulty: string; timeLimitMs: number; memoryLimitMb: number; tags: string[];
+}): Promise<ProblemFull> {
+  await sleep(); ensureOnline();
+  const id = Math.max(0, ...PROBLEMS.map((p) => p.id)) + 1;
+  const created: ProblemFull = {
+    id, title: draft.title, slug: slugify(draft.title), difficulty: draft.difficulty as ProblemFull["difficulty"],
+    tags: draft.tags, progress: "NEVER", description: draft.description,
+    timeLimitMs: draft.timeLimitMs, memoryLimitMb: draft.memoryLimitMb,
+    status: "DRAFT", likes: 0, dislikes: 0,
+  };
+  PROBLEMS.push(created);
+  return created;
+}
+
+export async function deleteProblem(id: number): Promise<void> {
+  await sleep(); ensureOnline();
+  const idx = PROBLEMS.findIndex((p) => p.id === id);
+  if (idx === -1) throw notFound(`Problem not found: ${id}`);
+  const hasSubs = store.get<SubRec[]>("mock:subs", []).some((s) => s.problemId === id);
+  if (hasSubs) {
+    throw new ApiError(409, {
+      title: "Resource Conflict", status: 409,
+      detail: `Cannot hard delete problem ${id}: it has submission history. Archive it instead.`,
+    });
+  }
+  PROBLEMS.splice(idx, 1);
 }
 
 const BASE_CASES: [string, string][] = [["1 2", "3"], ["5 7", "12"], ["-3 3", "0"], ["100 200", "300"], ["999 1", "1000"]];

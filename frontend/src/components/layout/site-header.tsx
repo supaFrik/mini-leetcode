@@ -13,12 +13,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user } = useUser();
+  const { user, ready } = useUser();
   const [q, setQ] = useState("");
 
   const inExam = pathname.startsWith("/exam");
   const inExamWorkspace = /^\/exam\/[^\/]+\/problems\//.test(pathname);
   const onProblems = pathname.startsWith("/problems");
+  const onAdmin = pathname.startsWith("/admin");
+  const isStaff = user?.role === "ADMIN" || user?.role === "INSTRUCTOR";
   const tab = (active: boolean) =>
     cn(
       "rounded-full px-3 py-1.5 text-body-md font-medium transition-colors",
@@ -47,6 +49,11 @@ export function SiteHeader() {
         <Link href="/exam" aria-current={inExam ? "page" : undefined} className={tab(inExam)}>
           Contest
         </Link>
+        {isStaff && (
+          <Link href="/admin/problems" aria-current={onAdmin ? "page" : undefined} className={tab(onAdmin)}>
+            Admin
+          </Link>
+        )}
       </nav>
 
       {!inExamWorkspace && (
@@ -69,44 +76,52 @@ export function SiteHeader() {
       )}
 
       <div className="ml-auto flex items-center gap-1.5">
-        <Link href="/submissions" className="mr-1 hidden whitespace-nowrap text-body-md text-body transition-colors hover:text-ink xl:inline">
-          Submissions
-        </Link>
-        <Button variant="ghost" size="icon" className="text-body hover:text-ink" aria-label="Notifications">
-          <span className="relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-destructive" />
-          </span>
-        </Button>
-        <div className="ml-1 flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-1">
-          <Avatar className="h-7 w-7">
-            <AvatarFallback className="bg-hairline-soft text-[11px] font-medium text-ink">
-              {user?.username?.[0]?.toUpperCase() ?? "?"}
-            </AvatarFallback>
-          </Avatar>
-          <div className="hidden leading-tight sm:block">
-            <div className="text-body-md text-ink">{user?.username ?? "Guest"}</div>
-            <div className="font-mono text-[10px] text-mute">{user?.role ?? "—"}</div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-body hover:text-ink"
-            aria-label="Sign out"
-            onClick={() => {
-              clearTokens();
-              router.push("/login");
-            }}
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-        <Link
-          href="/problems"
-          className="ml-1 hidden rounded-sm bg-ink px-3.5 py-1.5 text-body-md font-medium text-white transition-colors hover:bg-ink/90 sm:inline-block"
-        >
-          Start Solving
-        </Link>
+        {!ready ? null : user ? (
+          <>
+            <Link href="/submissions" className="mr-1 hidden whitespace-nowrap text-body-md text-body transition-colors hover:text-ink xl:inline">
+              Submissions
+            </Link>
+            <Button variant="ghost" size="icon" className="text-body hover:text-ink" aria-label="Notifications">
+              <span className="relative">
+                <Bell className="h-4 w-4" />
+                <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-destructive" />
+              </span>
+            </Button>
+            <div className="ml-1 flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-1">
+              <Avatar className="h-7 w-7">
+                <AvatarFallback className="bg-hairline-soft text-[11px] font-medium text-ink">
+                  {user.username?.[0]?.toUpperCase() ?? "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden leading-tight sm:block">
+                <div className="text-body-md text-ink">{user.username}</div>
+                <div className="font-mono text-[10px] text-mute">{user.role ?? "—"}</div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-body hover:text-ink"
+                aria-label="Sign out"
+                onClick={() => {
+                  clearTokens();
+                  router.push("/login");
+                }}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        ) : (
+          // Chưa đăng nhập: chỉ mời gọi hành động, không hiện avatar hay nút "Start Solving".
+          <>
+            <Button asChild variant="ghost" size="sm" className="text-body hover:text-ink">
+              <Link href="/login">Log in</Link>
+            </Button>
+            <Button asChild size="sm" className="rounded-sm bg-ink px-3.5 text-white hover:bg-ink/90">
+              <Link href="/register">Register</Link>
+            </Button>
+          </>
+        )}
       </div>
     </header>
   );

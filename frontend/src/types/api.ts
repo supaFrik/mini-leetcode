@@ -49,6 +49,10 @@ export interface ProblemFull extends ProblemSummary {
   timeLimitMs: number;
   memoryLimitMb: number;
   status?: ProblemLifecycle; // vòng đời DRAFT/REVIEWING/PUBLISHED/ARCHIVED
+  /** Số testcase của bài (mặc định 0). */
+  testCaseCount?: number;
+  createdByUsername?: string;
+  updatedAt?: string;
   likes?: number;
   dislikes?: number;
 }

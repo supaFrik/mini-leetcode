@@ -11,7 +11,7 @@ import * as mock from "./mock-server";
 import type { PollFetch } from "./polling";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary,
-  ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase,
+  ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
 } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
@@ -38,7 +38,8 @@ export function ensureMockSession() { const t = mock.login("student"); setTokens
 const normProblem = (r: Raw): ProblemFull => ({
   id: r.id, slug: r.slug ?? String(r.id), title: r.title, difficulty: r.difficulty, tags: r.tags ?? [], progress: r.progress,
   description: r.description ?? "", timeLimitMs: r.timeLimitMs ?? 1000, memoryLimitMb: r.memoryLimitMb ?? 256,
-  status: r.status, likes: r.likes, dislikes: r.dislikes,
+  status: r.status, testCaseCount: Number(r.testCaseCount ?? 0), createdByUsername: r.createdByUsername, updatedAt: r.updatedAt,
+  likes: r.likes, dislikes: r.dislikes,
 });
 
 /**
@@ -95,6 +96,56 @@ export async function updateProblem(id: number, patch: Partial<ProblemFull>): Pr
 export async function transitionProblem(id: number, status: ProblemLifecycle): Promise<ProblemFull> {
   if (USE_MOCK) return mock.transitionProblem(id, status);
   return normProblem(await api<Raw>(`/api/v1/problems/${id}/transitions`, { method: "POST", body: JSON.stringify({ status }) }));
+}
+
+// ---------- Admin ----------
+export interface AdminProblemQuery {
+  page: number;
+  q: string;
+  difficulty: string;
+  /** Trạng thái vòng đời; rỗng = không lọc. */
+  status: string;
+  tags: string[];
+}
+
+/** Danh sách bài cho trang quản trị — staff thấy cả bài chưa publish. */
+export async function fetchAdminProblems(q: AdminProblemQuery): Promise<Page<ProblemFull>> {
+  if (USE_MOCK) return mock.listAdminProblems(q);
+  const qs = new URLSearchParams({ page: String(q.page - 1), size: "20" });
+  if (q.q) qs.set("search", q.q);
+  if (q.difficulty) qs.set("difficulty", q.difficulty);
+  if (q.status) qs.set("status", q.status);
+  if (q.tags.length) qs.set("tags", q.tags.join(","));
+  const raw = await api<Raw>(`/api/v1/problems?${qs}`);
+  const page = normPage<Raw>(raw);
+  return { ...page, content: page.content.map(normProblem) };
+}
+
+export interface ProblemDraft {
+  title: string;
+  description: string;
+  difficulty: Difficulty;
+  timeLimitMs: number;
+  memoryLimitMb: number;
+  tags: string[];
+}
+
+/** Tạo bài mới. Luôn bắt đầu ở trạng thái DRAFT. */
+export async function createProblem(draft: ProblemDraft): Promise<ProblemFull> {
+  if (USE_MOCK) return mock.createProblem(draft);
+  return normProblem(await api<Raw>(`/api/v1/problems`, { method: "POST", body: JSON.stringify(draft) }));
+}
+
+/** Cập nhật metadata của bài (không đổi trạng thái vòng đời). */
+export async function saveProblem(id: number, draft: ProblemDraft): Promise<ProblemFull> {
+  if (USE_MOCK) return mock.updateProblem(id, draft as Partial<ProblemFull>);
+  return normProblem(await api<Raw>(`/api/v1/problems/${id}`, { method: "PUT", body: JSON.stringify(draft) }));
+}
+
+/** Xoá cứng bài. Server trả 409 nếu bài đã có lịch sử bài nộp. */
+export async function deleteProblem(id: number): Promise<void> {
+  if (USE_MOCK) return mock.deleteProblem(id);
+  await api<Raw>(`/api/v1/problems/${id}`, { method: "DELETE" });
 }
 
 const normCase = (r: Raw): TestCase => ({
