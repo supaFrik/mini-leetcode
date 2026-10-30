@@ -57,10 +57,6 @@ export function SubmissionsView() {
   if (!res) return <Note>Loading submissions…</Note>;
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8 sm:px-6">
-      <div>
-        <h1 className="text-heading-lg text-ink">Submissions</h1>
-        <p className="mt-1 text-body-md text-body">{res.totalElements} submissions on record.</p>
-      </div>
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <table className="w-full min-w-[640px] text-body-md">
           <thead>

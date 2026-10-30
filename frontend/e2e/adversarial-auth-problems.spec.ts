@@ -23,11 +23,11 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       const sqliUsername = `sqli_${ts}' OR '1'='1`;
       const sqliEmail = `sqli_${ts}'--@example.com`;
 
-      await page.getByLabel("Tên đăng nhập").fill(sqliUsername);
+      await page.getByLabel("Username").fill(sqliUsername);
       await page.getByLabel("Email").fill(sqliEmail);
-      await page.getByLabel("Mật khẩu", { exact: true }).fill("Password123!");
+      await page.getByLabel("Password", { exact: true }).fill("Password123!");
 
-      const submitBtn = page.getByRole("button", { name: "Đăng ký" });
+      const submitBtn = page.getByRole("button", { name: "Create Account" });
       await expect(submitBtn).toBeEnabled();
       await Promise.all([
         page.waitForResponse((r) => r.url().includes("/api/v1/auth/register")),
@@ -52,11 +52,11 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
 
       const ts = Date.now();
       const xssUsername = `<script>alert('xss_${ts}')</script>`;
-      await page.getByLabel("Tên đăng nhập").fill(xssUsername);
+      await page.getByLabel("Username").fill(xssUsername);
       await page.getByLabel("Email").fill(`xss_${ts}@example.com`);
-      await page.getByLabel("Mật khẩu", { exact: true }).fill("Password123!");
+      await page.getByLabel("Password", { exact: true }).fill("Password123!");
 
-      const submitBtn = page.getByRole("button", { name: "Đăng ký" });
+      const submitBtn = page.getByRole("button", { name: "Create Account" });
       await expect(submitBtn).toBeEnabled();
       await Promise.all([
         page.waitForResponse((r) => r.url().includes("/api/v1/auth/register")),
@@ -79,11 +79,11 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
 
       // 455-character username violates maximum 50-character limit
       const longUsername = "user_" + "a".repeat(450);
-      await page.getByLabel("Tên đăng nhập").fill(longUsername);
+      await page.getByLabel("Username").fill(longUsername);
       await page.getByLabel("Email").fill("boundary_user@example.com");
-      await page.getByLabel("Mật khẩu", { exact: true }).fill("Password123!");
+      await page.getByLabel("Password", { exact: true }).fill("Password123!");
 
-      const submitBtn = page.getByRole("button", { name: "Đăng ký" });
+      const submitBtn = page.getByRole("button", { name: "Create Account" });
       await expect(submitBtn).toBeEnabled();
       await Promise.all([
         page.waitForResponse((r) => r.url().includes("/api/v1/auth/register")),
@@ -119,11 +119,11 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       await page.goto("/register");
       await page.waitForLoadState("domcontentloaded");
 
-      await page.getByLabel("Tên đăng nhập").fill("bad_user_name");
+      await page.getByLabel("Username").fill("bad_user_name");
       await page.getByLabel("Email").fill("blocked@spam.com");
-      await page.getByLabel("Mật khẩu", { exact: true }).fill("12345678"); // valid length to bypass client check
+      await page.getByLabel("Password", { exact: true }).fill("12345678"); // valid length to bypass client check
 
-      const submitBtn = page.getByRole("button", { name: "Đăng ký" });
+      const submitBtn = page.getByRole("button", { name: "Create Account" });
       await expect(submitBtn).toBeEnabled();
       await Promise.all([
         page.waitForResponse((r) => r.url().includes("/api/v1/auth/register")),
@@ -157,11 +157,11 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       await page.goto("/register");
       await page.waitForLoadState("domcontentloaded");
 
-      await page.getByLabel("Tên đăng nhập").fill("test_user_500");
+      await page.getByLabel("Username").fill("test_user_500");
       await page.getByLabel("Email").fill("test500@example.com");
-      await page.getByLabel("Mật khẩu", { exact: true }).fill("Password123!");
+      await page.getByLabel("Password", { exact: true }).fill("Password123!");
 
-      const submitBtn = page.getByRole("button", { name: "Đăng ký" });
+      const submitBtn = page.getByRole("button", { name: "Create Account" });
       await expect(submitBtn).toBeEnabled();
       await Promise.all([
         page.waitForResponse((r) => r.url().includes("/api/v1/auth/register")),
@@ -193,10 +193,10 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
         await page.goto(`/login?next=${encodeURIComponent(target)}`);
         await page.waitForLoadState("domcontentloaded");
 
-        await page.getByLabel("Tên đăng nhập").fill("student");
-        await page.getByLabel("Mật khẩu", { exact: true }).fill("Password123!");
+        await page.getByLabel("Username").fill("student");
+        await page.getByLabel("Password", { exact: true }).fill("Password123!");
 
-        const submitBtn = page.getByRole("button", { name: "Đăng nhập" });
+        const submitBtn = page.getByRole("button", { name: "Log in" });
         await expect(submitBtn).toBeEnabled();
         await Promise.all([
           page.waitForResponse((r) => r.url().includes("/api/v1/auth/login")),
@@ -220,10 +220,10 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       await page.goto(`/login?next=${encodeURIComponent(deepUrl)}`);
       await page.waitForLoadState("domcontentloaded");
 
-      await page.getByLabel("Tên đăng nhập").fill("student");
-      await page.getByLabel("Mật khẩu", { exact: true }).fill("Password123!");
+      await page.getByLabel("Username").fill("student");
+      await page.getByLabel("Password", { exact: true }).fill("Password123!");
 
-      const submitBtn = page.getByRole("button", { name: "Đăng nhập" });
+      const submitBtn = page.getByRole("button", { name: "Log in" });
       await expect(submitBtn).toBeEnabled();
       await Promise.all([
         page.waitForResponse((r) => r.url().includes("/api/v1/auth/login")),

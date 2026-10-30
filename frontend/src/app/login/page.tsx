@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/auth/login-form";
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
-      <LoginForm />
+      <LoginForm initialMode="signin" />
     </Suspense>
   );
 }

@@ -17,7 +17,7 @@ export default function AuthPageDemo() {
 
   return (
     <AuthPage
-      mode="login"
+      mode="signup"
       username={username}
       email={email}
       password={password}

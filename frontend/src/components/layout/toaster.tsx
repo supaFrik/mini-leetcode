@@ -14,7 +14,7 @@ export function Toaster() {
           key={t.id}
           role={t.kind === "error" ? "alert" : "status"}
           className={cn(
-            "pointer-events-auto flex items-start gap-3 rounded-md border bg-card px-4 py-3 text-body-md text-ink shadow-floating",
+            "pointer-events-auto flex items-start gap-3 rounded-md border border-border bg-card px-4 py-3 text-body-md text-ink shadow-floating",
             t.kind === "error" && "border-destructive/30 bg-destructive/5 text-destructive",
             t.kind === "success" && "border-border"
           )}

@@ -59,6 +59,9 @@
     --hard: 0 78% 45%;                /* red */
 
     --radius: 0.75rem;
+
+    /* ---- Aurora (auth surface) ---- */
+    --brand-gray: #1a1a1a;
   }
 
   * { @apply border-border; }

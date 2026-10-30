@@ -92,13 +92,6 @@ export function ContestList() {
     );
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
-      <div>
-        <h1 className="text-heading-lg text-ink">Contests</h1>
-        <p className="mt-1 text-body-md text-body">
-          Server-timed contests with strict proctoring and anti-cheating measures. Registration is required
-          before participating.
-        </p>
-      </div>
       {SECTIONS.map(({ status, title, empty }) => {
         const list = data.filter((c) => c.status === status);
         return (

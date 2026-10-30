@@ -6,10 +6,15 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
+        // DESIGN.md decision #3: Geist Sans + Geist Mono across the app.
         sans: ["Geist", "'Inter Variable'", "system-ui", "sans-serif"],
         mono: ["'Geist Mono'", "'JetBrains Mono Variable'", "ui-monospace", "SFMono-Regular", "monospace"],
+        // The "Aurora" auth surface is a self-contained dark island with its
+        // own type. Scoped to that surface only — never the app default.
+        aurora: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
+        brandGray: "var(--brand-gray)",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },

@@ -90,7 +90,7 @@ export function ProblemDetail({
   return (
     <div className={cn("h-full overflow-auto", className)}>
       <div className="sticky top-0 z-10 border-b bg-card px-3 pt-2">
-        <span className="inline-flex items-center gap-1.5 rounded-t-md bg-secondary px-3 py-1.5 text-sm">
+        <span className="inline-flex items-center gap-1.5 rounded-t-sm bg-hairline-soft px-3 py-1.5 text-body-md text-ink">
           Description
         </span>
       </div>

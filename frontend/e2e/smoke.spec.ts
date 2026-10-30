@@ -35,9 +35,9 @@ test.describe("M1 Infrastructure Smoke Test", () => {
     await page.goto("/login", { waitUntil: "domcontentloaded" });
 
     // Expect the login form to be rendered
-    await expect(page.getByRole("heading", { name: "Đăng nhập" })).toBeVisible();
-    await expect(page.getByLabel("Tên đăng nhập")).toBeVisible();
-    await expect(page.getByLabel("Mật khẩu", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+    await expect(page.getByLabel("Username")).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
   });
 
   test("renders /register route directly without 404 or redirect", async ({ page }) => {
@@ -45,10 +45,10 @@ test.describe("M1 Infrastructure Smoke Test", () => {
     await page.goto("/register", { waitUntil: "domcontentloaded" });
 
     // Expect the register form to be visible
-    await expect(page.getByRole("heading", { name: "Tạo tài khoản" })).toBeVisible();
-    await expect(page.getByLabel("Tên đăng nhập")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Create New Profile" })).toBeVisible();
+    await expect(page.getByLabel("Username")).toBeVisible();
     await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByLabel("Mật khẩu", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Đăng ký" })).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Create Account" })).toBeVisible();
   });
 });

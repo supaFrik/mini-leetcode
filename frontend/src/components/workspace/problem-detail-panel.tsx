@@ -135,7 +135,7 @@ export function ProblemDetailPanel({
           <Star
             className={cn(
               "h-3.5 w-3.5",
-              watch ? "fill-amber-400 text-amber-400" : "text-muted-foreground"
+              watch ? "fill-amber-400 text-amber-400" : "text-mute"
             )}
             aria-hidden="true"
           />

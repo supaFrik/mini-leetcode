@@ -13,9 +13,9 @@ const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith(
  * Auth flow controller.
  *
  * Owns all state, validation and network calls. The visual shell lives in
- * `components/auth/auth-page.tsx` (split-screen redesign).
+ * `components/auth/auth-page.tsx` (the "Aurora" split-screen surface).
  */
-export function LoginForm({ initialMode = "login" }: { initialMode?: "login" | "register" } = {}) {
+export function LoginForm({ initialMode = "signin" }: { initialMode?: "signin" | "signup" } = {}) {
   const router = useRouter();
   const next = safeNext(useSearchParams().get("next"));
   const mode = initialMode;
@@ -40,14 +40,14 @@ export function LoginForm({ initialMode = "login" }: { initialMode?: "login" | "
 
   const submit = () => {
     if (username.trim().length < 3) { setFields({ username: "Username must be at least 3 characters." }); return; }
-    if (mode === "register") {
+    if (mode === "signup") {
       const emailVal = email.trim();
       if (!emailVal) { setFields({ email: "Email cannot be empty." }); return; }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(emailVal)) { setFields({ email: "Invalid email format." }); return; }
     }
     if (!USE_MOCK && password.length < 8) { setFields({ password: "Password must be at least 8 characters." }); return; }
-    void run(() => (mode === "login" ? login(username.trim(), password) : register(username.trim(), email.trim(), password)));
+    void run(() => (mode === "signin" ? login(username.trim(), password) : register(username.trim(), email.trim(), password)));
   };
 
   const handleSubmit = () => submit();

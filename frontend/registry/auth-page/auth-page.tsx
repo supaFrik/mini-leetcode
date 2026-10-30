@@ -1,22 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import {
-  AppleIcon,
-  AtSignIcon,
-  ChevronLeftIcon,
-  EyeIcon,
-  EyeOffIcon,
-  LockKeyholeIcon,
-  UserIcon,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { motion, useReducedMotion } from "framer-motion";
+import { Circle, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type AuthMode = "login" | "register";
+/**
+ * "Aurora" — the split-screen authentication surface.
+ *
+ * Left panel: a looping background video with the brand and a three-phase
+ * onboarding narrative. Right panel: social placeholders and the credentials
+ * form. The whole surface is a self-contained dark island; it does not touch
+ * the app's light "Ink & Mesh" theme.
+ *
+ * The component is presentational: all state and network calls live in the
+ * consumer (see `components/auth/login-form.tsx`).
+ */
+
+export type AuthMode = "signup" | "signin";
 
 export interface AuthPageProps {
   mode?: AuthMode;
@@ -32,21 +33,17 @@ export interface AuthPageProps {
   onPasswordChange: (value: string) => void;
   onToggleShowPassword: () => void;
   onSubmit: () => void;
-  /** Disable the "coming soon" social buttons (they are inert by default). */
   className?: string;
 }
 
-/**
- * Split-screen authentication page.
- *
- * Left panel: ambient video + animated SVG paths + testimonial.
- * Right panel: brand, social sign-in placeholders, and the credentials form.
- *
- * The component is presentational: all state and network calls live in the
- * consumer (see `components/auth/login-form.tsx`).
- */
+const STEPS = [
+  { title: "Register your identity", active: true },
+  { title: "Configure your studio", active: false },
+  { title: "Finalize your profile", active: false },
+];
+
 export function AuthPage({
-  mode = "login",
+  mode = "signin",
   username,
   email,
   password,
@@ -61,244 +58,230 @@ export function AuthPage({
   onSubmit,
   className,
 }: AuthPageProps) {
-  const isRegister = mode === "register";
-  const reduceMotion = usePrefersReducedMotion();
+  const isSignup = mode === "signup";
+  const reduceMotion = useReducedMotion();
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: reduceMotion
+        ? { staggerChildren: 0, delayChildren: 0 }
+        : { staggerChildren: 0.15, delayChildren: 0.2 },
+    },
+  };
+
+  const item = reduceMotion
+    ? { hidden: { opacity: 0 }, show: { opacity: 1 } }
+    : {
+        hidden: { opacity: 0, y: 10 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+      };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSubmit();
   };
 
-  const fieldError = (key: string) =>
-    fieldErrors[key] ? (
-      <p role="alert" className="text-xs text-destructive">
-        {fieldErrors[key]}
-      </p>
-    ) : null;
-
   return (
-    <main className={cn("relative lg:grid lg:grid-cols-2", className)}>
-      {/* ---------------- Left panel ---------------- */}
-      <div className="bg-muted/60 relative hidden h-full flex-col overflow-hidden border-r border-border p-10 lg:flex">
-        {/* Ambient video backdrop */}
-        <div className="absolute inset-0 overflow-hidden">
-          <video
-            className="h-full w-full object-cover opacity-25"
-            src="/auth-bg.mp4"
-            autoPlay={!reduceMotion}
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            aria-hidden="true"
-            tabIndex={-1}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/40" />
-        </div>
-
-        {/* Brand */}
-        <div className="relative z-20 flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-            mini
-          </span>
-          <p className="text-xl font-semibold">Mini LeetCode</p>
-        </div>
-
-        {/* Testimonial */}
-        <div className="relative z-20 mt-auto">
-          <blockquote className="space-y-2">
-            <p className="max-w-md text-xl leading-snug">
-              &ldquo;Mini LeetCode turns a four-hour algorithm grind into a focused forty-minute
-              session &mdash; with verdicts you can actually trust.&rdquo;
-            </p>
-            <footer className="font-mono text-sm font-semibold text-muted-foreground">
-              ~ The Mini LeetCode team
-            </footer>
-          </blockquote>
-        </div>
-
-        {/* Animated paths */}
-        <div className="pointer-events-none absolute inset-0 z-10">
-          <FloatingPaths position={1} reduceMotion={reduceMotion} />
-          <FloatingPaths position={-1} reduceMotion={reduceMotion} />
-        </div>
-      </div>
-
-      {/* ---------------- Right panel ---------------- */}
-      <div className="relative flex min-h-screen flex-col justify-center p-4">
-        <div
-          aria-hidden
-          className="absolute inset-0 isolate contain-strict opacity-60"
+    <main
+      className={cn(
+        "min-h-screen w-full bg-black font-aurora text-white selection:bg-white/30",
+        "lg:flex lg:h-screen lg:gap-4 lg:overflow-hidden lg:p-4",
+        className
+      )}
+    >
+      {/* ---------------- Left: hero ---------------- */}
+      <section
+        className="relative hidden h-full w-full flex-col items-center justify-end overflow-hidden rounded-3xl pb-32 px-12 shadow-2xl lg:flex lg:w-[52%]"
+        aria-label="Aurora introduction"
+      >
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
         >
-          <div className="absolute top-0 right-0 h-[80rem] w-[35rem] -translate-y-[87.5%] rounded-full bg-[radial-gradient(68.54%_68.72%_at_55.02%_31.46%,hsl(var(--foreground)/0.06)_0,hsla(0,0%,55%,0.02)_50%,hsl(var(--foreground)/0.01)_80%)]" />
-          <div className="absolute top-0 right-0 h-[80rem] w-60 -translate-y-[87.5%] rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsl(var(--foreground)/0.04)_0,hsl(var(--foreground)/0.01)_80%,transparent_100%)]" />
-          <div className="absolute top-0 right-0 h-[80rem] w-60 [translate:5%_-50%] rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,hsl(var(--foreground)/0.04)_0,hsl(var(--foreground)/0.01)_80%,transparent_100%)]" />
-        </div>
+          <source src="/aurora-bg.mp4" type="video/mp4" />
+        </video>
 
-        <Button variant="ghost" size="sm" className="absolute top-5 left-5" asChild>
-          <Link href="/">
-            <ChevronLeftIcon className="size-4" />
-            Home
-          </Link>
-        </Button>
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="relative z-10 flex w-full flex-col items-center text-center"
+        >
+          <motion.div variants={item} className="flex items-center gap-2">
+            <Circle className="size-5 fill-white text-white" aria-hidden="true" />
+            <span className="text-xl font-semibold tracking-tight">Mini LeetCode</span>
+          </motion.div>
 
-        <div className="relative z-10 mx-auto w-full space-y-4 sm:w-sm">
-          {/* Brand (mobile only) */}
-          <div className="flex items-center gap-2 lg:hidden">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-              mini
-            </span>
-            <p className="text-xl font-semibold">Mini LeetCode</p>
-          </div>
-
-          <div className="flex flex-col space-y-1">
-            <h1 className="font-sans text-2xl font-bold tracking-wide">
-              {isRegister ? "Create Your Account" : "Sign In to Your Account"}
-            </h1>
-            <p className="text-base text-muted-foreground">
-              {isRegister
-                ? "Register to start practicing algorithms and joining proctored contests."
-                : "Welcome back. Continue your algorithm journey."}
+          <motion.div variants={item} className="mt-10 space-y-3">
+            <h2 className="text-4xl font-semibold tracking-tight">
+              {isSignup ? "Join Mini LeetCode" : "Sign in to Mini LeetCode"}
+            </h2>
+            <p className="text-base text-white/70">
+              Follow these 3 quick phases to activate your space.
             </p>
+          </motion.div>
+
+          <motion.ul variants={item} className="mt-10 flex flex-col items-center gap-4">
+            {STEPS.map((step, i) => (
+              <StepItem
+                key={step.title}
+                index={i + 1}
+                title={step.title}
+                active={step.active}
+              />
+            ))}
+          </motion.ul>
+        </motion.div>
+      </section>
+
+      {/* ---------------- Right: form ---------------- */}
+      <section className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-12 sm:px-12 lg:overflow-hidden lg:px-16 lg:py-6 xl:px-24">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: reduceMotion ? 0 : 0.8, ease: "easeOut" }}
+          className="w-full max-w-xl space-y-8 lg:space-y-6 sm:space-y-10"
+        >
+          {/* Header */}
+          <header className="space-y-2">
+            <h1 className="text-3xl font-medium tracking-tight">
+              {isSignup ? "Create New Profile" : "Welcome back"}
+            </h1>
+            <p className="text-sm text-white/50">
+              {isSignup
+                ? "Input your basic details to begin the journey."
+                : "Enter your credentials to pick up where you left off."}
+            </p>
+          </header>
+
+          {/* Social placeholders — no OAuth endpoint exists yet. */}
+          <div className="grid grid-cols-2 gap-4">
+            <SocialButton label="Google" icon={<GoogleIcon />} />
+            <SocialButton label="GitHub" icon={<GitHubIcon />} />
           </div>
 
-          {/* Social sign-in placeholders */}
-          <div className="space-y-2">
-            <SocialButton label="Continue with Google" icon={<GoogleIcon />} />
-            <SocialButton label="Continue with Apple" icon={<AppleIcon className="size-4" />} />
-            <SocialButton label="Continue with GitHub" icon={<GitHubIcon />} />
+          {/* Divider */}
+          <div className="relative flex items-center">
+            <div className="h-px w-full border-t border-white/10" />
+            <span className="bg-black px-4 text-xs font-medium uppercase tracking-widest text-white/40">
+              Or
+            </span>
+            <div className="h-px w-full border-t border-white/10" />
           </div>
 
-          <AuthSeparator />
-
-          <form className="space-y-3" onSubmit={handleSubmit} noValidate>
-            <div className="space-y-1">
-              <label htmlFor="auth-username" className="text-sm font-medium">
-                Username
-              </label>
-              <div className="relative h-max">
-                <Input
-                  id="auth-username"
+          <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+            {isSignup ? (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <InputGroup
+                  id="auth-first-name"
                   name="username"
+                  label="First Name"
                   value={username}
-                  onChange={(e) => onUsernameChange(e.target.value)}
+                  onChange={onUsernameChange}
                   placeholder="your.username"
-                  className="peer ps-9"
+                  icon={<AtSignGlyph />}
+                  error={fieldErrors.username}
                   autoComplete="username"
-                  aria-invalid={!!fieldErrors.username}
                 />
-                <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground peer-disabled:opacity-50">
-                  <UserIcon className="size-4" aria-hidden="true" />
-                </div>
+                <InputGroup
+                  id="auth-email"
+                  name="email"
+                  type="email"
+                  label="Email"
+                  value={email}
+                  onChange={onEmailChange}
+                  placeholder="your.email@example.com"
+                  icon={<AtSignGlyph />}
+                  error={fieldErrors.email}
+                  autoComplete="email"
+                />
               </div>
-              {fieldError("username")}
-            </div>
-
-            {isRegister && (
-              <div className="space-y-1">
-                <label htmlFor="auth-email" className="text-sm font-medium">
-                  Email
-                </label>
-                <div className="relative h-max">
-                  <Input
-                    id="auth-email"
-                    name="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => onEmailChange(e.target.value)}
-                    placeholder="your.email@example.com"
-                    className="peer ps-9"
-                    autoComplete="email"
-                    aria-invalid={!!fieldErrors.email}
-                  />
-                  <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground peer-disabled:opacity-50">
-                    <AtSignIcon className="size-4" aria-hidden="true" />
-                  </div>
-                </div>
-                {fieldError("email")}
-              </div>
+            ) : (
+              <InputGroup
+                id="auth-username"
+                name="username"
+                label="Username"
+                value={username}
+                onChange={onUsernameChange}
+                placeholder="your.username"
+                icon={<AtSignGlyph />}
+                error={fieldErrors.username}
+                autoComplete="username"
+              />
             )}
 
-            <div className="space-y-1">
-              <label htmlFor="auth-password" className="text-sm font-medium">
-                Password
-              </label>
-              <div className="relative">
-                <Input
-                  id="auth-password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => onPasswordChange(e.target.value)}
-                  placeholder="••••••••"
-                  className="pe-10 ps-9"
-                  autoComplete={isRegister ? "new-password" : "current-password"}
-                  aria-invalid={!!fieldErrors.password}
-                />
-                <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground">
-                  <LockKeyholeIcon className="size-4" aria-hidden="true" />
-                </div>
+            <InputGroup
+              id="auth-password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              label="Password"
+              value={password}
+              onChange={onPasswordChange}
+              placeholder="••••••••"
+              icon={<LockGlyph />}
+              error={fieldErrors.password}
+              helper={isSignup ? "Requires at least 8 symbols." : undefined}
+              autoComplete={isSignup ? "new-password" : "current-password"}
+              trailing={
                 <button
                   type="button"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   onClick={onToggleShowPassword}
-                  className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  className="absolute top-1/2 right-3 -translate-y-1/2 rounded p-1 text-white/40 transition-colors hover:text-white"
                 >
-                  {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+                  {showPassword ? (
+                    <EyeOff className="size-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="size-4" aria-hidden="true" />
+                  )}
                 </button>
-              </div>
-              {fieldError("password")}
-            </div>
+              }
+            />
 
             {error && (
               <p
                 role="alert"
-                className="rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-sm text-destructive"
+                className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
               >
                 {error}
               </p>
             )}
 
-            <Button type="submit" className="w-full" disabled={busy}>
-              {busy
-                ? "Processing…"
-                : isRegister
-                  ? "Sign Up"
-                  : "Sign In"}
-            </Button>
+            <button
+              type="submit"
+              disabled={busy}
+              className="mt-4 h-14 w-full rounded-xl bg-white font-semibold text-black transition-[background-color,transform] hover:bg-white/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+            >
+              {busy ? "Processing…" : isSignup ? "Create Account" : "Log in"}
+            </button>
           </form>
 
-          <p className="text-sm text-muted-foreground">
-            {isRegister ? (
+          <p className="text-sm text-white/50">
+            {isSignup ? (
               <>
-                Already have an account?{" "}
-                <Link href="/login" className="font-medium text-primary hover:underline">
-                  Sign in
+                Member of the team?{" "}
+                <Link href="/login" className="font-medium text-white underline underline-offset-4 hover:text-white/80">
+                  Log in
                 </Link>
               </>
             ) : (
               <>
-                Don&apos;t have an account?{" "}
-                <Link href="/register" className="font-medium text-primary hover:underline">
-                  Sign up
+                New here?{" "}
+                <Link href="/register" className="font-medium text-white underline underline-offset-4 hover:text-white/80">
+                  Create an account
                 </Link>
               </>
             )}
           </p>
-
-          <p className="mt-2 text-sm text-muted-foreground">
-            By continuing, you agree to our{" "}
-            <a href="#" className="underline underline-offset-4 hover:text-primary">
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a href="#" className="underline underline-offset-4 hover:text-primary">
-              Privacy Policy
-            </a>
-            .
-          </p>
-        </div>
-      </div>
+        </motion.div>
+      </section>
     </main>
   );
 }
@@ -308,108 +291,174 @@ export function AuthPage({
 /* -------------------------------------------------------------------------- */
 
 /**
- * Tracks the OS "reduce motion" preference.
- *
- * Kept local to this file so the block stays self-contained when installed
- * from the registry.
+ * One phase of the onboarding narrative in the hero panel.
  */
-function usePrefersReducedMotion() {
-  const [reduce, setReduce] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduce(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return reduce;
+export function StepItem({
+  index,
+  title,
+  active = false,
+}: {
+  index: number;
+  title: string;
+  active?: boolean;
+}) {
+  return (
+    <li className="flex items-center gap-3">
+      <span
+        className={cn(
+          "grid size-7 place-items-center rounded-full border text-xs font-semibold",
+          active
+            ? "border-white bg-white text-black"
+            : "border-white/25 bg-transparent text-white/60"
+        )}
+        aria-hidden="true"
+      >
+        {index}
+      </span>
+      <span className={cn("text-sm", active ? "text-white" : "text-white/60")}>{title}</span>
+    </li>
+  );
 }
 
-function SocialButton({ label, icon }: { label: string; icon: React.ReactNode }) {
+/**
+ * Social sign-in placeholder. Disabled on purpose: the backend exposes no
+ * OAuth endpoint yet, so an enabled-looking button would be a broken promise.
+ */
+export function SocialButton({ label, icon }: { label: string; icon: React.ReactNode }) {
   return (
-    <Button type="button" size="lg" className="w-full" disabled aria-disabled="true">
+    <button
+      type="button"
+      disabled
+      aria-disabled="true"
+      className="flex h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-transparent text-sm font-medium text-white/80 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+    >
       {icon}
       <span>{label}</span>
-      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/40">
         Soon
       </span>
-    </Button>
+    </button>
   );
 }
 
-function AuthSeparator() {
+/**
+ * Labeled input with a leading glyph, optional trailing slot and inline
+ * validation copy.
+ */
+export function InputGroup({
+  id,
+  name,
+  label,
+  type = "text",
+  value,
+  onChange,
+  placeholder,
+  icon,
+  error,
+  helper,
+  autoComplete,
+  trailing,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  icon?: React.ReactNode;
+  error?: string;
+  helper?: string;
+  autoComplete?: string;
+  trailing?: React.ReactNode;
+}) {
   return (
-    <div className="flex w-full items-center justify-center">
-      <div className="h-px w-full bg-border" />
-      <span className="px-2 text-xs text-muted-foreground">OR</span>
-      <div className="h-px w-full bg-border" />
-    </div>
-  );
-}
-
-function FloatingPaths({ position, reduceMotion }: { position: number; reduceMotion: boolean }) {
-  const paths = Array.from({ length: 36 }, (_, i) => ({
-    id: i,
-    d: `M-${380 - i * 5 * position} -${189 + i * 6}C-${380 - i * 5 * position} -${
-      189 + i * 6
-    } -${312 - i * 5 * position} ${216 - i * 6} ${152 - i * 5 * position} ${
-      343 - i * 6
-    }C${616 - i * 5 * position} ${470 - i * 6} ${684 - i * 5 * position} ${
-      875 - i * 6
-    } ${684 - i * 5 * position} ${875 - i * 6}`,
-    color: `rgba(15,23,42,${0.1 + i * 0.03})`,
-    width: 0.5 + i * 0.03,
-  }));
-
-  return (
-    <div className="pointer-events-none absolute inset-0">
-      <svg
-        className="h-full w-full text-slate-950 dark:text-white"
-        viewBox="0 0 696 316"
-        fill="none"
-        preserveAspectRatio="xMidYMid slice"
-      >
-        <title>Background Paths</title>
-        {paths.map((path) =>
-          reduceMotion ? (
-            <path
-              key={path.id}
-              d={path.d}
-              stroke="currentColor"
-              strokeWidth={path.width}
-              strokeOpacity={0.1 + path.id * 0.03}
-            />
-          ) : (
-            <motion.path
-              key={path.id}
-              d={path.d}
-              stroke="currentColor"
-              strokeWidth={path.width}
-              strokeOpacity={0.1 + path.id * 0.03}
-              initial={{ pathLength: 0.3, opacity: 0.6 }}
-              animate={{
-                pathLength: 1,
-                opacity: [0.3, 0.6, 0.3],
-                pathOffset: [0, 1, 0],
-              }}
-              transition={{
-                // Deterministic duration: derived from the index so that the
-                // server-rendered markup and the client render always match.
-                duration: 20 + (path.id % 5) * 2,
-                repeat: Number.POSITIVE_INFINITY,
-                ease: "linear",
-              }}
-            />
-          ),
+    <div className="space-y-2">
+      <label htmlFor={id} className="block text-sm font-medium text-white/80">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          name={name}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          aria-invalid={!!error}
+          className={cn(
+            "h-12 w-full rounded-xl border bg-brand-gray px-4 text-sm text-white transition-colors",
+            "placeholder:text-white/30 focus:outline-none focus:ring-2",
+            error
+              ? "border-red-400/60 focus:border-red-400 focus:ring-red-400/20"
+              : "border-white/10 focus:border-white/30 focus:ring-white/15",
+            icon ? "ps-11" : "",
+            trailing ? "pe-11" : ""
+          )}
+        />
+        {icon && (
+          <span
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-white/35"
+            aria-hidden="true"
+          >
+            {icon}
+          </span>
         )}
-      </svg>
+        {trailing}
+      </div>
+      {error ? (
+        <p role="alert" className="text-xs text-red-300">
+          {error}
+        </p>
+      ) : helper ? (
+        <p className="text-xs text-white/40">{helper}</p>
+      ) : null}
     </div>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                   Icons                                     */
+/*                                   Glyphs                                    */
 /* -------------------------------------------------------------------------- */
+
+function AtSignGlyph() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
+    </svg>
+  );
+}
+
+function LockGlyph() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4"
+      aria-hidden="true"
+    >
+      <rect width="18" height="11" x="3" y="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
 
 const GoogleIcon = (props: React.ComponentProps<"svg">) => (
   <svg
@@ -433,6 +482,6 @@ const GitHubIcon = (props: React.ComponentProps<"svg">) => (
     aria-hidden="true"
     {...props}
   >
-    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23a11.5 11.5 0 0 1 3-.405c1.02.006 2.045.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07,3.633 17.7,3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23a11.5 11.5 0 0 1 3-.405c1.02.006 2.045.138 3 .405c2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 3.873.12 5.076.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565,22.092,24,17.592,24,12.297c0-6.627-5.373-12-12-12" />
   </svg>
 );
