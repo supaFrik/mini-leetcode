@@ -22,7 +22,7 @@ import { useProctoring } from "@/hooks/use-proctoring";
 import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
 import { fmtDuration } from "@/lib/format";
-import { DRAFT_SYNC, finalizeContestSubmission, loadDraft, RUN_ENABLED, saveDraft, updateProblem } from "@/lib/services";
+import { DRAFT_SYNC, finalizeContestSubmission, loadDraft, RUN_ENABLED, saveDraft, transitionProblem } from "@/lib/services";
 import { FILE_NAME, LANG_PREF_KEY, LANGUAGES, TEMPLATES } from "@/lib/templates";
 import { toast } from "@/lib/toast";
 import { VERDICT } from "@/lib/verdict";
@@ -119,7 +119,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
     const target = role === "ADMIN" ? "PUBLISHED" : "REVIEWING";
     setBusy(true);
     try {
-      const p = await updateProblem(problem.id, { status: target });
+      const p = await transitionProblem(problem.id, target);
       setProblem({ ...problem, ...p, status: p.status ?? target });
       toast(target === "PUBLISHED" ? "Problem published." : "Problem submitted for review.", "success");
     } catch (e) { toast(errorMessage(e), "error"); }

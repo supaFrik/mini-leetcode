@@ -111,7 +111,7 @@ class ProblemAndTestCaseIntegrationTest {
     @DisplayName("Verification Gate 4: Problem CRUD, Unique Slug Generation, Pagination, and TestCase Filtering")
     void problemAndTestCaseFullFlow() throws Exception {
         // 1. Instructor creates first problem "Two Sum"
-        CreateProblemRequest createP1 = new CreateProblemRequest("Two Sum", "Given array...", Difficulty.EASY, 1000, 256);
+        CreateProblemRequest createP1 = new CreateProblemRequest("Two Sum", "Given array...", Difficulty.EASY, 1000, 256, null);
         MvcResult p1Result = mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + instructorToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -126,7 +126,7 @@ class ProblemAndTestCaseIntegrationTest {
         long p1Id = p1Json.get("id").asLong();
 
         // 2. Instructor creates second problem with same title -> automatically creates unique slug "two-sum-1"
-        CreateProblemRequest createP2 = new CreateProblemRequest("Two Sum", "Second version...", Difficulty.MEDIUM, 2000, 512);
+        CreateProblemRequest createP2 = new CreateProblemRequest("Two Sum", "Second version...", Difficulty.MEDIUM, 2000, 512, null);
         mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + instructorToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -143,14 +143,13 @@ class ProblemAndTestCaseIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403));
 
-        // 4. Update problem lifecycle status to PUBLISHED
-        UpdateProblemRequest updateReq = new UpdateProblemRequest(null, null, null, null, null, ProblemStatus.PUBLISHED);
-        mockMvc.perform(put("/api/v1/problems/" + p1Id)
+        // 4. Lifecycle: DRAFT -> REVIEWING (allowed edge, no publish gate yet)
+        mockMvc.perform(post("/api/v1/problems/" + p1Id + "/transitions")
                         .header("Authorization", "Bearer " + instructorToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateReq)))
+                        .content("{\"status\":\"REVIEWING\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("PUBLISHED"));
+                .andExpect(jsonPath("$.status").value("REVIEWING"));
 
         // 5. Search & Pagination
         mockMvc.perform(get("/api/v1/problems")
@@ -173,6 +172,15 @@ class ProblemAndTestCaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.slug").value("two-sum"));
 
+        // 7b. Publish gate: PUBLISHED without any public test case -> 409 Conflict
+        mockMvc.perform(post("/api/v1/problems/" + p1Id + "/transitions")
+                        .header("Authorization", "Bearer " + instructorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PUBLISHED\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.title").value("Resource Conflict"));
+
         // 8. Upload public TestCase (isHidden = false, orderIndex = 1)
         MockMultipartFile inputFile1 = new MockMultipartFile(
                 "inputFile", "input_1.txt", "text/plain", "2 7 11 15\n9".getBytes());
@@ -190,6 +198,22 @@ class ProblemAndTestCaseIntegrationTest {
                 .andExpect(jsonPath("$.orderIndex").value(1))
                 .andExpect(jsonPath("$.inputFileUri").isNotEmpty())
                 .andExpect(jsonPath("$.expectedOutputUri").isNotEmpty());
+
+        // 8b. Now that a public test case exists, publishing succeeds.
+        mockMvc.perform(post("/api/v1/problems/" + p1Id + "/transitions")
+                        .header("Authorization", "Bearer " + instructorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PUBLISHED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"));
+
+        // 8c. Illegal edge: PUBLISHED -> REVIEWING is not allowed -> 409 Conflict
+        mockMvc.perform(post("/api/v1/problems/" + p1Id + "/transitions")
+                        .header("Authorization", "Bearer " + instructorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"REVIEWING\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409));
 
         // 9. Upload hidden TestCase (isHidden = true, orderIndex = 2)
         MockMultipartFile inputFile2 = new MockMultipartFile(
@@ -250,7 +274,7 @@ class ProblemAndTestCaseIntegrationTest {
     @Test
     @DisplayName("createProblem: invalid payload returns 400 ProblemDetail with invalid_params")
     void createProblem_validationFailure_returns400() throws Exception {
-        CreateProblemRequest invalidReq = new CreateProblemRequest("", "", null, -1, -1);
+        CreateProblemRequest invalidReq = new CreateProblemRequest("", "", null, -1, -1, null);
         mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + instructorToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -266,7 +290,7 @@ class ProblemAndTestCaseIntegrationTest {
     @Test
     @DisplayName("deleteProblem: role authorization and deletion flow")
     void deleteProblem_authorizationAndLifecycle() throws Exception {
-        CreateProblemRequest createP = new CreateProblemRequest("To Delete", "Desc", Difficulty.EASY, 1000, 256);
+        CreateProblemRequest createP = new CreateProblemRequest("To Delete", "Desc", Difficulty.EASY, 1000, 256, null);
         MvcResult pResult = mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + instructorToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -300,7 +324,7 @@ class ProblemAndTestCaseIntegrationTest {
     @Test
     @DisplayName("deleteTestCase: role authorization and deletion flow")
     void deleteTestCase_authorizationAndLifecycle() throws Exception {
-        CreateProblemRequest createP = new CreateProblemRequest("TC Problem", "Desc", Difficulty.EASY, 1000, 256);
+        CreateProblemRequest createP = new CreateProblemRequest("TC Problem", "Desc", Difficulty.EASY, 1000, 256, null);
         MvcResult pResult = mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + instructorToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -346,7 +370,7 @@ class ProblemAndTestCaseIntegrationTest {
     @Test
     @DisplayName("uploadTestCase: empty file returns 400 ProblemDetail")
     void uploadTestCase_emptyFile_returns400() throws Exception {
-        CreateProblemRequest createP = new CreateProblemRequest("Empty TC Problem", "Desc", Difficulty.EASY, 1000, 256);
+        CreateProblemRequest createP = new CreateProblemRequest("Empty TC Problem", "Desc", Difficulty.EASY, 1000, 256, null);
         MvcResult pResult = mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + instructorToken)
                         .contentType(MediaType.APPLICATION_JSON)

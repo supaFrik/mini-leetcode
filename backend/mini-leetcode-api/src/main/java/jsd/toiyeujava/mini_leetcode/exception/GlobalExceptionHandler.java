@@ -59,8 +59,8 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ProblemDetail handleDuplicateException(DuplicateResourceException ex) {
+    @ExceptionHandler({DuplicateResourceException.class, StateConflictException.class})
+    public ProblemDetail handleDuplicateException(Exception ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setTitle("Resource Conflict");
         problem.setType(URI.create("https://api.mini-leetcode.com/errors/conflict"));

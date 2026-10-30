@@ -15,7 +15,7 @@ import { decodeUser, getToken } from "./auth";
 import { TEMPLATES } from "./templates";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ContestProblem, Draft, Language, LeaderboardCell, LeaderboardRow, Page,
-  ProblemFull, ProblemSummary, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
+  ProblemFull, ProblemLifecycle, ProblemSummary, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
 } from "@/types/api";
 
 const sleep = (ms = 150) => new Promise<void>((r) => setTimeout(r, ms));
@@ -77,11 +77,14 @@ export async function listProblems(q: { page: number; q: string; difficulty: str
   await sleep(); ensureOnline();
   const done = new Set(store.get<SubRec[]>("mock:subs", []).filter((s) => s.verdict === "AC" && !s.run).map((s) => s.problemId));
   const size = 8;
+  // Bộ lọc chủ đề dùng ngữ nghĩa OR + so khớp chính xác không phân biệt hoa/thường
+  // (giống hệt backend: bài chỉ cần thuộc ÍT NHẤT MỘT chủ đề được chọn).
+  const wanted = q.tags.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 0);
   const all = PROBLEMS.map(withEdits).map((p) => ({ ...p, progress: done.has(p.id) ? ("DONE" as const) : p.progress }))
     .filter((p) =>
       (!q.q || p.title.toLowerCase().includes(q.q.toLowerCase()) || p.tags.join(" ").toLowerCase().includes(q.q.toLowerCase())) &&
       (!q.difficulty || p.difficulty === q.difficulty) && (!q.progress || p.progress === q.progress) &&
-      q.tags.every((t) => p.tags.includes(t)));
+      (wanted.length === 0 || p.tags.some((t) => wanted.includes(t.toLowerCase().trim()))));
   const start = (q.page - 1) * size;
   return {
     content: all.slice(start, start + size).map(({ id, slug, title, difficulty, tags, progress }) => ({ id, slug, title, difficulty, tags, progress })),
@@ -112,6 +115,42 @@ export async function updateProblem(id: number, patch: Partial<ProblemFull>): Pr
   edits[id] = { ...edits[id], ...patch };
   store.set("mock:problemEdits", edits);
   return getProblem(String(id));
+}
+
+/**
+ * Chuyển trạng thái vòng đời — giữ đúng luật của backend:
+ * - chỉ đi theo cạnh hợp lệ (DRAFT → REVIEWING → PUBLISHED → ARCHIVED),
+ * - PUBLISHED đòi hỏi ít nhất một testcase công khai,
+ * - chuyển sai trạng thái trả về 409 Conflict.
+ */
+const LIFECYCLE_EDGES: Record<string, string[]> = {
+  DRAFT: ["REVIEWING", "ARCHIVED"],
+  REVIEWING: ["DRAFT", "PUBLISHED"],
+  PUBLISHED: ["ARCHIVED"],
+  ARCHIVED: ["DRAFT"],
+};
+
+export async function transitionProblem(id: number, target: ProblemLifecycle): Promise<ProblemFull> {
+  await sleep(); ensureOnline();
+  const p = PROBLEMS.find((x) => x.id === id);
+  if (!p) throw notFound(`Problem not found: ${id}`);
+  const current = (withEdits(p).status ?? "DRAFT") as ProblemLifecycle;
+  if (current === target) {
+    throw new ApiError(409, { title: "Resource Conflict", status: 409, detail: `Problem is already in status ${target}` });
+  }
+  if (!(LIFECYCLE_EDGES[current] ?? []).includes(target)) {
+    throw new ApiError(409, {
+      title: "Resource Conflict", status: 409,
+      detail: `Cannot transition problem from ${current} to ${target}. Allowed targets: ${(LIFECYCLE_EDGES[current] ?? []).join(", ")}`,
+    });
+  }
+  if (target === "PUBLISHED" && !casesFor(id).some((c) => !c.isHidden)) {
+    throw new ApiError(409, {
+      title: "Resource Conflict", status: 409,
+      detail: `Cannot publish problem ${id}: at least one public test case is required`,
+    });
+  }
+  return updateProblem(id, { status: target });
 }
 
 const BASE_CASES: [string, string][] = [["1 2", "3"], ["5 7", "12"], ["-3 3", "0"], ["100 200", "300"], ["999 1", "1000"]];

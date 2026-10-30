@@ -10,8 +10,8 @@ import { setTokens } from "./auth";
 import * as mock from "./mock-server";
 import type { PollFetch } from "./polling";
 import type {
-  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemSummary, ProctoringEventType,
-  ProctoringResult, Submission, SubmitBody, TestCase,
+  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary,
+  ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase,
 } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
@@ -63,7 +63,8 @@ export async function fetchProblems(p: ProblemQuery): Promise<Page<ProblemSummar
   const qs = new URLSearchParams({ page: String(p.page - 1), size: "8" }); // backend đếm trang từ 0
   if (p.q) qs.set("search", p.q);
   if (p.difficulty) qs.set("difficulty", p.difficulty);
-  // Backend lọc chủ đề ở tầng SQL: bài phải thuộc TẤT CẢ tag được gửi lên.
+  // Backend lọc chủ đề ở tầng SQL: bài khớp nếu thuộc ÍT NHẤT MỘT tag được gửi lên
+  // (so khớp chính xác, không phân biệt hoa/thường).
   if (p.tags.length) qs.set("tags", p.tags.join(","));
   // `progress` chỉ có ý nghĩa với người đã đăng nhập; backend tự tính từ submissions.
   if (p.progress) qs.set("progress", p.progress);
@@ -85,6 +86,15 @@ export async function fetchProblem(idOrSlug: string): Promise<ProblemFull> {
 export async function updateProblem(id: number, patch: Partial<ProblemFull>): Promise<ProblemFull> {
   if (USE_MOCK) return mock.updateProblem(id, patch);
   return normProblem(await api<Raw>(`/api/v1/problems/${id}`, { method: "PUT", body: JSON.stringify(patch) }));
+}
+
+/**
+ * Chuyển trạng thái vòng đời của bài (DRAFT → REVIEWING → PUBLISHED → ARCHIVED).
+ * Tách riêng khỏi `updateProblem` vì server kiểm tra cạnh trạng thái hợp lệ.
+ */
+export async function transitionProblem(id: number, status: ProblemLifecycle): Promise<ProblemFull> {
+  if (USE_MOCK) return mock.transitionProblem(id, status);
+  return normProblem(await api<Raw>(`/api/v1/problems/${id}/transitions`, { method: "POST", body: JSON.stringify({ status }) }));
 }
 
 const normCase = (r: Raw): TestCase => ({

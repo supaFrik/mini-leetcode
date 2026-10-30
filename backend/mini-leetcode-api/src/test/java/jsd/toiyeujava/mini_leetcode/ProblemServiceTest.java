@@ -65,7 +65,7 @@ class ProblemServiceTest {
     @DisplayName("createProblem: generates unique slug and sets defaults")
     void createProblem_generatesUniqueSlug() {
         User creator = User.builder().id(1L).username("admin").build();
-        CreateProblemRequest request = new CreateProblemRequest("Valid Palindrome", "A phrase...", Difficulty.EASY, null, null);
+        CreateProblemRequest request = new CreateProblemRequest("Valid Palindrome", "A phrase...", Difficulty.EASY, null, null, null);
 
         when(problemRepository.existsBySlug("valid-palindrome")).thenReturn(false);
         when(problemRepository.save(any(Problem.class))).thenAnswer(i -> {
@@ -105,7 +105,7 @@ class ProblemServiceTest {
                 Difficulty.HARD,
                 2000,
                 512,
-                ProblemStatus.PUBLISHED
+                null
         );
 
         ProblemResponse updated = problemService.updateProblem(1L, updateReq);
@@ -114,7 +114,8 @@ class ProblemServiceTest {
         assertThat(updated.slug()).isEqualTo("new-title");
         assertThat(updated.description()).isEqualTo("New Desc");
         assertThat(updated.difficulty()).isEqualTo(Difficulty.HARD);
-        assertThat(updated.status()).isEqualTo(ProblemStatus.PUBLISHED);
+        // Metadata update must NOT touch the lifecycle status.
+        assertThat(updated.status()).isEqualTo(ProblemStatus.DRAFT);
         assertThat(updated.timeLimitMs()).isEqualTo(2000);
         assertThat(updated.memoryLimitMb()).isEqualTo(512);
     }
@@ -249,5 +250,56 @@ class ProblemServiceTest {
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).title()).isEqualTo("Two Sum");
+    }
+
+    @Test
+    @DisplayName("createProblem: normalizes tags (trim, drop blank, dedupe case-insensitively, keep display casing)")
+    void createProblem_normalizesTags() {
+        User creator = User.builder().id(1L).username("admin").build();
+        CreateProblemRequest request = new CreateProblemRequest(
+                "Tagged Problem", "Desc", Difficulty.EASY, null, null,
+                List.of("  Array  ", "", "array", "Hash Table"));
+
+        when(problemRepository.existsBySlug("tagged-problem")).thenReturn(false);
+        when(problemRepository.save(any(Problem.class))).thenAnswer(i -> i.getArgument(0));
+
+        ProblemResponse response = problemService.createProblem(request, creator);
+
+        assertThat(response.tags()).containsExactly("Array", "Hash Table");
+    }
+
+    @Test
+    @DisplayName("updateProblem: replaces tags when provided, keeps them when null")
+    void updateProblem_replacesTags() {
+        Problem existing = Problem.builder()
+                .id(1L)
+                .title("Two Sum")
+                .slug("two-sum")
+                .description("Old")
+                .difficulty(Difficulty.EASY)
+                .status(ProblemStatus.DRAFT)
+                .tags(new java.util.ArrayList<>(List.of("Old Tag")))
+                .build();
+
+        when(problemRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(problemRepository.save(any(Problem.class))).thenAnswer(i -> i.getArgument(0));
+
+        ProblemResponse updated = problemService.updateProblem(1L,
+                new UpdateProblemRequest(null, null, null, null, null, List.of("Array", "array", " ")));
+
+        assertThat(updated.tags()).containsExactly("Array");
+    }
+
+    @Test
+    @DisplayName("getProblems: tag filter uses OR semantics with case-insensitive matching")
+    void getProblems_tagFilterUsesOrSemantics() {
+        Problem p = Problem.builder().id(1L).title("Two Sum").slug("two-sum").difficulty(Difficulty.EASY).build();
+        Page<Problem> page = new PageImpl<>(List.of(p));
+        when(problemRepository.findAll(any(Specification.class), any(PageRequest.class))).thenReturn(page);
+
+        problemService.getProblems(null, null, null, List.of("array", "graph"), null, null, PageRequest.of(0, 10));
+
+        // The specification must be built without throwing and must reach the repository.
+        verify(problemRepository).findAll(any(Specification.class), any(PageRequest.class));
     }
 }

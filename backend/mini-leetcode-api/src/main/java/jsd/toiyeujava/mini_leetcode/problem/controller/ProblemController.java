@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import jsd.toiyeujava.mini_leetcode.problem.dto.CreateProblemRequest;
 import jsd.toiyeujava.mini_leetcode.problem.dto.ProblemResponse;
 import jsd.toiyeujava.mini_leetcode.problem.dto.UpdateProblemRequest;
+import jsd.toiyeujava.mini_leetcode.problem.dto.TransitionProblemRequest;
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.entity.UserProgress;
@@ -75,7 +76,7 @@ public class ProblemController {
             @RequestParam(required = false) ProblemStatus status,
             @Parameter(description = "Keyword search in title or description")
             @RequestParam(required = false) String search,
-            @Parameter(description = "Filter by topic tags; a problem must carry ALL of them (comma separated)")
+            @Parameter(description = "Filter by topic tags; a problem carrying ANY of them matches (comma separated, case-insensitive)")
             @RequestParam(required = false) List<String> tags,
             @Parameter(description = "Filter by the current user's progress (DONE, IN_PROGRESS, NEVER)")
             @RequestParam(required = false) UserProgress progress,
@@ -162,7 +163,9 @@ public class ProblemController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
-    @Operation(summary = "Update problem", description = "Updates an existing problem's details and lifecycle status",
+    @Operation(summary = "Update problem metadata",
+            description = "Updates an existing problem's metadata (title, description, difficulty, limits, tags). "
+                    + "Lifecycle status is NOT changed here - use POST /{id}/transitions for status changes.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Problem updated successfully"),
@@ -174,6 +177,26 @@ public class ProblemController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateProblemRequest request) {
         ProblemResponse response = problemService.updateProblem(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/transitions")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @Operation(summary = "Transition problem lifecycle status",
+            description = "Moves a problem along the DRAFT -> REVIEWING -> PUBLISHED -> ARCHIVED lifecycle. "
+                    + "Server-side validation only: illegal transitions and publishing without a public test case are rejected.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Status transitioned successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request payload"),
+            @ApiResponse(responseCode = "404", description = "Problem not found"),
+            @ApiResponse(responseCode = "409", description = "Illegal transition or publish requirements not met"),
+            @ApiResponse(responseCode = "403", description = "Forbidden")
+    })
+    public ResponseEntity<ProblemResponse> transitionProblem(
+            @PathVariable Long id,
+            @Valid @RequestBody TransitionProblemRequest request) {
+        ProblemResponse response = problemService.transitionStatus(id, request.status());
         return ResponseEntity.ok(response);
     }
 

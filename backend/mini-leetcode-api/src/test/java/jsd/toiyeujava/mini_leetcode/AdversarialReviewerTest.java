@@ -157,7 +157,7 @@ public class AdversarialReviewerTest {
         mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Active Problem", "Desc", Difficulty.EASY, 1000, 256))))
+                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Active Problem", "Desc", Difficulty.EASY, 1000, 256, null))))
                 .andExpect(status().isCreated());
 
         // Now block the user in database
@@ -169,7 +169,7 @@ public class AdversarialReviewerTest {
         mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Blocked Problem", "Desc", Difficulty.EASY, 1000, 256))))
+                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Blocked Problem", "Desc", Difficulty.EASY, 1000, 256, null))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
     }
@@ -307,7 +307,7 @@ public class AdversarialReviewerTest {
         mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Hacked Problem", "Desc", Difficulty.EASY, 1000, 256))))
+                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Hacked Problem", "Desc", Difficulty.EASY, 1000, 256, null))))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.title").value("Forbidden"));
@@ -467,7 +467,7 @@ public class AdversarialReviewerTest {
         mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Title", "Desc", Difficulty.EASY, 1000, 256))))
+                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Title", "Desc", Difficulty.EASY, 1000, 256, null))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.title").value("Unauthorized"));
@@ -596,7 +596,7 @@ public class AdversarialReviewerTest {
         mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer " + tamperedToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Title", "Desc", Difficulty.EASY, 1000, 256))))
+                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Title", "Desc", Difficulty.EASY, 1000, 256, null))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.title").value("Unauthorized"));
@@ -605,7 +605,7 @@ public class AdversarialReviewerTest {
         mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer not.a.valid.jwt")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Title", "Desc", Difficulty.EASY, 1000, 256))))
+                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Title", "Desc", Difficulty.EASY, 1000, 256, null))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
 
@@ -613,7 +613,7 @@ public class AdversarialReviewerTest {
         mockMvc.perform(post("/api/v1/problems")
                         .header("Authorization", "Bearer ")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Title", "Desc", Difficulty.EASY, 1000, 256))))
+                        .content(objectMapper.writeValueAsString(new CreateProblemRequest("Title", "Desc", Difficulty.EASY, 1000, 256, null))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
     }

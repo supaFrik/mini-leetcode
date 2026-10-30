@@ -15,8 +15,10 @@ import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.testcase.entity.TestCase;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
+import jsd.toiyeujava.mini_leetcode.exception.StateConflictException;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemTagRepository;
+import jsd.toiyeujava.mini_leetcode.problem.util.TagNormalizer;
 import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
 import jsd.toiyeujava.mini_leetcode.testcase.repository.TestCaseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +82,7 @@ public class ProblemService {
                 .timeLimitMs(request.getTimeLimitMsOrDefault())
                 .memoryLimitMb(request.getMemoryLimitMbOrDefault())
                 .status(ProblemStatus.DRAFT)
+                .tags(TagNormalizer.normalize(request.tags()))
                 .createdBy(creator)
                 .build();
 
@@ -116,12 +119,55 @@ public class ProblemService {
         if (request.memoryLimitMb() != null) {
             problem.setMemoryLimitMb(request.memoryLimitMb());
         }
-        if (request.status() != null) {
-            problem.setStatus(request.status());
+        if (request.tags() != null) {
+            problem.setTags(TagNormalizer.normalize(request.tags()));
         }
 
         problem = problemRepository.save(problem);
         return ProblemResponse.fromEntity(problem);
+    }
+
+    /**
+     * Chuyển trạng thái vòng đời của bài.
+     *
+     * <p>Toàn bộ luật nằm ở server: client chỉ gửi trạng thái đích.
+     * Chuyển sang {@code PUBLISHED} đòi hỏi bài đã có ít nhất một testcase
+     * công khai — nếu không thì bài sẽ không có ví dụ nào cho thí sinh.
+     */
+    @Transactional
+    public ProblemResponse transitionStatus(Long id, ProblemStatus target) {
+        Problem problem = problemRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + id));
+
+        ProblemStatus current = problem.getStatus();
+
+        if (current == target) {
+            throw new StateConflictException(
+                    "Problem is already in status " + target);
+        }
+
+        if (!ProblemLifecycle.isAllowed(current, target)) {
+            throw new StateConflictException("Cannot transition problem from " + current
+                    + " to " + target + ". Allowed targets: "
+                    + ProblemLifecycle.allowedTargets(current));
+        }
+
+        if (target == ProblemStatus.PUBLISHED && !hasPublicTestCase(id)) {
+            throw new StateConflictException(
+                    "Cannot publish problem " + id + ": at least one public test case is required");
+        }
+
+        problem.setStatus(target);
+        problem = problemRepository.save(problem);
+        return ProblemResponse.fromEntity(problem);
+    }
+
+    /** Bài có ít nhất một testcase công khai (is_hidden = false) không? */
+    private boolean hasPublicTestCase(Long problemId) {
+        if (testCaseRepository == null) {
+            return false;
+        }
+        return testCaseRepository.countByProblemIdAndIsHiddenFalse(problemId) > 0;
     }
 
     @Transactional(readOnly = true)
@@ -159,8 +205,7 @@ public class ProblemService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
-                                             List<String> tags, UserProgress progress, Long userId, Pageable pageable) {
+    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,                                             List<String> tags, UserProgress progress, Long userId, Pageable pageable) {
         // Bộ lọc tiến độ phụ thuộc vào user, nên phải tính TRƯỚC khi phân trang —
         // lọc sau khi đã cắt trang sẽ cho kết quả sai (trang thiếu hoặc sai số lượng).
         Set<Long> solvedIds = Set.of();
@@ -188,13 +233,19 @@ public class ProblemService {
                 predicates.add(cb.or(titleMatch, descMatch));
             }
             if (tags != null && !tags.isEmpty()) {
-                // AND giữa các chủ đề: bài phải thuộc TẤT CẢ chủ đề được chọn.
-                // distinct() bắt buộc vì join bảng nốu sinh ra bản ghi trùng.
-                for (String tag : tags) {
+                // OR giữa các chủ đề, so khớp chính xác không phân biệt hoa/thường:
+                // bài chỉ cần thuộc ÍT NHẤT MỘT chủ đề được chọn.
+                // Chuẩn hoá trước: trim, bỏ rỗng, khử trùng lặp, giữ display casing.
+                List<String> normalized = TagNormalizer.normalize(tags);
+                if (!normalized.isEmpty()) {
                     Join<Problem, String> tagJoin = root.join("tags", JoinType.INNER);
-                    predicates.add(cb.equal(tagJoin, tag));
+                    List<Predicate> tagPredicates = new ArrayList<>();
+                    for (String tag : normalized) {
+                        tagPredicates.add(cb.equal(cb.lower(tagJoin), tag.toLowerCase(Locale.ROOT)));
+                    }
+                    predicates.add(cb.or(tagPredicates.toArray(new Predicate[0])));
+                    query.distinct(true);
                 }
-                query.distinct(true);
             }
             if (progress != null && userId != null) {
                 switch (progress) {
