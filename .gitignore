@@ -119,3 +119,6 @@ runner-tmp/
 /docs/history/
 /.agents/
 docs/generate_docx.py
+
+# local scratch/utility scripts (not tracked)
+/scripts/
