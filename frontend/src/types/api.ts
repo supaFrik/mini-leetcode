@@ -34,6 +34,8 @@ export type ContestStatus = "SCHEDULED" | "RUNNING" | "COMPLETED";
 export type ParticipantStatus = "REGISTERED" | "IN_PROGRESS" | "SUBMITTED" | "DISQUALIFIED";
 export type ProctoringEventType = "WINDOW_BLUR" | "WINDOW_FOCUS" | "CLIPBOARD_PASTE";
 
+export type ProblemType = "ALGORITHMIC" | "OOP_GRINDING";
+
 // ===== Đề bài =====
 export interface ProblemSummary {
   id: number;
@@ -41,6 +43,7 @@ export interface ProblemSummary {
   title: string;
   difficulty: Difficulty;
   tags: string[];
+  type?: ProblemType;
   /** Tiến độ của user hiện tại. `undefined` khi chưa đăng nhập. */
   progress?: UserProgress;
 }
@@ -55,6 +58,7 @@ export interface ProblemFull extends ProblemSummary {
   updatedAt?: string;
   likes?: number;
   dislikes?: number;
+  starterTemplates?: string | null;
 }
 export interface TestCase {
   id: number;
@@ -66,6 +70,11 @@ export interface TestCase {
 }
 
 // ===== Bài nộp =====
+export interface SubmissionFile {
+  path: string;
+  content: string;
+}
+
 export interface Submission {
   id: number;
   problemId: number;
@@ -80,6 +89,9 @@ export interface Submission {
   memoryUsedKb: number | null;
   passTestCases: number;
   totalTestCases: number;
+  score?: number | null;
+  executionPhase?: string | null;
+  scoreBreakdown?: string | null;
   retryCount?: number | null; // số lần bài nộp bị chấm lại (worker chết giữa chừng)
   errorMessage: string | null;
   memoryPercentile?: number; // backend CHƯA có
@@ -97,7 +109,8 @@ export interface CaseResult {
 }
 export interface SubmitBody {
   language: Language;
-  code: string;
+  code?: string;
+  files?: SubmissionFile[];
   contestId?: number;
 }
 

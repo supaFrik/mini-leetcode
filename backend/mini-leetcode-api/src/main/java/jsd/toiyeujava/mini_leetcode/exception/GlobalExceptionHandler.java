@@ -134,6 +134,24 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(PayloadTooLargeException.class)
+    public ProblemDetail handlePayloadTooLargeException(PayloadTooLargeException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, ex.getMessage());
+        problem.setTitle("Payload Too Large");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/payload-too-large"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidSubmissionPathException.class)
+    public ProblemDetail handleInvalidSubmissionPathException(InvalidSubmissionPathException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Invalid Submission Path");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/bad-request"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
     @ExceptionHandler(StorageException.class)
     public ProblemDetail handleStorageException(StorageException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
@@ -145,7 +163,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenericException(Exception ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class).error("Unhandled exception: ", ex);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred");
         problem.setTitle("Internal Server Error");
         problem.setType(URI.create("https://api.mini-leetcode.com/errors/internal-error"));
         problem.setProperty("timestamp", Instant.now());

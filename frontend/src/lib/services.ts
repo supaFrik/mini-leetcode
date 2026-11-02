@@ -10,7 +10,7 @@ import { setTokens } from "./auth";
 import * as mock from "./mock-server";
 import type { PollFetch } from "./polling";
 import type {
-  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary,
+  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
 } from "@/types/api";
 
@@ -40,6 +40,8 @@ const normProblem = (r: Raw): ProblemFull => ({
   description: r.description ?? "", timeLimitMs: r.timeLimitMs ?? 1000, memoryLimitMb: r.memoryLimitMb ?? 256,
   status: r.status, testCaseCount: Number(r.testCaseCount ?? 0), createdByUsername: r.createdByUsername, updatedAt: r.updatedAt,
   likes: r.likes, dislikes: r.dislikes,
+  type: r.type ?? "ALGORITHMIC",
+  starterTemplates: r.starterTemplates ?? null,
 });
 
 /**
@@ -58,12 +60,13 @@ const normPage = <T,>(r: Raw): Page<T> => {
   return { content, totalElements, totalPages, number, size };
 };
 
-export interface ProblemQuery { page: number; q: string; difficulty: string; progress: string; tags: string[] }
+export interface ProblemQuery { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType }
 export async function fetchProblems(p: ProblemQuery): Promise<Page<ProblemSummary>> {
   if (USE_MOCK) return mock.listProblems(p);
   const qs = new URLSearchParams({ page: String(p.page - 1), size: "8" }); // backend đếm trang từ 0
   if (p.q) qs.set("search", p.q);
   if (p.difficulty) qs.set("difficulty", p.difficulty);
+  if (p.type) qs.set("type", p.type);
   // Backend lọc chủ đề ở tầng SQL: bài khớp nếu thuộc ÍT NHẤT MỘT tag được gửi lên
   // (so khớp chính xác, không phân biệt hoa/thường).
   if (p.tags.length) qs.set("tags", p.tags.join(","));
@@ -106,6 +109,7 @@ export interface AdminProblemQuery {
   /** Trạng thái vòng đời; rỗng = không lọc. */
   status: string;
   tags: string[];
+  type?: ProblemType;
 }
 
 /** Danh sách bài cho trang quản trị — staff thấy cả bài chưa publish. */
@@ -115,6 +119,7 @@ export async function fetchAdminProblems(q: AdminProblemQuery): Promise<Page<Pro
   if (q.q) qs.set("search", q.q);
   if (q.difficulty) qs.set("difficulty", q.difficulty);
   if (q.status) qs.set("status", q.status);
+  if (q.type) qs.set("type", q.type);
   if (q.tags.length) qs.set("tags", q.tags.join(","));
   const raw = await api<Raw>(`/api/v1/problems?${qs}`);
   const page = normPage<Raw>(raw);
@@ -128,6 +133,8 @@ export interface ProblemDraft {
   timeLimitMs: number;
   memoryLimitMb: number;
   tags: string[];
+  type?: ProblemType;
+  starterTemplates?: string | null;
 }
 
 /** Tạo bài mới. Luôn bắt đầu ở trạng thái DRAFT. */
@@ -170,6 +177,31 @@ export async function addTestCase(problemId: number, c: { input: string; expecte
 export async function submitCode(problemId: number, body: SubmitBody, run = false): Promise<Submission> {
   if (USE_MOCK) return mock.submit(problemId, body, run);
   return api<Submission>(`/api/v1/problems/${problemId}/${run ? "run" : "submit"}`, { method: "POST", body: JSON.stringify(body) }); // /run: [ĐỀ XUẤT]
+}
+
+export async function submitCodeMultipart(problemId: number, formData: FormData, run = false): Promise<Submission> {
+  if (!formData.has("problemId")) formData.append("problemId", String(problemId));
+  if (!formData.has("isQuickRun")) formData.append("isQuickRun", String(run));
+  return api<Submission>("/api/v1/submissions", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export async function downloadStarterZip(problemId: number, slug?: string): Promise<void> {
+  const res = await fetch(`/api/v1/problems/${problemId}/starter`);
+  if (!res.ok) {
+    throw new Error(`Failed to download starter scaffolding: ${res.statusText}`);
+  }
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${slug ?? `problem-${problemId}`}-starter.zip`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
 }
 export async function pollSubmission(id: number, signal: AbortSignal): Promise<PollFetch> {
   if (USE_MOCK) return { data: await mock.getSubmission(id), retryAfterMs: 0 };

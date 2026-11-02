@@ -2,6 +2,7 @@ package jsd.toiyeujava.mini_leetcode.problem.dto;
 
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
+import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.entity.UserProgress;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 
@@ -32,8 +33,53 @@ public record ProblemResponse(
          * Tiến độ của người dùng hiện tại với bài này.
          * {@code null} khi khách chưa đăng nhập — không ai để so sánh.
          */
-        UserProgress progress
+        UserProgress progress,
+        String starterTemplates,
+        ProblemType type
 ) {
+    public ProblemResponse(
+            Long id,
+            String title,
+            String slug,
+            String description,
+            Difficulty difficulty,
+            Integer timeLimitMs,
+            Integer memoryLimitMb,
+            ProblemStatus status,
+            Long createdById,
+            String createdByUsername,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt,
+            List<String> tags,
+            long testCaseCount,
+            UserProgress progress,
+            String starterTemplates
+    ) {
+        this(id, title, slug, description, difficulty, timeLimitMs, memoryLimitMb, status,
+                createdById, createdByUsername, createdAt, updatedAt, tags, testCaseCount, progress, starterTemplates, ProblemType.ALGORITHMIC);
+    }
+
+    public ProblemResponse(
+            Long id,
+            String title,
+            String slug,
+            String description,
+            Difficulty difficulty,
+            Integer timeLimitMs,
+            Integer memoryLimitMb,
+            ProblemStatus status,
+            Long createdById,
+            String createdByUsername,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt,
+            List<String> tags,
+            long testCaseCount,
+            UserProgress progress
+    ) {
+        this(id, title, slug, description, difficulty, timeLimitMs, memoryLimitMb, status,
+                createdById, createdByUsername, createdAt, updatedAt, tags, testCaseCount, progress, null, ProblemType.ALGORITHMIC);
+    }
+
     public static ProblemResponse fromEntity(Problem p) {
         return fromEntity(p, 0L, null);
     }
@@ -56,9 +102,11 @@ public record ProblemResponse(
                 p.getCreatedBy() != null ? p.getCreatedBy().getUsername() : null,
                 p.getCreatedAt(),
                 p.getUpdatedAt(),
-                p.getTags() != null ? List.copyOf(p.getTags()) : List.of(),
+                p.getTags() != null ? p.getTags().stream().filter(java.util.Objects::nonNull).toList() : List.of(),
                 testCaseCount,
-                progress
+                progress,
+                p.getStarterTemplates(),
+                p.getProblemType() != null ? p.getProblemType() : ProblemType.ALGORITHMIC
         );
     }
 }

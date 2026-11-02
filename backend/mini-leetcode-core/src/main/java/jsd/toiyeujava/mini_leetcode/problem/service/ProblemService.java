@@ -1,4 +1,5 @@
 package jsd.toiyeujava.mini_leetcode.problem.service;
+import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
 
 import jakarta.persistence.criteria.Join;
@@ -239,20 +240,25 @@ public class ProblemService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,                                             List<String> tags, UserProgress progress, Long userId, Pageable pageable) {
-        return getProblems(difficulty, status, search, tags, progress, userId, pageable, true);
+    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
+                                             List<String> tags, UserProgress progress, Long userId, Pageable pageable) {
+        return getProblems(difficulty, status, search, tags, progress, userId, pageable, true, null);
     }
 
-    /**
-     * @param staff {@code true} khi người gọi là giảng viên/admin — được thấy cả
-     *              bài chưa publish. Người dùng thường chỉ thấy bài {@code PUBLISHED}.
-     */
     @Transactional(readOnly = true)
     public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
                                              List<String> tags, UserProgress progress, Long userId,
                                              Pageable pageable, boolean staff) {
-        // Bộ lọc tiến độ phụ thuộc vào user, nên phải tính TRƯỚC khi phân trang —
-        // lọc sau khi đã cắt trang sẽ cho kết quả sai (trang thiếu hoặc sai số lượng).
+        return getProblems(difficulty, status, search, tags, progress, userId, pageable, staff, null);
+    }
+
+    /**
+     * @param staff true khi người gọi là giảng viên/admin
+     */
+    @Transactional(readOnly = true)
+    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
+                                             List<String> tags, UserProgress progress, Long userId,
+                                             Pageable pageable, boolean staff, ProblemType problemType) {
         Set<Long> solvedIds = Set.of();
         Set<Long> attemptedIds = Set.of();
         if (userId != null && submissionRepository != null) {
@@ -266,8 +272,6 @@ public class ProblemService {
             List<Predicate> predicates = new ArrayList<>();
 
             if (!staff) {
-                // Người dùng thường chỉ thấy bài đã publish, bất kể bộ lọc status
-                // có yêu cầu trạng thái khác hay không.
                 predicates.add(cb.equal(root.get("status"), ProblemStatus.PUBLISHED));
             }
             if (difficulty != null) {
@@ -276,6 +280,9 @@ public class ProblemService {
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
             }
+            if (problemType != null) {
+                predicates.add(cb.equal(root.get("problemType"), problemType));
+            }
             if (StringUtils.hasText(search)) {
                 String searchPattern = "%" + search.toLowerCase(Locale.ROOT).trim() + "%";
                 Predicate titleMatch = cb.like(cb.lower(root.get("title")), searchPattern);
@@ -283,9 +290,6 @@ public class ProblemService {
                 predicates.add(cb.or(titleMatch, descMatch));
             }
             if (tags != null && !tags.isEmpty()) {
-                // OR giữa các chủ đề, so khớp chính xác không phân biệt hoa/thường:
-                // bài chỉ cần thuộc ÍT NHẤT MỘT chủ đề được chọn.
-                // Chuẩn hoá trước: trim, bỏ rỗng, khử trùng lặp, giữ display casing.
                 List<String> normalized = TagNormalizer.normalize(tags);
                 if (!normalized.isEmpty()) {
                     Join<Problem, String> tagJoin = root.join("tags", JoinType.INNER);
@@ -310,18 +314,12 @@ public class ProblemService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        Page<Problem> page = problemRepository.findAll(spec, pageable);
-        Map<Long, UserProgress> progressByProblem = resolveProgress(userId, page.getContent(), solvedIds, attemptedIds);
-        Map<Long, Long> testCaseCounts = countTestCases(page.getContent());
-
-        return page.map(p -> ProblemResponse.fromEntity(p, testCaseCounts.getOrDefault(p.getId(), 0L),
-                progressByProblem.get(p.getId())));
+        Page<Problem> problems = problemRepository.findAll(spec, pageable);
+        Map<Long, Long> tcCounts = countTestCases(problems.getContent());
+        Map<Long, UserProgress> userProgress = resolveProgress(userId, problems.getContent(), solved, attempted);
+        return problems.map(p -> ProblemResponse.fromEntity(p, tcCounts.getOrDefault(p.getId(), 0L), userProgress.get(p.getId())));
     }
 
-    /**
-     * Số testcase của từng bài trong trang — một truy vấn GROUP BY cho cả trang,
-     * không phải một câu COUNT cho mỗi bài. Bài không có testcase thì mặc định 0.
-     */
     private Map<Long, Long> countTestCases(List<Problem> problems) {
         Map<Long, Long> counts = new HashMap<>();
         if (problems.isEmpty() || testCaseRepository == null) {

@@ -15,7 +15,7 @@ import { decodeUser, getToken } from "./auth";
 import { TEMPLATES } from "./templates";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ContestProblem, Draft, Language, LeaderboardCell, LeaderboardRow, Page,
-  ProblemFull, ProblemLifecycle, ProblemSummary, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
+  ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
 } from "@/types/api";
 
 const sleep = (ms = 150) => new Promise<void>((r) => setTimeout(r, ms));
@@ -73,7 +73,7 @@ const PROBLEMS: ProblemFull[] = Array.from({ length: 36 }, (_, i) => {
 });
 const withEdits = (p: ProblemFull): ProblemFull => ({ ...p, ...store.get<Record<number, Partial<ProblemFull>>>("mock:problemEdits", {})[p.id] });
 
-export async function listProblems(q: { page: number; q: string; difficulty: string; progress: string; tags: string[] }): Promise<Page<ProblemSummary>> {
+export async function listProblems(q: { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType }): Promise<Page<ProblemSummary>> {
   await sleep(); ensureOnline();
   const done = new Set(store.get<SubRec[]>("mock:subs", []).filter((s) => s.verdict === "AC" && !s.run).map((s) => s.problemId));
   const size = 8;
@@ -84,6 +84,7 @@ export async function listProblems(q: { page: number; q: string; difficulty: str
     .filter((p) =>
       (!q.q || p.title.toLowerCase().includes(q.q.toLowerCase()) || p.tags.join(" ").toLowerCase().includes(q.q.toLowerCase())) &&
       (!q.difficulty || p.difficulty === q.difficulty) && (!q.progress || p.progress === q.progress) &&
+      (!q.type || (p.type ?? "ALGORITHMIC") === q.type) &&
       (wanted.length === 0 || p.tags.some((t) => wanted.includes(t.toLowerCase().trim()))));
   const start = (q.page - 1) * size;
   return {
@@ -164,7 +165,7 @@ export async function transitionProblem(id: number, target: ProblemLifecycle): P
  * Danh sách bài cho trang quản trị. Khác với `listProblems`, staff thấy được
  * cả bài chưa publish, và lọc theo trạng thái vòng đời.
  */
-export async function listAdminProblems(q: { page: number; q: string; difficulty: string; status: string; tags: string[] }): Promise<Page<ProblemFull>> {
+export async function listAdminProblems(q: { page: number; q: string; difficulty: string; status: string; tags: string[]; type?: ProblemType }): Promise<Page<ProblemFull>> {
   await sleep(); ensureOnline();
   const size = 20;
   const wanted = q.tags.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 0);
@@ -172,6 +173,7 @@ export async function listAdminProblems(q: { page: number; q: string; difficulty
     (!q.q || p.title.toLowerCase().includes(q.q.toLowerCase()) || p.description.toLowerCase().includes(q.q.toLowerCase())) &&
     (!q.difficulty || p.difficulty === q.difficulty) &&
     (!q.status || (p.status ?? "PUBLISHED") === q.status) &&
+    (!q.type || (p.type ?? "ALGORITHMIC") === q.type) &&
     (wanted.length === 0 || p.tags.some((t) => wanted.includes(t.toLowerCase().trim())))
   );
   const start = (q.page - 1) * size;
@@ -183,6 +185,7 @@ export async function listAdminProblems(q: { page: number; q: string; difficulty
 
 export async function createProblem(draft: {
   title: string; description: string; difficulty: string; timeLimitMs: number; memoryLimitMb: number; tags: string[];
+  type?: ProblemType; starterTemplates?: string | null;
 }): Promise<ProblemFull> {
   await sleep(); ensureOnline();
   const id = Math.max(0, ...PROBLEMS.map((p) => p.id)) + 1;
@@ -191,6 +194,8 @@ export async function createProblem(draft: {
     tags: draft.tags, progress: "NEVER", description: draft.description,
     timeLimitMs: draft.timeLimitMs, memoryLimitMb: draft.memoryLimitMb,
     status: "DRAFT", likes: 0, dislikes: 0,
+    type: draft.type ?? "ALGORITHMIC",
+    starterTemplates: draft.starterTemplates ?? null,
   };
   PROBLEMS.push(created);
   return created;
@@ -250,8 +255,9 @@ function judgeOutcome(code: string, language: Language, total: number) {
 
 export async function submit(problemId: number, body: SubmitBody, run: boolean): Promise<Submission> {
   await sleep(250); ensureOnline();
-  if (!body.code.trim()) throw new ApiError(400, { title: "Bad Request", status: 400, detail: "Validation failed", invalid_params: { code: "Code must not be blank" } });
-  if (body.code.length > 64 * 1024) throw new ApiError(400, { title: "Bad Request", status: 400, detail: "Validation failed", invalid_params: { code: "Code must not exceed 64KB" } });
+  const effectiveCode = body.code ?? (body.files && body.files.length > 0 ? body.files.map((f) => `// === FILE: ${f.path} ===\n${f.content}`).join("\n\n") : "");
+  if (!effectiveCode.trim()) throw new ApiError(400, { title: "Bad Request", status: 400, detail: "Validation failed", invalid_params: { code: "Code must not be blank" } });
+  if (effectiveCode.length > 64 * 1024) throw new ApiError(400, { title: "Bad Request", status: 400, detail: "Validation failed", invalid_params: { code: "Code must not exceed 64KB" } });
   if (body.contestId != null) {
     const c = await getContest(body.contestId);
     if (c.status !== "RUNNING") throw forbidden("Contest is not currently active");
@@ -260,11 +266,11 @@ export async function submit(problemId: number, body: SubmitBody, run: boolean):
   }
   const u = me();
   const total = casesFor(problemId).filter((c) => !run || !c.isHidden).length;
-  const out = judgeOutcome(body.code, body.language, total);
+  const out = judgeOutcome(effectiveCode, body.language, total);
   const subs = store.get<SubRec[]>("mock:subs", []);
   const rec: SubRec = {
     id: 500 + subs.length + 1, userId: u.id, username: u.username, problemId, contestId: body.contestId ?? null, language: body.language,
-    code: body.code, run, createdAt: Date.now(), total, ...out,
+    code: effectiveCode, run, createdAt: Date.now(), total, ...out,
   };
   store.set("mock:subs", [...subs, rec]);
   return toSubmission(rec, 0);

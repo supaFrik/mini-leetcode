@@ -2,13 +2,21 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, List, Maximize2, Minimize2, RotateCcw, Shield, Timer } from "lucide-react";
+import { Copy, Download, FileCode, List, Maximize2, Minimize2, Plus, RotateCcw, Shield, Timer, Upload, X } from "lucide-react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@/components/ui/combobox";
 import { CodeEditor } from "./code-editor";
 import { ProblemDetailPanel } from "./problem-detail-panel";
 import { ProblemSubmissions } from "./problem-submissions";
@@ -22,11 +30,11 @@ import { useProctoring } from "@/hooks/use-proctoring";
 import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
 import { fmtDuration } from "@/lib/format";
-import { DRAFT_SYNC, finalizeContestSubmission, loadDraft, RUN_ENABLED, saveDraft, transitionProblem } from "@/lib/services";
+import { DRAFT_SYNC, downloadStarterZip, finalizeContestSubmission, loadDraft, RUN_ENABLED, saveDraft, submitCodeMultipart, transitionProblem } from "@/lib/services";
 import { FILE_NAME, LANG_PREF_KEY, LANGUAGES, TEMPLATES } from "@/lib/templates";
 import { toast } from "@/lib/toast";
 import { VERDICT } from "@/lib/verdict";
-import type { ContestInfo, Language, ProblemFull, ProctoringEventType, Role, TestCase } from "@/types/api";
+import type { ContestInfo, Language, ProblemFull, ProctoringEventType, Role, SubmissionFile, TestCase } from "@/types/api";
 
 export type WorkspaceMode = "student" | "instructor" | "exam";
 interface Props { problem: ProblemFull; testCases: TestCase[]; mode: WorkspaceMode; contest?: ContestInfo; role?: Role }
@@ -87,8 +95,139 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
 
   const judge = useJudge(problem.id, contestId);
   const canAct = !locked && autosave.ready && !judge.judging;
-  const onSubmit = () => { if (canAct) { setLastRun(false); setTab("result"); void judge.submit(lang, codes[lang]); } };
-  const onRun = () => { if (canAct && RUN_ENABLED && !examMode) { setLastRun(true); setTab("result"); void judge.submit(lang, codes[lang], { run: true }); } };
+
+  const isOopGrinding = problem.type === "OOP_GRINDING";
+  const defaultFiles = useMemo<SubmissionFile[]>(() => {
+    if (problem.starterTemplates) {
+      try {
+        const parsed = JSON.parse(problem.starterTemplates);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {
+        /* ignore parse error */
+      }
+    }
+    return [{ path: "Solution.java", content: "// Solution.java\npublic class Solution {\n    // Implementation here\n}\n" }];
+  }, [problem.starterTemplates]);
+
+  const [multiFiles, setMultiFiles] = useState<SubmissionFile[]>(defaultFiles);
+  const [activeFileIdx, setActiveFileIdx] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setMultiFiles(defaultFiles);
+    setActiveFileIdx(0);
+  }, [defaultFiles]);
+
+  const updateActiveContent = (newContent: string) => {
+    setMultiFiles((prev) => {
+      const next = [...prev];
+      if (next[activeFileIdx]) {
+        next[activeFileIdx] = { ...next[activeFileIdx], content: newContent };
+      }
+      return next;
+    });
+  };
+
+  const handleAddFile = () => {
+    const name = window.prompt("Enter new Java class/file name (e.g. Helper.java):", "NewClass.java");
+    if (!name || !name.trim()) return;
+    const cleanName = name.trim().endsWith(".java") ? name.trim() : `${name.trim()}.java`;
+    if (multiFiles.some((f) => f.path.toLowerCase() === cleanName.toLowerCase())) {
+      toast("File already exists with that name.", "error");
+      return;
+    }
+    const className = cleanName.replace(/\.java$/, "");
+    const initialContent = `// ${cleanName}\npublic class ${className} {\n    \n}\n`;
+    setMultiFiles((prev) => [...prev, { path: cleanName, content: initialContent }]);
+    setActiveFileIdx(multiFiles.length);
+  };
+
+  const handleDeleteFile = (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (multiFiles.length <= 1) {
+      toast("Cannot delete the only file in the workspace.", "error");
+      return;
+    }
+    if (!window.confirm(`Delete ${multiFiles[idx].path}?`)) return;
+    setMultiFiles((prev) => prev.filter((_, i) => i !== idx));
+    if (activeFileIdx >= idx && activeFileIdx > 0) {
+      setActiveFileIdx(activeFileIdx - 1);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.name.endsWith(".zip")) {
+        toast(`Uploading ZIP: ${file.name}...`, "info");
+        const fd = new FormData();
+        fd.append("problemId", String(problem.id));
+        fd.append("file", file);
+        fd.append("files", file);
+        fd.append("language", "JAVA");
+        if (contestId) fd.append("contestId", String(contestId));
+        try {
+          setBusy(true);
+          const sub = await submitCodeMultipart(problem.id, fd);
+          toast(`Submitted ZIP archive successfully (#${sub.id})`, "success");
+          setTab("subs");
+        } catch (err) {
+          toast(errorMessage(err), "error");
+        } finally {
+          setBusy(false);
+        }
+      } else if (file.name.endsWith(".java")) {
+        const text = await file.text();
+        setMultiFiles((prev) => {
+          const existingIdx = prev.findIndex((f) => f.path === file.name);
+          if (existingIdx >= 0) {
+            const updated = [...prev];
+            updated[existingIdx] = { path: file.name, content: text };
+            return updated;
+          }
+          return [...prev, { path: file.name, content: text }];
+        });
+        toast(`Imported ${file.name}`, "success");
+      }
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDownloadStarter = async () => {
+    try {
+      toast("Downloading starter template...", "info");
+      await downloadStarterZip(problem.id, problem.slug);
+      toast("Starter template downloaded.", "success");
+    } catch (err) {
+      toast(errorMessage(err), "error");
+    }
+  };
+
+  const onSubmit = () => {
+    if (canAct) {
+      setLastRun(false);
+      setTab("result");
+      if (isOopGrinding) {
+        void judge.submit("JAVA", multiFiles);
+      } else {
+        void judge.submit(lang, codes[lang]);
+      }
+    }
+  };
+  const onRun = () => {
+    if (canAct && RUN_ENABLED && !examMode) {
+      setLastRun(true);
+      setTab("result");
+      if (isOopGrinding) {
+        void judge.submit("JAVA", multiFiles, { run: true });
+      } else {
+        void judge.submit(lang, codes[lang], { run: true });
+      }
+    }
+  };
   const onSave = () => { void saveNow(); toast("Draft saved.", "success"); };
 
   useEffect(() => {
@@ -135,15 +274,18 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
       problem={problem}
       cases={cases}
       canEdit={mode === "instructor"}
+      isStaff={role === "ADMIN" || role === "INSTRUCTOR"}
       onProblemChange={setProblem}
       showTestCases={false}
       showResult={false}
     />
   );
+  const activeFile = isOopGrinding ? (multiFiles[activeFileIdx] ?? multiFiles[0]) : null;
+
   const editorNode = (
     <div className={cn("flex h-full flex-col bg-card", maximized && "fixed inset-0 z-40")}>
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3 font-mono text-body-sm text-mute">
-        <span className="text-ink">{FILE_NAME[lang]}</span>
+        <span className="text-ink">{isOopGrinding ? (activeFile?.path ?? "Solution.java") : FILE_NAME[lang]}</span>
         <span className="text-faint">·</span>
         <span aria-live="polite" className={cn(autosave.status === "offline" && "text-[#8a5a00]")}>
           {autosave.ready ? STATUS_TEXT[autosave.status] : "Loading draft…"}
@@ -151,11 +293,24 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
         <span className="ml-2 hidden truncate xl:inline" title="Shortcuts">{sh}</span>
         <div className="ml-auto flex items-center gap-3">
           {!examMode && (
-            <button aria-label="Copy code" title="Copy code" onClick={() => { void navigator.clipboard?.writeText(codes[lang]); toast("Code copied.", "success"); }} className="text-mute transition-colors hover:text-ink">
+            <button aria-label="Copy code" title="Copy code" onClick={() => {
+              const codeToCopy = isOopGrinding ? (activeFile?.content ?? "") : codes[lang];
+              void navigator.clipboard?.writeText(codeToCopy);
+              toast("Code copied.", "success");
+            }} className="text-mute transition-colors hover:text-ink">
               <Copy className="h-3.5 w-3.5" />
             </button>
           )}
-          <button aria-label="Reset template" title="Reset template" disabled={locked} onClick={() => { if (window.confirm("Reset code to default template? Current changes will be lost.")) setCodes((c) => ({ ...c, [lang]: TEMPLATES[lang] })); }} className="text-mute transition-colors hover:text-ink disabled:opacity-40">
+          <button aria-label="Reset template" title="Reset template" disabled={locked} onClick={() => {
+            if (window.confirm("Reset code to default template? Current changes will be lost.")) {
+              if (isOopGrinding) {
+                setMultiFiles(defaultFiles);
+                setActiveFileIdx(0);
+              } else {
+                setCodes((c) => ({ ...c, [lang]: TEMPLATES[lang] }));
+              }
+            }
+          }} className="text-mute transition-colors hover:text-ink disabled:opacity-40">
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
           <button aria-label={maximized ? "Minimize" : "Maximize"} title="Maximize / minimize (Esc)" onClick={() => setMaximized(!maximized)} className="text-mute transition-colors hover:text-ink">
@@ -163,9 +318,95 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
           </button>
         </div>
       </div>
+
+      {isOopGrinding && (
+        <div className="flex items-center gap-1 overflow-x-auto border-b border-border bg-hairline-soft/60 px-2 py-1 text-body-sm">
+          {multiFiles.map((f, idx) => (
+            <div
+              key={f.path}
+              onClick={() => setActiveFileIdx(idx)}
+              className={cn(
+                "group flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 font-mono text-code transition-colors",
+                idx === activeFileIdx
+                  ? "border border-border bg-card font-medium text-ink shadow-sm"
+                  : "text-mute hover:bg-card/50 hover:text-ink"
+              )}
+            >
+              <FileCode className="h-3.5 w-3.5 text-link" />
+              <span>{f.path}</span>
+              {multiFiles.length > 1 && (
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteFile(idx, e)}
+                  title={`Delete ${f.path}`}
+                  className="ml-1 rounded p-0.5 text-mute opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleAddFile}
+            className="h-7 gap-1 px-2 text-code text-mute hover:text-ink"
+            title="Add New Java File"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>New File</span>
+          </Button>
+          <div className="ml-auto flex items-center gap-1">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept=".zip,.java"
+              multiple
+              className="hidden"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="h-7 gap-1 px-2 text-code"
+              title="Upload .zip or .java files"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              <span>Upload</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadStarter}
+              className="h-7 gap-1 px-2 text-code"
+              title="Download Starter Template (.zip)"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Starter (.zip)</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="min-h-0 flex-1">
-        <CodeEditor language={lang} value={codes[lang]} readOnly={locked || !autosave.ready} examMode={examMode}
-          onChange={(v) => setCodes((c) => ({ ...c, [lang]: v }))} onSave={onSave} onRun={onRun} onSubmit={onSubmit} onPasteAttempt={proctor.reportPaste} />
+        <CodeEditor
+          language={isOopGrinding ? "JAVA" : lang}
+          value={isOopGrinding ? (activeFile?.content ?? "") : codes[lang]}
+          readOnly={locked || !autosave.ready}
+          examMode={examMode}
+          onChange={(v) => {
+            if (isOopGrinding) {
+              updateActiveContent(v);
+            } else {
+              setCodes((c) => ({ ...c, [lang]: v }));
+            }
+          }}
+          onSave={onSave}
+          onRun={onRun}
+          onSubmit={onSubmit}
+          onPasteAttempt={proctor.reportPaste}
+        />
       </div>
     </div>
   );
@@ -222,16 +463,35 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
         )}
         <span className="font-medium text-ink">#{problem.id} {problem.title}</span>
         <DifficultyBadge value={problem.difficulty} />
-        <label className="flex items-center gap-2 rounded-sm border border-border bg-card px-2 py-1 text-body-md">
-          <span className={cn("h-2 w-2 rounded-full", LANGUAGES.find((l) => l.value === lang)?.dot)} />
-          <select value={lang} onChange={(e) => changeLang(e.target.value as Language)} aria-label="Language" className="bg-transparent text-ink outline-none">
-            {LANGUAGES.map((l) => (
-              <option key={l.value} value={l.value} className="bg-card">
-                {l.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Combobox
+          items={LANGUAGES}
+          value={LANGUAGES.find((l) => l.value === lang)}
+          itemToStringValue={(l: unknown) => (l && typeof l === "object" && "label" in l ? String((l as { label: string }).label) : String(l ?? ""))}
+          onValueChange={(val: unknown) => {
+            if (isOopGrinding) return;
+            const v = (val && typeof val === "object" && "value" in val ? (val as { value: Language }).value : val) as Language;
+            if (v) changeLang(v);
+          }}
+        >
+          <ComboboxTrigger aria-label="Language" disabled={locked || isOopGrinding} className="h-8 min-w-[7.5rem] px-2.5 py-1 text-body-sm font-medium">
+            <span className="flex items-center gap-2">
+              <span className={cn("h-2 w-2 rounded-full", isOopGrinding ? "bg-amber-500" : LANGUAGES.find((l) => l.value === lang)?.dot)} />
+              <ComboboxValue placeholder="Select language">
+                {isOopGrinding ? "Java (OOP)" : (LANGUAGES.find((l) => l.value === lang)?.label ?? lang)}
+              </ComboboxValue>
+            </span>
+          </ComboboxTrigger>
+          <ComboboxContent align="start" className="w-36">
+            <ComboboxList>
+              {LANGUAGES.map((l) => (
+                <ComboboxItem key={l.value} value={l} className="flex items-center gap-2 text-body-sm">
+                  <span className={cn("h-2 w-2 rounded-full", l.dot)} />
+                  <span>{l.label}</span>
+                </ComboboxItem>
+              ))}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
         {mode === "student" && role !== "USER" && (
           <Link href={`/problems/${problem.slug}`} className="text-body-sm text-link underline underline-offset-4">
             Back to instructor view
@@ -298,7 +558,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
           )}
           {mode !== "instructor" && (
             <Button size="sm" className="h-8" onClick={onSubmit} disabled={!canAct} title={locked ? "Exam locked" : undefined}>
-              {judge.judging ? "Judging…" : "Submit Solution"}
+              {judge.judging ? "Judging…" : "Submit"}
             </Button>
           )}
         </div>

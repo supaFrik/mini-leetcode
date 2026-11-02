@@ -2,9 +2,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Boxes,
   Check,
   ChevronRight,
   Circle,
+  Code2,
   Compass,
   Filter,
   GraduationCap,
@@ -28,7 +30,7 @@ import { useUser } from "@/hooks/use-user";
 import { DifficultyBadge } from "./difficulty-badge";
 import { Pagination } from "./pagination";
 import { LANG_PREF_KEY } from "@/lib/templates";
-import type { ContestInfo, Page, ProblemSummary, Submission } from "@/types/api";
+import type { ContestInfo, Page, ProblemSummary, ProblemType, Submission } from "@/types/api";
 
 /* ------------------------------------------------------------------ *
  * Filter vocabulary
@@ -103,6 +105,8 @@ interface RailProps {
   onDifficulty: (v: string) => void;
   progress: string;
   onProgress: (v: string) => void;
+  type: string;
+  onType: (v: string) => void;
   solvedCount: number | null;
   totalCount: number | null;
   nextUp: ProblemSummary | null;
@@ -118,6 +122,8 @@ function Rail({
   onDifficulty,
   progress,
   onProgress,
+  type,
+  onType,
   solvedCount,
   totalCount,
   nextUp,
@@ -133,10 +139,43 @@ function Rail({
       className="hidden min-h-0 w-64 shrink-0 flex-col overflow-y-auto border-r border-border px-4 py-6 sm:px-6 lg:flex"
     >
       <nav aria-label="Library" className="space-y-0.5">
-        <Link href="/problems" className={cn(item, "bg-hairline-soft font-medium text-ink")}>
+        <button
+          type="button"
+          onClick={() => onType("")}
+          className={cn(item, !type ? "bg-hairline-soft font-medium text-ink" : "")}
+        >
           <Library className="h-4 w-4" />
-          Library
-        </Link>
+          <span>Tất cả bài tập</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onType("ALGORITHMIC")}
+          className={cn(
+            item,
+            type === "ALGORITHMIC"
+              ? "bg-cyan-500/10 font-medium text-cyan-600 dark:text-cyan-400"
+              : "hover:text-cyan-600"
+          )}
+        >
+          <Code2 className="h-4 w-4 text-cyan-600" />
+          <span>DSA (Thuật toán)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onType("OOP_GRINDING")}
+          className={cn(
+            item,
+            type === "OOP_GRINDING"
+              ? "bg-purple-500/10 font-medium text-purple-600 dark:text-purple-400"
+              : "hover:text-purple-600"
+          )}
+        >
+          <Boxes className="h-4 w-4 text-purple-600" />
+          <span>OOP & Socket</span>
+        </button>
+
+        <div className="my-2 h-px bg-border/60" />
+
         <Link href="/exam" className={item}>
           <Swords className="h-4 w-4" />
           Contest
@@ -296,6 +335,7 @@ export function ProblemsView() {
   const q = sp.get("q") ?? "";
   const difficulty = sp.get("difficulty") ?? "";
   const progress = sp.get("progress") ?? "";
+  const type = (sp.get("type") ?? "") as ProblemType | "";
   const [lang, setLang] = useState("");
   useEffect(() => {
     try {
@@ -364,7 +404,7 @@ export function ProblemsView() {
     let ignore = false;
     setLoading(true);
     setError(null);
-    fetchProblems({ page, q, difficulty, progress, tags })
+    fetchProblems({ page, q, difficulty, progress, tags, type: type || undefined })
       .then((r) => {
         if (!ignore) setRes(r);
       })
@@ -378,7 +418,7 @@ export function ProblemsView() {
       ignore = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, q, difficulty, progress, tagsParam]);
+  }, [page, q, difficulty, progress, tagsParam, type]);
 
   const [open, setOpen] = useState(false);
   const [dProgress, setDProgress] = useState(progress);
@@ -435,6 +475,8 @@ export function ProblemsView() {
         onDifficulty={(v) => set({ difficulty: v || null })}
         progress={progress}
         onProgress={(v) => set({ progress: v || null })}
+        type={type}
+        onType={(v) => set({ type: v || null, page: null })}
         solvedCount={solvedCount}
         totalCount={totalCount}
         nextUp={nextUp}
@@ -533,10 +575,65 @@ export function ProblemsView() {
             </Popover>
           </div>
 
+          {/* Category Switcher Tabs */}
+          <div className="flex flex-wrap items-center gap-2 border-b border-border/70 pb-3" role="tablist" aria-label="Problem categories">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!type}
+              onClick={() => set({ type: null, page: null })}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-body-sm font-medium transition-all",
+                !type
+                  ? "bg-ink text-card shadow-sm"
+                  : "border border-border bg-card text-body hover:bg-hairline-soft hover:text-ink"
+              )}
+            >
+              <Library className="h-4 w-4" />
+              <span>Tất cả bài tập</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={type === "ALGORITHMIC"}
+              onClick={() => set({ type: "ALGORITHMIC", page: null })}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-body-sm font-medium transition-all",
+                type === "ALGORITHMIC"
+                  ? "border border-cyan-500/40 bg-cyan-600 text-white shadow-sm"
+                  : "border border-border bg-card text-body hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-700 dark:hover:text-cyan-300"
+              )}
+            >
+              <Code2 className="h-4 w-4" />
+              <span>DSA (Thuật toán & Cấu trúc dữ liệu)</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={type === "OOP_GRINDING"}
+              onClick={() => set({ type: "OOP_GRINDING", page: null })}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-body-sm font-medium transition-all",
+                type === "OOP_GRINDING"
+                  ? "border border-purple-500/40 bg-purple-600 text-white shadow-sm"
+                  : "border border-border bg-card text-body hover:border-purple-500/30 hover:bg-purple-500/10 hover:text-purple-700 dark:hover:text-purple-300"
+              )}
+            >
+              <Boxes className="h-4 w-4" />
+              <span>OOP (Lập trình Hướng đối tượng & Socket)</span>
+            </button>
+          </div>
+
           {/* Active filters */}
-          {(q || difficulty || progress || tags.length > 0) && (
+          {(q || difficulty || progress || type || tags.length > 0) && (
             <div className="flex flex-wrap items-center gap-1.5" aria-label="Active filters">
               <span className="mr-1 text-body-sm text-mute">Active:</span>
+              {type && (
+                <Removable
+                  label={type === "OOP_GRINDING" ? "OOP & Socket" : "DSA (Thuật toán)"}
+                  onRemove={() => set({ type: null, page: null })}
+                />
+              )}
               {q && <Removable label={`“${q}”`} onRemove={() => set({ q: null })} />}
               {difficulty && <Removable label={difficulty} onRemove={() => set({ difficulty: null })} />}
               {progress && <Removable label={progress} onRemove={() => set({ progress: null })} />}
@@ -549,7 +646,7 @@ export function ProblemsView() {
               ))}
               <button
                 className="ml-1 text-body-sm text-body underline-offset-2 transition-colors hover:text-ink hover:underline"
-                onClick={() => set({ q: null, difficulty: null, progress: null, tags: null })}
+                onClick={() => set({ q: null, difficulty: null, progress: null, type: null, tags: null })}
               >
                 Clear all
               </button>
@@ -631,6 +728,15 @@ export function ProblemsView() {
                   <span className="block truncate text-body-md text-ink transition-colors group-hover:text-link">
                     <span className="mr-1.5 font-mono text-mute">{p.id}.</span>
                     {p.title}
+                    {p.type === "OOP_GRINDING" ? (
+                      <span className="ml-2 inline-flex items-center rounded border border-purple-500/25 bg-purple-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                        OOP
+                      </span>
+                    ) : (
+                      <span className="ml-2 inline-flex items-center rounded border border-cyan-500/25 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-cyan-600 dark:text-cyan-400">
+                        DSA
+                      </span>
+                    )}
                   </span>
                   {p.tags.length > 0 && (
                     <span className="mt-1.5 hidden flex-wrap gap-1 sm:flex" aria-label={`Topics: ${p.tags.join(", ")}`}>

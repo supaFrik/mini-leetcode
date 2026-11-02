@@ -61,6 +61,9 @@ export interface ProblemDetailSubmission {
   memoryUsedKb?: number | null;
   passTestCases?: number;
   totalTestCases?: number;
+  score?: number | null;
+  executionPhase?: string | null;
+  scoreBreakdown?: string | null;
   errorMessage?: string | null;
   memoryPercentile?: number | null;
 }

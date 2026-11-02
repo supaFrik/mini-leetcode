@@ -12,6 +12,7 @@ export interface ProblemDetailPanelProps {
   problem: ProblemFull;
   cases: TestCase[];
   canEdit?: boolean;
+  isStaff?: boolean;
   onProblemChange?: (p: ProblemFull) => void;
   result?: Submission | null;
   caseResults?: CaseResult[] | null;
@@ -37,6 +38,7 @@ export function ProblemDetailPanel({
   problem,
   cases,
   canEdit = false,
+  isStaff = false,
   onProblemChange,
   result = null,
   caseResults = null,
@@ -109,6 +111,7 @@ export function ProblemDetailPanel({
       showHiddenCases={showHiddenCases}
       showTestCases={showTestCases}
       showResult={showResult}
+      showStaffBadges={isStaff}
       editor={
         canEdit
           ? {

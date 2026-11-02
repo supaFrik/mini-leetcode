@@ -1,5 +1,6 @@
 package jsd.toiyeujava.mini_leetcode.judge;
 
+import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionLanguage;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionStatus;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
@@ -31,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
@@ -371,5 +373,21 @@ class JudgeServiceTest {
         verify(submissionService).updateSubmissionVerdict(
                 eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.AC),
                 eq(120), eq(0), eq(2), eq(2), isNull());
+    }
+
+    @Test
+    @DisplayName("Fails submission when problem type has no matching judge strategy")
+    void judge_UnsupportedProblemType_FailsSubmission() {
+        Problem oopProblem = Problem.builder()
+                .id(10L)
+                .timeLimitMs(1000)
+                .memoryLimitMb(256)
+                .problemType(ProblemType.OOP_GRINDING)
+                .build();
+        when(problemRepository.findById(10L)).thenReturn(Optional.of(oopProblem));
+
+        judgeService.judge(message(SubmissionLanguage.JAVA));
+
+        verify(submissionService).failSubmission(eq(1L), contains("No judge strategy for problem type: OOP_GRINDING"));
     }
 }

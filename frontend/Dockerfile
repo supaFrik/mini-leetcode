@@ -37,6 +37,10 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder /app/next.config.mjs ./
+# `public/` chứa static assets phục vụ ở root (font, video hero của auth).
+# Next KHÔNG bundle nó vào `.next`, nên stage runner phải copy riêng —
+# nếu thiếu, /aurora-bg.mp4 sẽ 404 và panel hero đen hoàn toàn.
+COPY --from=builder --chown=nextjs:nextjs /app/public ./public
 
 USER nextjs
 

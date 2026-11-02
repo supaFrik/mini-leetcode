@@ -43,6 +43,8 @@ export interface ProblemDetailProps {
   showTestCases?: boolean;
   /** Render the judge verdict panel. */
   showResult?: boolean;
+  /** Whether to render staff-only metadata badges (time, memory limits, lifecycle status). */
+  showStaffBadges?: boolean;
   /** When provided, the title and description become editable. */
   editor?: ProblemDetailEditor;
   /** Extra controls rendered in the header, e.g. a watchlist toggle. */
@@ -83,6 +85,7 @@ export function ProblemDetail({
   showHiddenCases = true,
   showTestCases = true,
   showResult = true,
+  showStaffBadges = false,
   editor,
   actions,
   className,
@@ -101,6 +104,7 @@ export function ProblemDetail({
           title={problem.title}
           difficulty={problem.difficulty}
           status={problem.status}
+          showStatus={showStaffBadges}
           likes={problem.likes}
           dislikes={problem.dislikes}
           actions={actions}
@@ -120,6 +124,7 @@ export function ProblemDetail({
           markdown={problem.description}
           timeLimitMs={problem.timeLimitMs}
           memoryLimitMb={problem.memoryLimitMb}
+          showLimits={showStaffBadges}
           editor={
             editor
               ? {

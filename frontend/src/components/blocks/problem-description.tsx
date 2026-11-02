@@ -12,6 +12,7 @@ export interface ProblemDescriptionProps {
   markdown: string;
   timeLimitMs?: number;
   memoryLimitMb?: number;
+  showLimits?: boolean;
   /** When provided, renders an editable markdown editor instead of the rendered statement. */
   editor?: {
     value: string;
@@ -38,12 +39,13 @@ export function ProblemDescription({
   markdown,
   timeLimitMs,
   memoryLimitMb,
+  showLimits = true,
   editor,
   className,
 }: ProblemDescriptionProps) {
   return (
     <div className={cn("space-y-4", className)}>
-      {timeLimitMs != null || memoryLimitMb != null ? (
+      {(timeLimitMs != null || memoryLimitMb != null) && showLimits ? (
         <div className="flex flex-wrap gap-2">
           {timeLimitMs != null ? (
             <Badge variant="outline" className="font-mono font-normal">

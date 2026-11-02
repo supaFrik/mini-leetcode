@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
 # Install docker-cli so judge worker can coordinate ephemeral sandbox containers

@@ -1,21 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Circle, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-/**
- * "Aurora" — the split-screen authentication surface.
- *
- * Left panel: a looping background video with the brand and a three-phase
- * onboarding narrative. Right panel: social placeholders and the credentials
- * form. The whole surface is a self-contained dark island; it does not touch
- * the app's light "Ink & Mesh" theme.
- *
- * The component is presentational: all state and network calls live in the
- * consumer (see `components/auth/login-form.tsx`).
- */
 
 export type AuthMode = "signup" | "signin";
 
@@ -86,15 +74,15 @@ export function AuthPage({
   return (
     <main
       className={cn(
-        "min-h-screen w-full bg-black font-aurora text-white selection:bg-white/30",
+        "min-h-screen w-full bg-background font-sans text-ink selection:bg-link-soft selection:text-ink",
         "lg:flex lg:h-screen lg:gap-4 lg:overflow-hidden lg:p-4",
         className
       )}
     >
       {/* ---------------- Left: hero ---------------- */}
       <section
-        className="relative hidden h-full w-full flex-col items-center justify-end overflow-hidden rounded-3xl pb-32 px-12 shadow-2xl lg:flex lg:w-[52%]"
-        aria-label="Aurora introduction"
+        className="relative hidden h-full w-full flex-col items-center justify-end overflow-hidden rounded-3xl pb-32 px-12 bg-black text-white shadow-2xl lg:flex lg:w-[50%]"
+        aria-label="Introduction"
       >
         <video
           className="absolute inset-0 h-full w-full object-cover"
@@ -116,15 +104,15 @@ export function AuthPage({
         >
           <motion.div variants={item} className="flex items-center gap-2">
             <Circle className="size-5 fill-white text-white" aria-hidden="true" />
-            <span className="text-xl font-semibold tracking-tight">Mini LeetCode</span>
+            <span className="text-xl font-semibold tracking-tight text-white">Mini LeetCode</span>
           </motion.div>
 
           <motion.div variants={item} className="mt-10 space-y-3">
-            <h2 className="text-4xl font-semibold tracking-tight">
+            <h2 className="text-4xl font-semibold tracking-tight text-white">
               {isSignup ? "Join Mini LeetCode" : "Sign in to Mini LeetCode"}
             </h2>
             <p className="text-base text-white/70">
-              Follow these 3 quick phases to activate your space.
+              Master algorithms. Compete in proctored real-time contests.
             </p>
           </motion.div>
 
@@ -135,7 +123,6 @@ export function AuthPage({
                 index={i + 1}
                 title={step.title}
                 active={step.active}
-                variants={item}
               />
             ))}
           </motion.ul>
@@ -152,17 +139,17 @@ export function AuthPage({
         >
           {/* Header */}
           <header className="space-y-2">
-            <h1 className="text-3xl font-medium tracking-tight">
+            <h1 className="text-3xl font-semibold tracking-tight text-ink">
               {isSignup ? "Create New Profile" : "Welcome back"}
             </h1>
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-body">
               {isSignup
-                ? "Input your basic details to begin the journey."
+                ? "Input your basic details to begin your algorithm journey."
                 : "Enter your credentials to pick up where you left off."}
             </p>
           </header>
 
-          {/* Social placeholders — no OAuth endpoint exists yet. */}
+          {/* Social placeholders */}
           <div className="grid grid-cols-2 gap-4">
             <SocialButton label="Google" icon={<GoogleIcon />} />
             <SocialButton label="GitHub" icon={<GitHubIcon />} />
@@ -170,11 +157,11 @@ export function AuthPage({
 
           {/* Divider */}
           <div className="relative flex items-center">
-            <div className="h-px w-full border-t border-white/10" />
-            <span className="bg-black px-4 text-xs font-medium uppercase tracking-widest text-white/40">
+            <div className="h-px w-full border-t border-border" />
+            <span className="bg-background px-4 text-xs font-medium uppercase tracking-widest text-mute">
               Or
             </span>
-            <div className="h-px w-full border-t border-white/10" />
+            <div className="h-px w-full border-t border-border" />
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit} noValidate>
@@ -235,7 +222,7 @@ export function AuthPage({
                   type="button"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   onClick={onToggleShowPassword}
-                  className="absolute top-1/2 right-3 -translate-y-1/2 rounded p-1 text-white/40 transition-colors hover:text-white"
+                  className="absolute top-1/2 right-3 -translate-y-1/2 rounded p-1 text-mute transition-colors hover:text-ink"
                 >
                   {showPassword ? (
                     <EyeOff className="size-4" aria-hidden="true" />
@@ -249,7 +236,7 @@ export function AuthPage({
             {error && (
               <p
                 role="alert"
-                className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+                className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
               >
                 {error}
               </p>
@@ -258,24 +245,24 @@ export function AuthPage({
             <button
               type="submit"
               disabled={busy}
-              className="mt-4 h-14 w-full rounded-xl bg-white font-semibold text-black transition-[background-color,transform] hover:bg-white/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+              className="mt-4 h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
             >
               {busy ? "Processing…" : isSignup ? "Create Account" : "Log in"}
             </button>
           </form>
 
-          <p className="text-sm text-white/50">
+          <p className="text-sm text-mute">
             {isSignup ? (
               <>
                 Member of the team?{" "}
-                <Link href="/login" className="font-medium text-white underline underline-offset-4 hover:text-white/80">
+                <Link href="/login" className="font-medium text-link underline underline-offset-4 hover:text-link-deep">
                   Log in
                 </Link>
               </>
             ) : (
               <>
                 New here?{" "}
-                <Link href="/register" className="font-medium text-white underline underline-offset-4 hover:text-white/80">
+                <Link href="/register" className="font-medium text-link underline underline-offset-4 hover:text-link-deep">
                   Create an account
                 </Link>
               </>
@@ -287,67 +274,59 @@ export function AuthPage({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                  Sub-parts                                  */
-/* -------------------------------------------------------------------------- */
-
-/**
- * One phase of the onboarding narrative in the hero panel.
- */
 export function StepItem({
   index,
   title,
   active = false,
-  variants,
 }: {
   index: number;
   title: string;
   active?: boolean;
-  variants?: Variants;
 }) {
   return (
-    <motion.li variants={variants} className="flex items-center gap-3">
+    <li
+      className={cn(
+        "flex w-72 items-center gap-4 rounded-2xl border px-4 py-3 text-sm backdrop-blur-md transition-colors",
+        active
+          ? "border-white/30 bg-white/15 text-white shadow-lg"
+          : "border-white/10 bg-white/5 text-white/70"
+      )}
+    >
       <span
         className={cn(
-          "grid size-7 place-items-center rounded-full border text-xs font-semibold",
-          active
-            ? "border-white bg-white text-black"
-            : "border-white/25 bg-transparent text-white/60"
+          "grid size-7 place-items-center rounded-full text-xs font-semibold",
+          active ? "bg-white text-black" : "bg-white/10 text-white/70"
         )}
-        aria-hidden="true"
       >
         {index}
       </span>
-      <span className={cn("text-sm", active ? "text-white" : "text-white/60")}>{title}</span>
-    </motion.li>
+      <span className="font-medium text-white">{title}</span>
+    </li>
   );
 }
 
-/**
- * Social sign-in placeholder. Disabled on purpose: the backend exposes no
- * OAuth endpoint yet, so an enabled-looking button would be a broken promise.
- */
-export function SocialButton({ label, icon }: { label: string; icon: React.ReactNode }) {
+export function SocialButton({
+  label,
+  icon,
+}: {
+  label: string;
+  icon: React.ReactNode;
+}) {
   return (
     <button
       type="button"
       disabled
-      aria-disabled="true"
-      className="flex h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-transparent text-sm font-medium text-white/80 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-border bg-card text-sm font-medium text-body transition-colors hover:bg-hairline-soft disabled:cursor-not-allowed disabled:opacity-60"
     >
       {icon}
       <span>{label}</span>
-      <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white/40">
+      <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-mute">
         Soon
       </span>
     </button>
   );
 }
 
-/**
- * Labeled input with a leading glyph, optional trailing slot and inline
- * validation copy.
- */
 export function InputGroup({
   id,
   name,
@@ -377,7 +356,7 @@ export function InputGroup({
 }) {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-medium text-white/80">
+      <label htmlFor={id} className="block text-sm font-medium text-ink">
         {label}
       </label>
       <div className="relative">
@@ -391,18 +370,18 @@ export function InputGroup({
           autoComplete={autoComplete}
           aria-invalid={!!error}
           className={cn(
-            "h-12 w-full rounded-xl border bg-brand-gray px-4 text-sm text-white transition-colors",
-            "placeholder:text-white/30 focus:outline-none focus:ring-2",
+            "h-12 w-full rounded-xl border bg-card px-4 text-sm text-ink transition-colors",
+            "placeholder:text-faint focus:outline-none focus:ring-2",
             error
-              ? "border-red-400/60 focus:border-red-400 focus:ring-red-400/20"
-              : "border-white/10 focus:border-white/30 focus:ring-white/15",
+              ? "border-destructive/60 focus:border-destructive focus:ring-destructive/20"
+              : "border-border focus:border-ring focus:ring-ring/20",
             icon ? "ps-11" : "",
             trailing ? "pe-11" : ""
           )}
         />
         {icon && (
           <span
-            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-white/35"
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-mute"
             aria-hidden="true"
           >
             {icon}
@@ -411,19 +390,15 @@ export function InputGroup({
         {trailing}
       </div>
       {error ? (
-        <p role="alert" className="text-xs text-red-300">
+        <p role="alert" className="text-xs text-destructive">
           {error}
         </p>
       ) : helper ? (
-        <p className="text-xs text-white/40">{helper}</p>
+        <p className="text-xs text-mute">{helper}</p>
       ) : null}
     </div>
   );
 }
-
-/* -------------------------------------------------------------------------- */
-/*                                   Glyphs                                    */
-/* -------------------------------------------------------------------------- */
 
 function AtSignGlyph() {
   return (

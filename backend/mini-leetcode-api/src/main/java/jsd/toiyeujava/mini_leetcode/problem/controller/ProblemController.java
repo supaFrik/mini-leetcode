@@ -12,26 +12,39 @@ import jsd.toiyeujava.mini_leetcode.problem.dto.ProblemResponse;
 import jsd.toiyeujava.mini_leetcode.problem.dto.UpdateProblemRequest;
 import jsd.toiyeujava.mini_leetcode.problem.dto.TransitionProblemRequest;
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
+import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.entity.Role;
 import jsd.toiyeujava.mini_leetcode.entity.UserProgress;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
-import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.auth.repository.UserRepository;
 import jsd.toiyeujava.mini_leetcode.auth.security.UserPrincipal;
+import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.problem.service.ProblemService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
+import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
+import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionFileDto;
+import jsd.toiyeujava.mini_leetcode.submission.service.SubmissionArchiveService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/problems")
 @Tag(name = "Problems", description = "Problem Management and Exploration APIs")
@@ -39,10 +52,27 @@ public class ProblemController {
 
     private final ProblemService problemService;
     private final UserRepository userRepository;
+    private final ProblemRepository problemRepository;
+    private final SubmissionArchiveService submissionArchiveService;
+    private final ObjectMapper objectMapper;
 
-    public ProblemController(ProblemService problemService, UserRepository userRepository) {
+    @Autowired
+    public ProblemController(
+            ProblemService problemService,
+            UserRepository userRepository,
+            @Autowired(required = false) ProblemRepository problemRepository,
+            @Autowired(required = false) SubmissionArchiveService submissionArchiveService,
+            @Autowired(required = false) ObjectMapper objectMapper
+    ) {
         this.problemService = problemService;
         this.userRepository = userRepository;
+        this.problemRepository = problemRepository;
+        this.submissionArchiveService = submissionArchiveService;
+        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
+    }
+
+    public ProblemController(ProblemService problemService, UserRepository userRepository) {
+        this(problemService, userRepository, null, null, new ObjectMapper());
     }
 
     @PostMapping
@@ -81,6 +111,8 @@ public class ProblemController {
             @RequestParam(required = false) List<String> tags,
             @Parameter(description = "Filter by the current user's progress (DONE, IN_PROGRESS, NEVER)")
             @RequestParam(required = false) UserProgress progress,
+            @Parameter(description = "Filter by problem type (ALGORITHMIC, OOP_GRINDING)")
+            @RequestParam(required = false) ProblemType type,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             jakarta.servlet.http.HttpServletRequest httpRequest,
             @AuthenticationPrincipal UserPrincipal currentUser) {
@@ -111,7 +143,7 @@ public class ProblemController {
         Page<ProblemResponse> page = problemService.getProblems(
                 difficulty, status, search, tags, progress,
                 currentUser != null ? currentUser.getId() : null,
-                pageable, isStaff(currentUser));
+                pageable, isStaff(currentUser), type);
         return ResponseEntity.ok(page);
     }
 
@@ -223,5 +255,73 @@ public class ProblemController {
     public ResponseEntity<Void> deleteProblem(@PathVariable Long id) {
         problemService.deleteProblem(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping(value = {"/{idOrSlug}/starter-template", "/{idOrSlug}/starter"}, produces = "application/zip")
+    @Operation(summary = "Download starter scaffolding template ZIP",
+            description = "Generates and streams an offline starter project ZIP containing skeleton code and README.md")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Starter ZIP downloaded successfully"),
+            @ApiResponse(responseCode = "404", description = "Problem not found")
+    })
+    public ResponseEntity<byte[]> getStarterTemplate(
+            @Parameter(description = "Numeric ID or string slug of the problem")
+            @PathVariable String idOrSlug,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+
+        Problem problem;
+        if (idOrSlug.matches("^\\d+$")) {
+            Long problemId = Long.parseLong(idOrSlug);
+            problem = (problemRepository != null ? problemRepository.findById(problemId) : java.util.Optional.<Problem>empty())
+                    .orElseGet(() -> (problemRepository != null ? problemRepository.findBySlug(idOrSlug) : java.util.Optional.<Problem>empty())
+                            .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + idOrSlug)));
+        } else {
+            problem = (problemRepository != null ? problemRepository.findBySlug(idOrSlug) : java.util.Optional.<Problem>empty())
+                    .orElseThrow(() -> new ResourceNotFoundException("Problem not found with slug: " + idOrSlug));
+        }
+
+        if (!isStaff(currentUser) && problem.getStatus() != ProblemStatus.PUBLISHED) {
+            throw new ResourceNotFoundException("Problem not found with id: " + problem.getId());
+        }
+
+        List<SubmissionFileDto> templates = parseStarterTemplates(problem.getStarterTemplates());
+        if (templates.isEmpty()) {
+            templates.add(new SubmissionFileDto(
+                    "Solution.java",
+                    "public class Solution {\n    // TODO: Implement your solution here\n}\n"
+            ));
+        }
+
+        byte[] zipBytes = submissionArchiveService != null
+                ? submissionArchiveService.generateStarterZip(
+                        problem.getSlug(),
+                        problem.getTitle(),
+                        problem.getDescription(),
+                        templates)
+                : new byte[0];
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/zip"));
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + problem.getSlug() + "-starter.zip\"");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(zipBytes);
+    }
+
+    private List<SubmissionFileDto> parseStarterTemplates(String json) {
+        if (json == null || json.isBlank() || objectMapper == null) {
+            return new ArrayList<>();
+        }
+        try {
+            List<SubmissionFileDto> list = objectMapper.readValue(
+                    json,
+                    new TypeReference<List<SubmissionFileDto>>() {}
+            );
+            return list != null ? new ArrayList<>(list) : new ArrayList<>();
+        } catch (Exception e) {
+            log.warn("Failed to parse starter templates JSON, falling back to empty list: {}", e.getMessage());
+            return new ArrayList<>();
+        }
     }
 }

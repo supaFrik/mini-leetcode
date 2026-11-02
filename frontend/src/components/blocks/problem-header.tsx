@@ -22,6 +22,7 @@ export interface ProblemHeaderProps {
   title: string;
   difficulty: ProblemDifficulty;
   status?: string;
+  showStatus?: boolean;
   likes?: number | null;
   dislikes?: number | null;
   /** When provided, the title becomes editable. */
@@ -39,6 +40,7 @@ export function ProblemHeader({
   title,
   difficulty,
   status,
+  showStatus = true,
   likes,
   dislikes,
   editor,
@@ -67,7 +69,7 @@ export function ProblemHeader({
               <Pencil className="h-4 w-4" aria-hidden="true" />
             </Button>
           ) : null}
-          {status ? (
+          {status && showStatus ? (
             <Badge variant="secondary" className="font-mono font-normal">
               {status}
             </Badge>

@@ -21,9 +21,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         /* Black ink fill — the default app button. */
-        default: "rounded-sm bg-ink text-white hover:bg-ink/90",
+        default: "rounded-sm bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
         /* Black ink pill — marketing CTA. */
-        pill: "rounded-pill bg-ink text-white hover:bg-ink/90",
+        pill: "rounded-pill bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
         /* White pill — inverted marketing CTA. */
         "pill-outline": "rounded-pill border border-border bg-card text-ink hover:bg-hairline-soft",
         /* Square app button — nav / in-app. */

@@ -39,7 +39,7 @@
     --muted-foreground: 0 0% 56.1%;
 
     /* ---- Accent (single chromatic voice) ---- */
-    --primary: 0 0% 9.4%;             /* #171717  ink fills buttons */
+    --primary: 142 71% 40%;           /* leetcode emerald green */
     --primary-foreground: 0 0% 100%;
     --link: 211 100% 48%;              /* #0070f3 */
     --link-deep: 213 89% 43%;         /* #0761d1 */

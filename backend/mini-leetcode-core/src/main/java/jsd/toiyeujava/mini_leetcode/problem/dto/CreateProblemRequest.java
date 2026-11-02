@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
+import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 
 import java.util.List;
 
@@ -26,8 +27,22 @@ public record CreateProblemRequest(
         Integer memoryLimitMb,
 
         /** Chủ đề của bài (tối đa 50 ký tự/tag). Chuẩn hoá ở tầng service. */
-        List<@Size(max = 50, message = "Tag must not exceed 50 characters") String> tags
+        List<@Size(max = 50, message = "Tag must not exceed 50 characters") String> tags,
+
+        ProblemType problemType,
+        String starterTemplates
 ) {
+    public CreateProblemRequest(
+            String title,
+            String description,
+            Difficulty difficulty,
+            Integer timeLimitMs,
+            Integer memoryLimitMb,
+            List<String> tags
+    ) {
+        this(title, description, difficulty, timeLimitMs, memoryLimitMb, tags, ProblemType.ALGORITHMIC, null);
+    }
+
     public Integer getTimeLimitMsOrDefault() {
         return timeLimitMs != null ? timeLimitMs : 1000;
     }

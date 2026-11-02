@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, errorMessage } from "@/lib/api";
 import { pollSubmission } from "@/lib/polling";
 import { fetchSubmissionResults, pollSubmission as fetchPoll, submitCode } from "@/lib/services";
-import type { CaseResult, Language, Submission } from "@/types/api";
+import type { CaseResult, Language, Submission, SubmissionFile } from "@/types/api";
 
 // Nộp bài → nhận 202 → polling thích ứng (backoff + jitter) → lấy chi tiết từng testcase.
 export function useJudge(problemId: number, contestId?: number) {
@@ -15,13 +15,22 @@ export function useJudge(problemId: number, contestId?: number) {
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => () => abortRef.current?.abort(), []); // rời trang thì dừng polling
 
-  const submit = useCallback(async (language: Language, code: string, opts?: { run?: boolean }) => {
+  const submit = useCallback(async (
+    language: Language,
+    codeOrFiles: string | SubmissionFile[],
+    opts?: { run?: boolean }
+  ) => {
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     setJudging(true); setResult(null); setCases(null); setError(null); setTimedOut(false);
     try {
-      const created = await submitCode(problemId, { language, code, ...(contestId ? { contestId } : {}) }, opts?.run);
+      const isMulti = Array.isArray(codeOrFiles);
+      const submitBody = isMulti
+        ? { language, files: codeOrFiles, ...(contestId ? { contestId } : {}) }
+        : { language, code: codeOrFiles, ...(contestId ? { contestId } : {}) };
+
+      const created = await submitCode(problemId, submitBody, opts?.run);
       if (ctrl.signal.aborted) return;
       setResult(created);
       const final = await pollSubmission((signal) => fetchPoll(created.id, signal), { signal: ctrl.signal, onUpdate: (s) => !ctrl.signal.aborted && setResult(s) });

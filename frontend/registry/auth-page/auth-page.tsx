@@ -388,7 +388,7 @@ export function InputGroup({
           autoComplete={autoComplete}
           aria-invalid={!!error}
           className={cn(
-            "h-12 w-full rounded-xl border bg-brand-gray px-4 text-sm text-white transition-colors",
+            "h-12 w-full rounded-xl border bg-[#1a1a1a] px-4 text-sm text-white transition-colors",
             "placeholder:text-white/30 focus:outline-none focus:ring-2",
             error
               ? "border-red-400/60 focus:border-red-400 focus:ring-red-400/20"

@@ -25,6 +25,7 @@ app:
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadminpassword}
     bucket-name: ${MINIO_BUCKET_NAME:testcases}
+    submissions-bucket-name: ${MINIO_SUBMISSIONS_BUCKET_NAME:submissions}
   judge:
     # Tên stream chứa bài nộp chờ chấm (dùng chung cho API producer và Judge consumer).
     stream-key: ${JUDGE_STREAM_KEY:stream:submissions}

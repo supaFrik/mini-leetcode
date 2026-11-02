@@ -14,6 +14,7 @@ const config: Config = {
         aurora: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
+        "brand-gray": "var(--brand-gray)",
         brandGray: "var(--brand-gray)",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

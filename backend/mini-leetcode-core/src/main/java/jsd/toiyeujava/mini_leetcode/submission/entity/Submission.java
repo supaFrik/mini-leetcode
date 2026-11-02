@@ -8,7 +8,9 @@ import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -68,6 +70,16 @@ public class Submission {
 
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
+
+    @Column(name = "score")
+    private Double score;
+
+    @Column(name = "execution_phase", length = 30)
+    private String executionPhase;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "score_breakdown", columnDefinition = "json")
+    private String scoreBreakdown;
 
     @Column(name = "retry_count", nullable = false)
     @Builder.Default

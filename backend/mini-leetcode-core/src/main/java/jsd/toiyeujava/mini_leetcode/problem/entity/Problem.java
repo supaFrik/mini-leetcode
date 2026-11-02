@@ -2,6 +2,7 @@ package jsd.toiyeujava.mini_leetcode.problem.entity;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
+import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -50,6 +51,15 @@ public class Problem {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private ProblemStatus status = ProblemStatus.DRAFT;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "problem_type", nullable = false, length = 30)
+    @Builder.Default
+    private ProblemType problemType = ProblemType.ALGORITHMIC;
+
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "starter_templates", columnDefinition = "JSON")
+    private String starterTemplates;
 
     /**
      * Chủ đề của bài tập (Array, String, Hash Table...).

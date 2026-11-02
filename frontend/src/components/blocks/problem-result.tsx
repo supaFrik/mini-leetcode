@@ -154,13 +154,22 @@ export function ProblemResult({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={cn("grid gap-3", result.score != null ? "grid-cols-3" : "grid-cols-2")}>
         <div className="rounded-lg border border-border bg-card p-3">
           <p className="eyebrow">Status</p>
           <p className={cn("mt-1 font-medium", verdict.ok ? "text-success" : "text-destructive")}>
             {verdict.ok ? "Passed" : "Failed"} ({result.passTestCases ?? 0}/{result.totalTestCases ?? 0})
           </p>
         </div>
+
+        {result.score != null ? (
+          <div className="rounded-lg border border-border bg-card p-3">
+            <p className="eyebrow">Score (Partial)</p>
+            <p className={cn("mt-1 font-medium", result.score >= 100 ? "text-success" : result.score > 0 ? "text-amber-500" : "text-destructive")}>
+              {result.score.toFixed(1)} / 100.0
+            </p>
+          </div>
+        ) : null}
 
         {result.memoryPercentile != null ? (
           <div className="rounded-lg border border-border bg-card p-3">

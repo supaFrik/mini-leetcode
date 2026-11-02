@@ -6,10 +6,10 @@
 --   Get-Content backend\tools\seed-contest-test.sql -Raw | docker exec -i mini_leetcode_mysql mysql -u leetcode -pleetcode_password mini_leetcode
 -- ============================================================
 
--- 1. Kỳ thi mới: bắt đầu 30 phút trước, kết thúc sau 90 phút nữa (đủ thời gian test).
+-- 1. Kỳ thi mới: bắt đầu 30 phút trước, kết thúc sau 120 phút nữa (đủ thời gian test).
 INSERT INTO contests (id, title, slug, start_time, end_time, scoring_policy, max_violations_allowed, status, created_by, created_at) VALUES
 (100, 'Test Exam - Algorithms Sprint', 'test-exam-algorithms-sprint',
- DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 MINUTE), DATE_ADD(UTC_TIMESTAMP(), INTERVAL 90 MINUTE),
+ DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 MINUTE), DATE_ADD(UTC_TIMESTAMP(), INTERVAL 120 MINUTE),
  'ACM_ICPC', 3, 'RUNNING', 1, NOW())
 ON DUPLICATE KEY UPDATE
   title = VALUES(title),

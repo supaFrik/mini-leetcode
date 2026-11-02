@@ -15,11 +15,12 @@ import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
+import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionArchiveResult;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionResponse;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmitCodeRequest;
 import jsd.toiyeujava.mini_leetcode.submission.entity.Submission;
 import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -30,9 +31,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SubmissionServiceImpl implements SubmissionService {
 
@@ -42,6 +44,37 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final StorageService storageService;
     private final ContestRepository contestRepository;
     private final ContestParticipantRepository contestParticipantRepository;
+    private final SubmissionArchiveService submissionArchiveService;
+
+    @Autowired
+    public SubmissionServiceImpl(
+            SubmissionRepository submissionRepository,
+            ProblemRepository problemRepository,
+            UserRepository userRepository,
+            StorageService storageService,
+            ContestRepository contestRepository,
+            ContestParticipantRepository contestParticipantRepository,
+            @Autowired(required = false) SubmissionArchiveService submissionArchiveService
+    ) {
+        this.submissionRepository = submissionRepository;
+        this.problemRepository = problemRepository;
+        this.userRepository = userRepository;
+        this.storageService = storageService;
+        this.contestRepository = contestRepository;
+        this.contestParticipantRepository = contestParticipantRepository;
+        this.submissionArchiveService = submissionArchiveService;
+    }
+
+    public SubmissionServiceImpl(
+            SubmissionRepository submissionRepository,
+            ProblemRepository problemRepository,
+            UserRepository userRepository,
+            StorageService storageService,
+            ContestRepository contestRepository,
+            ContestParticipantRepository contestParticipantRepository
+    ) {
+        this(submissionRepository, problemRepository, userRepository, storageService, contestRepository, contestParticipantRepository, null);
+    }
 
     @Override
     @Transactional
@@ -58,7 +91,13 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (request.language() == null) {
             throw new IllegalArgumentException("Language is required");
         }
-        if (request.code() == null || request.code().isBlank()) {
+
+        boolean hasFiles = request.files() != null && !request.files().isEmpty();
+        boolean hasCode = request.code() != null && !request.code().isBlank();
+        boolean hasArchive = request.archiveBytes() != null && request.archiveBytes().length > 0;
+        boolean hasStorageUri = request.codeStorageUri() != null && !request.codeStorageUri().isBlank();
+
+        if (!hasFiles && !hasCode && !hasArchive && !hasStorageUri) {
             throw new IllegalArgumentException("Code must not be blank");
         }
 
@@ -73,9 +112,6 @@ public class SubmissionServiceImpl implements SubmissionService {
             Contest contest = contestRepository.findById(request.contestId())
                     .orElseThrow(() -> new ResourceNotFoundException("Contest not found with id: " + request.contestId()));
 
-            // Dùng resolveStatus() thay vì getStatus(): kỳ thi đã qua end_time vẫn còn
-            // status = RUNNING trong DB, nếu chỉ đọc status thì thí sinh vẫn nộp được bài
-            // sau khi kỳ thi đã kết thúc (lỗ hổng chống gian lận).
             ContestStatus effectiveStatus = contest.resolveStatus();
             if (effectiveStatus != ContestStatus.RUNNING) {
                 throw new AccessDeniedException("Contest is not currently active (status: " + effectiveStatus + ")");
@@ -96,17 +132,57 @@ public class SubmissionServiceImpl implements SubmissionService {
             }
         }
 
-        String extension = request.language() == SubmissionLanguage.JAVA ? ".java"
-                : (request.language() == SubmissionLanguage.PYTHON ? ".py" : ".cpp");
-        String objectName = "submissions/" + problemId + "/" + userId + "/" + UUID.randomUUID() + extension;
+        String codeStorageUri;
+        if (hasStorageUri) {
+            codeStorageUri = request.codeStorageUri();
+        } else if (hasArchive) {
+            if (submissionArchiveService == null) {
+                throw new IllegalStateException("SubmissionArchiveService is not configured");
+            }
+            SubmissionArchiveResult archiveResult = submissionArchiveService.packageAndValidate(
+                    null,
+                    new ByteArrayInputStream(request.archiveBytes()),
+                    null,
+                    request.language()
+            );
+            codeStorageUri = submissionArchiveService.uploadSubmissionArchive(
+                    problemId,
+                    userId,
+                    archiveResult.zipBytes()
+            );
+        } else if (submissionArchiveService != null && (hasFiles || (hasCode && (request.code().contains("FILE:") || request.code().contains("###"))))) {
+            SubmissionArchiveResult archiveResult = submissionArchiveService.packageAndValidate(
+                    request.files(),
+                    null,
+                    request.code(),
+                    request.language()
+            );
+            codeStorageUri = submissionArchiveService.uploadSubmissionArchive(
+                    problemId,
+                    userId,
+                    archiveResult.zipBytes()
+            );
+        } else {
+            String extension = request.language() == SubmissionLanguage.JAVA ? ".java"
+                    : (request.language() == SubmissionLanguage.PYTHON ? ".py" : ".cpp");
+            String objectName = storageService.generateSubmissionKey(problemId, userId, extension);
+            if (objectName == null || objectName.isBlank()) {
+                objectName = "submissions/" + problemId + "/" + userId + "/" + java.util.UUID.randomUUID() + extension;
+            }
 
-        byte[] codeBytes = request.code().getBytes(StandardCharsets.UTF_8);
-        String codeStorageUri = storageService.uploadFile(
-                objectName,
-                new ByteArrayInputStream(codeBytes),
-                codeBytes.length,
-                "text/plain"
-        );
+            byte[] codeBytes = (request.code() != null ? request.code() : "").getBytes(StandardCharsets.UTF_8);
+            String bucket = storageService.getSubmissionsBucketName();
+            if (bucket == null || bucket.isBlank()) {
+                bucket = "submissions";
+            }
+            codeStorageUri = storageService.uploadFile(
+                    bucket,
+                    objectName,
+                    new ByteArrayInputStream(codeBytes),
+                    codeBytes.length,
+                    "text/plain"
+            );
+        }
 
         Submission submission = Submission.builder()
                 .problem(problem)
@@ -145,10 +221,35 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (submission.getCodeStorageUri() == null || submission.getCodeStorageUri().isBlank()) {
             return "";
         }
-        String objectName = storageService.extractObjectName(submission.getCodeStorageUri());
-        try (java.io.InputStream is = storageService.downloadFile(objectName)) {
+        String uri = submission.getCodeStorageUri();
+        String objectName = storageService.extractObjectName(uri);
+        try (java.io.InputStream is = storageService.downloadFileByUri(uri)) {
             if (is == null) {
                 return "";
+            }
+            if (objectName.endsWith(".zip") || uri.endsWith(".zip")) {
+                StringBuilder sb = new StringBuilder();
+                try (ZipInputStream zis = new ZipInputStream(is, StandardCharsets.UTF_8)) {
+                    ZipEntry entry;
+                    boolean first = true;
+                    while ((entry = zis.getNextEntry()) != null) {
+                        String name = entry.getName();
+                        boolean isSource = name.endsWith(".java") || name.endsWith(".py") || name.endsWith(".cpp")
+                                || name.endsWith(".c") || name.endsWith(".h") || name.endsWith(".hpp");
+                        if (!entry.isDirectory() && isSource) {
+                            if (!first) {
+                                sb.append("\n");
+                            }
+                            sb.append("// === FILE: ").append(name).append(" ===\n");
+                            sb.append(new String(zis.readAllBytes(), StandardCharsets.UTF_8));
+                            if (!sb.toString().endsWith("\n")) {
+                                sb.append("\n");
+                            }
+                            first = false;
+                        }
+                    }
+                }
+                return sb.toString();
             }
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         } catch (java.io.IOException e) {
@@ -259,4 +360,3 @@ public class SubmissionServiceImpl implements SubmissionService {
         submissionRepository.save(submission);
     }
 }
-

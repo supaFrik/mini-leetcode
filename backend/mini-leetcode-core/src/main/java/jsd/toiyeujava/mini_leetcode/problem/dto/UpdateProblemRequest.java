@@ -3,6 +3,7 @@ package jsd.toiyeujava.mini_leetcode.problem.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
+import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 
 import java.util.List;
 
@@ -27,6 +28,19 @@ public record UpdateProblemRequest(
         Integer memoryLimitMb,
 
         /** Chủ đề mới của bài. {@code null} = giữ nguyên, rỗng = gỡ toàn bộ. */
-        List<@Size(max = 50, message = "Tag must not exceed 50 characters") String> tags
+        List<@Size(max = 50, message = "Tag must not exceed 50 characters") String> tags,
+
+        ProblemType problemType,
+        String starterTemplates
 ) {
+    public UpdateProblemRequest(
+            String title,
+            String description,
+            Difficulty difficulty,
+            Integer timeLimitMs,
+            Integer memoryLimitMb,
+            List<String> tags
+    ) {
+        this(title, description, difficulty, timeLimitMs, memoryLimitMb, tags, null, null);
+    }
 }

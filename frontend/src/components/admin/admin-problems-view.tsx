@@ -6,6 +6,7 @@ import {
   Check,
   ChevronRight,
   FileText,
+  FileCode,
   Loader2,
   Plus,
   Search,
@@ -29,7 +30,7 @@ import {
   transitionProblem,
   type ProblemDraft,
 } from "@/lib/services";
-import type { Difficulty, Page, ProblemFull, ProblemLifecycle } from "@/types/api";
+import type { Difficulty, Page, ProblemFull, ProblemLifecycle, ProblemType, SubmissionFile } from "@/types/api";
 
 const LIFECYCLES: { value: ProblemLifecycle; label: string }[] = [
   { value: "DRAFT", label: "Draft" },
@@ -62,6 +63,8 @@ const EMPTY_DRAFT: ProblemDraft = {
   timeLimitMs: 1000,
   memoryLimitMb: 256,
   tags: [],
+  type: "ALGORITHMIC",
+  starterTemplates: null,
 };
 
 /* ------------------------------------------------------------------ *
@@ -140,6 +143,139 @@ function TagEditor({ value, onChange }: { value: string[]; onChange: (v: string[
  * Editor panel — create and edit share one form.
  * ------------------------------------------------------------------ */
 
+function StarterTemplateEditor({
+  value,
+  onChange,
+}: {
+  value: string | null | undefined;
+  onChange: (v: string) => void;
+}) {
+  const defaultFiles = useMemo<SubmissionFile[]>(() => {
+    if (value) {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {
+        /* ignore parse error */
+      }
+    }
+    return [
+      {
+        path: "Solution.java",
+        content: "// Solution.java\npublic class Solution {\n    // Implementation here\n}\n",
+      },
+    ];
+  }, [value]);
+
+  const [files, setFiles] = useState<SubmissionFile[]>(defaultFiles);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  useEffect(() => {
+    setFiles(defaultFiles);
+    setActiveIdx(0);
+  }, [defaultFiles]);
+
+  const updateFiles = (next: SubmissionFile[]) => {
+    setFiles(next);
+    onChange(JSON.stringify(next));
+  };
+
+  const handleAddFile = () => {
+    const name = window.prompt("New Java class name (e.g. Helper.java):", "NewClass.java");
+    if (!name || !name.trim()) return;
+    const cleanName = name.trim().endsWith(".java") ? name.trim() : `${name.trim()}.java`;
+    if (files.some((f) => f.path.toLowerCase() === cleanName.toLowerCase())) {
+      toast("File already exists with that name.", "error");
+      return;
+    }
+    const className = cleanName.replace(/\.java$/, "");
+    const content = `// ${cleanName}\npublic class ${className} {\n    \n}\n`;
+    const next = [...files, { path: cleanName, content }];
+    updateFiles(next);
+    setActiveIdx(next.length - 1);
+  };
+
+  const handleDeleteFile = (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (files.length <= 1) {
+      toast("Cannot delete the only template file.", "error");
+      return;
+    }
+    const next = files.filter((_, i) => i !== idx);
+    updateFiles(next);
+    if (activeIdx >= idx && activeIdx > 0) {
+      setActiveIdx(activeIdx - 1);
+    }
+  };
+
+  const updateActiveContent = (content: string) => {
+    const next = [...files];
+    if (next[activeIdx]) {
+      next[activeIdx] = { ...next[activeIdx], content };
+      updateFiles(next);
+    }
+  };
+
+  const active = files[activeIdx] ?? files[0];
+
+  return (
+    <div className="space-y-3 rounded-sm border border-border bg-card p-3">
+      <div className="flex items-center justify-between">
+        <label className="eyebrow block text-mute">
+          Starter Templates (.java)
+        </label>
+        <Button type="button" variant="outline" size="sm" onClick={handleAddFile} className="h-7 gap-1 text-xs">
+          <Plus className="h-3.5 w-3.5" />
+          Add Java File
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-1 overflow-x-auto border-b border-border pb-1">
+        {files.map((f, idx) => (
+          <div
+            key={f.path}
+            onClick={() => setActiveIdx(idx)}
+            className={cn(
+              "group flex cursor-pointer items-center gap-1.5 rounded px-2.5 py-1 font-mono text-xs transition-colors",
+              idx === activeIdx
+                ? "border border-border bg-background font-medium text-ink shadow-sm"
+                : "text-mute hover:bg-hairline-soft hover:text-ink"
+            )}
+          >
+            <FileCode className="h-3.5 w-3.5 text-link" />
+            <span>{f.path}</span>
+            {files.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => handleDeleteFile(idx, e)}
+                title={`Delete ${f.path}`}
+                className="ml-1 rounded p-0.5 text-mute opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {active && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-mute">
+            <span>Editing template: <span className="font-mono text-ink">{active.path}</span></span>
+          </div>
+          <Textarea
+            value={active.content}
+            onChange={(e) => updateActiveContent(e.target.value)}
+            rows={8}
+            className="rounded-sm bg-background font-mono text-xs text-ink"
+            placeholder={`// Skeleton code for ${active.path}`}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Editor({
   problem,
   onClose,
@@ -165,6 +301,8 @@ function Editor({
       timeLimitMs: problem.timeLimitMs,
       memoryLimitMb: problem.memoryLimitMb,
       tags: [...problem.tags],
+      type: problem.type ?? "ALGORITHMIC",
+      starterTemplates: problem.starterTemplates ?? null,
     });
   }, [problem]);
 
@@ -276,6 +414,28 @@ function Editor({
 
           <TagEditor value={draft.tags} onChange={(v) => set("tags", v)} />
 
+          <div className="space-y-2">
+            <label htmlFor="admin-type" className="eyebrow block text-mute">
+              Problem Type
+            </label>
+            <select
+              id="admin-type"
+              value={draft.type ?? "ALGORITHMIC"}
+              onChange={(e) => set("type", e.target.value as ProblemType)}
+              className="h-9 w-full rounded-sm border border-border bg-card px-2.5 text-body-md text-ink"
+            >
+              <option value="ALGORITHMIC">Algorithmic (Single File)</option>
+              <option value="OOP_GRINDING">OOP Grinding (Multi-File Java)</option>
+            </select>
+          </div>
+
+          {draft.type === "OOP_GRINDING" && (
+            <StarterTemplateEditor
+              value={draft.starterTemplates}
+              onChange={(v) => set("starterTemplates", v)}
+            />
+          )}
+
           {error && (
             <p role="alert" className="rounded-sm border border-destructive/25 bg-destructive/5 px-3 py-2 text-body-md text-destructive">
               {error}
@@ -315,6 +475,7 @@ export function AdminProblemsView() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [difficulty, setDifficulty] = useState("");
+  const [type, setType] = useState<ProblemType | "">("");
   const [editing, setEditing] = useState<ProblemFull | null>(null);
   const [creating, setCreating] = useState(false);
   const [pending, setPending] = useState<number | null>(null);
@@ -323,13 +484,13 @@ export function AdminProblemsView() {
     setLoading(true);
     setError(null);
     try {
-      setRes(await fetchAdminProblems({ page, q, status, difficulty, tags: [] }));
+      setRes(await fetchAdminProblems({ page, q, status, difficulty, tags: [], type: type || undefined }));
     } catch (e) {
       setError(errorMessage(e));
     } finally {
       setLoading(false);
     }
-  }, [page, q, status, difficulty]);
+  }, [page, q, status, difficulty, type]);
 
   useEffect(() => {
     load();
@@ -443,6 +604,19 @@ export function AdminProblemsView() {
             </option>
           ))}
         </select>
+        <select
+          value={type}
+          onChange={(e) => {
+            setType(e.target.value as ProblemType | "");
+            setPage(1);
+          }}
+          aria-label="Filter by problem type"
+          className="h-10 rounded-sm border border-border bg-card px-2.5 text-body-md text-ink"
+        >
+          <option value="">All Types (DSA & OOP)</option>
+          <option value="ALGORITHMIC">DSA (Thuật toán)</option>
+          <option value="OOP_GRINDING">OOP (Hướng đối tượng)</option>
+        </select>
       </div>
 
       {/* Status tally — counts describe the rows on screen, so they are labelled */}
@@ -508,6 +682,15 @@ export function AdminProblemsView() {
                   className="block max-w-full truncate text-left text-body-md text-ink transition-colors hover:text-link"
                 >
                   {p.title}
+                  {p.type === "OOP_GRINDING" ? (
+                    <span className="ml-2 inline-flex items-center rounded border border-purple-500/25 bg-purple-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                      OOP
+                    </span>
+                  ) : (
+                    <span className="ml-2 inline-flex items-center rounded border border-cyan-500/25 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-cyan-600 dark:text-cyan-400">
+                      DSA
+                    </span>
+                  )}
                 </button>
                 <span className="mt-1 flex flex-wrap gap-1">
                   {p.tags.slice(0, 4).map((t) => (

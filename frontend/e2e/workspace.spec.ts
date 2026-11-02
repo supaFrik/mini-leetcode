@@ -27,18 +27,20 @@ test.describe("Problem Solving Workspace E2E Suite", () => {
   test("interacts with code editor and updates template on language change", async ({ page }) => {
     await page.goto("/problems/two-sum", { waitUntil: "domcontentloaded" });
 
-    const langSelect = page.getByLabel("Language");
-    await expect(langSelect).toBeVisible();
+    const langTrigger = page.getByRole("combobox", { name: /Language/i }).or(page.getByLabel("Language"));
+    await expect(langTrigger).toBeVisible();
 
     // Default language is Java -> Solution.java
     await expect(page.getByText("Solution.java")).toBeVisible();
 
-    // Switch to Python
-    await langSelect.selectOption("PYTHON");
+    // Switch to Python via Combobox
+    await langTrigger.click();
+    await page.getByRole("option", { name: /Python/i }).click();
     await expect(page.getByText("solution.py")).toBeVisible();
 
     // Switch back to Java
-    await langSelect.selectOption("JAVA");
+    await langTrigger.click();
+    await page.getByRole("option", { name: /Java/i }).click();
     await expect(page.getByText("Solution.java")).toBeVisible();
 
     // Type custom code into editor (supporting Monaco editor and fallback textarea)
@@ -76,8 +78,8 @@ test.describe("Problem Solving Workspace E2E Suite", () => {
   test("executes code Submit action and verifies accepted verdict", async ({ page }) => {
     await page.goto("/problems/two-sum", { waitUntil: "domcontentloaded" });
 
-    // Click Submit Solution button
-    const submitBtn = page.getByRole("button", { name: "Submit Solution" });
+    // Click Submit button
+    const submitBtn = page.getByRole("button", { name: "Submit", exact: true });
     await expect(submitBtn).toBeVisible();
     await expect(submitBtn).toBeEnabled();
     await Promise.all([

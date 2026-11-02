@@ -100,15 +100,15 @@ class SubmissionServiceTest {
 
         when(problemRepository.findById(100L)).thenReturn(Optional.of(testProblem));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-        when(storageService.uploadFile(anyString(), any(InputStream.class), anyLong(), anyString()))
-                .thenReturn("submissions/100/1/uuid.java");
+        when(storageService.uploadFile(anyString(), anyString(), any(InputStream.class), anyLong(), anyString()))
+                .thenReturn("minio://submissions/submissions/100/1/uuid.java");
 
         Submission savedEntity = Submission.builder()
                 .id(501L)
                 .problem(testProblem)
                 .user(testUser)
                 .language(SubmissionLanguage.JAVA)
-                .codeStorageUri("submissions/100/1/uuid.java")
+                .codeStorageUri("minio://submissions/submissions/100/1/uuid.java")
                 .status(SubmissionStatus.PENDING)
                 .build();
 
@@ -120,7 +120,7 @@ class SubmissionServiceTest {
         assertThat(result.getId()).isEqualTo(501L);
         assertThat(result.getStatus()).isEqualTo(SubmissionStatus.PENDING);
         assertThat(result.getLanguage()).isEqualTo(SubmissionLanguage.JAVA);
-        verify(storageService).uploadFile(anyString(), any(InputStream.class), anyLong(), eq("text/plain"));
+        verify(storageService).uploadFile(anyString(), anyString(), any(InputStream.class), anyLong(), eq("text/plain"));
         verify(submissionRepository).save(any(Submission.class));
     }
 
@@ -151,8 +151,8 @@ class SubmissionServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(contestRepository.findById(10L)).thenReturn(Optional.of(contest));
         when(contestParticipantRepository.findByContestIdAndUserId(10L, 1L)).thenReturn(Optional.of(participant));
-        when(storageService.uploadFile(anyString(), any(InputStream.class), anyLong(), anyString()))
-                .thenReturn("submissions/100/1/uuid.java");
+        when(storageService.uploadFile(anyString(), anyString(), any(InputStream.class), anyLong(), anyString()))
+                .thenReturn("minio://submissions/submissions/100/1/uuid.java");
 
         Submission savedEntity = Submission.builder()
                 .id(502L)
@@ -160,7 +160,7 @@ class SubmissionServiceTest {
                 .user(testUser)
                 .contestId(10L)
                 .language(SubmissionLanguage.JAVA)
-                .codeStorageUri("submissions/100/1/uuid.java")
+                .codeStorageUri("minio://submissions/submissions/100/1/uuid.java")
                 .status(SubmissionStatus.PENDING)
                 .build();
 
@@ -333,8 +333,8 @@ class SubmissionServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(contestRepository.findById(10L)).thenReturn(Optional.of(contest));
         when(contestParticipantRepository.findByContestIdAndUserId(10L, 1L)).thenReturn(Optional.of(participant));
-        when(storageService.uploadFile(anyString(), any(InputStream.class), anyLong(), anyString()))
-                .thenReturn("submissions/100/1/uuid.py");
+        when(storageService.uploadFile(anyString(), anyString(), any(InputStream.class), anyLong(), anyString()))
+                .thenReturn("minio://submissions/submissions/100/1/uuid.py");
         when(submissionRepository.save(any(Submission.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Submission result = submissionService.createSubmission(100L, 1L, request);
@@ -610,7 +610,7 @@ class SubmissionServiceTest {
 
         when(submissionRepository.findById(1L)).thenReturn(Optional.of(s1));
         when(storageService.extractObjectName("submissions/100/1/uuid.java")).thenReturn("submissions/100/1/uuid.java");
-        when(storageService.downloadFile("submissions/100/1/uuid.java"))
+        when(storageService.downloadFileByUri("submissions/100/1/uuid.java"))
                 .thenReturn(new java.io.ByteArrayInputStream("public class Main {}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
         String code = submissionService.getSubmissionCode(1L);
@@ -704,5 +704,60 @@ class SubmissionServiceTest {
         assertThatThrownBy(() -> submissionService.getProblemSubmissions(null, PageRequest.of(0, 10)))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Problem not found with id: null");
+    }
+
+    @Test
+    @DisplayName("getSubmissionCode: reads ZIP archive from minio://submissions/ bucket via downloadFileByUri")
+    void getSubmissionCode_ZipArchiveFromSubmissionsBucket() throws Exception {
+        byte[] zipData;
+        try (java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+             java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(baos)) {
+            java.util.zip.ZipEntry ze = new java.util.zip.ZipEntry("Solution.java");
+            zos.putNextEntry(ze);
+            zos.write("public class Solution {}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            zos.closeEntry();
+            zos.finish();
+            zipData = baos.toByteArray();
+        }
+
+        String uri = "minio://submissions/submissions/100/1/abc-123.zip";
+        Submission submission = Submission.builder()
+                .id(2L)
+                .problem(testProblem)
+                .user(testUser)
+                .codeStorageUri(uri)
+                .build();
+
+        when(submissionRepository.findById(2L)).thenReturn(Optional.of(submission));
+        when(storageService.extractObjectName(uri)).thenReturn("submissions/100/1/abc-123.zip");
+        when(storageService.downloadFileByUri(uri)).thenReturn(new java.io.ByteArrayInputStream(zipData));
+
+        String code = submissionService.getSubmissionCode(2L);
+        assertThat(code).contains("// === FILE: Solution.java ===");
+        assertThat(code).contains("public class Solution {}");
+        verify(storageService).downloadFileByUri(uri);
+    }
+
+    @Test
+    @DisplayName("createSubmission: single-file upload explicitly targets submissions bucket")
+    void createSubmission_SingleFile_RoutesToSubmissionsBucket() {
+        SubmitCodeRequest request = new SubmitCodeRequest(
+                SubmissionLanguage.JAVA,
+                "public class SingleFile {}"
+        );
+
+        when(problemRepository.findById(100L)).thenReturn(Optional.of(testProblem));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(storageService.getSubmissionsBucketName()).thenReturn("submissions");
+        when(storageService.generateSubmissionKey(eq(100L), eq(1L), eq(".java")))
+                .thenReturn("submissions/100/1/test-key.java");
+        when(storageService.uploadFile(eq("submissions"), eq("submissions/100/1/test-key.java"), any(InputStream.class), anyLong(), eq("text/plain")))
+                .thenReturn("minio://submissions/submissions/100/1/test-key.java");
+        when(submissionRepository.save(any(Submission.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Submission result = submissionService.createSubmission(100L, 1L, request);
+
+        assertThat(result.getCodeStorageUri()).isEqualTo("minio://submissions/submissions/100/1/test-key.java");
+        verify(storageService).uploadFile(eq("submissions"), eq("submissions/100/1/test-key.java"), any(InputStream.class), anyLong(), eq("text/plain"));
     }
 }
