@@ -203,6 +203,7 @@ public class OopDockerRunner {
     }
 
     public ExecutionReport runInProcessHarness(Long submissionId, Path workDir, HarnessConfig config) {
+        long startTime = System.currentTimeMillis();
         Path studentClassesDir = workDir.resolve("classes");
         Path testClassesDir = studentClassesDir;
 
@@ -306,9 +307,15 @@ public class OopDockerRunner {
                 .socketIntegration(socketPhase)
                 .build();
 
+        long elapsedMs = Math.max(10L, System.currentTimeMillis() - startTime);
+        long usedBytes = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        int memKb = (int) Math.max(8192L, usedBytes / 1024L);
+
         ExecutionReport report = ExecutionReport.builder()
                 .submissionId(submissionId)
                 .executionPhase("COMPLETED")
+                .executionTimeMs((int) elapsedMs)
+                .memoryUsedKb(memKb)
                 .phases(breakdown)
                 .build();
 

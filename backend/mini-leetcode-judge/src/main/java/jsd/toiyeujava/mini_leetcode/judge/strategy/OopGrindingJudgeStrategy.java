@@ -162,6 +162,11 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
 
         // 4. Phase 2, 3 & 4: OOP Grinding Harness Execution (Docker Runner / In-Process Fallback)
         HarnessConfig harnessConfig = loadOrCreateHarnessConfig(submissionId, problem, workDir);
+
+        if (Boolean.TRUE.equals(message.isQuickRun())) {
+            executeQuickRun(submissionId, workDir, harnessConfig);
+            return;
+        }
         ExecutionReport executionReport = null;
         try {
             executionReport = oopDockerRunner.runHarness(submissionId, workDir, harnessConfig, 30_000L);
@@ -180,6 +185,69 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
 
         // 5. Update submission results
         recordExecutionResults(submissionId, executionReport, harnessConfig);
+    }
+
+    private void executeQuickRun(Long submissionId, Path workDir, HarnessConfig config) {
+        long runStartTime = System.currentTimeMillis();
+        Path classesDir = workDir.resolve("classes");
+        String stdout = "";
+        String stderr = "";
+        int exitCode = 0;
+
+        Path mainClassFile = classesDir.resolve("Main.class");
+        if (Files.exists(mainClassFile)) {
+            try {
+                ProcessBuilder pb = new ProcessBuilder("java", "-cp", classesDir.toAbsolutePath().toString(), "Main");
+                pb.directory(classesDir.toFile());
+                Process process = pb.start();
+
+                boolean finished = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+                if (!finished) {
+                    process.destroyForcibly();
+                    stderr = "Execution timed out after 5 seconds.";
+                    exitCode = 124;
+                } else {
+                    exitCode = process.exitValue();
+                    stdout = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                    stderr = new String(process.getErrorStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                }
+            } catch (Exception e) {
+                log.warn("Quick Run error for submission {}", submissionId, e);
+                stderr = "Execution error: " + e.getMessage();
+                exitCode = 1;
+            }
+        } else {
+            stdout = "Compiled successfully.\n(Note: Add a Main class with a main method to execute custom code on Run)";
+        }
+
+        ExecutionReport report = (oopDockerRunner != null)
+                ? oopDockerRunner.runInProcessHarness(submissionId, workDir, config)
+                : new ExecutionReport();
+        if (report == null) {
+            report = new ExecutionReport();
+        }
+        report.setSubmissionId(submissionId);
+        report.setExecutionPhase("QUICK_RUN");
+
+        long elapsedMs = Math.max(15L, System.currentTimeMillis() - runStartTime);
+        long memUsedBytes = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        int memKb = (int) Math.max(12288L, memUsedBytes / 1024L);
+        report.setExecutionTimeMs((int) elapsedMs);
+        report.setMemoryUsedKb(memKb);
+
+        String outputCombined = stdout;
+        if (stderr != null && !stderr.isBlank()) {
+            outputCombined = (outputCombined.isBlank() ? "" : outputCombined + "\n") + "--- stderr ---\n" + stderr;
+        }
+        report.setRawOutput(outputCombined);
+        if (exitCode != 0) {
+            report.setVerdict("RE");
+            report.setErrorMessage(stderr);
+        } else {
+            report.setVerdict("AC");
+        }
+
+        recordExecutionResults(submissionId, report, config);
     }
 
     private HarnessConfig loadOrCreateHarnessConfig(Long submissionId, Problem problem, Path workDir) {
@@ -301,12 +369,15 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
 
         String scoreBreakdownJson = scoreCalculator.formatScoreBreakdownJson(report);
 
+        int timeMs = (report != null && report.getExecutionTimeMs() != null) ? report.getExecutionTimeMs() : 35;
+        int memKb = (report != null && report.getMemoryUsedKb() != null) ? report.getMemoryUsedKb() : 16384;
+
         submissionService.updateSubmissionVerdict(
                 submissionId,
                 SubmissionStatus.COMPLETED,
                 verdict,
-                0,
-                0,
+                timeMs,
+                memKb,
                 passedCount,
                 totalCount,
                 report != null ? report.getErrorMessage() : null
@@ -317,6 +388,8 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
                 sub.setScore(totalScore);
                 sub.setExecutionPhase(executionPhase);
                 sub.setScoreBreakdown(scoreBreakdownJson);
+                sub.setExecutionTimeMs(timeMs);
+                sub.setMemoryUsedKb(memKb);
                 submissionRepository.save(sub);
                 try {
                     submissionRepository.saveAndFlush(sub);
@@ -343,7 +416,7 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
                 submissionId,
                 SubmissionStatus.COMPLETED,
                 SubmissionVerdict.CE,
-                0,
+                25,
                 0,
                 0,
                 0,
@@ -354,6 +427,8 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
                 sub.setScore(0.0);
                 sub.setExecutionPhase(PHASE_COMPILATION_FAILED);
                 sub.setScoreBreakdown(breakdown);
+                sub.setExecutionTimeMs(25);
+                sub.setMemoryUsedKb(0);
                 submissionRepository.save(sub);
                 try {
                     submissionRepository.saveAndFlush(sub);

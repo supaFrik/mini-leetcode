@@ -614,8 +614,8 @@ export function AdminProblemsView() {
           className="h-10 rounded-sm border border-border bg-card px-2.5 text-body-md text-ink"
         >
           <option value="">All Types (DSA & OOP)</option>
-          <option value="ALGORITHMIC">DSA (Thuật toán)</option>
-          <option value="OOP_GRINDING">OOP (Hướng đối tượng)</option>
+          <option value="ALGORITHMIC">DSA (Algorithms)</option>
+          <option value="OOP_GRINDING">OOP (Object-Oriented)</option>
         </select>
       </div>
 

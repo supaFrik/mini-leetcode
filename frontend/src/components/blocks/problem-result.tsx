@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ProblemDiffView } from "./problem-diff-view";
@@ -66,7 +65,6 @@ export function ProblemResult({
   judging,
   timedOut,
   error,
-  runMode,
   emptyHint = "Run code or submit solution to see results.",
   timedOutHint = "Judging took longer than expected. Your submission has been saved; check the Submissions tab.",
   memoryLabel = "Memory",
@@ -146,12 +144,6 @@ export function ProblemResult({
           <span className="mx-2 text-faint">|</span> {memoryLabel}:{" "}
           {formatProblemMemory(result.memoryUsedKb)}
         </span>
-
-        {runMode ? (
-          <Badge variant="outline" className="ml-auto">
-            Run: public testcases only
-          </Badge>
-        ) : null}
       </div>
 
       <div className={cn("grid gap-3", result.score != null ? "grid-cols-3" : "grid-cols-2")}>
@@ -184,6 +176,43 @@ export function ProblemResult({
           {result.errorMessage}
         </pre>
       ) : null}
+
+      {result.scoreBreakdown ? (() => {
+        try {
+          const bd = typeof result.scoreBreakdown === "string" ? JSON.parse(result.scoreBreakdown) : result.scoreBreakdown;
+          const rules = bd?.phases?.oopInspection?.rules ?? bd?.oopInspection?.rules;
+          if (!rules || rules.length === 0) return null;
+
+          return (
+            <div className="space-y-3">
+              <div>
+                <p className="eyebrow mb-1.5">OOP Structure Checks</p>
+                <div className="space-y-1.5">
+                  {rules.map((r: { targetClass?: string; passed?: boolean; message?: string; ruleName?: string }, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-body-sm"
+                    >
+                      <span
+                        className={cn(
+                          "h-2 w-2 shrink-0 rounded-full",
+                          r.passed ? "bg-success" : "bg-destructive"
+                        )}
+                      />
+                      <span className="font-mono font-medium text-ink">
+                        {r.targetClass ?? r.ruleName ?? `Rule #${idx + 1}`}
+                      </span>
+                      <span className="text-mute">— {r.message ?? (r.passed ? "Check passed" : "Failed")}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        } catch {
+          return null;
+        }
+      })() : null}
 
       {cases && cases.length > 0 ? (
         <>

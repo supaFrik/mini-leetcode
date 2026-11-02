@@ -24,6 +24,8 @@ public class ExecutionReport {
     private PhaseBreakdown phases;
     private String rawOutput;
     private String errorMessage;
+    private Integer executionTimeMs;
+    private Integer memoryUsedKb;
 
     @Data
     @Builder

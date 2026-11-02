@@ -2,11 +2,23 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Download, FileCode, List, Maximize2, Minimize2, Plus, RotateCcw, Shield, Timer, Upload, X } from "lucide-react";
+import { Copy, Download, FileCode, List, Maximize2, Minimize2, Plus, RotateCcw, Shield, Terminal, Timer, Upload, X } from "lucide-react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { formatProblemMemory } from "@/components/blocks/problem-types";
 import { cn } from "@/lib/utils";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
 import {
@@ -42,6 +54,102 @@ interface Props { problem: ProblemFull; testCases: TestCase[]; mode: WorkspaceMo
 const STATUS_TEXT: Record<SaveStatus, string> = { saved: "Auto-saved", saving: "Saving…", offline: "Offline, saved locally" };
 const EVENT_LABEL: Record<ProctoringEventType, string> = { WINDOW_BLUR: "Left exam window", WINDOW_FOCUS: "Returned to exam window", CLIPBOARD_PASTE: "Pasted content" };
 
+function formatConsoleLine(line: string, idx: number) {
+  const isErr = /error:|Exception in thread|^\s*at\s+|FAILED|^\s*\[ERROR\]/i.test(line);
+  if (isErr) {
+    return (
+      <div key={idx} className="font-mono text-red-400 font-medium">
+        {line}
+      </div>
+    );
+  }
+  const isOk = /exit code 0|BUILD SUCCESS|OK/i.test(line);
+  if (isOk) {
+    return (
+      <div key={idx} className="font-mono text-emerald-400">
+        {line}
+      </div>
+    );
+  }
+  return (
+    <div key={idx} className="font-mono text-[#e6edf3]">
+      {line}
+    </div>
+  );
+}
+
+function TerminalConsole({
+  output,
+  error,
+  judging,
+  onRun,
+  mainFileName = "Main.java",
+  executionTimeMs,
+  memoryUsedKb,
+}: {
+  output: string | null;
+  error?: string | null;
+  judging: boolean;
+  onRun: () => void;
+  mainFileName?: string;
+  executionTimeMs?: number | null;
+  memoryUsedKb?: number | null;
+}) {
+  return (
+    <div className="flex h-full min-h-[200px] flex-col rounded-b-xl bg-[#0d1117] text-white">
+      <div className="flex h-8 shrink-0 items-center justify-between border-b border-[#30363d] px-3 font-mono text-body-sm text-[#8b949e]">
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "h-2 w-2 rounded-full",
+              judging ? "animate-pulse bg-amber-400" : output ? "bg-emerald-400" : error ? "bg-red-400" : "bg-neutral-500"
+            )}
+          />
+          <span>sh &mdash; java {mainFileName.replace(/\.java$/, "")}</span>
+        </div>
+        <button
+          type="button"
+          onClick={onRun}
+          disabled={judging}
+          className="flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium text-[#58a6ff] hover:bg-[#161b22] disabled:opacity-40"
+        >
+          <span>Run</span>
+        </button>
+      </div>
+
+      <div className="min-h-[140px] flex-1 overflow-auto p-4 font-mono text-code leading-relaxed">
+        <p className="text-[#8b949e]">$ java -cp . {mainFileName.replace(/\.java$/, "")}</p>
+        {judging ? (
+          <div className="mt-2 flex items-center gap-2 text-amber-300">
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <span>Executing...</span>
+          </div>
+        ) : error ? (
+          <div className="mt-2 space-y-0.5">
+            {error.split("\n").map((l, i) => formatConsoleLine(l, i))}
+            <p className="mt-2 text-red-400/80">
+              [Process exited with error{executionTimeMs != null && executionTimeMs > 0 ? ` in ${executionTimeMs}ms` : ""}]
+            </p>
+          </div>
+        ) : output ? (
+          <div className="mt-2 space-y-0.5">
+            {output.split("\n").map((l, i) => formatConsoleLine(l, i))}
+            <p className="mt-3 text-emerald-400">
+              [Process finished with exit code 0
+              {executionTimeMs != null && executionTimeMs > 0 ? ` in ${executionTimeMs}ms` : ""}
+              {memoryUsedKb != null && memoryUsedKb > 0 ? ` | ${formatProblemMemory(memoryUsedKb)}` : ""}]
+            </p>
+          </div>
+        ) : (
+          <div className="mt-2 text-[#8b949e]">
+            <p>[Ready]</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function Workspace({ problem: initialProblem, testCases: initialCases, mode, contest, role = "USER" }: Props) {
   const router = useRouter();
   const examMode = mode === "exam";
@@ -53,7 +161,6 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
   const [codes, setCodes] = useState<Record<Language, string>>({ ...TEMPLATES });
   const [lastRun, setLastRun] = useState(false);
   const [maximized, setMaximized] = useState(false);
-  const [tab, setTab] = useState("result");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -82,9 +189,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
   const { saveNow } = autosave;
   useEffect(() => { if (locked && !flushed.current) { flushed.current = true; void saveNow(); } }, [locked, saveNow]);
 
-  // Hết giờ: lưu bản nháp cuối cùng và chốt bài thi ở phía server.
-  // Nếu không chốt, thí sinh vẫn ở trạng thái IN_PROGRESS và server không biết
-  // bài làm cuối cùng của họ là bài nào.
+  // Time up: save final draft and finalize contest on the server.
   const finalized = useRef(false);
   useEffect(() => {
     if (!examMode || !timeUp || !contestId || finalized.current) return;
@@ -97,6 +202,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
   const canAct = !locked && autosave.ready && !judge.judging;
 
   const isOopGrinding = problem.type === "OOP_GRINDING";
+  const [tab, setTab] = useState<string>(problem.type === "OOP_GRINDING" ? "console" : "case");
   const defaultFiles = useMemo<SubmissionFile[]>(() => {
     if (problem.starterTemplates) {
       try {
@@ -113,10 +219,45 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
   const [activeFileIdx, setActiveFileIdx] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Alert Dialog states
+  const [deleteTargetIdx, setDeleteTargetIdx] = useState<number | null>(null);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [newFileDialogOpen, setNewFileDialogOpen] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
+
+  // Testcase Playground inputs
+  const [playgroundArgs, setPlaygroundArgs] = useState("");
+  const [playgroundStdin, setPlaygroundStdin] = useState("");
+
   useEffect(() => {
     setMultiFiles(defaultFiles);
     setActiveFileIdx(0);
   }, [defaultFiles]);
+
+  const extractedMainCases = useMemo(() => {
+    if (!isOopGrinding) return [];
+    const mainFile = multiFiles.find((f) => f.path.toLowerCase() === "main.java");
+    if (!mainFile) return [];
+    const code = mainFile.content;
+    const casesList: Array<{ id: number; title: string; statement: string; target: string }> = [];
+
+    const objRegex = /(?:([A-Za-z0-9_<>]+)\s+)?([a-zA-Z0-9_]+)\s*=\s*new\s+([A-Za-z0-9_]+)\s*\(([^)]*)\)/g;
+    let match;
+    let idx = 1;
+    while ((match = objRegex.exec(code)) !== null) {
+      const varName = match[2];
+      const className = match[3];
+      const args = match[4]?.trim() || "";
+      casesList.push({
+        id: idx++,
+        title: `${className} (${varName})`,
+        statement: `new ${className}(${args})`,
+        target: varName,
+      });
+    }
+
+    return casesList;
+  }, [isOopGrinding, multiFiles]);
 
   const updateActiveContent = (newContent: string) => {
     setMultiFiles((prev) => {
@@ -128,10 +269,14 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
     });
   };
 
-  const handleAddFile = () => {
-    const name = window.prompt("Enter new Java class/file name (e.g. Helper.java):", "NewClass.java");
-    if (!name || !name.trim()) return;
-    const cleanName = name.trim().endsWith(".java") ? name.trim() : `${name.trim()}.java`;
+  const handleOpenAddFile = () => {
+    setNewFileName("");
+    setNewFileDialogOpen(true);
+  };
+
+  const handleConfirmAddFile = () => {
+    if (!newFileName || !newFileName.trim()) return;
+    const cleanName = newFileName.trim().endsWith(".java") ? newFileName.trim() : `${newFileName.trim()}.java`;
     if (multiFiles.some((f) => f.path.toLowerCase() === cleanName.toLowerCase())) {
       toast("File already exists with that name.", "error");
       return;
@@ -140,6 +285,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
     const initialContent = `// ${cleanName}\npublic class ${className} {\n    \n}\n`;
     setMultiFiles((prev) => [...prev, { path: cleanName, content: initialContent }]);
     setActiveFileIdx(multiFiles.length);
+    setNewFileDialogOpen(false);
   };
 
   const handleDeleteFile = (idx: number, e: React.MouseEvent) => {
@@ -148,11 +294,28 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
       toast("Cannot delete the only file in the workspace.", "error");
       return;
     }
-    if (!window.confirm(`Delete ${multiFiles[idx].path}?`)) return;
-    setMultiFiles((prev) => prev.filter((_, i) => i !== idx));
-    if (activeFileIdx >= idx && activeFileIdx > 0) {
+    setDeleteTargetIdx(idx);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteTargetIdx === null) return;
+    const target = deleteTargetIdx;
+    setDeleteTargetIdx(null);
+    setMultiFiles((prev) => prev.filter((_, i) => i !== target));
+    if (activeFileIdx >= target && activeFileIdx > 0) {
       setActiveFileIdx(activeFileIdx - 1);
     }
+  };
+
+  const handleConfirmReset = () => {
+    setResetDialogOpen(false);
+    if (isOopGrinding) {
+      setMultiFiles(defaultFiles);
+      setActiveFileIdx(0);
+    } else {
+      setCodes((c) => ({ ...c, [lang]: TEMPLATES[lang] }));
+    }
+    toast("Reset code to default template.", "info");
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,7 +372,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
   const onSubmit = () => {
     if (canAct) {
       setLastRun(false);
-      setTab("result");
+      setTab(isOopGrinding ? "console" : "result");
       if (isOopGrinding) {
         void judge.submit("JAVA", multiFiles);
       } else {
@@ -235,7 +398,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
     toast(judge.error.message, "error");
     setTab("result");
     if (examMode && judge.error.status === 403 && /disqualified/i.test(judge.error.message)) proctor.markDisqualified();
-  }, [judge.error]);
+  }, [judge.error, examMode, proctor]);
   useEffect(() => { if (judge.timedOut) toast("Judging is taking longer than expected. Your submission has been saved; check Submissions.", "info"); }, [judge.timedOut]);
   useEffect(() => {
     if (!maximized) return;
@@ -265,8 +428,23 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
     finally { setBusy(false); }
   };
 
+  
+  const consoleOutput = useMemo(() => {
+    if (!judge.result) return null;
+    if (judge.result.scoreBreakdown) {
+      try {
+        const parsed = typeof judge.result.scoreBreakdown === "string" 
+          ? JSON.parse(judge.result.scoreBreakdown) 
+          : judge.result.scoreBreakdown;
+        return parsed?.rawOutput ?? null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }, [judge.result]);
+
   const crumbHref = examMode && contestId ? `/exam/${contestId}` : "/problems";
-  const sh = examMode ? "Ctrl+Shift+Enter submit" : "Ctrl+Enter run · Ctrl+Shift+Enter submit · Ctrl+S save";
   const resultLabel = judge.result?.verdict ? ` (${VERDICT[judge.result.verdict].label})` : "";
 
   const descriptionNode = (
@@ -290,7 +468,6 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
         <span aria-live="polite" className={cn(autosave.status === "offline" && "text-[#8a5a00]")}>
           {autosave.ready ? STATUS_TEXT[autosave.status] : "Loading draft…"}
         </span>
-        <span className="ml-2 hidden truncate xl:inline" title="Shortcuts">{sh}</span>
         <div className="ml-auto flex items-center gap-3">
           {!examMode && (
             <button aria-label="Copy code" title="Copy code" onClick={() => {
@@ -301,16 +478,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
               <Copy className="h-3.5 w-3.5" />
             </button>
           )}
-          <button aria-label="Reset template" title="Reset template" disabled={locked} onClick={() => {
-            if (window.confirm("Reset code to default template? Current changes will be lost.")) {
-              if (isOopGrinding) {
-                setMultiFiles(defaultFiles);
-                setActiveFileIdx(0);
-              } else {
-                setCodes((c) => ({ ...c, [lang]: TEMPLATES[lang] }));
-              }
-            }
-          }} className="text-mute transition-colors hover:text-ink disabled:opacity-40">
+          <button aria-label="Reset template" title="Reset template" disabled={locked} onClick={() => setResetDialogOpen(true)} className="text-mute transition-colors hover:text-ink disabled:opacity-40">
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
           <button aria-label={maximized ? "Minimize" : "Maximize"} title="Maximize / minimize (Esc)" onClick={() => setMaximized(!maximized)} className="text-mute transition-colors hover:text-ink">
@@ -349,7 +517,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleAddFile}
+            onClick={handleOpenAddFile}
             className="h-7 gap-1 px-2 text-code text-mute hover:text-ink"
             title="Add New Java File"
           >
@@ -392,6 +560,8 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
       <div className="min-h-0 flex-1">
         <CodeEditor
           language={isOopGrinding ? "JAVA" : lang}
+          fileName={isOopGrinding ? activeFile?.path : undefined}
+          errorMessage={judge.error?.message || (judge.result?.verdict === "CE" || judge.result?.verdict === "RE" ? judge.result.errorMessage : null)}
           value={isOopGrinding ? (activeFile?.content ?? "") : codes[lang]}
           readOnly={locked || !autosave.ready}
           examMode={examMode}
@@ -411,27 +581,110 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
     </div>
   );
   const bottomNode = (
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="m-2 border-b-0">
+      <Tabs value={tab} onValueChange={setTab} className="flex h-full flex-col">
+        <TabsList className="m-2 border-b-0 shrink-0">
+          <TabsTrigger value="console" className="gap-1.5">
+            <Terminal className="h-3.5 w-3.5" />
+            Console
+          </TabsTrigger>
           <TabsTrigger value="case">Testcase</TabsTrigger>
           <TabsTrigger value="result">Test Result{resultLabel}</TabsTrigger>
           <TabsTrigger value="subs">Submissions</TabsTrigger>
         </TabsList>
-        <TabsContent value="case" className="space-y-2 p-4 text-body-sm">
-          {cases.filter((c) => !c.isHidden).map((c, i) => (
-            <div key={c.id}>
-              <p className="mb-1 text-mute">Case {i + 1}</p>
-              <pre className="overflow-auto whitespace-pre-wrap rounded-sm border border-border bg-card px-3 py-2 font-mono text-code text-ink">{c.input}</pre>
-            </div>
-          ))}
-          {cases.every((c) => c.isHidden) && <p className="text-mute">No public testcases available yet.</p>}
+
+        <TabsContent value="console" className="mt-0 min-h-0 flex-1">
+          <TerminalConsole
+            output={consoleOutput}
+            error={judge.error?.message || (judge.result?.verdict === "CE" || judge.result?.verdict === "RE" ? judge.result.errorMessage : null)}
+            judging={judge.judging}
+            onRun={onRun}
+            mainFileName={isOopGrinding ? "Main.java" : FILE_NAME[lang]}
+            executionTimeMs={judge.result?.executionTimeMs}
+            memoryUsedKb={judge.result?.memoryUsedKb}
+          />
         </TabsContent>
-      <TabsContent value="result" className="mt-0">
-        <ResultPanel result={judge.result} cases={judge.cases} judging={judge.judging} timedOut={judge.timedOut} error={judge.error} runMode={lastRun} />
-      </TabsContent>
-      <TabsContent value="subs" className="mt-0">
-        <ProblemSubmissions problemId={problem.id} contestId={contestId} refreshKey={`${judge.result?.id}-${judge.result?.status}`} />
-      </TabsContent>
+
+        <TabsContent value="case" className="mt-0 min-h-0 flex-1 space-y-4 p-4 text-body-sm overflow-auto">
+          {isOopGrinding ? (
+            <div className="space-y-4">
+              <div>
+                <p className="eyebrow mb-2">Driver Inputs (Main.java)</p>
+                {extractedMainCases.length > 0 ? (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {extractedMainCases.map((c, i) => (
+                      <div key={c.id} className="rounded-lg border border-border bg-card p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-medium text-ink">Case {i + 1}: {c.title}</span>
+                          <span className="rounded bg-hairline-soft px-1.5 py-0.5 font-mono text-[11px] text-mute">{c.target}</span>
+                        </div>
+                        <div className="mt-2 font-mono text-code text-body">
+                          <code className="text-ink">{c.statement}</code>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-mute">No direct object instantiations detected in Main.java.</p>
+                )}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="eyebrow mb-1.5 block">Program Arguments (String[] args)</label>
+                  <Input
+                    value={playgroundArgs}
+                    onChange={(e) => setPlaygroundArgs(e.target.value)}
+                    placeholder="e.g. arg1 arg2"
+                    className="font-mono text-code"
+                  />
+                </div>
+                <div>
+                  <label className="eyebrow mb-1.5 block">Standard Input (stdin)</label>
+                  <textarea
+                    value={playgroundStdin}
+                    onChange={(e) => setPlaygroundStdin(e.target.value)}
+                    placeholder="Piped to System.in..."
+                    rows={2}
+                    className="w-full resize-none rounded-sm border border-input bg-card p-2 font-mono text-code text-ink outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setTab("console");
+                    onRun();
+                  }}
+                  disabled={!canAct || judge.judging}
+                  className="gap-1.5"
+                >
+                  <Terminal className="h-3.5 w-3.5" />
+                  <span>Run in Console</span>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {cases.filter((c) => !c.isHidden).map((c, i) => (
+                <div key={c.id}>
+                  <p className="mb-1 text-mute">Case {i + 1}</p>
+                  <pre className="overflow-auto whitespace-pre-wrap rounded-sm border border-border bg-card px-3 py-2 font-mono text-code text-ink">{c.input}</pre>
+                </div>
+              ))}
+              {cases.every((c) => c.isHidden) && <p className="text-mute">No public testcases available yet.</p>}
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="result" className="mt-0 min-h-0 flex-1 overflow-auto">
+          <ResultPanel result={judge.result} cases={judge.cases} judging={judge.judging} timedOut={judge.timedOut} error={judge.error} runMode={lastRun} />
+        </TabsContent>
+
+        <TabsContent value="subs" className="mt-0 min-h-0 flex-1 overflow-auto">
+          <ProblemSubmissions problemId={problem.id} contestId={contestId} refreshKey={`${judge.result?.id}-${judge.result?.status}`} />
+        </TabsContent>
     </Tabs>
   );
 
@@ -598,6 +851,74 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
           {!locked && proctor.fullscreenLost && <FullscreenOverlay onEnter={proctor.enterFullscreen} />}
         </>
       )}
+
+      {/* Alert Dialog: Reset code to starter template */}
+      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset to default template?</AlertDialogTitle>
+            <AlertDialogDescription>
+              All current changes in this problem will be reverted to the initial starter code.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleConfirmReset}>
+              Reset
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Alert Dialog: Delete file */}
+      <AlertDialog open={deleteTargetIdx !== null} onOpenChange={(open) => !open && setDeleteTargetIdx(null)}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete file?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTargetIdx !== null
+                ? `Are you sure you want to delete ${multiFiles[deleteTargetIdx]?.path}? This action cannot be undone.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleConfirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Alert Dialog: New file */}
+      <AlertDialog open={newFileDialogOpen} onOpenChange={setNewFileDialogOpen}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>New Java File</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter class or file name:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <Input
+              value={newFileName}
+              onChange={(e) => setNewFileName(e.target.value)}
+              placeholder="e.g. Helper.java"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleConfirmAddFile();
+                }
+              }}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAddFile}>Create</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

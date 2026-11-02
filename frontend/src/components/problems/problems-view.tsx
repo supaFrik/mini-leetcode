@@ -145,7 +145,7 @@ function Rail({
           className={cn(item, !type ? "bg-hairline-soft font-medium text-ink" : "")}
         >
           <Library className="h-4 w-4" />
-          <span>Tất cả bài tập</span>
+          <span>All Problems</span>
         </button>
         <button
           type="button"
@@ -158,7 +158,7 @@ function Rail({
           )}
         >
           <Code2 className="h-4 w-4 text-cyan-600" />
-          <span>DSA (Thuật toán)</span>
+          <span>DSA (Algorithms)</span>
         </button>
         <button
           type="button"
@@ -171,7 +171,7 @@ function Rail({
           )}
         >
           <Boxes className="h-4 w-4 text-purple-600" />
-          <span>OOP & Socket</span>
+          <span>OOP & Sockets</span>
         </button>
 
         <div className="my-2 h-px bg-border/60" />
@@ -590,7 +590,7 @@ export function ProblemsView() {
               )}
             >
               <Library className="h-4 w-4" />
-              <span>Tất cả bài tập</span>
+              <span>All Problems</span>
             </button>
             <button
               type="button"
@@ -605,7 +605,7 @@ export function ProblemsView() {
               )}
             >
               <Code2 className="h-4 w-4" />
-              <span>DSA (Thuật toán & Cấu trúc dữ liệu)</span>
+              <span>DSA (Algorithms & Data Structures)</span>
             </button>
             <button
               type="button"
@@ -620,7 +620,7 @@ export function ProblemsView() {
               )}
             >
               <Boxes className="h-4 w-4" />
-              <span>OOP (Lập trình Hướng đối tượng & Socket)</span>
+              <span>OOP (Object-Oriented & Sockets)</span>
             </button>
           </div>
 
@@ -630,7 +630,7 @@ export function ProblemsView() {
               <span className="mr-1 text-body-sm text-mute">Active:</span>
               {type && (
                 <Removable
-                  label={type === "OOP_GRINDING" ? "OOP & Socket" : "DSA (Thuật toán)"}
+                  label={type === "OOP_GRINDING" ? "OOP & Sockets" : "DSA (Algorithms)"}
                   onRemove={() => set({ type: null, page: null })}
                 />
               )}

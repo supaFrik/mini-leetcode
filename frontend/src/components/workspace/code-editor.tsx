@@ -1,9 +1,11 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import type { BeforeMount, OnMount } from "@monaco-editor/react";
+import type { BeforeMount, Monaco, OnMount } from "@monaco-editor/react";
 import type { Language } from "@/types/api";
 import { FILE_NAME, MONACO_LANG } from "@/lib/templates";
+
+type EditorInstance = Parameters<OnMount>[0];
 
 // Monaco uses `window`, only loaded on client (ssr: false)
 const Editor = dynamic(() => import("@monaco-editor/react"), {
@@ -21,12 +23,13 @@ interface Props {
   onRun?: () => void;
   onSubmit?: () => void;
   onPasteAttempt?: () => void;
+  fileName?: string;
+  errorMessage?: string | null;
 }
 
 /**
  * The editor is a light surface like the rest of the system: white canvas,
- * ink syntax, hairline gutter. It is themed off the design tokens rather than
- * Monaco's stock "light" preset so it matches the canvas exactly.
+ * ink syntax, hairline gutter.
  */
 const beforeMount: BeforeMount = (monaco) => {
   monaco.editor.defineTheme("mini-light", {
@@ -58,7 +61,7 @@ function FallbackEditor({ value, onChange, readOnly, examMode, onSave, onRun, on
   return (
     <div className="flex h-full flex-col">
       <p role="status" className="shrink-0 border-b border-border bg-warning/10 px-3 py-1 text-body-sm text-[#8a5a00]">
-        Could not load advanced code editor (CDN might be blocked). Using fallback editor.
+        Could not load advanced code editor. Using fallback editor.
       </p>
       <textarea
         aria-label="Source code"
@@ -111,6 +114,8 @@ function FallbackEditor({ value, onChange, readOnly, examMode, onSave, onRun, on
 
 export function CodeEditor(props: Props) {
   const [loadState, setLoadState] = useState<"loading" | "ready" | "failed">("loading");
+  const editorRef = useRef<EditorInstance | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
   const latest = useRef(props);
   latest.current = props;
 
@@ -130,6 +135,9 @@ export function CodeEditor(props: Props) {
   }, []);
 
   const onMount: OnMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => latest.current.onSave?.());
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => latest.current.onRun?.());
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => latest.current.onSubmit?.());
@@ -151,11 +159,70 @@ export function CodeEditor(props: Props) {
     }
   };
 
+  // Underline compilation & runtime errors in red with Monaco markers
+  useEffect(() => {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    if (!editor || !monaco) return;
+    const model = editor.getModel();
+    if (!model) return;
+
+    if (!props.errorMessage) {
+      monaco.editor.setModelMarkers(model, "compiler-errors", []);
+      return;
+    }
+
+    const markers: Parameters<Monaco["editor"]["setModelMarkers"]>[2] = [];
+    const lines = props.errorMessage.split("\n");
+    const currentFile = props.fileName || FILE_NAME[props.language];
+
+    for (const line of lines) {
+      const match = line.match(/(?:^|[\s/\\(])([a-zA-Z0-9_]+\.java):(\d+)(?::(\d+))?:\s*(?:error:\s*)?(.*)$/i);
+      if (match) {
+        const file = match[1];
+        const lineNum = parseInt(match[2], 10);
+        const colNum = match[3] ? parseInt(match[3], 10) : 1;
+        const msg = match[4]?.trim() || "Compilation error";
+
+        if (!currentFile || currentFile.toLowerCase() === file.toLowerCase()) {
+          const maxCol = model.getLineMaxColumn(lineNum) || colNum + 20;
+          markers.push({
+            startLineNumber: lineNum,
+            startColumn: colNum,
+            endLineNumber: lineNum,
+            endColumn: maxCol,
+            message: msg,
+            severity: monaco.MarkerSeverity.Error,
+          });
+        }
+      } else {
+        const traceMatch = line.match(/at\s+.*?\(([a-zA-Z0-9_]+\.java):(\d+)\)/i);
+        if (traceMatch) {
+          const file = traceMatch[1];
+          const lineNum = parseInt(traceMatch[2], 10);
+          if (!currentFile || currentFile.toLowerCase() === file.toLowerCase()) {
+            const maxCol = model.getLineMaxColumn(lineNum) || 50;
+            markers.push({
+              startLineNumber: lineNum,
+              startColumn: 1,
+              endLineNumber: lineNum,
+              endColumn: maxCol,
+              message: "Runtime exception / stack trace",
+              severity: monaco.MarkerSeverity.Error,
+            });
+          }
+        }
+      }
+    }
+
+    monaco.editor.setModelMarkers(model, "compiler-errors", markers);
+  }, [props.errorMessage, props.fileName, props.value, props.language]);
+
   if (loadState === "failed") return <FallbackEditor {...props} />;
   return (
     <Editor
       height="100%"
-      path={FILE_NAME[props.language]}
+      path={props.fileName || FILE_NAME[props.language]}
       theme="mini-light"
       language={MONACO_LANG[props.language]}
       value={props.value}
