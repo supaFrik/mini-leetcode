@@ -1,6 +1,0 @@
-5
-OPEN bob 0
-WITHDRAW bob 10
-DEPOSIT bob -5
-BALANCE carol
-OPEN bob 7

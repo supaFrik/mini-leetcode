@@ -125,3 +125,6 @@ docs/generate_docx.py
 
 # graphify knowledge-graph output (generated locally)
 graphify-out/
+
+# testcase sinh bằng backend/tools/two-sum/gen.py và backend/tools/problems/*.py (xem backend/tools/README.md)
+backend/tools/*/cases/
