@@ -99,7 +99,9 @@ class ContestTimeZoneSerializationTest {
                 3,
                 List.of(),
                 ParticipantStatus.REGISTERED,
-                0);
+                0,
+                null,
+                null);
 
         String json = objectMapper.writeValueAsString(response);
 
