@@ -3,7 +3,7 @@ import { formatCode } from "../src/lib/format-code";
 
 // Kiểm tra hàm thuần, không cần trình duyệt.
 test.describe("formatCode", () => {
-  test("re-indents Java by braces and ignores braces in strings and comments", () => {
+  test("re-indents Java by braces only and ignores braces in strings and comments", () => {
     const messy = [
       "public class Solution {",
       "public static void main(String[] args) {\t",
@@ -34,7 +34,7 @@ test.describe("formatCode", () => {
         "            System.out.println('}');",
         "        } else {",
         "            foo(1,",
-        "                2);",
+        "            2);",
         "        }",
         "        /*",
         "         * note {",

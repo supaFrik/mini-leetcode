@@ -55,8 +55,8 @@ function reindentJava(lines: string[]): string[] {
         seenCode = true;
         continue;
       }
-      if (ch === "{" || ch === "(") open++;
-      else if (ch === "}" || ch === ")") {
+      if (ch === "{") open++;
+      else if (ch === "}") {
         if (!seenCode) leadingClose++;
         open--;
       } else if (ch !== " ") seenCode = true;
