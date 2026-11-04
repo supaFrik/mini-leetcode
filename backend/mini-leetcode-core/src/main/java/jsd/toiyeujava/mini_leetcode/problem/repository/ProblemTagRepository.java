@@ -25,4 +25,11 @@ public interface ProblemTagRepository extends Repository<Problem, Long> {
             + "where p.status = 'PUBLISHED' "
             + "group by pt.tag order by count(pt.problem_id) desc, pt.tag asc", nativeQuery = true)
     List<Object[]> findTagCounts();
+
+    /** Giống {@link #findTagCounts()} nhưng chỉ đếm bài thuộc một loại (ALGORITHMIC / OOP_GRINDING). */
+    @Query(value = "select pt.tag, count(pt.problem_id) from problem_tags pt "
+            + "join problems p on p.id = pt.problem_id "
+            + "where p.status = 'PUBLISHED' and p.problem_type = :type "
+            + "group by pt.tag order by count(pt.problem_id) desc, pt.tag asc", nativeQuery = true)
+    List<Object[]> findTagCountsByType(@org.springframework.data.repository.query.Param("type") String type);
 }
