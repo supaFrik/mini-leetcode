@@ -1,0 +1,6 @@
+5
+SUBSCRIBE ann orders
+SUBSCRIBE bob orders
+PUBLISH orders order 42 shipped
+UNSUBSCRIBE ann orders
+PUBLISH orders order 43 shipped

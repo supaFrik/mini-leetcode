@@ -1,0 +1,5001 @@
+5000
+PUBLISH topic4 price
+PUBLISH topic1 started
+UNSUBSCRIBE user12 topic1
+SUBSCRIBE user12 topic5
+UNSUBSCRIBE user7 topic2
+UNSUBSCRIBE user12 topic4
+SUBSCRIBE user13 topic0
+PUBLISH topic3 order deploy
+PUBLISH topic3 build dropped
+SUBSCRIBE user6 topic4
+PUBLISH topic2 order order dropped build
+SUBSCRIBE user1 topic1
+SUBSCRIBE user9 topic3
+SUBSCRIBE user14 topic1
+SUBSCRIBE user8 topic3
+PUBLISH topic4 price
+UNSUBSCRIBE user19 topic2
+PUBLISH topic4 passed build
+PUBLISH topic2 dropped build started
+PUBLISH topic1 build
+SUBSCRIBE user7 topic4
+SUBSCRIBE user18 topic2
+PUBLISH topic0 order order deploy started
+PUBLISH topic4 shipped order
+UNSUBSCRIBE user8 topic3
+PUBLISH topic2 price shipped started
+SUBSCRIBE user19 topic5
+SUBSCRIBE user0 topic5
+SUBSCRIBE user2 topic2
+PUBLISH topic0 deploy started order
+PUBLISH topic4 price deploy deploy build
+PUBLISH topic3 passed passed
+SUBSCRIBE user11 topic5
+UNSUBSCRIBE user7 topic3
+SUBSCRIBE user2 topic3
+PUBLISH topic2 build passed
+UNSUBSCRIBE user7 topic2
+SUBSCRIBE user18 topic3
+SUBSCRIBE user8 topic0
+SUBSCRIBE user0 topic2
+UNSUBSCRIBE user2 topic5
+SUBSCRIBE user16 topic4
+UNSUBSCRIBE user5 topic0
+PUBLISH topic5 shipped
+PUBLISH topic3 order passed build build
+PUBLISH topic5 deploy started
+PUBLISH topic4 order passed build passed
+UNSUBSCRIBE user1 topic5
+SUBSCRIBE user13 topic1
+UNSUBSCRIBE user9 topic4
+PUBLISH topic0 price
+SUBSCRIBE user5 topic0
+UNSUBSCRIBE user4 topic5
+PUBLISH topic1 deploy started order
+PUBLISH topic0 dropped
+PUBLISH topic3 dropped
+SUBSCRIBE user4 topic0
+UNSUBSCRIBE user19 topic5
+SUBSCRIBE user1 topic4
+SUBSCRIBE user5 topic4
+SUBSCRIBE user6 topic2
+SUBSCRIBE user4 topic1
+SUBSCRIBE user10 topic1
+PUBLISH topic5 price passed price
+UNSUBSCRIBE user14 topic2
+SUBSCRIBE user11 topic5
+SUBSCRIBE user3 topic4
+UNSUBSCRIBE user16 topic1
+PUBLISH topic3 order dropped shipped build
+PUBLISH topic2 order started dropped
+PUBLISH topic2 passed passed
+UNSUBSCRIBE user14 topic0
+PUBLISH topic4 dropped shipped dropped dropped
+PUBLISH topic2 order order
+UNSUBSCRIBE user3 topic2
+PUBLISH topic1 order dropped deploy
+PUBLISH topic0 shipped price
+UNSUBSCRIBE user5 topic5
+SUBSCRIBE user15 topic1
+PUBLISH topic5 passed started
+PUBLISH topic4 passed dropped dropped shipped
+UNSUBSCRIBE user11 topic5
+SUBSCRIBE user17 topic5
+SUBSCRIBE user8 topic4
+PUBLISH topic0 dropped started shipped shipped
+PUBLISH topic1 dropped deploy deploy
+SUBSCRIBE user1 topic3
+PUBLISH topic3 started build started order
+UNSUBSCRIBE user14 topic4
+PUBLISH topic5 shipped build started
+PUBLISH topic5 build passed started
+SUBSCRIBE user17 topic2
+PUBLISH topic2 deploy dropped build
+PUBLISH topic2 build
+UNSUBSCRIBE user11 topic0
+PUBLISH topic0 price started
+SUBSCRIBE user3 topic0
+UNSUBSCRIBE user10 topic5
+SUBSCRIBE user9 topic2
+UNSUBSCRIBE user16 topic1
+UNSUBSCRIBE user19 topic5
+PUBLISH topic1 started
+SUBSCRIBE user19 topic2
+PUBLISH topic4 build price passed shipped
+PUBLISH topic1 build dropped order
+PUBLISH topic5 shipped passed build
+PUBLISH topic2 dropped
+SUBSCRIBE user1 topic5
+SUBSCRIBE user16 topic5
+SUBSCRIBE user3 topic4
+UNSUBSCRIBE user6 topic5
+PUBLISH topic4 shipped
+SUBSCRIBE user15 topic0
+PUBLISH topic0 build
+UNSUBSCRIBE user17 topic1
+UNSUBSCRIBE user17 topic0
+PUBLISH topic5 price shipped deploy order
+UNSUBSCRIBE user15 topic2
+SUBSCRIBE user7 topic4
+PUBLISH topic1 build
+SUBSCRIBE user8 topic0
+PUBLISH topic3 order order
+SUBSCRIBE user10 topic1
+PUBLISH topic1 started build price
+UNSUBSCRIBE user6 topic0
+SUBSCRIBE user6 topic0
+PUBLISH topic3 shipped passed dropped
+UNSUBSCRIBE user5 topic5
+PUBLISH topic2 price shipped
+PUBLISH topic5 started
+SUBSCRIBE user5 topic2
+SUBSCRIBE user4 topic0
+SUBSCRIBE user17 topic1
+SUBSCRIBE user17 topic3
+SUBSCRIBE user7 topic4
+PUBLISH topic1 price dropped order shipped
+SUBSCRIBE user10 topic3
+SUBSCRIBE user19 topic5
+SUBSCRIBE user1 topic5
+PUBLISH topic4 price
+PUBLISH topic5 order deploy started passed
+SUBSCRIBE user13 topic2
+PUBLISH topic3 deploy build
+SUBSCRIBE user18 topic3
+SUBSCRIBE user10 topic4
+PUBLISH topic4 shipped shipped
+PUBLISH topic3 shipped
+UNSUBSCRIBE user7 topic5
+PUBLISH topic5 deploy price started build
+SUBSCRIBE user5 topic5
+SUBSCRIBE user12 topic3
+PUBLISH topic4 build dropped
+PUBLISH topic1 dropped
+PUBLISH topic1 passed price deploy passed
+UNSUBSCRIBE user12 topic0
+UNSUBSCRIBE user16 topic1
+SUBSCRIBE user12 topic1
+SUBSCRIBE user19 topic5
+UNSUBSCRIBE user1 topic3
+PUBLISH topic1 build shipped
+UNSUBSCRIBE user0 topic5
+PUBLISH topic0 passed passed
+SUBSCRIBE user9 topic5
+PUBLISH topic3 build order deploy deploy
+SUBSCRIBE user12 topic3
+PUBLISH topic3 price passed dropped price
+SUBSCRIBE user6 topic2
+SUBSCRIBE user10 topic5
+UNSUBSCRIBE user3 topic3
+PUBLISH topic1 shipped
+PUBLISH topic0 passed
+SUBSCRIBE user19 topic5
+UNSUBSCRIBE user7 topic1
+PUBLISH topic2 passed order passed order
+SUBSCRIBE user5 topic5
+UNSUBSCRIBE user18 topic1
+SUBSCRIBE user4 topic0
+SUBSCRIBE user19 topic1
+UNSUBSCRIBE user8 topic1
+SUBSCRIBE user1 topic4
+UNSUBSCRIBE user14 topic2
+SUBSCRIBE user19 topic3
+PUBLISH topic1 dropped price price passed
+SUBSCRIBE user8 topic2
+SUBSCRIBE user1 topic1
+SUBSCRIBE user0 topic4
+PUBLISH topic1 price started
+UNSUBSCRIBE user8 topic4
+PUBLISH topic5 passed passed build
+UNSUBSCRIBE user15 topic5
+SUBSCRIBE user5 topic2
+SUBSCRIBE user1 topic5
+SUBSCRIBE user2 topic2
+PUBLISH topic2 price
+PUBLISH topic3 dropped dropped passed dropped
+SUBSCRIBE user3 topic4
+SUBSCRIBE user2 topic4
+SUBSCRIBE user11 topic0
+PUBLISH topic5 deploy shipped
+PUBLISH topic0 dropped started
+PUBLISH topic5 dropped
+UNSUBSCRIBE user16 topic3
+PUBLISH topic5 passed dropped passed
+SUBSCRIBE user7 topic4
+PUBLISH topic4 build price passed
+PUBLISH topic4 started
+SUBSCRIBE user11 topic1
+SUBSCRIBE user2 topic0
+UNSUBSCRIBE user8 topic5
+UNSUBSCRIBE user12 topic0
+UNSUBSCRIBE user7 topic4
+UNSUBSCRIBE user18 topic4
+SUBSCRIBE user16 topic1
+UNSUBSCRIBE user9 topic1
+PUBLISH topic3 passed dropped deploy dropped
+PUBLISH topic1 started dropped build shipped
+PUBLISH topic5 dropped build
+SUBSCRIBE user1 topic2
+PUBLISH topic0 started build passed
+UNSUBSCRIBE user8 topic2
+SUBSCRIBE user15 topic1
+PUBLISH topic0 build deploy deploy
+SUBSCRIBE user4 topic0
+SUBSCRIBE user15 topic1
+PUBLISH topic4 started passed
+SUBSCRIBE user18 topic5
+PUBLISH topic2 price order price
+SUBSCRIBE user5 topic1
+SUBSCRIBE user5 topic1
+PUBLISH topic1 shipped
+SUBSCRIBE user16 topic4
+SUBSCRIBE user18 topic3
+UNSUBSCRIBE user7 topic3
+SUBSCRIBE user4 topic3
+PUBLISH topic1 shipped
+SUBSCRIBE user4 topic2
+PUBLISH topic5 shipped started
+PUBLISH topic1 dropped
+PUBLISH topic3 deploy passed price price
+SUBSCRIBE user13 topic0
+PUBLISH topic5 started price build price
+SUBSCRIBE user11 topic4
+UNSUBSCRIBE user4 topic4
+SUBSCRIBE user7 topic4
+PUBLISH topic5 build dropped shipped
+UNSUBSCRIBE user7 topic5
+UNSUBSCRIBE user9 topic4
+SUBSCRIBE user12 topic0
+SUBSCRIBE user18 topic5
+UNSUBSCRIBE user6 topic1
+PUBLISH topic0 dropped
+SUBSCRIBE user15 topic2
+PUBLISH topic0 order shipped
+PUBLISH topic4 shipped deploy
+PUBLISH topic5 build passed
+SUBSCRIBE user1 topic5
+PUBLISH topic5 price build price order
+SUBSCRIBE user13 topic2
+PUBLISH topic0 price build price
+SUBSCRIBE user14 topic2
+PUBLISH topic0 deploy shipped order
+SUBSCRIBE user0 topic2
+SUBSCRIBE user6 topic2
+SUBSCRIBE user18 topic3
+SUBSCRIBE user9 topic2
+UNSUBSCRIBE user3 topic5
+UNSUBSCRIBE user10 topic2
+SUBSCRIBE user9 topic3
+SUBSCRIBE user11 topic5
+SUBSCRIBE user12 topic5
+SUBSCRIBE user5 topic0
+PUBLISH topic1 order passed
+UNSUBSCRIBE user16 topic2
+PUBLISH topic2 shipped
+PUBLISH topic0 price dropped shipped
+PUBLISH topic4 price shipped shipped price
+PUBLISH topic1 shipped price deploy dropped
+PUBLISH topic4 dropped order started shipped
+SUBSCRIBE user5 topic1
+PUBLISH topic4 deploy order
+UNSUBSCRIBE user7 topic1
+PUBLISH topic4 price
+SUBSCRIBE user7 topic1
+SUBSCRIBE user17 topic0
+PUBLISH topic0 build dropped deploy
+UNSUBSCRIBE user9 topic1
+UNSUBSCRIBE user2 topic4
+PUBLISH topic1 order shipped started dropped
+PUBLISH topic1 price price shipped
+UNSUBSCRIBE user15 topic3
+SUBSCRIBE user2 topic1
+UNSUBSCRIBE user5 topic1
+UNSUBSCRIBE user5 topic4
+SUBSCRIBE user4 topic0
+PUBLISH topic3 deploy price
+PUBLISH topic0 price started
+UNSUBSCRIBE user14 topic4
+PUBLISH topic5 started passed dropped
+UNSUBSCRIBE user14 topic1
+SUBSCRIBE user14 topic3
+SUBSCRIBE user17 topic1
+PUBLISH topic3 order price build dropped
+PUBLISH topic0 build shipped deploy dropped
+UNSUBSCRIBE user0 topic5
+PUBLISH topic4 price started
+UNSUBSCRIBE user4 topic2
+SUBSCRIBE user17 topic2
+PUBLISH topic4 passed dropped price passed
+SUBSCRIBE user18 topic5
+SUBSCRIBE user15 topic0
+PUBLISH topic4 passed dropped build passed
+PUBLISH topic5 order
+SUBSCRIBE user16 topic2
+SUBSCRIBE user16 topic1
+UNSUBSCRIBE user7 topic5
+UNSUBSCRIBE user4 topic2
+UNSUBSCRIBE user13 topic2
+SUBSCRIBE user5 topic4
+UNSUBSCRIBE user17 topic2
+UNSUBSCRIBE user8 topic3
+SUBSCRIBE user11 topic2
+PUBLISH topic3 price
+PUBLISH topic1 price build
+PUBLISH topic3 passed passed
+SUBSCRIBE user4 topic2
+PUBLISH topic3 started started passed
+UNSUBSCRIBE user0 topic4
+PUBLISH topic5 passed dropped shipped deploy
+UNSUBSCRIBE user7 topic5
+SUBSCRIBE user14 topic3
+PUBLISH topic0 build shipped build passed
+SUBSCRIBE user2 topic1
+UNSUBSCRIBE user19 topic5
+PUBLISH topic1 started shipped shipped
+PUBLISH topic0 price started
+PUBLISH topic4 build passed shipped
+SUBSCRIBE user4 topic2
+UNSUBSCRIBE user4 topic1
+UNSUBSCRIBE user8 topic4
+SUBSCRIBE user13 topic2
+PUBLISH topic2 started deploy
+SUBSCRIBE user16 topic1
+PUBLISH topic0 build started deploy order
+SUBSCRIBE user5 topic1
+PUBLISH topic2 build price
+PUBLISH topic5 build price
+SUBSCRIBE user16 topic4
+PUBLISH topic0 deploy shipped started started
+PUBLISH topic1 started
+PUBLISH topic1 passed
+PUBLISH topic2 dropped price
+UNSUBSCRIBE user19 topic5
+UNSUBSCRIBE user13 topic2
+SUBSCRIBE user17 topic3
+PUBLISH topic0 order build deploy
+SUBSCRIBE user2 topic4
+UNSUBSCRIBE user19 topic4
+SUBSCRIBE user5 topic3
+SUBSCRIBE user14 topic2
+PUBLISH topic4 deploy build price
+SUBSCRIBE user8 topic4
+UNSUBSCRIBE user16 topic5
+UNSUBSCRIBE user13 topic1
+SUBSCRIBE user19 topic0
+UNSUBSCRIBE user5 topic1
+PUBLISH topic2 price passed
+PUBLISH topic4 price
+SUBSCRIBE user18 topic1
+SUBSCRIBE user16 topic5
+PUBLISH topic3 deploy passed shipped
+PUBLISH topic0 order shipped price
+PUBLISH topic0 passed deploy
+PUBLISH topic1 dropped build
+PUBLISH topic4 price
+SUBSCRIBE user11 topic4
+PUBLISH topic4 dropped
+PUBLISH topic5 order price order order
+PUBLISH topic0 dropped price shipped order
+SUBSCRIBE user15 topic1
+UNSUBSCRIBE user15 topic5
+PUBLISH topic4 passed deploy passed
+SUBSCRIBE user2 topic5
+PUBLISH topic5 dropped
+SUBSCRIBE user7 topic5
+SUBSCRIBE user16 topic1
+UNSUBSCRIBE user9 topic5
+PUBLISH topic3 shipped order deploy order
+UNSUBSCRIBE user6 topic2
+SUBSCRIBE user13 topic1
+PUBLISH topic0 price dropped order
+SUBSCRIBE user19 topic0
+PUBLISH topic2 price started
+PUBLISH topic5 order shipped passed
+PUBLISH topic1 dropped order shipped dropped
+PUBLISH topic2 dropped order
+SUBSCRIBE user17 topic4
+UNSUBSCRIBE user16 topic0
+SUBSCRIBE user2 topic3
+PUBLISH topic5 build order build
+SUBSCRIBE user15 topic3
+PUBLISH topic4 shipped started shipped dropped
+SUBSCRIBE user14 topic1
+UNSUBSCRIBE user14 topic0
+SUBSCRIBE user1 topic1
+SUBSCRIBE user18 topic0
+SUBSCRIBE user12 topic4
+PUBLISH topic0 price deploy price
+SUBSCRIBE user9 topic1
+PUBLISH topic4 order deploy price
+SUBSCRIBE user4 topic4
+SUBSCRIBE user9 topic2
+SUBSCRIBE user8 topic1
+UNSUBSCRIBE user18 topic2
+SUBSCRIBE user13 topic0
+PUBLISH topic3 deploy passed build
+SUBSCRIBE user1 topic5
+PUBLISH topic4 deploy passed order
+SUBSCRIBE user0 topic3
+SUBSCRIBE user15 topic4
+PUBLISH topic3 passed deploy
+PUBLISH topic3 shipped order deploy
+UNSUBSCRIBE user9 topic0
+UNSUBSCRIBE user11 topic2
+PUBLISH topic1 deploy
+PUBLISH topic4 shipped passed price deploy
+SUBSCRIBE user19 topic3
+PUBLISH topic1 price
+SUBSCRIBE user8 topic1
+UNSUBSCRIBE user0 topic0
+UNSUBSCRIBE user5 topic4
+PUBLISH topic4 passed order passed
+SUBSCRIBE user9 topic3
+SUBSCRIBE user9 topic4
+PUBLISH topic1 price deploy
+UNSUBSCRIBE user15 topic2
+SUBSCRIBE user16 topic4
+PUBLISH topic3 started shipped build dropped
+SUBSCRIBE user0 topic4
+SUBSCRIBE user1 topic0
+UNSUBSCRIBE user6 topic4
+PUBLISH topic4 dropped deploy price price
+UNSUBSCRIBE user16 topic5
+PUBLISH topic2 build order build
+UNSUBSCRIBE user5 topic0
+PUBLISH topic1 price build
+SUBSCRIBE user12 topic0
+UNSUBSCRIBE user19 topic1
+SUBSCRIBE user18 topic0
+SUBSCRIBE user13 topic2
+SUBSCRIBE user18 topic5
+PUBLISH topic4 started
+SUBSCRIBE user18 topic4
+SUBSCRIBE user2 topic4
+SUBSCRIBE user14 topic3
+PUBLISH topic4 shipped price
+PUBLISH topic0 deploy shipped deploy
+PUBLISH topic0 shipped
+SUBSCRIBE user15 topic2
+PUBLISH topic2 deploy build
+PUBLISH topic1 price build dropped shipped
+SUBSCRIBE user11 topic2
+UNSUBSCRIBE user6 topic1
+PUBLISH topic1 order order passed build
+SUBSCRIBE user9 topic2
+UNSUBSCRIBE user1 topic3
+SUBSCRIBE user4 topic0
+SUBSCRIBE user18 topic5
+PUBLISH topic0 deploy order
+SUBSCRIBE user10 topic2
+PUBLISH topic1 passed shipped
+PUBLISH topic0 dropped deploy price
+SUBSCRIBE user7 topic3
+SUBSCRIBE user0 topic1
+UNSUBSCRIBE user2 topic2
+PUBLISH topic1 deploy
+UNSUBSCRIBE user17 topic1
+SUBSCRIBE user15 topic0
+PUBLISH topic4 build
+SUBSCRIBE user1 topic3
+PUBLISH topic5 shipped dropped order
+PUBLISH topic5 build order
+UNSUBSCRIBE user12 topic3
+PUBLISH topic5 build passed passed
+PUBLISH topic2 deploy
+PUBLISH topic4 started
+UNSUBSCRIBE user4 topic2
+SUBSCRIBE user14 topic5
+PUBLISH topic5 dropped build dropped
+UNSUBSCRIBE user5 topic1
+UNSUBSCRIBE user18 topic1
+SUBSCRIBE user1 topic3
+PUBLISH topic2 shipped
+PUBLISH topic0 started shipped shipped deploy
+SUBSCRIBE user0 topic5
+PUBLISH topic1 order
+SUBSCRIBE user3 topic0
+PUBLISH topic5 dropped shipped build build
+UNSUBSCRIBE user15 topic4
+SUBSCRIBE user11 topic1
+UNSUBSCRIBE user4 topic3
+UNSUBSCRIBE user13 topic2
+PUBLISH topic3 deploy passed build order
+SUBSCRIBE user3 topic3
+SUBSCRIBE user14 topic2
+PUBLISH topic5 deploy passed
+PUBLISH topic5 build price dropped
+SUBSCRIBE user6 topic3
+UNSUBSCRIBE user16 topic5
+SUBSCRIBE user5 topic0
+SUBSCRIBE user12 topic0
+PUBLISH topic1 started deploy price
+PUBLISH topic3 price passed passed
+UNSUBSCRIBE user4 topic1
+SUBSCRIBE user3 topic2
+SUBSCRIBE user14 topic2
+UNSUBSCRIBE user1 topic0
+PUBLISH topic0 order started price build
+PUBLISH topic0 order build
+UNSUBSCRIBE user3 topic5
+PUBLISH topic4 deploy order
+PUBLISH topic4 build
+PUBLISH topic4 dropped deploy
+PUBLISH topic0 passed build
+SUBSCRIBE user3 topic3
+PUBLISH topic2 deploy started
+SUBSCRIBE user18 topic5
+SUBSCRIBE user11 topic3
+SUBSCRIBE user11 topic5
+SUBSCRIBE user6 topic1
+SUBSCRIBE user11 topic1
+SUBSCRIBE user0 topic0
+PUBLISH topic5 shipped started order build
+SUBSCRIBE user12 topic4
+SUBSCRIBE user4 topic1
+UNSUBSCRIBE user9 topic3
+SUBSCRIBE user9 topic5
+UNSUBSCRIBE user6 topic1
+PUBLISH topic0 price order deploy
+SUBSCRIBE user15 topic5
+UNSUBSCRIBE user7 topic3
+SUBSCRIBE user8 topic2
+UNSUBSCRIBE user4 topic0
+PUBLISH topic4 price
+PUBLISH topic1 build started order
+UNSUBSCRIBE user1 topic0
+SUBSCRIBE user16 topic4
+SUBSCRIBE user17 topic3
+PUBLISH topic0 shipped build build
+PUBLISH topic0 started passed
+PUBLISH topic2 order price deploy
+SUBSCRIBE user8 topic1
+PUBLISH topic5 started started
+PUBLISH topic1 passed passed build price
+PUBLISH topic5 shipped price shipped order
+PUBLISH topic3 deploy passed
+PUBLISH topic1 deploy shipped deploy
+UNSUBSCRIBE user18 topic2
+PUBLISH topic5 price build passed shipped
+SUBSCRIBE user19 topic3
+SUBSCRIBE user0 topic2
+SUBSCRIBE user19 topic2
+SUBSCRIBE user17 topic4
+SUBSCRIBE user19 topic4
+PUBLISH topic2 price started build
+UNSUBSCRIBE user14 topic0
+PUBLISH topic1 dropped passed dropped build
+PUBLISH topic0 passed dropped deploy
+UNSUBSCRIBE user18 topic0
+SUBSCRIBE user15 topic4
+PUBLISH topic2 started
+PUBLISH topic4 order price
+SUBSCRIBE user7 topic1
+UNSUBSCRIBE user16 topic0
+UNSUBSCRIBE user19 topic2
+SUBSCRIBE user15 topic4
+SUBSCRIBE user4 topic5
+PUBLISH topic1 dropped dropped price
+SUBSCRIBE user14 topic4
+PUBLISH topic3 deploy deploy price deploy
+SUBSCRIBE user16 topic2
+SUBSCRIBE user0 topic1
+SUBSCRIBE user6 topic5
+PUBLISH topic4 started
+PUBLISH topic2 shipped passed
+SUBSCRIBE user9 topic3
+SUBSCRIBE user10 topic3
+SUBSCRIBE user1 topic2
+SUBSCRIBE user8 topic1
+SUBSCRIBE user3 topic0
+PUBLISH topic5 started passed dropped
+UNSUBSCRIBE user10 topic2
+SUBSCRIBE user8 topic1
+SUBSCRIBE user10 topic4
+SUBSCRIBE user18 topic4
+PUBLISH topic0 started price build order
+SUBSCRIBE user5 topic0
+SUBSCRIBE user7 topic3
+PUBLISH topic1 price
+SUBSCRIBE user18 topic1
+PUBLISH topic3 dropped shipped
+SUBSCRIBE user18 topic2
+PUBLISH topic3 dropped
+SUBSCRIBE user17 topic1
+PUBLISH topic2 price passed
+SUBSCRIBE user10 topic3
+PUBLISH topic4 dropped started
+SUBSCRIBE user19 topic0
+SUBSCRIBE user3 topic3
+PUBLISH topic3 started order dropped deploy
+SUBSCRIBE user3 topic2
+PUBLISH topic5 build
+SUBSCRIBE user4 topic4
+PUBLISH topic2 started
+PUBLISH topic1 passed order build passed
+SUBSCRIBE user0 topic0
+UNSUBSCRIBE user13 topic4
+SUBSCRIBE user16 topic0
+SUBSCRIBE user7 topic3
+PUBLISH topic2 shipped
+PUBLISH topic3 order build passed price
+SUBSCRIBE user13 topic2
+SUBSCRIBE user8 topic4
+PUBLISH topic2 started
+UNSUBSCRIBE user15 topic3
+UNSUBSCRIBE user18 topic4
+PUBLISH topic0 deploy started passed
+SUBSCRIBE user8 topic1
+UNSUBSCRIBE user15 topic4
+PUBLISH topic1 price started build order
+SUBSCRIBE user17 topic5
+PUBLISH topic3 shipped shipped build
+UNSUBSCRIBE user9 topic1
+SUBSCRIBE user13 topic4
+UNSUBSCRIBE user3 topic2
+SUBSCRIBE user0 topic2
+PUBLISH topic4 price started deploy
+PUBLISH topic2 started started order deploy
+UNSUBSCRIBE user5 topic5
+UNSUBSCRIBE user19 topic3
+SUBSCRIBE user19 topic4
+SUBSCRIBE user4 topic2
+PUBLISH topic5 order started
+SUBSCRIBE user10 topic3
+SUBSCRIBE user0 topic2
+PUBLISH topic1 passed build
+PUBLISH topic2 deploy build order
+SUBSCRIBE user14 topic3
+PUBLISH topic3 deploy shipped order price
+UNSUBSCRIBE user11 topic5
+SUBSCRIBE user13 topic4
+SUBSCRIBE user1 topic5
+SUBSCRIBE user16 topic0
+SUBSCRIBE user15 topic2
+UNSUBSCRIBE user9 topic1
+PUBLISH topic1 started dropped shipped
+SUBSCRIBE user7 topic2
+PUBLISH topic2 dropped build
+PUBLISH topic3 build dropped
+PUBLISH topic0 passed passed started
+PUBLISH topic4 started deploy
+PUBLISH topic3 price build
+PUBLISH topic1 passed price
+PUBLISH topic1 shipped price
+SUBSCRIBE user17 topic4
+PUBLISH topic4 passed
+SUBSCRIBE user10 topic1
+PUBLISH topic0 deploy
+PUBLISH topic1 price
+SUBSCRIBE user13 topic5
+SUBSCRIBE user3 topic5
+SUBSCRIBE user16 topic2
+PUBLISH topic4 price deploy order deploy
+SUBSCRIBE user13 topic1
+UNSUBSCRIBE user18 topic2
+SUBSCRIBE user14 topic4
+SUBSCRIBE user13 topic3
+PUBLISH topic4 shipped build started started
+UNSUBSCRIBE user10 topic0
+PUBLISH topic4 dropped deploy build price
+PUBLISH topic2 order dropped shipped order
+PUBLISH topic4 order
+PUBLISH topic5 started started
+PUBLISH topic0 passed passed order
+SUBSCRIBE user0 topic2
+SUBSCRIBE user18 topic2
+PUBLISH topic5 passed
+SUBSCRIBE user17 topic3
+SUBSCRIBE user2 topic3
+SUBSCRIBE user4 topic4
+UNSUBSCRIBE user9 topic4
+UNSUBSCRIBE user19 topic4
+UNSUBSCRIBE user6 topic0
+UNSUBSCRIBE user18 topic3
+PUBLISH topic2 shipped
+UNSUBSCRIBE user11 topic2
+SUBSCRIBE user18 topic0
+SUBSCRIBE user7 topic0
+PUBLISH topic2 deploy dropped build build
+PUBLISH topic1 order price
+PUBLISH topic0 started
+PUBLISH topic1 build
+PUBLISH topic2 dropped dropped deploy
+SUBSCRIBE user14 topic4
+UNSUBSCRIBE user16 topic3
+SUBSCRIBE user2 topic2
+SUBSCRIBE user2 topic5
+PUBLISH topic4 started started price
+UNSUBSCRIBE user17 topic5
+PUBLISH topic4 passed
+SUBSCRIBE user7 topic0
+PUBLISH topic3 build
+SUBSCRIBE user11 topic5
+PUBLISH topic3 started
+SUBSCRIBE user17 topic4
+PUBLISH topic0 passed deploy build
+SUBSCRIBE user19 topic4
+UNSUBSCRIBE user8 topic1
+PUBLISH topic1 build
+UNSUBSCRIBE user11 topic0
+PUBLISH topic2 dropped dropped
+PUBLISH topic1 order order shipped shipped
+PUBLISH topic2 dropped dropped
+PUBLISH topic3 order order deploy deploy
+SUBSCRIBE user10 topic2
+SUBSCRIBE user5 topic5
+UNSUBSCRIBE user14 topic2
+PUBLISH topic5 build started
+PUBLISH topic5 passed dropped
+SUBSCRIBE user5 topic1
+PUBLISH topic3 build order
+SUBSCRIBE user17 topic2
+PUBLISH topic5 build shipped
+PUBLISH topic3 build deploy order dropped
+UNSUBSCRIBE user10 topic3
+PUBLISH topic3 started deploy price dropped
+PUBLISH topic5 dropped build
+PUBLISH topic0 build
+PUBLISH topic2 build dropped dropped
+SUBSCRIBE user5 topic3
+PUBLISH topic5 shipped
+UNSUBSCRIBE user17 topic0
+PUBLISH topic0 started price order price
+UNSUBSCRIBE user8 topic1
+UNSUBSCRIBE user1 topic2
+SUBSCRIBE user6 topic2
+PUBLISH topic1 dropped price
+UNSUBSCRIBE user15 topic4
+SUBSCRIBE user17 topic3
+SUBSCRIBE user18 topic1
+SUBSCRIBE user2 topic1
+PUBLISH topic4 dropped dropped
+UNSUBSCRIBE user5 topic5
+PUBLISH topic4 order dropped order
+PUBLISH topic5 deploy order dropped
+PUBLISH topic5 deploy
+PUBLISH topic4 dropped passed dropped
+PUBLISH topic4 price passed
+PUBLISH topic1 price build shipped
+UNSUBSCRIBE user3 topic0
+UNSUBSCRIBE user3 topic1
+PUBLISH topic2 deploy passed build
+UNSUBSCRIBE user13 topic5
+UNSUBSCRIBE user15 topic0
+PUBLISH topic1 order
+PUBLISH topic2 dropped
+SUBSCRIBE user16 topic5
+PUBLISH topic2 deploy build dropped started
+SUBSCRIBE user16 topic5
+SUBSCRIBE user11 topic1
+PUBLISH topic5 price started order price
+SUBSCRIBE user15 topic1
+PUBLISH topic4 order shipped build shipped
+SUBSCRIBE user3 topic1
+SUBSCRIBE user14 topic0
+PUBLISH topic1 order
+SUBSCRIBE user13 topic0
+PUBLISH topic1 price started dropped
+SUBSCRIBE user1 topic1
+PUBLISH topic5 build deploy price price
+PUBLISH topic3 dropped shipped
+PUBLISH topic5 deploy
+PUBLISH topic1 deploy dropped
+SUBSCRIBE user10 topic4
+SUBSCRIBE user2 topic1
+PUBLISH topic4 shipped
+PUBLISH topic2 build deploy dropped order
+PUBLISH topic0 build passed shipped dropped
+SUBSCRIBE user5 topic1
+UNSUBSCRIBE user12 topic3
+PUBLISH topic5 price
+PUBLISH topic2 shipped build
+PUBLISH topic3 started shipped price
+UNSUBSCRIBE user10 topic0
+SUBSCRIBE user5 topic4
+PUBLISH topic2 shipped
+PUBLISH topic1 build order dropped passed
+SUBSCRIBE user12 topic2
+PUBLISH topic4 started deploy deploy
+SUBSCRIBE user9 topic4
+UNSUBSCRIBE user13 topic1
+UNSUBSCRIBE user0 topic5
+SUBSCRIBE user5 topic5
+PUBLISH topic4 deploy started build price
+PUBLISH topic5 dropped build
+PUBLISH topic3 deploy
+UNSUBSCRIBE user11 topic5
+UNSUBSCRIBE user19 topic4
+UNSUBSCRIBE user18 topic4
+SUBSCRIBE user7 topic2
+UNSUBSCRIBE user18 topic4
+PUBLISH topic5 passed started passed
+PUBLISH topic2 order
+UNSUBSCRIBE user0 topic3
+UNSUBSCRIBE user10 topic0
+SUBSCRIBE user5 topic0
+UNSUBSCRIBE user1 topic2
+PUBLISH topic5 order passed dropped price
+SUBSCRIBE user18 topic3
+PUBLISH topic2 build order deploy
+PUBLISH topic3 passed build order shipped
+PUBLISH topic2 price started order
+SUBSCRIBE user0 topic3
+UNSUBSCRIBE user3 topic3
+SUBSCRIBE user4 topic4
+PUBLISH topic0 dropped order dropped dropped
+SUBSCRIBE user5 topic0
+UNSUBSCRIBE user11 topic0
+PUBLISH topic0 shipped order passed
+PUBLISH topic0 shipped passed price
+PUBLISH topic2 passed
+PUBLISH topic0 passed shipped
+PUBLISH topic1 dropped shipped started dropped
+UNSUBSCRIBE user9 topic4
+PUBLISH topic0 order order deploy
+PUBLISH topic1 order passed passed build
+SUBSCRIBE user12 topic1
+PUBLISH topic4 build build dropped deploy
+SUBSCRIBE user1 topic0
+UNSUBSCRIBE user0 topic1
+PUBLISH topic2 build started dropped passed
+UNSUBSCRIBE user1 topic0
+UNSUBSCRIBE user6 topic5
+UNSUBSCRIBE user9 topic4
+PUBLISH topic3 order shipped deploy
+SUBSCRIBE user6 topic3
+PUBLISH topic0 passed dropped
+SUBSCRIBE user19 topic4
+PUBLISH topic2 dropped order
+PUBLISH topic0 passed
+SUBSCRIBE user4 topic1
+SUBSCRIBE user3 topic2
+SUBSCRIBE user11 topic0
+PUBLISH topic1 shipped started
+PUBLISH topic1 passed build
+SUBSCRIBE user1 topic2
+SUBSCRIBE user18 topic0
+UNSUBSCRIBE user9 topic0
+PUBLISH topic2 started
+SUBSCRIBE user16 topic5
+UNSUBSCRIBE user5 topic0
+SUBSCRIBE user14 topic2
+SUBSCRIBE user4 topic3
+PUBLISH topic0 deploy
+SUBSCRIBE user6 topic3
+SUBSCRIBE user9 topic5
+PUBLISH topic1 order dropped deploy order
+SUBSCRIBE user19 topic0
+PUBLISH topic0 price dropped dropped passed
+PUBLISH topic1 deploy dropped deploy build
+SUBSCRIBE user2 topic1
+UNSUBSCRIBE user7 topic0
+SUBSCRIBE user3 topic3
+PUBLISH topic5 dropped started
+SUBSCRIBE user14 topic4
+PUBLISH topic0 order started
+SUBSCRIBE user13 topic2
+PUBLISH topic5 started passed
+PUBLISH topic3 build
+SUBSCRIBE user12 topic4
+PUBLISH topic0 deploy started
+UNSUBSCRIBE user2 topic0
+SUBSCRIBE user18 topic3
+SUBSCRIBE user16 topic3
+SUBSCRIBE user12 topic1
+SUBSCRIBE user13 topic0
+SUBSCRIBE user18 topic5
+PUBLISH topic0 passed
+PUBLISH topic4 passed shipped
+UNSUBSCRIBE user10 topic0
+PUBLISH topic2 price order price build
+UNSUBSCRIBE user11 topic3
+PUBLISH topic3 deploy
+SUBSCRIBE user15 topic0
+UNSUBSCRIBE user6 topic4
+PUBLISH topic3 price
+SUBSCRIBE user0 topic1
+PUBLISH topic5 dropped deploy
+UNSUBSCRIBE user12 topic1
+UNSUBSCRIBE user13 topic2
+PUBLISH topic5 shipped build started dropped
+SUBSCRIBE user10 topic2
+SUBSCRIBE user15 topic2
+PUBLISH topic1 deploy deploy started
+SUBSCRIBE user14 topic2
+UNSUBSCRIBE user16 topic5
+UNSUBSCRIBE user1 topic0
+SUBSCRIBE user8 topic4
+PUBLISH topic5 build order order deploy
+SUBSCRIBE user15 topic1
+UNSUBSCRIBE user11 topic1
+PUBLISH topic0 shipped order
+SUBSCRIBE user4 topic0
+PUBLISH topic3 deploy
+PUBLISH topic3 started shipped
+PUBLISH topic5 shipped deploy build dropped
+SUBSCRIBE user11 topic2
+PUBLISH topic0 order shipped dropped
+UNSUBSCRIBE user11 topic1
+SUBSCRIBE user15 topic2
+SUBSCRIBE user12 topic2
+SUBSCRIBE user15 topic3
+SUBSCRIBE user8 topic4
+SUBSCRIBE user4 topic2
+PUBLISH topic4 build order shipped
+PUBLISH topic1 order
+UNSUBSCRIBE user16 topic1
+PUBLISH topic0 build dropped build
+SUBSCRIBE user0 topic0
+PUBLISH topic4 started deploy deploy passed
+SUBSCRIBE user3 topic1
+SUBSCRIBE user2 topic3
+PUBLISH topic5 shipped
+UNSUBSCRIBE user11 topic1
+PUBLISH topic1 order
+SUBSCRIBE user7 topic0
+UNSUBSCRIBE user5 topic0
+SUBSCRIBE user2 topic2
+PUBLISH topic4 shipped started
+PUBLISH topic5 order
+PUBLISH topic4 started shipped deploy
+PUBLISH topic5 passed
+PUBLISH topic2 started deploy
+PUBLISH topic5 price build price
+UNSUBSCRIBE user17 topic5
+UNSUBSCRIBE user4 topic3
+PUBLISH topic1 deploy started price
+UNSUBSCRIBE user13 topic1
+SUBSCRIBE user9 topic5
+PUBLISH topic3 price build price
+SUBSCRIBE user16 topic4
+PUBLISH topic2 price passed price deploy
+PUBLISH topic1 build price shipped
+PUBLISH topic4 shipped
+PUBLISH topic4 build price dropped
+PUBLISH topic5 build build started order
+PUBLISH topic2 started dropped order
+SUBSCRIBE user19 topic4
+UNSUBSCRIBE user18 topic1
+SUBSCRIBE user15 topic4
+UNSUBSCRIBE user11 topic3
+PUBLISH topic3 build order
+SUBSCRIBE user10 topic0
+PUBLISH topic1 build shipped
+SUBSCRIBE user16 topic5
+SUBSCRIBE user10 topic0
+UNSUBSCRIBE user7 topic4
+SUBSCRIBE user18 topic1
+SUBSCRIBE user18 topic1
+SUBSCRIBE user14 topic1
+UNSUBSCRIBE user19 topic4
+PUBLISH topic4 deploy deploy price
+SUBSCRIBE user5 topic3
+PUBLISH topic3 passed deploy shipped
+UNSUBSCRIBE user8 topic5
+UNSUBSCRIBE user1 topic1
+PUBLISH topic0 price deploy passed passed
+UNSUBSCRIBE user9 topic4
+UNSUBSCRIBE user2 topic0
+SUBSCRIBE user15 topic2
+PUBLISH topic0 started passed
+SUBSCRIBE user14 topic4
+PUBLISH topic1 deploy build shipped passed
+SUBSCRIBE user3 topic0
+SUBSCRIBE user8 topic1
+SUBSCRIBE user9 topic4
+PUBLISH topic0 order shipped started dropped
+SUBSCRIBE user11 topic4
+PUBLISH topic2 shipped started
+PUBLISH topic1 deploy shipped price price
+SUBSCRIBE user4 topic0
+SUBSCRIBE user10 topic0
+SUBSCRIBE user12 topic2
+PUBLISH topic3 dropped
+UNSUBSCRIBE user17 topic0
+PUBLISH topic0 dropped
+PUBLISH topic0 started started price
+PUBLISH topic0 started order passed deploy
+PUBLISH topic2 started
+SUBSCRIBE user3 topic1
+SUBSCRIBE user0 topic2
+PUBLISH topic3 order started build build
+SUBSCRIBE user8 topic3
+SUBSCRIBE user5 topic3
+SUBSCRIBE user18 topic3
+SUBSCRIBE user12 topic4
+PUBLISH topic3 passed
+SUBSCRIBE user9 topic2
+PUBLISH topic2 order shipped passed
+PUBLISH topic4 price build deploy dropped
+SUBSCRIBE user6 topic3
+PUBLISH topic5 price shipped deploy
+PUBLISH topic1 deploy price price order
+PUBLISH topic0 passed passed dropped
+UNSUBSCRIBE user10 topic0
+SUBSCRIBE user12 topic0
+PUBLISH topic1 order started dropped deploy
+SUBSCRIBE user11 topic3
+SUBSCRIBE user18 topic2
+UNSUBSCRIBE user0 topic1
+PUBLISH topic4 price dropped deploy started
+SUBSCRIBE user15 topic5
+SUBSCRIBE user10 topic2
+PUBLISH topic1 build started deploy
+SUBSCRIBE user16 topic3
+SUBSCRIBE user15 topic5
+UNSUBSCRIBE user2 topic5
+SUBSCRIBE user5 topic5
+UNSUBSCRIBE user0 topic4
+SUBSCRIBE user6 topic4
+SUBSCRIBE user9 topic5
+PUBLISH topic5 build
+PUBLISH topic4 passed dropped started
+PUBLISH topic5 build price
+PUBLISH topic2 deploy dropped deploy started
+PUBLISH topic2 order deploy price
+PUBLISH topic2 price order shipped dropped
+SUBSCRIBE user9 topic0
+SUBSCRIBE user10 topic0
+UNSUBSCRIBE user5 topic5
+SUBSCRIBE user14 topic0
+PUBLISH topic5 order price
+UNSUBSCRIBE user1 topic0
+PUBLISH topic3 deploy passed
+UNSUBSCRIBE user0 topic1
+PUBLISH topic4 shipped passed price
+PUBLISH topic3 order shipped dropped
+PUBLISH topic5 dropped build build
+SUBSCRIBE user7 topic4
+PUBLISH topic1 shipped
+SUBSCRIBE user19 topic0
+SUBSCRIBE user11 topic3
+SUBSCRIBE user11 topic4
+PUBLISH topic2 deploy
+PUBLISH topic0 order dropped started
+PUBLISH topic5 price
+PUBLISH topic3 dropped
+SUBSCRIBE user0 topic5
+UNSUBSCRIBE user0 topic5
+SUBSCRIBE user6 topic5
+PUBLISH topic3 passed build
+UNSUBSCRIBE user7 topic1
+SUBSCRIBE user12 topic1
+PUBLISH topic3 shipped price passed
+SUBSCRIBE user1 topic0
+PUBLISH topic5 build
+PUBLISH topic4 deploy
+SUBSCRIBE user18 topic4
+SUBSCRIBE user15 topic1
+PUBLISH topic5 started deploy
+PUBLISH topic5 order order deploy
+PUBLISH topic4 shipped passed order
+SUBSCRIBE user0 topic0
+PUBLISH topic2 shipped order shipped passed
+SUBSCRIBE user10 topic0
+SUBSCRIBE user0 topic0
+PUBLISH topic3 price order passed price
+SUBSCRIBE user12 topic1
+PUBLISH topic3 started started deploy
+PUBLISH topic1 deploy price
+SUBSCRIBE user3 topic3
+PUBLISH topic2 dropped
+PUBLISH topic3 deploy shipped
+PUBLISH topic3 shipped price
+SUBSCRIBE user1 topic4
+PUBLISH topic3 price price passed build
+UNSUBSCRIBE user1 topic5
+PUBLISH topic5 build passed
+SUBSCRIBE user18 topic2
+SUBSCRIBE user0 topic4
+PUBLISH topic0 passed price
+PUBLISH topic4 deploy price build
+UNSUBSCRIBE user13 topic3
+UNSUBSCRIBE user13 topic4
+SUBSCRIBE user2 topic1
+PUBLISH topic2 order
+SUBSCRIBE user11 topic3
+PUBLISH topic3 shipped started
+PUBLISH topic5 started
+PUBLISH topic4 deploy price build shipped
+SUBSCRIBE user19 topic3
+PUBLISH topic4 deploy dropped deploy
+UNSUBSCRIBE user1 topic1
+UNSUBSCRIBE user18 topic3
+PUBLISH topic2 passed price
+PUBLISH topic0 price passed build
+PUBLISH topic1 started dropped
+SUBSCRIBE user0 topic5
+PUBLISH topic0 shipped dropped deploy
+UNSUBSCRIBE user0 topic0
+PUBLISH topic0 build
+UNSUBSCRIBE user4 topic1
+PUBLISH topic4 deploy dropped
+PUBLISH topic1 dropped price order order
+SUBSCRIBE user11 topic3
+UNSUBSCRIBE user12 topic1
+PUBLISH topic2 shipped shipped build passed
+UNSUBSCRIBE user10 topic2
+PUBLISH topic0 started passed
+SUBSCRIBE user14 topic5
+SUBSCRIBE user7 topic3
+SUBSCRIBE user0 topic1
+UNSUBSCRIBE user7 topic5
+PUBLISH topic1 started passed
+PUBLISH topic1 dropped
+UNSUBSCRIBE user2 topic3
+SUBSCRIBE user6 topic5
+SUBSCRIBE user7 topic2
+UNSUBSCRIBE user10 topic0
+SUBSCRIBE user12 topic2
+PUBLISH topic0 started passed shipped build
+PUBLISH topic5 shipped price
+PUBLISH topic2 started dropped order
+SUBSCRIBE user9 topic1
+PUBLISH topic5 price price dropped price
+SUBSCRIBE user6 topic0
+UNSUBSCRIBE user12 topic1
+PUBLISH topic4 started
+PUBLISH topic2 dropped passed
+PUBLISH topic2 order shipped
+PUBLISH topic4 order dropped shipped build
+PUBLISH topic3 deploy build deploy deploy
+PUBLISH topic0 shipped passed passed deploy
+UNSUBSCRIBE user14 topic2
+SUBSCRIBE user12 topic5
+PUBLISH topic1 build
+UNSUBSCRIBE user18 topic2
+SUBSCRIBE user15 topic2
+PUBLISH topic0 deploy order price
+PUBLISH topic5 price build passed dropped
+SUBSCRIBE user13 topic0
+PUBLISH topic1 build
+PUBLISH topic2 deploy passed build
+SUBSCRIBE user11 topic4
+SUBSCRIBE user11 topic3
+PUBLISH topic2 build order
+SUBSCRIBE user6 topic4
+UNSUBSCRIBE user1 topic4
+SUBSCRIBE user15 topic3
+UNSUBSCRIBE user8 topic4
+PUBLISH topic2 build price started
+PUBLISH topic0 passed dropped price shipped
+SUBSCRIBE user15 topic1
+SUBSCRIBE user4 topic5
+SUBSCRIBE user18 topic4
+UNSUBSCRIBE user14 topic4
+SUBSCRIBE user18 topic0
+SUBSCRIBE user11 topic2
+SUBSCRIBE user4 topic3
+PUBLISH topic0 shipped
+UNSUBSCRIBE user18 topic5
+SUBSCRIBE user4 topic1
+SUBSCRIBE user6 topic2
+PUBLISH topic4 order price deploy build
+SUBSCRIBE user16 topic4
+SUBSCRIBE user6 topic1
+SUBSCRIBE user8 topic4
+UNSUBSCRIBE user5 topic4
+SUBSCRIBE user19 topic1
+PUBLISH topic3 passed started dropped order
+SUBSCRIBE user18 topic2
+UNSUBSCRIBE user16 topic0
+PUBLISH topic5 passed shipped dropped passed
+UNSUBSCRIBE user17 topic4
+SUBSCRIBE user0 topic1
+PUBLISH topic0 passed shipped
+SUBSCRIBE user9 topic5
+PUBLISH topic4 passed order
+PUBLISH topic5 dropped dropped
+SUBSCRIBE user9 topic5
+PUBLISH topic5 started dropped started
+PUBLISH topic3 shipped
+SUBSCRIBE user11 topic4
+PUBLISH topic5 build started started order
+PUBLISH topic4 deploy passed dropped price
+PUBLISH topic4 build passed deploy started
+PUBLISH topic1 passed
+SUBSCRIBE user17 topic3
+PUBLISH topic3 passed
+SUBSCRIBE user16 topic0
+UNSUBSCRIBE user8 topic0
+SUBSCRIBE user0 topic4
+SUBSCRIBE user9 topic3
+PUBLISH topic5 deploy dropped passed dropped
+PUBLISH topic3 dropped build
+PUBLISH topic1 order deploy deploy shipped
+PUBLISH topic4 dropped
+SUBSCRIBE user12 topic0
+UNSUBSCRIBE user0 topic0
+PUBLISH topic1 dropped dropped order passed
+PUBLISH topic5 deploy shipped shipped deploy
+SUBSCRIBE user11 topic3
+PUBLISH topic2 dropped price
+UNSUBSCRIBE user5 topic2
+PUBLISH topic0 dropped
+SUBSCRIBE user9 topic5
+PUBLISH topic2 order shipped
+UNSUBSCRIBE user14 topic5
+SUBSCRIBE user0 topic2
+SUBSCRIBE user12 topic2
+SUBSCRIBE user10 topic2
+SUBSCRIBE user19 topic5
+PUBLISH topic5 order
+SUBSCRIBE user8 topic1
+PUBLISH topic4 order price
+UNSUBSCRIBE user2 topic3
+UNSUBSCRIBE user12 topic5
+PUBLISH topic2 order
+SUBSCRIBE user1 topic2
+UNSUBSCRIBE user7 topic2
+UNSUBSCRIBE user18 topic2
+SUBSCRIBE user19 topic4
+PUBLISH topic2 started
+SUBSCRIBE user17 topic5
+PUBLISH topic0 shipped order
+UNSUBSCRIBE user2 topic4
+SUBSCRIBE user18 topic4
+PUBLISH topic2 dropped price
+SUBSCRIBE user17 topic4
+PUBLISH topic4 build passed passed shipped
+SUBSCRIBE user9 topic4
+UNSUBSCRIBE user15 topic5
+PUBLISH topic2 dropped passed shipped deploy
+SUBSCRIBE user7 topic4
+PUBLISH topic4 build dropped
+SUBSCRIBE user4 topic1
+SUBSCRIBE user9 topic3
+SUBSCRIBE user6 topic2
+UNSUBSCRIBE user16 topic5
+PUBLISH topic4 started
+UNSUBSCRIBE user2 topic1
+PUBLISH topic3 passed
+PUBLISH topic0 passed price
+SUBSCRIBE user10 topic5
+PUBLISH topic2 deploy
+SUBSCRIBE user0 topic5
+SUBSCRIBE user15 topic4
+PUBLISH topic4 price dropped build deploy
+SUBSCRIBE user10 topic5
+SUBSCRIBE user11 topic5
+UNSUBSCRIBE user5 topic1
+PUBLISH topic2 deploy build
+PUBLISH topic4 passed started
+PUBLISH topic1 dropped shipped order
+SUBSCRIBE user15 topic0
+SUBSCRIBE user3 topic2
+SUBSCRIBE user6 topic2
+PUBLISH topic5 order price
+UNSUBSCRIBE user7 topic0
+UNSUBSCRIBE user1 topic1
+SUBSCRIBE user3 topic5
+PUBLISH topic5 build
+SUBSCRIBE user13 topic4
+SUBSCRIBE user11 topic0
+SUBSCRIBE user7 topic5
+SUBSCRIBE user16 topic4
+PUBLISH topic2 price dropped dropped
+PUBLISH topic1 build shipped
+SUBSCRIBE user5 topic4
+SUBSCRIBE user8 topic2
+PUBLISH topic0 dropped started build
+PUBLISH topic4 dropped shipped shipped
+PUBLISH topic1 deploy passed shipped
+PUBLISH topic3 price shipped price dropped
+UNSUBSCRIBE user14 topic5
+SUBSCRIBE user15 topic1
+SUBSCRIBE user11 topic0
+SUBSCRIBE user14 topic3
+UNSUBSCRIBE user10 topic2
+PUBLISH topic3 dropped started
+UNSUBSCRIBE user11 topic4
+UNSUBSCRIBE user3 topic4
+UNSUBSCRIBE user19 topic2
+UNSUBSCRIBE user6 topic0
+PUBLISH topic4 dropped build started shipped
+PUBLISH topic3 passed
+PUBLISH topic5 price
+PUBLISH topic2 shipped started dropped
+SUBSCRIBE user7 topic2
+PUBLISH topic4 passed dropped deploy price
+PUBLISH topic3 price
+UNSUBSCRIBE user0 topic5
+SUBSCRIBE user18 topic2
+PUBLISH topic2 price order
+PUBLISH topic1 price started
+UNSUBSCRIBE user14 topic3
+SUBSCRIBE user18 topic4
+SUBSCRIBE user1 topic0
+SUBSCRIBE user8 topic3
+UNSUBSCRIBE user4 topic5
+UNSUBSCRIBE user13 topic3
+PUBLISH topic0 dropped build build deploy
+PUBLISH topic5 passed shipped
+SUBSCRIBE user15 topic1
+PUBLISH topic5 build
+SUBSCRIBE user8 topic1
+PUBLISH topic3 price
+SUBSCRIBE user19 topic0
+SUBSCRIBE user19 topic5
+SUBSCRIBE user16 topic0
+UNSUBSCRIBE user16 topic3
+UNSUBSCRIBE user11 topic3
+SUBSCRIBE user5 topic0
+SUBSCRIBE user0 topic4
+SUBSCRIBE user14 topic1
+PUBLISH topic0 started started dropped build
+SUBSCRIBE user18 topic2
+PUBLISH topic1 started
+UNSUBSCRIBE user14 topic1
+SUBSCRIBE user14 topic5
+SUBSCRIBE user18 topic2
+PUBLISH topic0 shipped shipped shipped dropped
+PUBLISH topic5 price
+UNSUBSCRIBE user11 topic1
+SUBSCRIBE user9 topic1
+PUBLISH topic5 started
+SUBSCRIBE user0 topic2
+UNSUBSCRIBE user0 topic0
+SUBSCRIBE user14 topic1
+PUBLISH topic2 dropped
+UNSUBSCRIBE user12 topic2
+SUBSCRIBE user11 topic4
+PUBLISH topic3 order shipped
+UNSUBSCRIBE user7 topic1
+SUBSCRIBE user8 topic4
+PUBLISH topic5 build started deploy deploy
+PUBLISH topic4 build order price
+PUBLISH topic5 order shipped dropped price
+PUBLISH topic4 order order shipped
+SUBSCRIBE user14 topic1
+PUBLISH topic0 order order
+PUBLISH topic3 passed build dropped deploy
+UNSUBSCRIBE user16 topic2
+SUBSCRIBE user3 topic0
+PUBLISH topic5 order dropped
+PUBLISH topic4 dropped
+PUBLISH topic5 order dropped build passed
+UNSUBSCRIBE user8 topic3
+PUBLISH topic5 shipped price shipped
+SUBSCRIBE user15 topic4
+PUBLISH topic5 passed started
+PUBLISH topic2 passed deploy started shipped
+PUBLISH topic1 price deploy price
+UNSUBSCRIBE user17 topic5
+SUBSCRIBE user3 topic3
+UNSUBSCRIBE user16 topic4
+SUBSCRIBE user10 topic3
+SUBSCRIBE user8 topic0
+SUBSCRIBE user8 topic2
+SUBSCRIBE user16 topic2
+UNSUBSCRIBE user19 topic2
+SUBSCRIBE user11 topic4
+PUBLISH topic1 dropped build shipped
+PUBLISH topic4 started deploy
+PUBLISH topic3 price started
+PUBLISH topic0 dropped deploy deploy started
+PUBLISH topic4 dropped shipped shipped
+PUBLISH topic0 price deploy build build
+SUBSCRIBE user2 topic4
+PUBLISH topic4 started
+SUBSCRIBE user1 topic4
+SUBSCRIBE user15 topic5
+PUBLISH topic4 order shipped build build
+PUBLISH topic4 shipped deploy passed shipped
+UNSUBSCRIBE user2 topic0
+PUBLISH topic0 build dropped build deploy
+PUBLISH topic0 dropped
+SUBSCRIBE user12 topic3
+SUBSCRIBE user18 topic5
+PUBLISH topic1 started
+UNSUBSCRIBE user11 topic5
+SUBSCRIBE user14 topic1
+SUBSCRIBE user8 topic3
+PUBLISH topic3 passed passed order price
+SUBSCRIBE user5 topic1
+SUBSCRIBE user19 topic5
+SUBSCRIBE user6 topic3
+PUBLISH topic4 dropped
+UNSUBSCRIBE user18 topic4
+SUBSCRIBE user1 topic1
+SUBSCRIBE user0 topic0
+PUBLISH topic2 deploy started order price
+PUBLISH topic0 passed
+PUBLISH topic2 order order price price
+SUBSCRIBE user12 topic1
+PUBLISH topic2 dropped started shipped
+PUBLISH topic1 build
+PUBLISH topic5 price order
+PUBLISH topic4 order price dropped deploy
+SUBSCRIBE user3 topic2
+UNSUBSCRIBE user4 topic1
+PUBLISH topic4 passed
+SUBSCRIBE user10 topic4
+SUBSCRIBE user5 topic2
+UNSUBSCRIBE user12 topic5
+UNSUBSCRIBE user10 topic5
+UNSUBSCRIBE user3 topic4
+SUBSCRIBE user5 topic1
+SUBSCRIBE user2 topic1
+PUBLISH topic2 dropped build order shipped
+SUBSCRIBE user17 topic2
+UNSUBSCRIBE user7 topic5
+SUBSCRIBE user10 topic0
+SUBSCRIBE user10 topic3
+PUBLISH topic5 order
+PUBLISH topic5 started build dropped
+UNSUBSCRIBE user10 topic0
+SUBSCRIBE user7 topic4
+UNSUBSCRIBE user16 topic3
+UNSUBSCRIBE user7 topic4
+SUBSCRIBE user12 topic3
+SUBSCRIBE user8 topic5
+PUBLISH topic3 deploy dropped order passed
+SUBSCRIBE user0 topic1
+PUBLISH topic2 order
+PUBLISH topic4 passed build dropped price
+PUBLISH topic3 deploy build shipped
+PUBLISH topic4 deploy
+UNSUBSCRIBE user1 topic4
+PUBLISH topic0 build
+SUBSCRIBE user18 topic3
+SUBSCRIBE user0 topic3
+SUBSCRIBE user6 topic0
+PUBLISH topic3 build deploy started
+PUBLISH topic3 order passed
+SUBSCRIBE user16 topic2
+SUBSCRIBE user19 topic2
+PUBLISH topic0 shipped
+SUBSCRIBE user4 topic3
+SUBSCRIBE user13 topic4
+SUBSCRIBE user15 topic0
+SUBSCRIBE user16 topic1
+SUBSCRIBE user1 topic1
+SUBSCRIBE user10 topic3
+SUBSCRIBE user5 topic4
+SUBSCRIBE user0 topic1
+PUBLISH topic4 price build
+UNSUBSCRIBE user11 topic1
+UNSUBSCRIBE user3 topic4
+PUBLISH topic4 dropped passed build
+UNSUBSCRIBE user15 topic2
+UNSUBSCRIBE user12 topic5
+SUBSCRIBE user14 topic1
+SUBSCRIBE user12 topic1
+PUBLISH topic2 dropped
+SUBSCRIBE user0 topic2
+UNSUBSCRIBE user3 topic4
+PUBLISH topic0 order shipped passed
+SUBSCRIBE user7 topic5
+SUBSCRIBE user12 topic4
+UNSUBSCRIBE user15 topic1
+SUBSCRIBE user9 topic2
+SUBSCRIBE user7 topic4
+PUBLISH topic0 build order price
+PUBLISH topic3 started started price
+UNSUBSCRIBE user15 topic5
+PUBLISH topic1 order started passed price
+UNSUBSCRIBE user19 topic5
+PUBLISH topic2 build price deploy deploy
+UNSUBSCRIBE user16 topic4
+PUBLISH topic0 shipped
+SUBSCRIBE user0 topic1
+SUBSCRIBE user17 topic3
+SUBSCRIBE user1 topic4
+SUBSCRIBE user0 topic2
+SUBSCRIBE user15 topic3
+UNSUBSCRIBE user19 topic4
+SUBSCRIBE user7 topic3
+SUBSCRIBE user12 topic2
+SUBSCRIBE user4 topic4
+PUBLISH topic1 passed started
+PUBLISH topic2 build shipped build deploy
+PUBLISH topic5 passed
+PUBLISH topic0 started order
+UNSUBSCRIBE user11 topic2
+UNSUBSCRIBE user3 topic0
+SUBSCRIBE user11 topic1
+PUBLISH topic3 deploy
+UNSUBSCRIBE user15 topic1
+PUBLISH topic1 dropped deploy
+PUBLISH topic2 build
+PUBLISH topic3 price deploy price
+SUBSCRIBE user16 topic3
+PUBLISH topic5 build
+SUBSCRIBE user16 topic1
+PUBLISH topic5 passed order deploy
+PUBLISH topic1 order
+PUBLISH topic1 dropped build
+SUBSCRIBE user18 topic5
+PUBLISH topic2 started passed
+SUBSCRIBE user4 topic3
+PUBLISH topic2 shipped build passed build
+UNSUBSCRIBE user0 topic1
+PUBLISH topic1 started price shipped
+SUBSCRIBE user15 topic5
+SUBSCRIBE user12 topic5
+SUBSCRIBE user5 topic5
+PUBLISH topic4 started deploy deploy
+PUBLISH topic3 started shipped shipped
+SUBSCRIBE user2 topic0
+SUBSCRIBE user5 topic4
+SUBSCRIBE user3 topic2
+PUBLISH topic5 passed started passed started
+SUBSCRIBE user15 topic4
+UNSUBSCRIBE user0 topic1
+UNSUBSCRIBE user3 topic2
+PUBLISH topic2 shipped
+SUBSCRIBE user9 topic2
+PUBLISH topic4 deploy build
+SUBSCRIBE user16 topic0
+SUBSCRIBE user15 topic4
+SUBSCRIBE user12 topic5
+PUBLISH topic0 order shipped shipped order
+UNSUBSCRIBE user13 topic1
+PUBLISH topic1 passed
+SUBSCRIBE user7 topic1
+PUBLISH topic4 price
+PUBLISH topic0 shipped deploy deploy
+UNSUBSCRIBE user11 topic0
+SUBSCRIBE user14 topic4
+SUBSCRIBE user9 topic2
+UNSUBSCRIBE user10 topic3
+UNSUBSCRIBE user2 topic1
+SUBSCRIBE user9 topic2
+PUBLISH topic5 order
+SUBSCRIBE user15 topic1
+SUBSCRIBE user10 topic0
+SUBSCRIBE user10 topic5
+PUBLISH topic1 passed
+SUBSCRIBE user3 topic0
+SUBSCRIBE user16 topic5
+PUBLISH topic1 started
+SUBSCRIBE user11 topic2
+SUBSCRIBE user3 topic3
+SUBSCRIBE user7 topic0
+SUBSCRIBE user18 topic3
+SUBSCRIBE user15 topic3
+UNSUBSCRIBE user11 topic5
+PUBLISH topic3 passed started deploy
+SUBSCRIBE user13 topic2
+PUBLISH topic1 deploy price dropped deploy
+SUBSCRIBE user7 topic0
+UNSUBSCRIBE user7 topic4
+SUBSCRIBE user6 topic4
+UNSUBSCRIBE user3 topic0
+SUBSCRIBE user18 topic5
+PUBLISH topic5 shipped price dropped
+SUBSCRIBE user14 topic4
+PUBLISH topic3 passed passed started price
+SUBSCRIBE user8 topic4
+PUBLISH topic5 passed
+PUBLISH topic2 price price price
+SUBSCRIBE user13 topic5
+SUBSCRIBE user14 topic4
+SUBSCRIBE user8 topic1
+SUBSCRIBE user0 topic0
+PUBLISH topic2 passed passed price price
+PUBLISH topic4 deploy started
+PUBLISH topic5 dropped deploy dropped
+SUBSCRIBE user3 topic4
+PUBLISH topic5 passed dropped dropped
+SUBSCRIBE user6 topic5
+UNSUBSCRIBE user9 topic4
+SUBSCRIBE user13 topic5
+PUBLISH topic4 price order deploy
+PUBLISH topic4 shipped dropped passed shipped
+SUBSCRIBE user0 topic3
+PUBLISH topic5 deploy dropped deploy price
+UNSUBSCRIBE user12 topic5
+UNSUBSCRIBE user14 topic3
+SUBSCRIBE user5 topic1
+PUBLISH topic2 build dropped started
+SUBSCRIBE user19 topic1
+PUBLISH topic2 shipped passed price
+SUBSCRIBE user14 topic1
+PUBLISH topic0 deploy
+UNSUBSCRIBE user18 topic4
+UNSUBSCRIBE user17 topic0
+SUBSCRIBE user13 topic0
+SUBSCRIBE user3 topic5
+SUBSCRIBE user0 topic4
+SUBSCRIBE user1 topic5
+PUBLISH topic5 build deploy order
+UNSUBSCRIBE user11 topic3
+UNSUBSCRIBE user16 topic3
+PUBLISH topic2 dropped shipped build order
+PUBLISH topic0 started
+SUBSCRIBE user1 topic3
+PUBLISH topic1 passed shipped price price
+PUBLISH topic5 deploy
+SUBSCRIBE user17 topic3
+SUBSCRIBE user8 topic0
+SUBSCRIBE user9 topic3
+SUBSCRIBE user15 topic1
+SUBSCRIBE user7 topic4
+PUBLISH topic5 shipped shipped
+PUBLISH topic3 order deploy
+UNSUBSCRIBE user14 topic4
+PUBLISH topic3 price price
+UNSUBSCRIBE user1 topic0
+SUBSCRIBE user15 topic2
+SUBSCRIBE user4 topic3
+UNSUBSCRIBE user7 topic5
+UNSUBSCRIBE user2 topic4
+PUBLISH topic2 deploy dropped order
+PUBLISH topic3 dropped
+PUBLISH topic1 dropped started build
+SUBSCRIBE user10 topic5
+PUBLISH topic1 dropped price shipped deploy
+PUBLISH topic2 passed deploy shipped passed
+PUBLISH topic1 price price
+PUBLISH topic0 started build deploy
+UNSUBSCRIBE user15 topic1
+UNSUBSCRIBE user18 topic2
+PUBLISH topic3 deploy dropped
+SUBSCRIBE user18 topic1
+SUBSCRIBE user18 topic3
+SUBSCRIBE user3 topic4
+PUBLISH topic5 passed dropped order
+UNSUBSCRIBE user19 topic2
+UNSUBSCRIBE user15 topic5
+SUBSCRIBE user7 topic5
+PUBLISH topic2 build
+PUBLISH topic3 started
+UNSUBSCRIBE user3 topic0
+PUBLISH topic5 deploy started build order
+UNSUBSCRIBE user6 topic3
+PUBLISH topic1 passed deploy deploy
+SUBSCRIBE user0 topic3
+UNSUBSCRIBE user11 topic2
+SUBSCRIBE user19 topic0
+SUBSCRIBE user8 topic3
+PUBLISH topic3 dropped deploy build price
+SUBSCRIBE user5 topic0
+SUBSCRIBE user4 topic1
+SUBSCRIBE user18 topic1
+PUBLISH topic4 price started shipped price
+SUBSCRIBE user3 topic4
+PUBLISH topic3 started build started build
+SUBSCRIBE user5 topic2
+PUBLISH topic1 build price deploy shipped
+SUBSCRIBE user14 topic0
+SUBSCRIBE user1 topic5
+SUBSCRIBE user15 topic4
+PUBLISH topic4 deploy build
+PUBLISH topic5 price passed passed
+PUBLISH topic5 price price shipped price
+SUBSCRIBE user6 topic4
+UNSUBSCRIBE user18 topic1
+SUBSCRIBE user18 topic5
+SUBSCRIBE user12 topic4
+PUBLISH topic3 dropped deploy dropped
+SUBSCRIBE user8 topic5
+PUBLISH topic1 passed
+UNSUBSCRIBE user12 topic0
+SUBSCRIBE user8 topic1
+UNSUBSCRIBE user10 topic1
+PUBLISH topic2 price
+PUBLISH topic0 shipped passed passed
+PUBLISH topic5 deploy shipped order deploy
+SUBSCRIBE user12 topic3
+SUBSCRIBE user0 topic2
+SUBSCRIBE user6 topic2
+PUBLISH topic5 passed build started
+SUBSCRIBE user14 topic2
+PUBLISH topic2 price passed dropped dropped
+UNSUBSCRIBE user16 topic3
+PUBLISH topic4 deploy deploy deploy price
+UNSUBSCRIBE user11 topic1
+SUBSCRIBE user15 topic5
+UNSUBSCRIBE user1 topic3
+UNSUBSCRIBE user3 topic4
+SUBSCRIBE user18 topic0
+SUBSCRIBE user19 topic2
+PUBLISH topic1 started build
+PUBLISH topic1 shipped dropped shipped
+PUBLISH topic2 order started
+SUBSCRIBE user17 topic3
+UNSUBSCRIBE user1 topic5
+PUBLISH topic3 price
+SUBSCRIBE user0 topic4
+SUBSCRIBE user6 topic5
+PUBLISH topic3 passed build price
+PUBLISH topic3 dropped shipped
+SUBSCRIBE user5 topic1
+SUBSCRIBE user16 topic5
+SUBSCRIBE user4 topic0
+PUBLISH topic3 passed price passed price
+SUBSCRIBE user19 topic5
+PUBLISH topic4 build shipped deploy price
+UNSUBSCRIBE user6 topic4
+UNSUBSCRIBE user16 topic3
+SUBSCRIBE user18 topic2
+SUBSCRIBE user19 topic2
+UNSUBSCRIBE user5 topic4
+PUBLISH topic0 deploy
+UNSUBSCRIBE user10 topic4
+SUBSCRIBE user11 topic4
+PUBLISH topic4 passed passed passed
+PUBLISH topic5 passed build
+UNSUBSCRIBE user19 topic0
+SUBSCRIBE user6 topic0
+UNSUBSCRIBE user4 topic0
+SUBSCRIBE user12 topic4
+UNSUBSCRIBE user18 topic4
+SUBSCRIBE user17 topic4
+UNSUBSCRIBE user4 topic2
+PUBLISH topic1 dropped order
+SUBSCRIBE user11 topic4
+UNSUBSCRIBE user5 topic5
+UNSUBSCRIBE user3 topic0
+SUBSCRIBE user7 topic4
+SUBSCRIBE user17 topic2
+PUBLISH topic0 price order started
+SUBSCRIBE user0 topic2
+SUBSCRIBE user0 topic1
+PUBLISH topic2 order passed
+SUBSCRIBE user16 topic1
+UNSUBSCRIBE user17 topic3
+PUBLISH topic2 shipped
+UNSUBSCRIBE user6 topic5
+SUBSCRIBE user17 topic2
+SUBSCRIBE user3 topic4
+PUBLISH topic3 price passed build
+PUBLISH topic1 order order passed
+PUBLISH topic4 started passed order build
+PUBLISH topic1 build started dropped dropped
+PUBLISH topic4 deploy
+PUBLISH topic1 deploy dropped dropped order
+PUBLISH topic1 deploy shipped price dropped
+PUBLISH topic1 deploy dropped started build
+SUBSCRIBE user10 topic2
+PUBLISH topic1 shipped dropped build
+SUBSCRIBE user3 topic5
+UNSUBSCRIBE user17 topic4
+SUBSCRIBE user17 topic5
+SUBSCRIBE user2 topic0
+UNSUBSCRIBE user4 topic2
+SUBSCRIBE user0 topic3
+SUBSCRIBE user9 topic5
+PUBLISH topic0 shipped started
+SUBSCRIBE user4 topic0
+SUBSCRIBE user3 topic4
+SUBSCRIBE user17 topic3
+SUBSCRIBE user11 topic2
+SUBSCRIBE user13 topic4
+SUBSCRIBE user16 topic0
+UNSUBSCRIBE user18 topic3
+PUBLISH topic2 order shipped build
+UNSUBSCRIBE user18 topic1
+SUBSCRIBE user0 topic1
+UNSUBSCRIBE user14 topic2
+UNSUBSCRIBE user12 topic1
+PUBLISH topic0 shipped
+PUBLISH topic5 dropped
+PUBLISH topic2 order price
+SUBSCRIBE user6 topic5
+SUBSCRIBE user16 topic0
+SUBSCRIBE user1 topic0
+SUBSCRIBE user6 topic0
+SUBSCRIBE user15 topic5
+SUBSCRIBE user11 topic3
+PUBLISH topic3 started dropped
+SUBSCRIBE user6 topic4
+UNSUBSCRIBE user14 topic5
+SUBSCRIBE user12 topic4
+SUBSCRIBE user4 topic4
+PUBLISH topic0 shipped order
+UNSUBSCRIBE user13 topic3
+SUBSCRIBE user4 topic5
+SUBSCRIBE user13 topic5
+SUBSCRIBE user6 topic2
+PUBLISH topic1 deploy
+SUBSCRIBE user5 topic1
+PUBLISH topic3 order build build shipped
+UNSUBSCRIBE user2 topic1
+SUBSCRIBE user2 topic3
+SUBSCRIBE user10 topic2
+SUBSCRIBE user12 topic5
+SUBSCRIBE user19 topic4
+UNSUBSCRIBE user5 topic1
+SUBSCRIBE user6 topic5
+SUBSCRIBE user9 topic0
+PUBLISH topic4 dropped started dropped
+PUBLISH topic1 started
+SUBSCRIBE user0 topic1
+SUBSCRIBE user14 topic2
+UNSUBSCRIBE user6 topic5
+SUBSCRIBE user8 topic4
+PUBLISH topic2 started
+SUBSCRIBE user16 topic2
+PUBLISH topic4 passed shipped passed passed
+PUBLISH topic1 order
+UNSUBSCRIBE user10 topic1
+UNSUBSCRIBE user6 topic3
+UNSUBSCRIBE user11 topic4
+SUBSCRIBE user11 topic1
+SUBSCRIBE user15 topic1
+PUBLISH topic3 passed
+PUBLISH topic5 passed
+PUBLISH topic2 build build
+SUBSCRIBE user4 topic5
+SUBSCRIBE user2 topic4
+SUBSCRIBE user18 topic1
+PUBLISH topic4 passed
+SUBSCRIBE user11 topic1
+PUBLISH topic4 deploy dropped dropped
+PUBLISH topic2 started passed
+PUBLISH topic5 deploy price order started
+UNSUBSCRIBE user10 topic5
+SUBSCRIBE user18 topic2
+PUBLISH topic2 started passed
+UNSUBSCRIBE user4 topic2
+UNSUBSCRIBE user10 topic5
+UNSUBSCRIBE user2 topic1
+SUBSCRIBE user9 topic2
+PUBLISH topic4 order deploy price deploy
+UNSUBSCRIBE user0 topic3
+PUBLISH topic4 deploy price shipped price
+SUBSCRIBE user16 topic5
+PUBLISH topic2 shipped build
+UNSUBSCRIBE user4 topic1
+PUBLISH topic1 build order order
+SUBSCRIBE user12 topic5
+PUBLISH topic0 price price
+SUBSCRIBE user17 topic0
+SUBSCRIBE user15 topic4
+UNSUBSCRIBE user10 topic0
+UNSUBSCRIBE user4 topic3
+SUBSCRIBE user2 topic2
+PUBLISH topic2 passed started
+UNSUBSCRIBE user9 topic0
+SUBSCRIBE user17 topic1
+PUBLISH topic0 build
+UNSUBSCRIBE user5 topic5
+PUBLISH topic4 started order passed
+SUBSCRIBE user9 topic1
+PUBLISH topic3 passed
+UNSUBSCRIBE user1 topic5
+PUBLISH topic3 deploy deploy
+UNSUBSCRIBE user13 topic0
+PUBLISH topic4 dropped
+SUBSCRIBE user14 topic4
+SUBSCRIBE user0 topic5
+UNSUBSCRIBE user16 topic3
+UNSUBSCRIBE user10 topic3
+SUBSCRIBE user11 topic2
+SUBSCRIBE user3 topic2
+PUBLISH topic1 order deploy
+UNSUBSCRIBE user11 topic4
+SUBSCRIBE user15 topic4
+PUBLISH topic2 build price
+UNSUBSCRIBE user0 topic3
+PUBLISH topic4 dropped shipped dropped passed
+UNSUBSCRIBE user13 topic0
+PUBLISH topic2 started dropped price
+PUBLISH topic2 passed
+UNSUBSCRIBE user19 topic3
+PUBLISH topic0 build
+SUBSCRIBE user14 topic2
+UNSUBSCRIBE user12 topic5
+PUBLISH topic5 deploy
+SUBSCRIBE user10 topic0
+PUBLISH topic1 order
+PUBLISH topic0 build dropped shipped price
+UNSUBSCRIBE user9 topic0
+PUBLISH topic1 deploy passed build
+SUBSCRIBE user6 topic1
+PUBLISH topic3 price started shipped price
+SUBSCRIBE user5 topic2
+PUBLISH topic3 price build
+SUBSCRIBE user0 topic3
+PUBLISH topic1 order price dropped
+PUBLISH topic4 dropped passed price dropped
+PUBLISH topic3 deploy deploy dropped price
+UNSUBSCRIBE user2 topic1
+PUBLISH topic2 deploy
+PUBLISH topic4 passed price price
+UNSUBSCRIBE user15 topic4
+SUBSCRIBE user0 topic0
+UNSUBSCRIBE user10 topic3
+UNSUBSCRIBE user12 topic3
+PUBLISH topic1 build
+PUBLISH topic0 started build price
+SUBSCRIBE user13 topic4
+PUBLISH topic0 deploy shipped order
+UNSUBSCRIBE user3 topic1
+SUBSCRIBE user18 topic1
+SUBSCRIBE user7 topic4
+PUBLISH topic1 deploy shipped
+SUBSCRIBE user5 topic2
+PUBLISH topic3 order passed order
+PUBLISH topic2 build order price shipped
+UNSUBSCRIBE user0 topic4
+SUBSCRIBE user10 topic1
+SUBSCRIBE user5 topic5
+PUBLISH topic4 deploy price dropped deploy
+PUBLISH topic3 build
+PUBLISH topic5 price started build
+PUBLISH topic2 deploy dropped started order
+PUBLISH topic4 shipped started build build
+PUBLISH topic2 shipped shipped
+PUBLISH topic4 price
+PUBLISH topic4 shipped
+SUBSCRIBE user18 topic1
+SUBSCRIBE user18 topic4
+SUBSCRIBE user14 topic2
+SUBSCRIBE user9 topic2
+SUBSCRIBE user8 topic5
+PUBLISH topic0 price deploy build deploy
+PUBLISH topic1 deploy shipped order
+PUBLISH topic4 shipped passed
+PUBLISH topic2 price started started
+SUBSCRIBE user1 topic3
+SUBSCRIBE user2 topic0
+PUBLISH topic0 shipped
+SUBSCRIBE user17 topic4
+UNSUBSCRIBE user5 topic3
+SUBSCRIBE user15 topic0
+PUBLISH topic1 dropped
+PUBLISH topic2 shipped shipped
+SUBSCRIBE user19 topic5
+SUBSCRIBE user13 topic2
+SUBSCRIBE user13 topic4
+UNSUBSCRIBE user16 topic2
+SUBSCRIBE user17 topic3
+PUBLISH topic4 dropped
+PUBLISH topic4 deploy dropped
+SUBSCRIBE user9 topic3
+PUBLISH topic2 price shipped
+SUBSCRIBE user17 topic5
+PUBLISH topic3 order
+SUBSCRIBE user1 topic5
+SUBSCRIBE user14 topic1
+PUBLISH topic4 started order price
+SUBSCRIBE user14 topic2
+UNSUBSCRIBE user6 topic1
+PUBLISH topic1 shipped build
+PUBLISH topic5 dropped deploy started deploy
+UNSUBSCRIBE user18 topic4
+SUBSCRIBE user3 topic4
+SUBSCRIBE user0 topic1
+PUBLISH topic2 build order build order
+SUBSCRIBE user9 topic0
+PUBLISH topic4 deploy
+PUBLISH topic0 shipped started price
+UNSUBSCRIBE user0 topic0
+PUBLISH topic5 deploy price started
+PUBLISH topic3 order
+UNSUBSCRIBE user18 topic1
+SUBSCRIBE user13 topic1
+UNSUBSCRIBE user8 topic2
+UNSUBSCRIBE user16 topic4
+UNSUBSCRIBE user17 topic0
+PUBLISH topic2 price build deploy
+UNSUBSCRIBE user19 topic2
+PUBLISH topic2 started dropped deploy passed
+PUBLISH topic5 build order
+SUBSCRIBE user18 topic3
+UNSUBSCRIBE user13 topic4
+SUBSCRIBE user4 topic5
+PUBLISH topic5 build passed started
+UNSUBSCRIBE user10 topic1
+SUBSCRIBE user5 topic4
+SUBSCRIBE user0 topic1
+SUBSCRIBE user8 topic1
+PUBLISH topic1 started passed
+UNSUBSCRIBE user4 topic4
+PUBLISH topic4 started order order shipped
+UNSUBSCRIBE user17 topic0
+SUBSCRIBE user1 topic2
+SUBSCRIBE user0 topic1
+SUBSCRIBE user3 topic2
+SUBSCRIBE user4 topic5
+SUBSCRIBE user17 topic2
+SUBSCRIBE user2 topic4
+PUBLISH topic2 shipped
+PUBLISH topic0 started dropped
+SUBSCRIBE user0 topic3
+SUBSCRIBE user0 topic4
+PUBLISH topic3 dropped passed
+SUBSCRIBE user3 topic3
+PUBLISH topic1 shipped passed
+SUBSCRIBE user14 topic2
+UNSUBSCRIBE user2 topic2
+PUBLISH topic3 build order order price
+SUBSCRIBE user2 topic0
+UNSUBSCRIBE user9 topic4
+PUBLISH topic2 started deploy deploy
+SUBSCRIBE user8 topic3
+SUBSCRIBE user2 topic0
+PUBLISH topic2 started
+PUBLISH topic2 deploy started shipped
+SUBSCRIBE user5 topic4
+PUBLISH topic5 dropped price price shipped
+PUBLISH topic1 order
+PUBLISH topic3 dropped passed passed
+PUBLISH topic5 shipped
+SUBSCRIBE user2 topic2
+SUBSCRIBE user11 topic1
+UNSUBSCRIBE user16 topic4
+SUBSCRIBE user6 topic5
+SUBSCRIBE user18 topic4
+SUBSCRIBE user4 topic4
+PUBLISH topic2 dropped started order price
+PUBLISH topic1 price
+SUBSCRIBE user14 topic4
+UNSUBSCRIBE user10 topic1
+PUBLISH topic2 started order build
+SUBSCRIBE user11 topic5
+PUBLISH topic2 passed
+PUBLISH topic0 started price
+SUBSCRIBE user12 topic2
+PUBLISH topic5 order build
+PUBLISH topic4 deploy order shipped
+SUBSCRIBE user3 topic1
+PUBLISH topic4 build
+SUBSCRIBE user11 topic5
+PUBLISH topic1 passed deploy
+SUBSCRIBE user7 topic1
+UNSUBSCRIBE user5 topic0
+UNSUBSCRIBE user13 topic4
+UNSUBSCRIBE user9 topic5
+PUBLISH topic5 price
+PUBLISH topic0 dropped price deploy
+PUBLISH topic2 order dropped
+PUBLISH topic5 dropped passed order
+SUBSCRIBE user0 topic0
+UNSUBSCRIBE user5 topic4
+SUBSCRIBE user15 topic5
+SUBSCRIBE user17 topic2
+SUBSCRIBE user12 topic2
+PUBLISH topic0 price passed dropped
+UNSUBSCRIBE user18 topic1
+SUBSCRIBE user8 topic1
+UNSUBSCRIBE user12 topic0
+PUBLISH topic0 order passed price
+PUBLISH topic3 build
+SUBSCRIBE user19 topic1
+PUBLISH topic5 deploy
+PUBLISH topic5 deploy started
+UNSUBSCRIBE user17 topic3
+PUBLISH topic5 deploy started
+UNSUBSCRIBE user12 topic0
+SUBSCRIBE user9 topic0
+PUBLISH topic2 price build started order
+SUBSCRIBE user13 topic2
+SUBSCRIBE user8 topic1
+PUBLISH topic4 deploy
+UNSUBSCRIBE user4 topic2
+SUBSCRIBE user10 topic3
+SUBSCRIBE user8 topic0
+SUBSCRIBE user0 topic0
+SUBSCRIBE user8 topic3
+UNSUBSCRIBE user16 topic3
+PUBLISH topic2 order
+UNSUBSCRIBE user3 topic1
+UNSUBSCRIBE user2 topic5
+UNSUBSCRIBE user0 topic0
+PUBLISH topic1 shipped price dropped
+SUBSCRIBE user6 topic3
+SUBSCRIBE user15 topic1
+PUBLISH topic2 price
+UNSUBSCRIBE user11 topic1
+SUBSCRIBE user10 topic3
+SUBSCRIBE user15 topic0
+PUBLISH topic1 deploy deploy
+PUBLISH topic2 dropped dropped passed passed
+UNSUBSCRIBE user16 topic3
+PUBLISH topic1 price deploy
+PUBLISH topic4 build price dropped build
+PUBLISH topic3 order
+SUBSCRIBE user17 topic1
+SUBSCRIBE user2 topic1
+PUBLISH topic0 dropped
+SUBSCRIBE user15 topic0
+UNSUBSCRIBE user17 topic0
+UNSUBSCRIBE user17 topic1
+UNSUBSCRIBE user9 topic2
+UNSUBSCRIBE user8 topic5
+SUBSCRIBE user19 topic5
+PUBLISH topic1 started passed build
+SUBSCRIBE user2 topic3
+SUBSCRIBE user19 topic1
+SUBSCRIBE user16 topic4
+PUBLISH topic5 started
+SUBSCRIBE user11 topic2
+UNSUBSCRIBE user1 topic4
+PUBLISH topic4 order order price price
+SUBSCRIBE user12 topic4
+PUBLISH topic2 deploy started
+UNSUBSCRIBE user17 topic4
+PUBLISH topic2 price dropped shipped
+PUBLISH topic0 passed
+PUBLISH topic3 shipped
+SUBSCRIBE user8 topic1
+SUBSCRIBE user18 topic2
+SUBSCRIBE user13 topic0
+UNSUBSCRIBE user6 topic3
+SUBSCRIBE user19 topic1
+PUBLISH topic4 dropped passed build passed
+SUBSCRIBE user8 topic3
+PUBLISH topic1 shipped build build
+UNSUBSCRIBE user12 topic5
+SUBSCRIBE user7 topic1
+SUBSCRIBE user15 topic0
+PUBLISH topic0 started dropped
+SUBSCRIBE user3 topic4
+PUBLISH topic5 deploy passed price dropped
+SUBSCRIBE user0 topic2
+UNSUBSCRIBE user11 topic2
+PUBLISH topic0 build started
+PUBLISH topic5 price
+SUBSCRIBE user8 topic2
+UNSUBSCRIBE user5 topic4
+SUBSCRIBE user5 topic5
+SUBSCRIBE user7 topic0
+UNSUBSCRIBE user2 topic2
+SUBSCRIBE user6 topic4
+PUBLISH topic2 build build order
+UNSUBSCRIBE user3 topic2
+SUBSCRIBE user15 topic3
+SUBSCRIBE user1 topic2
+SUBSCRIBE user8 topic0
+UNSUBSCRIBE user9 topic2
+PUBLISH topic1 order deploy shipped shipped
+SUBSCRIBE user11 topic0
+PUBLISH topic2 dropped passed
+PUBLISH topic1 dropped
+PUBLISH topic0 dropped
+PUBLISH topic0 deploy dropped dropped started
+SUBSCRIBE user10 topic2
+PUBLISH topic1 deploy
+SUBSCRIBE user14 topic4
+SUBSCRIBE user8 topic5
+SUBSCRIBE user6 topic4
+SUBSCRIBE user3 topic4
+UNSUBSCRIBE user11 topic0
+PUBLISH topic2 started
+PUBLISH topic2 passed started deploy dropped
+PUBLISH topic2 deploy price
+UNSUBSCRIBE user4 topic3
+PUBLISH topic3 build
+PUBLISH topic0 shipped build
+SUBSCRIBE user17 topic3
+PUBLISH topic3 passed shipped
+PUBLISH topic5 passed
+SUBSCRIBE user13 topic3
+UNSUBSCRIBE user16 topic3
+PUBLISH topic4 order order shipped
+PUBLISH topic3 started dropped passed
+UNSUBSCRIBE user11 topic4
+PUBLISH topic3 order dropped
+SUBSCRIBE user6 topic4
+UNSUBSCRIBE user10 topic3
+PUBLISH topic5 build price deploy
+PUBLISH topic0 deploy started deploy started
+SUBSCRIBE user7 topic4
+PUBLISH topic4 dropped
+PUBLISH topic4 price deploy
+SUBSCRIBE user17 topic4
+PUBLISH topic5 price shipped dropped
+SUBSCRIBE user12 topic4
+PUBLISH topic1 price passed shipped
+UNSUBSCRIBE user2 topic5
+SUBSCRIBE user2 topic1
+UNSUBSCRIBE user6 topic1
+PUBLISH topic3 started passed build
+PUBLISH topic2 deploy build passed
+SUBSCRIBE user1 topic5
+PUBLISH topic5 order order shipped dropped
+SUBSCRIBE user1 topic5
+PUBLISH topic5 order shipped
+SUBSCRIBE user1 topic5
+PUBLISH topic1 dropped build started
+SUBSCRIBE user2 topic5
+UNSUBSCRIBE user12 topic5
+PUBLISH topic0 order dropped deploy
+SUBSCRIBE user2 topic3
+UNSUBSCRIBE user10 topic1
+SUBSCRIBE user8 topic5
+UNSUBSCRIBE user16 topic3
+PUBLISH topic2 started shipped
+SUBSCRIBE user16 topic0
+PUBLISH topic0 price started order
+SUBSCRIBE user4 topic2
+PUBLISH topic5 dropped order deploy
+SUBSCRIBE user14 topic0
+SUBSCRIBE user15 topic1
+UNSUBSCRIBE user8 topic0
+PUBLISH topic4 order price shipped build
+PUBLISH topic3 started shipped shipped order
+SUBSCRIBE user9 topic4
+UNSUBSCRIBE user19 topic5
+UNSUBSCRIBE user14 topic4
+PUBLISH topic1 shipped
+PUBLISH topic4 started deploy dropped
+PUBLISH topic0 price shipped
+SUBSCRIBE user0 topic5
+PUBLISH topic1 order price
+UNSUBSCRIBE user4 topic1
+PUBLISH topic0 price price
+PUBLISH topic2 dropped
+UNSUBSCRIBE user15 topic2
+SUBSCRIBE user15 topic0
+UNSUBSCRIBE user12 topic2
+SUBSCRIBE user11 topic0
+PUBLISH topic1 shipped order
+SUBSCRIBE user7 topic2
+PUBLISH topic1 dropped price
+SUBSCRIBE user6 topic1
+PUBLISH topic4 dropped order
+SUBSCRIBE user11 topic5
+SUBSCRIBE user15 topic3
+SUBSCRIBE user3 topic3
+UNSUBSCRIBE user16 topic4
+PUBLISH topic3 order
+PUBLISH topic1 order deploy build dropped
+PUBLISH topic4 dropped dropped shipped
+UNSUBSCRIBE user5 topic1
+PUBLISH topic3 deploy passed dropped started
+UNSUBSCRIBE user13 topic0
+PUBLISH topic2 price price shipped price
+UNSUBSCRIBE user12 topic1
+UNSUBSCRIBE user3 topic2
+PUBLISH topic2 price shipped price
+PUBLISH topic3 price shipped
+UNSUBSCRIBE user18 topic0
+PUBLISH topic3 build started
+SUBSCRIBE user10 topic4
+PUBLISH topic3 shipped
+UNSUBSCRIBE user6 topic5
+SUBSCRIBE user8 topic4
+SUBSCRIBE user12 topic3
+UNSUBSCRIBE user18 topic5
+PUBLISH topic2 order
+PUBLISH topic0 deploy order started build
+PUBLISH topic1 started
+UNSUBSCRIBE user15 topic4
+SUBSCRIBE user14 topic5
+SUBSCRIBE user4 topic0
+SUBSCRIBE user6 topic4
+PUBLISH topic1 started
+PUBLISH topic3 dropped build dropped dropped
+SUBSCRIBE user10 topic1
+UNSUBSCRIBE user11 topic5
+UNSUBSCRIBE user2 topic5
+PUBLISH topic3 shipped
+SUBSCRIBE user6 topic0
+PUBLISH topic4 deploy deploy build
+PUBLISH topic0 price dropped started
+SUBSCRIBE user18 topic2
+SUBSCRIBE user7 topic5
+UNSUBSCRIBE user14 topic1
+SUBSCRIBE user5 topic5
+UNSUBSCRIBE user5 topic4
+UNSUBSCRIBE user18 topic5
+PUBLISH topic1 build shipped started
+PUBLISH topic4 dropped started started price
+PUBLISH topic0 build passed passed
+UNSUBSCRIBE user15 topic2
+SUBSCRIBE user16 topic4
+SUBSCRIBE user10 topic5
+SUBSCRIBE user3 topic1
+SUBSCRIBE user1 topic4
+SUBSCRIBE user16 topic5
+UNSUBSCRIBE user10 topic1
+SUBSCRIBE user6 topic5
+UNSUBSCRIBE user13 topic2
+SUBSCRIBE user1 topic5
+SUBSCRIBE user19 topic5
+PUBLISH topic5 order price shipped price
+UNSUBSCRIBE user12 topic3
+PUBLISH topic4 order order price price
+SUBSCRIBE user5 topic5
+SUBSCRIBE user2 topic4
+SUBSCRIBE user17 topic0
+SUBSCRIBE user12 topic0
+SUBSCRIBE user4 topic5
+SUBSCRIBE user13 topic5
+PUBLISH topic0 started price order
+UNSUBSCRIBE user9 topic5
+UNSUBSCRIBE user19 topic5
+SUBSCRIBE user9 topic0
+PUBLISH topic5 order order
+UNSUBSCRIBE user15 topic1
+SUBSCRIBE user12 topic2
+SUBSCRIBE user6 topic3
+SUBSCRIBE user13 topic3
+SUBSCRIBE user8 topic5
+SUBSCRIBE user14 topic0
+PUBLISH topic5 shipped order shipped deploy
+SUBSCRIBE user10 topic4
+UNSUBSCRIBE user6 topic0
+PUBLISH topic4 passed price
+SUBSCRIBE user13 topic4
+SUBSCRIBE user6 topic3
+PUBLISH topic5 passed order dropped shipped
+PUBLISH topic2 shipped passed build
+SUBSCRIBE user17 topic1
+SUBSCRIBE user18 topic1
+PUBLISH topic3 started passed
+UNSUBSCRIBE user8 topic1
+PUBLISH topic2 order deploy order
+SUBSCRIBE user9 topic3
+PUBLISH topic1 order deploy order deploy
+PUBLISH topic3 dropped build deploy build
+PUBLISH topic3 price build price order
+PUBLISH topic3 shipped deploy
+SUBSCRIBE user12 topic5
+SUBSCRIBE user2 topic1
+PUBLISH topic5 started passed dropped build
+SUBSCRIBE user0 topic0
+SUBSCRIBE user7 topic3
+SUBSCRIBE user17 topic5
+SUBSCRIBE user7 topic1
+PUBLISH topic2 deploy
+SUBSCRIBE user11 topic5
+SUBSCRIBE user14 topic5
+SUBSCRIBE user16 topic0
+SUBSCRIBE user5 topic1
+SUBSCRIBE user2 topic5
+SUBSCRIBE user19 topic3
+UNSUBSCRIBE user4 topic2
+UNSUBSCRIBE user2 topic3
+PUBLISH topic1 shipped price shipped
+UNSUBSCRIBE user17 topic0
+SUBSCRIBE user6 topic4
+PUBLISH topic1 order order order
+SUBSCRIBE user6 topic4
+SUBSCRIBE user3 topic3
+SUBSCRIBE user11 topic1
+SUBSCRIBE user17 topic0
+PUBLISH topic5 deploy build build
+PUBLISH topic2 dropped
+PUBLISH topic4 shipped price passed dropped
+PUBLISH topic0 build price order
+PUBLISH topic2 passed dropped
+SUBSCRIBE user11 topic1
+PUBLISH topic2 shipped
+SUBSCRIBE user9 topic0
+UNSUBSCRIBE user4 topic1
+PUBLISH topic3 passed started
+PUBLISH topic4 started deploy
+SUBSCRIBE user12 topic3
+SUBSCRIBE user12 topic5
+PUBLISH topic0 passed shipped dropped started
+PUBLISH topic2 price deploy
+SUBSCRIBE user14 topic0
+PUBLISH topic2 dropped
+PUBLISH topic2 started deploy
+UNSUBSCRIBE user14 topic5
+SUBSCRIBE user6 topic0
+SUBSCRIBE user10 topic0
+SUBSCRIBE user3 topic5
+PUBLISH topic2 passed dropped
+PUBLISH topic5 started
+SUBSCRIBE user13 topic3
+PUBLISH topic4 price passed
+UNSUBSCRIBE user13 topic3
+PUBLISH topic3 passed build
+SUBSCRIBE user9 topic0
+PUBLISH topic3 shipped order
+SUBSCRIBE user6 topic5
+UNSUBSCRIBE user14 topic3
+PUBLISH topic5 price passed order
+SUBSCRIBE user1 topic2
+PUBLISH topic5 dropped dropped
+UNSUBSCRIBE user3 topic1
+PUBLISH topic0 dropped passed
+SUBSCRIBE user8 topic5
+PUBLISH topic5 dropped
+UNSUBSCRIBE user18 topic4
+SUBSCRIBE user5 topic1
+SUBSCRIBE user6 topic1
+PUBLISH topic4 shipped
+PUBLISH topic2 dropped price passed passed
+PUBLISH topic1 build order
+PUBLISH topic3 build deploy
+SUBSCRIBE user6 topic0
+PUBLISH topic3 shipped order dropped shipped
+PUBLISH topic5 price dropped shipped
+PUBLISH topic5 passed build started
+PUBLISH topic0 deploy
+PUBLISH topic5 passed
+SUBSCRIBE user11 topic1
+SUBSCRIBE user5 topic4
+SUBSCRIBE user10 topic2
+UNSUBSCRIBE user13 topic2
+SUBSCRIBE user2 topic5
+PUBLISH topic3 started shipped
+UNSUBSCRIBE user3 topic2
+SUBSCRIBE user5 topic4
+PUBLISH topic4 build dropped
+SUBSCRIBE user12 topic5
+PUBLISH topic1 started
+PUBLISH topic3 deploy deploy started dropped
+PUBLISH topic3 order started
+PUBLISH topic3 dropped passed
+UNSUBSCRIBE user14 topic3
+SUBSCRIBE user5 topic2
+UNSUBSCRIBE user3 topic0
+PUBLISH topic4 build shipped deploy deploy
+UNSUBSCRIBE user12 topic3
+PUBLISH topic3 passed order shipped
+PUBLISH topic3 dropped shipped shipped
+SUBSCRIBE user19 topic1
+SUBSCRIBE user2 topic1
+SUBSCRIBE user15 topic2
+SUBSCRIBE user9 topic4
+SUBSCRIBE user15 topic1
+SUBSCRIBE user15 topic3
+UNSUBSCRIBE user17 topic4
+SUBSCRIBE user2 topic5
+UNSUBSCRIBE user15 topic4
+UNSUBSCRIBE user6 topic0
+PUBLISH topic2 deploy price shipped
+SUBSCRIBE user5 topic4
+UNSUBSCRIBE user13 topic0
+PUBLISH topic1 price started build passed
+PUBLISH topic2 build price deploy dropped
+UNSUBSCRIBE user8 topic3
+PUBLISH topic0 passed shipped deploy
+PUBLISH topic0 shipped
+PUBLISH topic0 passed deploy passed
+SUBSCRIBE user15 topic0
+SUBSCRIBE user3 topic3
+UNSUBSCRIBE user1 topic1
+SUBSCRIBE user10 topic0
+SUBSCRIBE user16 topic2
+SUBSCRIBE user9 topic3
+UNSUBSCRIBE user6 topic3
+PUBLISH topic1 price
+SUBSCRIBE user17 topic3
+SUBSCRIBE user9 topic0
+SUBSCRIBE user5 topic2
+PUBLISH topic5 deploy
+SUBSCRIBE user19 topic1
+PUBLISH topic4 started deploy price
+UNSUBSCRIBE user19 topic1
+PUBLISH topic5 shipped
+UNSUBSCRIBE user8 topic3
+PUBLISH topic0 passed
+UNSUBSCRIBE user7 topic0
+PUBLISH topic3 deploy started build passed
+SUBSCRIBE user5 topic0
+SUBSCRIBE user8 topic1
+SUBSCRIBE user10 topic0
+SUBSCRIBE user15 topic4
+SUBSCRIBE user0 topic2
+PUBLISH topic3 dropped started
+SUBSCRIBE user11 topic1
+PUBLISH topic1 order
+SUBSCRIBE user14 topic1
+SUBSCRIBE user15 topic5
+SUBSCRIBE user10 topic5
+SUBSCRIBE user13 topic1
+SUBSCRIBE user5 topic1
+PUBLISH topic3 order build build
+PUBLISH topic2 passed passed order dropped
+PUBLISH topic5 dropped order build shipped
+PUBLISH topic4 build build price
+PUBLISH topic5 build started
+UNSUBSCRIBE user3 topic2
+SUBSCRIBE user9 topic1
+UNSUBSCRIBE user11 topic5
+PUBLISH topic2 started passed dropped shipped
+SUBSCRIBE user3 topic5
+UNSUBSCRIBE user1 topic0
+PUBLISH topic1 deploy
+UNSUBSCRIBE user12 topic4
+SUBSCRIBE user3 topic5
+SUBSCRIBE user7 topic0
+PUBLISH topic5 shipped price price
+SUBSCRIBE user18 topic0
+PUBLISH topic5 passed build
+PUBLISH topic5 deploy
+SUBSCRIBE user1 topic3
+SUBSCRIBE user17 topic0
+SUBSCRIBE user6 topic5
+UNSUBSCRIBE user11 topic3
+SUBSCRIBE user2 topic5
+PUBLISH topic1 order price passed deploy
+PUBLISH topic0 build dropped
+SUBSCRIBE user16 topic3
+PUBLISH topic0 order started
+SUBSCRIBE user5 topic5
+SUBSCRIBE user8 topic0
+SUBSCRIBE user0 topic1
+SUBSCRIBE user13 topic0
+SUBSCRIBE user12 topic2
+PUBLISH topic2 deploy shipped price
+SUBSCRIBE user18 topic5
+SUBSCRIBE user19 topic2
+PUBLISH topic3 dropped dropped price
+UNSUBSCRIBE user19 topic5
+SUBSCRIBE user2 topic4
+PUBLISH topic5 passed
+UNSUBSCRIBE user6 topic2
+SUBSCRIBE user19 topic0
+SUBSCRIBE user1 topic3
+UNSUBSCRIBE user5 topic4
+PUBLISH topic1 started build price price
+SUBSCRIBE user5 topic0
+PUBLISH topic5 shipped order shipped
+PUBLISH topic2 order
+SUBSCRIBE user4 topic3
+PUBLISH topic4 price shipped deploy deploy
+SUBSCRIBE user19 topic3
+UNSUBSCRIBE user18 topic4
+PUBLISH topic4 started
+UNSUBSCRIBE user1 topic3
+PUBLISH topic2 price
+SUBSCRIBE user15 topic5
+SUBSCRIBE user19 topic1
+PUBLISH topic0 started dropped deploy price
+UNSUBSCRIBE user8 topic0
+UNSUBSCRIBE user11 topic4
+UNSUBSCRIBE user0 topic5
+PUBLISH topic4 dropped shipped
+SUBSCRIBE user16 topic4
+PUBLISH topic5 price dropped
+PUBLISH topic5 deploy order deploy passed
+SUBSCRIBE user19 topic0
+PUBLISH topic1 dropped shipped price
+PUBLISH topic1 order shipped price started
+PUBLISH topic4 dropped
+SUBSCRIBE user3 topic1
+UNSUBSCRIBE user15 topic2
+UNSUBSCRIBE user4 topic0
+PUBLISH topic2 order
+SUBSCRIBE user14 topic2
+PUBLISH topic0 shipped started dropped deploy
+SUBSCRIBE user14 topic4
+SUBSCRIBE user8 topic2
+UNSUBSCRIBE user2 topic3
+SUBSCRIBE user5 topic3
+SUBSCRIBE user3 topic3
+SUBSCRIBE user9 topic3
+PUBLISH topic5 shipped price shipped
+PUBLISH topic1 shipped deploy passed
+SUBSCRIBE user6 topic3
+PUBLISH topic4 dropped price order
+PUBLISH topic1 price started
+SUBSCRIBE user17 topic2
+SUBSCRIBE user10 topic5
+PUBLISH topic3 order deploy build
+UNSUBSCRIBE user16 topic2
+PUBLISH topic4 price passed
+UNSUBSCRIBE user16 topic5
+SUBSCRIBE user10 topic5
+SUBSCRIBE user6 topic2
+PUBLISH topic3 deploy started
+PUBLISH topic1 shipped build
+PUBLISH topic2 shipped order
+SUBSCRIBE user16 topic3
+SUBSCRIBE user5 topic4
+SUBSCRIBE user17 topic4
+SUBSCRIBE user12 topic1
+PUBLISH topic3 price deploy price started
+SUBSCRIBE user16 topic3
+SUBSCRIBE user1 topic0
+PUBLISH topic4 order
+PUBLISH topic4 build
+SUBSCRIBE user12 topic4
+PUBLISH topic4 price build deploy deploy
+UNSUBSCRIBE user5 topic3
+SUBSCRIBE user17 topic5
+SUBSCRIBE user6 topic0
+UNSUBSCRIBE user7 topic5
+SUBSCRIBE user4 topic1
+PUBLISH topic0 order build
+PUBLISH topic0 price deploy shipped price
+PUBLISH topic1 order
+SUBSCRIBE user8 topic0
+PUBLISH topic3 dropped build price
+PUBLISH topic3 dropped
+PUBLISH topic1 shipped deploy deploy
+SUBSCRIBE user14 topic4
+PUBLISH topic1 order price price
+UNSUBSCRIBE user15 topic3
+SUBSCRIBE user8 topic1
+UNSUBSCRIBE user7 topic1
+PUBLISH topic3 order
+SUBSCRIBE user11 topic0
+PUBLISH topic2 price passed
+PUBLISH topic5 build deploy deploy
+SUBSCRIBE user18 topic0
+PUBLISH topic0 dropped started passed price
+SUBSCRIBE user14 topic3
+UNSUBSCRIBE user17 topic4
+SUBSCRIBE user1 topic2
+UNSUBSCRIBE user14 topic2
+UNSUBSCRIBE user9 topic4
+SUBSCRIBE user15 topic3
+SUBSCRIBE user7 topic1
+SUBSCRIBE user19 topic4
+SUBSCRIBE user6 topic5
+PUBLISH topic2 deploy deploy dropped dropped
+PUBLISH topic4 price
+PUBLISH topic2 deploy shipped started dropped
+UNSUBSCRIBE user0 topic1
+PUBLISH topic2 build shipped shipped order
+PUBLISH topic1 price passed
+PUBLISH topic1 started
+PUBLISH topic3 deploy
+PUBLISH topic3 started started price order
+UNSUBSCRIBE user10 topic1
+PUBLISH topic0 shipped dropped
+PUBLISH topic0 passed passed passed
+SUBSCRIBE user10 topic3
+UNSUBSCRIBE user12 topic0
+PUBLISH topic4 started passed order started
+UNSUBSCRIBE user14 topic1
+SUBSCRIBE user8 topic2
+SUBSCRIBE user17 topic4
+PUBLISH topic4 order
+UNSUBSCRIBE user7 topic1
+PUBLISH topic4 started order
+SUBSCRIBE user10 topic1
+PUBLISH topic0 build shipped passed started
+PUBLISH topic0 order
+PUBLISH topic4 build dropped shipped passed
+SUBSCRIBE user7 topic5
+SUBSCRIBE user5 topic4
+SUBSCRIBE user0 topic3
+UNSUBSCRIBE user16 topic1
+PUBLISH topic1 passed started deploy
+SUBSCRIBE user12 topic1
+SUBSCRIBE user7 topic2
+UNSUBSCRIBE user8 topic3
+SUBSCRIBE user1 topic4
+PUBLISH topic3 deploy passed
+PUBLISH topic3 build
+PUBLISH topic4 deploy started dropped
+SUBSCRIBE user7 topic2
+SUBSCRIBE user0 topic2
+UNSUBSCRIBE user3 topic1
+SUBSCRIBE user2 topic5
+PUBLISH topic1 deploy order
+SUBSCRIBE user13 topic4
+SUBSCRIBE user18 topic2
+PUBLISH topic2 deploy passed started dropped
+SUBSCRIBE user13 topic5
+PUBLISH topic3 passed
+PUBLISH topic1 shipped price
+SUBSCRIBE user4 topic4
+PUBLISH topic2 price order
+PUBLISH topic1 price
+PUBLISH topic5 price dropped price
+SUBSCRIBE user2 topic0
+UNSUBSCRIBE user8 topic0
+SUBSCRIBE user4 topic1
+PUBLISH topic5 dropped dropped
+SUBSCRIBE user7 topic5
+PUBLISH topic5 build
+UNSUBSCRIBE user3 topic0
+SUBSCRIBE user19 topic1
+SUBSCRIBE user1 topic2
+PUBLISH topic5 shipped deploy order
+SUBSCRIBE user18 topic3
+SUBSCRIBE user10 topic2
+SUBSCRIBE user10 topic0
+PUBLISH topic4 started build order passed
+PUBLISH topic5 dropped shipped deploy dropped
+SUBSCRIBE user18 topic3
+SUBSCRIBE user9 topic5
+PUBLISH topic0 dropped shipped order build
+SUBSCRIBE user18 topic0
+SUBSCRIBE user2 topic2
+SUBSCRIBE user13 topic3
+PUBLISH topic3 deploy started passed order
+UNSUBSCRIBE user17 topic3
+UNSUBSCRIBE user12 topic5
+PUBLISH topic0 order passed build
+SUBSCRIBE user5 topic1
+SUBSCRIBE user7 topic5
+PUBLISH topic5 started started started started
+SUBSCRIBE user3 topic3
+SUBSCRIBE user2 topic0
+PUBLISH topic2 passed build price passed
+SUBSCRIBE user9 topic2
+PUBLISH topic5 deploy build build shipped
+SUBSCRIBE user15 topic1
+SUBSCRIBE user0 topic2
+PUBLISH topic2 build shipped deploy dropped
+PUBLISH topic3 dropped order price dropped
+PUBLISH topic2 dropped
+PUBLISH topic0 deploy dropped passed
+SUBSCRIBE user9 topic5
+SUBSCRIBE user3 topic3
+PUBLISH topic5 deploy shipped passed shipped
+UNSUBSCRIBE user18 topic3
+PUBLISH topic2 shipped build shipped
+SUBSCRIBE user17 topic3
+SUBSCRIBE user7 topic1
+PUBLISH topic4 passed
+PUBLISH topic3 dropped shipped
+SUBSCRIBE user6 topic0
+PUBLISH topic2 shipped
+UNSUBSCRIBE user11 topic3
+PUBLISH topic0 started passed dropped
+PUBLISH topic5 deploy deploy passed
+SUBSCRIBE user10 topic4
+UNSUBSCRIBE user4 topic5
+SUBSCRIBE user5 topic0
+SUBSCRIBE user11 topic5
+PUBLISH topic1 deploy order
+SUBSCRIBE user4 topic1
+PUBLISH topic2 dropped build shipped shipped
+SUBSCRIBE user8 topic1
+SUBSCRIBE user7 topic5
+SUBSCRIBE user5 topic3
+SUBSCRIBE user5 topic4
+SUBSCRIBE user8 topic4
+PUBLISH topic1 build order started price
+SUBSCRIBE user0 topic2
+UNSUBSCRIBE user4 topic2
+PUBLISH topic1 deploy order dropped started
+PUBLISH topic2 build
+PUBLISH topic2 dropped dropped
+SUBSCRIBE user6 topic4
+UNSUBSCRIBE user18 topic3
+PUBLISH topic0 shipped dropped
+SUBSCRIBE user15 topic5
+PUBLISH topic1 order
+UNSUBSCRIBE user11 topic3
+SUBSCRIBE user13 topic2
+PUBLISH topic1 passed started build price
+UNSUBSCRIBE user19 topic1
+SUBSCRIBE user16 topic1
+SUBSCRIBE user17 topic4
+SUBSCRIBE user18 topic4
+PUBLISH topic3 order deploy
+PUBLISH topic0 passed build shipped order
+PUBLISH topic2 price price
+PUBLISH topic5 deploy
+PUBLISH topic3 passed started
+UNSUBSCRIBE user2 topic0
+PUBLISH topic2 dropped order
+SUBSCRIBE user7 topic1
+SUBSCRIBE user18 topic0
+PUBLISH topic3 build passed dropped
+PUBLISH topic2 deploy shipped build
+SUBSCRIBE user9 topic1
+SUBSCRIBE user4 topic5
+SUBSCRIBE user10 topic0
+PUBLISH topic5 dropped dropped
+PUBLISH topic2 deploy
+PUBLISH topic2 shipped shipped price price
+UNSUBSCRIBE user18 topic3
+UNSUBSCRIBE user19 topic5
+PUBLISH topic3 passed shipped dropped
+SUBSCRIBE user7 topic2
+SUBSCRIBE user5 topic2
+SUBSCRIBE user5 topic0
+PUBLISH topic0 deploy shipped started
+PUBLISH topic4 deploy deploy
+SUBSCRIBE user9 topic4
+SUBSCRIBE user17 topic4
+UNSUBSCRIBE user3 topic2
+SUBSCRIBE user17 topic3
+UNSUBSCRIBE user5 topic0
+PUBLISH topic4 dropped order started
+SUBSCRIBE user9 topic1
+PUBLISH topic4 build
+PUBLISH topic3 price started shipped shipped
+PUBLISH topic2 order order build deploy
+PUBLISH topic0 passed build deploy passed
+SUBSCRIBE user0 topic1
+SUBSCRIBE user0 topic4
+SUBSCRIBE user6 topic5
+UNSUBSCRIBE user14 topic1
+SUBSCRIBE user5 topic3
+SUBSCRIBE user5 topic3
+UNSUBSCRIBE user10 topic2
+SUBSCRIBE user2 topic5
+UNSUBSCRIBE user12 topic3
+PUBLISH topic4 build
+SUBSCRIBE user19 topic2
+SUBSCRIBE user5 topic1
+PUBLISH topic5 price dropped deploy
+PUBLISH topic3 shipped
+SUBSCRIBE user6 topic2
+SUBSCRIBE user9 topic5
+SUBSCRIBE user5 topic0
+UNSUBSCRIBE user8 topic4
+SUBSCRIBE user3 topic1
+UNSUBSCRIBE user2 topic0
+UNSUBSCRIBE user3 topic2
+SUBSCRIBE user19 topic5
+PUBLISH topic5 dropped build
+PUBLISH topic4 passed price order
+SUBSCRIBE user14 topic3
+SUBSCRIBE user17 topic3
+UNSUBSCRIBE user2 topic5
+SUBSCRIBE user1 topic0
+SUBSCRIBE user15 topic2
+SUBSCRIBE user19 topic0
+SUBSCRIBE user5 topic3
+PUBLISH topic3 deploy
+PUBLISH topic1 order dropped shipped deploy
+UNSUBSCRIBE user16 topic2
+SUBSCRIBE user12 topic5
+SUBSCRIBE user4 topic0
+PUBLISH topic5 deploy dropped price price
+UNSUBSCRIBE user6 topic2
+PUBLISH topic4 order order deploy build
+UNSUBSCRIBE user8 topic4
+SUBSCRIBE user8 topic0
+PUBLISH topic5 passed
+SUBSCRIBE user4 topic1
+UNSUBSCRIBE user1 topic4
+UNSUBSCRIBE user15 topic1
+UNSUBSCRIBE user3 topic4
+SUBSCRIBE user5 topic3
+SUBSCRIBE user6 topic0
+SUBSCRIBE user8 topic5
+SUBSCRIBE user0 topic0
+UNSUBSCRIBE user13 topic3
+SUBSCRIBE user11 topic4
+PUBLISH topic5 started started
+SUBSCRIBE user2 topic2
+SUBSCRIBE user8 topic0
+PUBLISH topic2 price started passed dropped
+UNSUBSCRIBE user10 topic3
+UNSUBSCRIBE user8 topic2
+SUBSCRIBE user18 topic3
+UNSUBSCRIBE user10 topic0
+SUBSCRIBE user13 topic3
+PUBLISH topic4 started passed
+SUBSCRIBE user18 topic5
+PUBLISH topic3 build
+SUBSCRIBE user11 topic1
+UNSUBSCRIBE user15 topic3
+SUBSCRIBE user8 topic3
+PUBLISH topic3 shipped
+PUBLISH topic2 started deploy order dropped
+PUBLISH topic4 started
+PUBLISH topic2 price
+SUBSCRIBE user13 topic4
+SUBSCRIBE user13 topic1
+SUBSCRIBE user2 topic2
+PUBLISH topic4 shipped dropped passed deploy
+SUBSCRIBE user13 topic4
+UNSUBSCRIBE user3 topic1
+PUBLISH topic5 order dropped
+PUBLISH topic4 deploy dropped build deploy
+PUBLISH topic3 started passed
+SUBSCRIBE user19 topic2
+SUBSCRIBE user7 topic3
+PUBLISH topic5 dropped
+UNSUBSCRIBE user0 topic3
+PUBLISH topic1 started dropped deploy
+SUBSCRIBE user9 topic2
+PUBLISH topic2 started
+PUBLISH topic3 started shipped passed deploy
+PUBLISH topic0 passed
+PUBLISH topic5 deploy price build
+SUBSCRIBE user12 topic1
+SUBSCRIBE user8 topic1
+SUBSCRIBE user19 topic1
+SUBSCRIBE user0 topic1
+SUBSCRIBE user13 topic4
+SUBSCRIBE user0 topic4
+SUBSCRIBE user12 topic5
+UNSUBSCRIBE user5 topic2
+PUBLISH topic1 started price dropped
+SUBSCRIBE user5 topic2
+SUBSCRIBE user11 topic2
+SUBSCRIBE user1 topic1
+PUBLISH topic0 passed order price deploy
+UNSUBSCRIBE user0 topic2
+SUBSCRIBE user4 topic4
+SUBSCRIBE user0 topic1
+SUBSCRIBE user16 topic4
+PUBLISH topic4 passed build
+SUBSCRIBE user0 topic0
+SUBSCRIBE user11 topic2
+PUBLISH topic4 build passed
+PUBLISH topic3 passed shipped
+PUBLISH topic5 started passed
+SUBSCRIBE user17 topic5
+SUBSCRIBE user9 topic2
+SUBSCRIBE user19 topic4
+SUBSCRIBE user14 topic1
+PUBLISH topic2 build shipped dropped dropped
+PUBLISH topic0 order passed passed order
+UNSUBSCRIBE user10 topic5
+UNSUBSCRIBE user19 topic5
+UNSUBSCRIBE user17 topic2
+UNSUBSCRIBE user1 topic0
+UNSUBSCRIBE user5 topic2
+SUBSCRIBE user10 topic5
+SUBSCRIBE user0 topic2
+PUBLISH topic2 build shipped build shipped
+SUBSCRIBE user10 topic2
+PUBLISH topic0 passed
+PUBLISH topic3 build shipped price passed
+SUBSCRIBE user17 topic1
+PUBLISH topic5 build build
+SUBSCRIBE user14 topic2
+UNSUBSCRIBE user9 topic0
+PUBLISH topic0 dropped started started shipped
+PUBLISH topic1 price shipped started dropped
+SUBSCRIBE user3 topic5
+SUBSCRIBE user11 topic5
+UNSUBSCRIBE user7 topic0
+PUBLISH topic2 shipped
+PUBLISH topic4 order passed shipped
+SUBSCRIBE user0 topic5
+SUBSCRIBE user18 topic1
+UNSUBSCRIBE user5 topic3
+PUBLISH topic5 started price started started
+PUBLISH topic4 shipped order passed order
+SUBSCRIBE user13 topic3
+UNSUBSCRIBE user0 topic5
+PUBLISH topic2 dropped
+SUBSCRIBE user18 topic1
+PUBLISH topic2 started order build price
+SUBSCRIBE user10 topic1
+SUBSCRIBE user6 topic2
+SUBSCRIBE user2 topic3
+SUBSCRIBE user5 topic4
+PUBLISH topic1 deploy dropped
+PUBLISH topic5 dropped passed started
+SUBSCRIBE user11 topic0
+PUBLISH topic4 passed build deploy
+PUBLISH topic5 order
+UNSUBSCRIBE user6 topic2
+UNSUBSCRIBE user9 topic0
+PUBLISH topic3 build dropped
+UNSUBSCRIBE user2 topic3
+SUBSCRIBE user2 topic4
+UNSUBSCRIBE user5 topic5
+SUBSCRIBE user14 topic2
+SUBSCRIBE user19 topic5
+PUBLISH topic2 passed
+PUBLISH topic3 started
+PUBLISH topic5 passed started passed
+UNSUBSCRIBE user18 topic0
+UNSUBSCRIBE user8 topic4
+UNSUBSCRIBE user8 topic2
+UNSUBSCRIBE user3 topic2
+SUBSCRIBE user19 topic0
+PUBLISH topic4 shipped passed build deploy
+SUBSCRIBE user17 topic2
+SUBSCRIBE user4 topic5
+PUBLISH topic2 dropped shipped
+SUBSCRIBE user8 topic5
+SUBSCRIBE user5 topic4
+SUBSCRIBE user11 topic0
+PUBLISH topic0 started
+PUBLISH topic5 deploy shipped deploy
+SUBSCRIBE user17 topic0
+PUBLISH topic1 shipped passed
+SUBSCRIBE user19 topic5
+SUBSCRIBE user7 topic0
+PUBLISH topic5 order started price
+SUBSCRIBE user10 topic3
+SUBSCRIBE user12 topic3
+PUBLISH topic3 deploy price deploy deploy
+PUBLISH topic2 dropped build started
+SUBSCRIBE user18 topic0
+PUBLISH topic4 price build shipped order
+PUBLISH topic0 shipped
+UNSUBSCRIBE user2 topic0
+SUBSCRIBE user12 topic4
+PUBLISH topic3 build order price passed
+SUBSCRIBE user4 topic3
+PUBLISH topic2 passed
+PUBLISH topic4 price build dropped
+PUBLISH topic0 deploy started dropped dropped
+SUBSCRIBE user6 topic2
+UNSUBSCRIBE user8 topic0
+SUBSCRIBE user0 topic4
+SUBSCRIBE user16 topic0
+SUBSCRIBE user4 topic5
+SUBSCRIBE user11 topic0
+SUBSCRIBE user0 topic4
+SUBSCRIBE user11 topic2
+PUBLISH topic0 passed
+PUBLISH topic3 order
+PUBLISH topic5 deploy order
+UNSUBSCRIBE user3 topic0
+PUBLISH topic1 passed
+PUBLISH topic0 dropped shipped
+PUBLISH topic2 price dropped price
+UNSUBSCRIBE user7 topic0
+SUBSCRIBE user10 topic3
+PUBLISH topic4 started price deploy
+SUBSCRIBE user7 topic2
+PUBLISH topic0 passed
+UNSUBSCRIBE user18 topic3
+SUBSCRIBE user11 topic2
+UNSUBSCRIBE user15 topic1
+UNSUBSCRIBE user4 topic4
+UNSUBSCRIBE user6 topic3
+PUBLISH topic3 build passed price
+SUBSCRIBE user5 topic3
+UNSUBSCRIBE user4 topic3
+SUBSCRIBE user2 topic4
+SUBSCRIBE user12 topic5
+SUBSCRIBE user1 topic3
+SUBSCRIBE user12 topic5
+UNSUBSCRIBE user14 topic5
+PUBLISH topic3 price deploy
+PUBLISH topic2 order started shipped
+PUBLISH topic1 shipped dropped price
+PUBLISH topic3 started deploy shipped passed
+SUBSCRIBE user11 topic1
+SUBSCRIBE user5 topic4
+PUBLISH topic0 order build deploy order
+PUBLISH topic3 order
+PUBLISH topic1 shipped dropped dropped price
+PUBLISH topic5 order dropped price
+SUBSCRIBE user17 topic0
+SUBSCRIBE user16 topic5
+SUBSCRIBE user10 topic4
+SUBSCRIBE user8 topic1
+UNSUBSCRIBE user16 topic1
+PUBLISH topic0 shipped deploy dropped
+SUBSCRIBE user13 topic4
+UNSUBSCRIBE user9 topic0
+SUBSCRIBE user15 topic5
+PUBLISH topic1 dropped price
+PUBLISH topic1 order dropped
+PUBLISH topic2 build order
+SUBSCRIBE user0 topic1
+PUBLISH topic2 shipped build dropped dropped
+PUBLISH topic0 order order
+PUBLISH topic5 build deploy shipped
+SUBSCRIBE user17 topic4
+SUBSCRIBE user9 topic1
+SUBSCRIBE user14 topic4
+PUBLISH topic1 passed build price started
+SUBSCRIBE user2 topic5
+UNSUBSCRIBE user9 topic5
+UNSUBSCRIBE user9 topic1
+PUBLISH topic0 dropped price price
+SUBSCRIBE user16 topic0
+UNSUBSCRIBE user13 topic0
+PUBLISH topic3 price passed passed started
+SUBSCRIBE user8 topic3
+SUBSCRIBE user6 topic3
+PUBLISH topic4 price
+SUBSCRIBE user6 topic0
+UNSUBSCRIBE user9 topic4
+SUBSCRIBE user12 topic2
+SUBSCRIBE user10 topic1
+SUBSCRIBE user11 topic2
+UNSUBSCRIBE user16 topic5
+PUBLISH topic4 build deploy dropped
+PUBLISH topic0 order build build build
+PUBLISH topic1 price passed dropped
+SUBSCRIBE user0 topic3
+UNSUBSCRIBE user1 topic0
+UNSUBSCRIBE user0 topic0
+SUBSCRIBE user19 topic0
+SUBSCRIBE user9 topic2
+PUBLISH topic2 price price started passed
+PUBLISH topic4 order order deploy
+PUBLISH topic2 deploy passed order
+PUBLISH topic1 build order passed
+PUBLISH topic4 build passed deploy dropped
+SUBSCRIBE user8 topic2
+SUBSCRIBE user18 topic2
+PUBLISH topic3 started order order shipped
+PUBLISH topic1 shipped
+PUBLISH topic5 passed price price shipped
+UNSUBSCRIBE user19 topic5
+UNSUBSCRIBE user3 topic4
+PUBLISH topic5 passed
+PUBLISH topic4 build dropped
+SUBSCRIBE user18 topic0
+PUBLISH topic2 price
+PUBLISH topic4 order order
+SUBSCRIBE user3 topic4
+UNSUBSCRIBE user15 topic4
+SUBSCRIBE user8 topic3
+PUBLISH topic5 shipped order dropped build
+PUBLISH topic1 build shipped
+SUBSCRIBE user6 topic1
+SUBSCRIBE user17 topic5
+UNSUBSCRIBE user15 topic5
+SUBSCRIBE user6 topic1
+UNSUBSCRIBE user9 topic1
+PUBLISH topic2 deploy
+UNSUBSCRIBE user7 topic4
+PUBLISH topic4 shipped deploy build
+UNSUBSCRIBE user8 topic2
+SUBSCRIBE user9 topic0
+SUBSCRIBE user17 topic2
+PUBLISH topic2 build
+PUBLISH topic1 started
+SUBSCRIBE user15 topic0
+SUBSCRIBE user5 topic0
+UNSUBSCRIBE user16 topic4
+SUBSCRIBE user16 topic4
+UNSUBSCRIBE user16 topic1
+SUBSCRIBE user8 topic0
+PUBLISH topic2 deploy price shipped
+SUBSCRIBE user11 topic2
+SUBSCRIBE user17 topic0
+PUBLISH topic4 deploy order price
+UNSUBSCRIBE user12 topic5
+SUBSCRIBE user16 topic5
+SUBSCRIBE user8 topic5
+SUBSCRIBE user15 topic1
+SUBSCRIBE user0 topic4
+UNSUBSCRIBE user8 topic1
+SUBSCRIBE user2 topic3
+SUBSCRIBE user2 topic4
+SUBSCRIBE user2 topic1
+PUBLISH topic0 build build order
+SUBSCRIBE user5 topic0
+PUBLISH topic3 passed passed order
+PUBLISH topic0 passed build
+SUBSCRIBE user0 topic1
+UNSUBSCRIBE user12 topic3
+PUBLISH topic5 passed price price
+PUBLISH topic5 build price started deploy
+PUBLISH topic2 dropped build shipped dropped
+PUBLISH topic3 started shipped started dropped
+SUBSCRIBE user15 topic2
+SUBSCRIBE user18 topic5
+SUBSCRIBE user10 topic2
+SUBSCRIBE user12 topic0
+SUBSCRIBE user9 topic5
+SUBSCRIBE user13 topic4
+SUBSCRIBE user11 topic0
+SUBSCRIBE user0 topic1
+PUBLISH topic1 dropped dropped
+SUBSCRIBE user17 topic3
+PUBLISH topic5 build
+SUBSCRIBE user2 topic4
+SUBSCRIBE user12 topic2
+PUBLISH topic2 build build
+PUBLISH topic2 order dropped
+SUBSCRIBE user15 topic2
+PUBLISH topic1 shipped
+UNSUBSCRIBE user16 topic0
+SUBSCRIBE user5 topic5
+SUBSCRIBE user9 topic1
+PUBLISH topic0 shipped
+UNSUBSCRIBE user3 topic2
+UNSUBSCRIBE user13 topic2
+UNSUBSCRIBE user9 topic5
+PUBLISH topic1 build started order
+PUBLISH topic0 dropped
+SUBSCRIBE user1 topic4
+UNSUBSCRIBE user16 topic2
+PUBLISH topic4 order price
+PUBLISH topic4 price build started
+SUBSCRIBE user8 topic1
+PUBLISH topic2 build dropped build
+SUBSCRIBE user3 topic4
+SUBSCRIBE user4 topic3
+PUBLISH topic3 shipped passed price
+PUBLISH topic0 shipped
+SUBSCRIBE user5 topic5
+UNSUBSCRIBE user14 topic3
+UNSUBSCRIBE user7 topic1
+SUBSCRIBE user13 topic5
+PUBLISH topic3 order
+SUBSCRIBE user2 topic1
+UNSUBSCRIBE user5 topic4
+UNSUBSCRIBE user9 topic0
+SUBSCRIBE user17 topic5
+PUBLISH topic4 started
+UNSUBSCRIBE user17 topic2
+UNSUBSCRIBE user12 topic5
+UNSUBSCRIBE user17 topic3
+SUBSCRIBE user19 topic1
+PUBLISH topic0 shipped build dropped
+UNSUBSCRIBE user7 topic3
+PUBLISH topic1 passed shipped price passed
+SUBSCRIBE user18 topic1
+SUBSCRIBE user8 topic4
+UNSUBSCRIBE user19 topic3
+PUBLISH topic3 build
+PUBLISH topic5 build passed
+SUBSCRIBE user1 topic1
+PUBLISH topic3 deploy order order passed
+UNSUBSCRIBE user14 topic1
+SUBSCRIBE user7 topic3
+PUBLISH topic0 order
+PUBLISH topic4 shipped order shipped
+SUBSCRIBE user13 topic0
+PUBLISH topic3 deploy started
+UNSUBSCRIBE user9 topic5
+PUBLISH topic0 deploy order
+UNSUBSCRIBE user4 topic4
+PUBLISH topic5 passed shipped started
+UNSUBSCRIBE user1 topic0
+PUBLISH topic4 shipped order
+SUBSCRIBE user14 topic4
+SUBSCRIBE user18 topic4
+SUBSCRIBE user17 topic3
+SUBSCRIBE user6 topic1
+SUBSCRIBE user18 topic4
+PUBLISH topic4 passed build passed deploy
+SUBSCRIBE user12 topic5
+SUBSCRIBE user16 topic2
+PUBLISH topic1 order order started order
+UNSUBSCRIBE user19 topic4
+PUBLISH topic4 price
+UNSUBSCRIBE user2 topic3
+PUBLISH topic0 deploy
+PUBLISH topic0 build order deploy price
+SUBSCRIBE user5 topic1
+PUBLISH topic1 deploy shipped order
+PUBLISH topic5 deploy dropped deploy price
+PUBLISH topic3 deploy deploy dropped
+SUBSCRIBE user16 topic5
+UNSUBSCRIBE user19 topic1
+SUBSCRIBE user6 topic0
+PUBLISH topic2 price deploy
+PUBLISH topic5 deploy dropped passed
+PUBLISH topic2 passed dropped deploy started
+PUBLISH topic0 passed
+PUBLISH topic4 passed order shipped
+SUBSCRIBE user2 topic1
+SUBSCRIBE user5 topic5
+SUBSCRIBE user7 topic5
+PUBLISH topic1 deploy shipped deploy deploy
+PUBLISH topic4 deploy
+PUBLISH topic0 shipped dropped passed
+SUBSCRIBE user15 topic1
+UNSUBSCRIBE user7 topic1
+SUBSCRIBE user2 topic0
+PUBLISH topic0 build
+PUBLISH topic5 passed
+SUBSCRIBE user9 topic3
+SUBSCRIBE user3 topic5
+PUBLISH topic0 deploy
+SUBSCRIBE user3 topic3
+UNSUBSCRIBE user13 topic1
+UNSUBSCRIBE user18 topic0
+SUBSCRIBE user12 topic4
+PUBLISH topic2 order started build build
+SUBSCRIBE user17 topic3
+SUBSCRIBE user3 topic3
+SUBSCRIBE user5 topic0
+UNSUBSCRIBE user18 topic4
+PUBLISH topic1 deploy
+PUBLISH topic3 build shipped shipped build
+UNSUBSCRIBE user9 topic5
+SUBSCRIBE user9 topic0
+SUBSCRIBE user17 topic3
+UNSUBSCRIBE user16 topic0
+PUBLISH topic0 shipped price dropped build
+UNSUBSCRIBE user3 topic1
+UNSUBSCRIBE user12 topic1
+PUBLISH topic4 order price
+PUBLISH topic0 deploy dropped build
+PUBLISH topic1 deploy shipped
+PUBLISH topic0 build passed build passed
+PUBLISH topic0 passed
+UNSUBSCRIBE user17 topic4
+PUBLISH topic0 shipped started price
+SUBSCRIBE user8 topic5
+UNSUBSCRIBE user7 topic1
+PUBLISH topic5 started deploy
+PUBLISH topic1 shipped build
+SUBSCRIBE user2 topic0
+SUBSCRIBE user15 topic4
+PUBLISH topic0 order order build
+UNSUBSCRIBE user1 topic2
+UNSUBSCRIBE user19 topic2
+SUBSCRIBE user15 topic4
+PUBLISH topic1 started shipped
+SUBSCRIBE user18 topic3
+PUBLISH topic4 deploy price build deploy
+PUBLISH topic4 price build
+UNSUBSCRIBE user6 topic3
+PUBLISH topic5 dropped passed shipped
+SUBSCRIBE user4 topic3
+SUBSCRIBE user12 topic1
+SUBSCRIBE user6 topic0
+SUBSCRIBE user14 topic0
+SUBSCRIBE user0 topic0
+PUBLISH topic0 passed passed
+PUBLISH topic2 build
+UNSUBSCRIBE user19 topic5
+PUBLISH topic0 started order order
+PUBLISH topic5 build
+SUBSCRIBE user12 topic3
+UNSUBSCRIBE user5 topic2
+PUBLISH topic2 dropped
+SUBSCRIBE user9 topic3
+PUBLISH topic4 shipped dropped
+SUBSCRIBE user12 topic2
+UNSUBSCRIBE user4 topic3
+PUBLISH topic0 deploy
+PUBLISH topic3 dropped
+UNSUBSCRIBE user8 topic2
+SUBSCRIBE user3 topic0
+SUBSCRIBE user15 topic3
+UNSUBSCRIBE user19 topic2
+SUBSCRIBE user11 topic1
+UNSUBSCRIBE user19 topic0
+PUBLISH topic5 shipped build
+SUBSCRIBE user9 topic5
+SUBSCRIBE user3 topic5
+SUBSCRIBE user16 topic5
+UNSUBSCRIBE user13 topic2
+SUBSCRIBE user0 topic4
+SUBSCRIBE user15 topic1
+PUBLISH topic0 passed price
+PUBLISH topic1 passed
+SUBSCRIBE user19 topic5
+PUBLISH topic3 started deploy build passed
+PUBLISH topic0 passed started
+PUBLISH topic2 price
+UNSUBSCRIBE user0 topic1
+PUBLISH topic1 price passed price shipped
+PUBLISH topic2 order started passed
+PUBLISH topic3 started passed started deploy
+UNSUBSCRIBE user12 topic5
+SUBSCRIBE user18 topic2
+SUBSCRIBE user19 topic1
+UNSUBSCRIBE user9 topic2
+SUBSCRIBE user14 topic0
+UNSUBSCRIBE user15 topic3
+PUBLISH topic0 started passed
+PUBLISH topic2 dropped build price passed
+PUBLISH topic3 shipped
+UNSUBSCRIBE user16 topic2
+SUBSCRIBE user18 topic4
+PUBLISH topic2 build started shipped
+PUBLISH topic1 passed
+UNSUBSCRIBE user3 topic4
+PUBLISH topic4 shipped
+SUBSCRIBE user5 topic2
+PUBLISH topic2 shipped
+PUBLISH topic4 passed build dropped
+SUBSCRIBE user10 topic3
+SUBSCRIBE user19 topic2
+PUBLISH topic4 deploy order
+SUBSCRIBE user14 topic4
+SUBSCRIBE user2 topic3
+PUBLISH topic1 dropped deploy started dropped
+PUBLISH topic5 started shipped deploy deploy
+UNSUBSCRIBE user1 topic1
+SUBSCRIBE user15 topic0
+PUBLISH topic0 shipped deploy
+PUBLISH topic2 order
+PUBLISH topic1 build price
+SUBSCRIBE user14 topic5
+SUBSCRIBE user18 topic4
+PUBLISH topic1 dropped shipped build
+PUBLISH topic1 price shipped started build
+SUBSCRIBE user11 topic1
+PUBLISH topic1 order price
+SUBSCRIBE user15 topic2
+PUBLISH topic2 order started started passed
+PUBLISH topic5 started shipped shipped started
+UNSUBSCRIBE user18 topic3
+SUBSCRIBE user2 topic4
+UNSUBSCRIBE user10 topic2
+UNSUBSCRIBE user10 topic1
+UNSUBSCRIBE user4 topic1
+SUBSCRIBE user14 topic4
+PUBLISH topic4 passed
+SUBSCRIBE user7 topic3
+SUBSCRIBE user3 topic1
+SUBSCRIBE user16 topic0
+PUBLISH topic4 deploy build order
+PUBLISH topic3 order dropped started
+UNSUBSCRIBE user14 topic5
+SUBSCRIBE user11 topic4
+UNSUBSCRIBE user18 topic2
+SUBSCRIBE user13 topic4
+UNSUBSCRIBE user16 topic2
+SUBSCRIBE user10 topic1
+SUBSCRIBE user11 topic0
+PUBLISH topic1 shipped dropped order
+SUBSCRIBE user18 topic2
+PUBLISH topic1 deploy order order shipped
+SUBSCRIBE user14 topic4
+PUBLISH topic1 shipped
+PUBLISH topic0 dropped passed deploy
+UNSUBSCRIBE user12 topic5
+SUBSCRIBE user14 topic4
+UNSUBSCRIBE user9 topic1
+PUBLISH topic1 deploy price order price
+SUBSCRIBE user0 topic2
+PUBLISH topic1 deploy deploy started
+UNSUBSCRIBE user19 topic3
+PUBLISH topic5 passed shipped passed started
+PUBLISH topic1 deploy build
+SUBSCRIBE user3 topic2
+SUBSCRIBE user11 topic1
+PUBLISH topic2 started price build
+SUBSCRIBE user4 topic1
+PUBLISH topic3 price
+PUBLISH topic3 started
+PUBLISH topic4 shipped
+PUBLISH topic0 deploy price deploy build
+PUBLISH topic4 started order
+SUBSCRIBE user14 topic4
+PUBLISH topic3 order build deploy shipped
+UNSUBSCRIBE user0 topic3
+SUBSCRIBE user0 topic1
+SUBSCRIBE user13 topic3
+PUBLISH topic4 price dropped passed order
+SUBSCRIBE user0 topic5
+PUBLISH topic5 shipped
+PUBLISH topic2 build price price shipped
+SUBSCRIBE user13 topic0
+SUBSCRIBE user11 topic5
+PUBLISH topic2 shipped passed
+PUBLISH topic2 price passed price
+SUBSCRIBE user11 topic1
+UNSUBSCRIBE user1 topic5
+PUBLISH topic3 order order deploy build
+PUBLISH topic4 deploy shipped
+PUBLISH topic4 price started deploy deploy
+PUBLISH topic0 build shipped dropped shipped
+UNSUBSCRIBE user17 topic0
+SUBSCRIBE user9 topic0
+UNSUBSCRIBE user19 topic1
+SUBSCRIBE user9 topic0
+UNSUBSCRIBE user19 topic1
+UNSUBSCRIBE user7 topic1
+SUBSCRIBE user16 topic2
+UNSUBSCRIBE user3 topic5
+PUBLISH topic5 order
+PUBLISH topic2 price
+SUBSCRIBE user1 topic3
+PUBLISH topic4 build
+UNSUBSCRIBE user18 topic2
+PUBLISH topic0 price dropped shipped
+PUBLISH topic3 deploy build dropped
+PUBLISH topic5 deploy price order started
+UNSUBSCRIBE user17 topic4
+UNSUBSCRIBE user14 topic3
+PUBLISH topic2 passed build
+PUBLISH topic4 build started started
+UNSUBSCRIBE user12 topic1
+SUBSCRIBE user5 topic4
+PUBLISH topic2 order
+PUBLISH topic1 started
+SUBSCRIBE user4 topic1
+PUBLISH topic2 build shipped passed order
+SUBSCRIBE user16 topic2
+UNSUBSCRIBE user19 topic4
+PUBLISH topic1 started order dropped
+SUBSCRIBE user8 topic5
+UNSUBSCRIBE user5 topic4
+PUBLISH topic1 build order price
+SUBSCRIBE user0 topic3
+UNSUBSCRIBE user11 topic0
+UNSUBSCRIBE user16 topic0
+PUBLISH topic2 price price
+SUBSCRIBE user2 topic1
+PUBLISH topic2 price passed started build
+SUBSCRIBE user8 topic2
+PUBLISH topic1 deploy
+SUBSCRIBE user17 topic5
+PUBLISH topic3 started build build build
+UNSUBSCRIBE user0 topic1
+SUBSCRIBE user12 topic0
+SUBSCRIBE user18 topic3
+SUBSCRIBE user13 topic5
+UNSUBSCRIBE user11 topic3
+SUBSCRIBE user19 topic1
+UNSUBSCRIBE user14 topic5
+SUBSCRIBE user13 topic0
+PUBLISH topic0 order passed deploy deploy
+SUBSCRIBE user7 topic4
+SUBSCRIBE user7 topic4
+PUBLISH topic0 order
+SUBSCRIBE user9 topic5
+PUBLISH topic1 dropped build deploy
+PUBLISH topic5 shipped passed
+UNSUBSCRIBE user13 topic0
+SUBSCRIBE user14 topic1
+SUBSCRIBE user16 topic1
+PUBLISH topic4 price deploy price
+PUBLISH topic5 shipped deploy build build
+SUBSCRIBE user17 topic4
+SUBSCRIBE user0 topic5
+PUBLISH topic4 passed started shipped passed
+UNSUBSCRIBE user19 topic4
+PUBLISH topic3 shipped build build
+UNSUBSCRIBE user9 topic5
+PUBLISH topic4 dropped price dropped
+PUBLISH topic1 build shipped dropped
+PUBLISH topic0 build build price dropped
+PUBLISH topic1 price order
+PUBLISH topic5 started
+PUBLISH topic5 started build passed
+PUBLISH topic2 price dropped
+PUBLISH topic0 passed build
+UNSUBSCRIBE user6 topic2
+PUBLISH topic5 passed build deploy
+SUBSCRIBE user2 topic0
+PUBLISH topic4 build
+SUBSCRIBE user4 topic1
+PUBLISH topic1 build price started
+PUBLISH topic5 order
+PUBLISH topic5 started build price build
+SUBSCRIBE user5 topic2
+PUBLISH topic2 started
+SUBSCRIBE user14 topic3
+UNSUBSCRIBE user6 topic5
+SUBSCRIBE user17 topic2
+UNSUBSCRIBE user18 topic4
+SUBSCRIBE user7 topic1
+UNSUBSCRIBE user14 topic0
+PUBLISH topic1 price
+SUBSCRIBE user12 topic3
+UNSUBSCRIBE user18 topic0
+SUBSCRIBE user17 topic1
+SUBSCRIBE user17 topic2
+SUBSCRIBE user17 topic4
+SUBSCRIBE user4 topic2
+SUBSCRIBE user4 topic4
+PUBLISH topic2 shipped
+UNSUBSCRIBE user14 topic5
+UNSUBSCRIBE user12 topic0
+PUBLISH topic5 price build build
+SUBSCRIBE user7 topic4
+SUBSCRIBE user9 topic4
+SUBSCRIBE user15 topic3
+PUBLISH topic1 passed order shipped price
+SUBSCRIBE user14 topic1
+SUBSCRIBE user10 topic5
+SUBSCRIBE user19 topic4
+SUBSCRIBE user5 topic0
+PUBLISH topic0 price order deploy
+PUBLISH topic5 passed dropped
+UNSUBSCRIBE user17 topic3
+PUBLISH topic0 price order passed build
+PUBLISH topic0 passed price dropped
+PUBLISH topic3 order
+PUBLISH topic0 build deploy price
+SUBSCRIBE user11 topic2
+PUBLISH topic5 price passed shipped passed
+SUBSCRIBE user15 topic1
+SUBSCRIBE user1 topic4
+UNSUBSCRIBE user14 topic1
+PUBLISH topic1 started
+SUBSCRIBE user2 topic2
+SUBSCRIBE user19 topic0
+PUBLISH topic3 dropped build started shipped
+PUBLISH topic5 started
+SUBSCRIBE user1 topic5
+PUBLISH topic5 build build passed started
+SUBSCRIBE user17 topic4
+UNSUBSCRIBE user6 topic4
+PUBLISH topic5 shipped
+SUBSCRIBE user10 topic2
+SUBSCRIBE user11 topic1
+UNSUBSCRIBE user0 topic5
+PUBLISH topic2 deploy dropped order passed
+UNSUBSCRIBE user16 topic1
+SUBSCRIBE user18 topic0
+UNSUBSCRIBE user9 topic3
+UNSUBSCRIBE user14 topic5
+PUBLISH topic0 shipped deploy
+PUBLISH topic2 price order
+UNSUBSCRIBE user17 topic0
+SUBSCRIBE user15 topic2
+PUBLISH topic3 started price
+PUBLISH topic3 passed started shipped
+UNSUBSCRIBE user1 topic4
+UNSUBSCRIBE user15 topic3
+SUBSCRIBE user15 topic3
+SUBSCRIBE user14 topic0
+PUBLISH topic0 deploy shipped deploy deploy
+SUBSCRIBE user18 topic0
+SUBSCRIBE user10 topic4
+PUBLISH topic3 build dropped price
+SUBSCRIBE user19 topic2
+UNSUBSCRIBE user17 topic1
+SUBSCRIBE user14 topic4
+UNSUBSCRIBE user18 topic0
+SUBSCRIBE user9 topic3
+SUBSCRIBE user10 topic0
+PUBLISH topic0 order started
+SUBSCRIBE user8 topic2
+PUBLISH topic5 started shipped dropped started
+UNSUBSCRIBE user6 topic2
+SUBSCRIBE user18 topic3
+PUBLISH topic1 build passed
+PUBLISH topic0 price dropped price
+PUBLISH topic4 dropped passed
+SUBSCRIBE user14 topic1
+PUBLISH topic3 deploy
+PUBLISH topic0 deploy
+SUBSCRIBE user13 topic4
+UNSUBSCRIBE user6 topic5
+UNSUBSCRIBE user10 topic4
+PUBLISH topic3 deploy
+PUBLISH topic2 shipped
+UNSUBSCRIBE user2 topic1
+PUBLISH topic4 deploy shipped build price
+SUBSCRIBE user19 topic0
+UNSUBSCRIBE user19 topic5
+SUBSCRIBE user19 topic4
+SUBSCRIBE user1 topic3
+PUBLISH topic1 order
+UNSUBSCRIBE user14 topic4
+SUBSCRIBE user4 topic1
+PUBLISH topic5 build started dropped dropped
+SUBSCRIBE user11 topic5
+UNSUBSCRIBE user15 topic2
+UNSUBSCRIBE user6 topic4
+SUBSCRIBE user0 topic3
+PUBLISH topic1 build order order shipped
+SUBSCRIBE user2 topic3
+PUBLISH topic4 dropped
+SUBSCRIBE user5 topic0
+SUBSCRIBE user4 topic1
+PUBLISH topic2 passed deploy passed price
+PUBLISH topic1 deploy
+UNSUBSCRIBE user6 topic3
+SUBSCRIBE user16 topic0
+PUBLISH topic4 dropped started passed
+SUBSCRIBE user9 topic2
+UNSUBSCRIBE user4 topic2
+PUBLISH topic5 build build dropped
+UNSUBSCRIBE user7 topic2
+PUBLISH topic1 dropped passed passed price
+SUBSCRIBE user4 topic1
+UNSUBSCRIBE user5 topic5
+SUBSCRIBE user1 topic1
+PUBLISH topic2 deploy
+SUBSCRIBE user19 topic2
+PUBLISH topic1 build
+PUBLISH topic1 shipped build
+UNSUBSCRIBE user2 topic1
+SUBSCRIBE user11 topic3
+UNSUBSCRIBE user12 topic3
+PUBLISH topic1 deploy order
+PUBLISH topic0 passed started passed started
+SUBSCRIBE user7 topic2
+PUBLISH topic4 passed deploy
+SUBSCRIBE user1 topic3
+SUBSCRIBE user0 topic4
+SUBSCRIBE user8 topic5
+PUBLISH topic4 shipped dropped build order
+UNSUBSCRIBE user0 topic4
+SUBSCRIBE user8 topic2
+SUBSCRIBE user19 topic3
+SUBSCRIBE user13 topic5
+SUBSCRIBE user6 topic3
+SUBSCRIBE user19 topic5
+SUBSCRIBE user19 topic4
+PUBLISH topic1 build
+PUBLISH topic3 passed order started build
+SUBSCRIBE user11 topic3
+SUBSCRIBE user15 topic2
+UNSUBSCRIBE user5 topic4
+UNSUBSCRIBE user7 topic1
+UNSUBSCRIBE user4 topic1
+SUBSCRIBE user13 topic1
+UNSUBSCRIBE user12 topic2
+SUBSCRIBE user16 topic5
+PUBLISH topic3 started
+SUBSCRIBE user3 topic3
+SUBSCRIBE user13 topic3
+SUBSCRIBE user4 topic2
+SUBSCRIBE user6 topic0
+SUBSCRIBE user10 topic1
+SUBSCRIBE user11 topic2
+PUBLISH topic4 order price
+SUBSCRIBE user7 topic1
+SUBSCRIBE user10 topic4
+UNSUBSCRIBE user15 topic0
+UNSUBSCRIBE user3 topic4
+PUBLISH topic1 dropped build shipped
+PUBLISH topic0 shipped deploy started
+PUBLISH topic4 price
+PUBLISH topic0 build
+PUBLISH topic5 build passed order
+UNSUBSCRIBE user3 topic1
+SUBSCRIBE user10 topic2
+PUBLISH topic3 build passed order deploy
+SUBSCRIBE user17 topic1
+SUBSCRIBE user19 topic0
+SUBSCRIBE user8 topic4
+UNSUBSCRIBE user14 topic2
+SUBSCRIBE user7 topic1
+SUBSCRIBE user3 topic3
+SUBSCRIBE user9 topic3
+SUBSCRIBE user8 topic5
+PUBLISH topic1 order build shipped
+UNSUBSCRIBE user17 topic3
+UNSUBSCRIBE user14 topic4
+PUBLISH topic2 price price
+SUBSCRIBE user12 topic1
+SUBSCRIBE user3 topic3
+PUBLISH topic5 dropped deploy started
+SUBSCRIBE user2 topic5
+PUBLISH topic5 started
+PUBLISH topic5 order dropped dropped started
+PUBLISH topic5 shipped started
+PUBLISH topic0 order shipped
+SUBSCRIBE user19 topic3
+PUBLISH topic4 build passed build
+UNSUBSCRIBE user4 topic3
+SUBSCRIBE user0 topic4
+UNSUBSCRIBE user8 topic3
+UNSUBSCRIBE user12 topic0
+UNSUBSCRIBE user18 topic0
+UNSUBSCRIBE user11 topic0
+UNSUBSCRIBE user6 topic3
+SUBSCRIBE user19 topic3
+PUBLISH topic0 started passed shipped build
+SUBSCRIBE user7 topic1
+SUBSCRIBE user0 topic5
+PUBLISH topic3 shipped shipped price shipped
+UNSUBSCRIBE user17 topic1
+PUBLISH topic4 started passed
+PUBLISH topic0 passed deploy shipped
+PUBLISH topic5 build started order
+PUBLISH topic3 shipped deploy
+PUBLISH topic1 started started deploy
+SUBSCRIBE user13 topic1
+SUBSCRIBE user4 topic3
+UNSUBSCRIBE user15 topic2
+PUBLISH topic4 started passed
+SUBSCRIBE user16 topic1
+SUBSCRIBE user19 topic4
+SUBSCRIBE user15 topic0
+PUBLISH topic4 shipped price
+PUBLISH topic2 price price
+SUBSCRIBE user12 topic4
+PUBLISH topic0 order dropped
+SUBSCRIBE user9 topic3
+PUBLISH topic2 dropped passed dropped shipped
+PUBLISH topic2 dropped
+SUBSCRIBE user3 topic1
+PUBLISH topic3 shipped
+SUBSCRIBE user17 topic0
+UNSUBSCRIBE user14 topic3
+SUBSCRIBE user9 topic4
+SUBSCRIBE user8 topic5
+PUBLISH topic2 order build
+SUBSCRIBE user19 topic2
+SUBSCRIBE user4 topic0
+SUBSCRIBE user16 topic4
+SUBSCRIBE user1 topic2
+SUBSCRIBE user13 topic3
+PUBLISH topic5 dropped order order started
+SUBSCRIBE user2 topic5
+PUBLISH topic1 shipped deploy started build
+SUBSCRIBE user0 topic1
+SUBSCRIBE user2 topic2
+PUBLISH topic4 build price
+PUBLISH topic5 price price
+UNSUBSCRIBE user8 topic1
+PUBLISH topic4 shipped
+SUBSCRIBE user11 topic5
+UNSUBSCRIBE user0 topic0
+UNSUBSCRIBE user2 topic2
+PUBLISH topic3 shipped shipped
+SUBSCRIBE user10 topic4
+PUBLISH topic0 passed deploy
+PUBLISH topic3 started order
+SUBSCRIBE user2 topic0
+UNSUBSCRIBE user3 topic5
+SUBSCRIBE user6 topic1
+UNSUBSCRIBE user18 topic3
+UNSUBSCRIBE user17 topic3
+PUBLISH topic0 deploy price order
+SUBSCRIBE user8 topic1
+SUBSCRIBE user4 topic4
+SUBSCRIBE user8 topic0
+UNSUBSCRIBE user0 topic0
+PUBLISH topic1 build started build
+PUBLISH topic4 price order dropped passed
+PUBLISH topic1 dropped started
+UNSUBSCRIBE user13 topic3
+PUBLISH topic4 dropped price deploy build
+UNSUBSCRIBE user17 topic3
+SUBSCRIBE user18 topic1
+SUBSCRIBE user10 topic3
+PUBLISH topic2 deploy build
+PUBLISH topic3 dropped
+PUBLISH topic2 dropped dropped dropped deploy
+SUBSCRIBE user3 topic2
+SUBSCRIBE user3 topic3
+UNSUBSCRIBE user4 topic2
+PUBLISH topic2 dropped build order
+SUBSCRIBE user19 topic3
+PUBLISH topic1 started
+SUBSCRIBE user3 topic4
+UNSUBSCRIBE user8 topic0
+PUBLISH topic4 started passed dropped
+PUBLISH topic0 order shipped
+SUBSCRIBE user1 topic4
+SUBSCRIBE user12 topic4
+SUBSCRIBE user3 topic2
+PUBLISH topic0 build
+SUBSCRIBE user0 topic2
+SUBSCRIBE user7 topic0
+SUBSCRIBE user8 topic1
+UNSUBSCRIBE user3 topic5
+PUBLISH topic2 deploy passed started
+SUBSCRIBE user12 topic3
+PUBLISH topic2 passed order dropped
+PUBLISH topic3 price
+SUBSCRIBE user3 topic0
+SUBSCRIBE user9 topic1
+SUBSCRIBE user2 topic5
+SUBSCRIBE user17 topic5
+PUBLISH topic0 order started
+PUBLISH topic4 passed passed order build
+PUBLISH topic4 started order order
+SUBSCRIBE user10 topic5
+SUBSCRIBE user13 topic1
+SUBSCRIBE user19 topic5
+SUBSCRIBE user4 topic2
+UNSUBSCRIBE user13 topic4
+PUBLISH topic5 dropped order
+SUBSCRIBE user15 topic2
+UNSUBSCRIBE user6 topic4
+SUBSCRIBE user19 topic3
+SUBSCRIBE user14 topic2
+SUBSCRIBE user16 topic3
+PUBLISH topic4 deploy deploy
+PUBLISH topic0 build passed order
+SUBSCRIBE user11 topic4
+PUBLISH topic4 build passed shipped
+PUBLISH topic3 price build
+PUBLISH topic5 passed deploy dropped dropped
+UNSUBSCRIBE user19 topic4
+PUBLISH topic2 deploy
+UNSUBSCRIBE user0 topic1
+SUBSCRIBE user8 topic0
+UNSUBSCRIBE user3 topic2
+PUBLISH topic1 started passed deploy build
+PUBLISH topic1 passed shipped
+PUBLISH topic4 build
+PUBLISH topic4 order deploy order
+SUBSCRIBE user15 topic1
+PUBLISH topic0 deploy
+SUBSCRIBE user9 topic2
+UNSUBSCRIBE user15 topic0
+PUBLISH topic1 started passed passed
+PUBLISH topic2 order
+SUBSCRIBE user7 topic1
+UNSUBSCRIBE user0 topic3
+PUBLISH topic0 order dropped started
+PUBLISH topic4 passed shipped
+UNSUBSCRIBE user19 topic2
+PUBLISH topic0 order
+PUBLISH topic3 build dropped shipped
+SUBSCRIBE user18 topic2
+PUBLISH topic5 dropped order
+SUBSCRIBE user18 topic0
+SUBSCRIBE user5 topic4
+SUBSCRIBE user9 topic1
+UNSUBSCRIBE user16 topic1
+SUBSCRIBE user9 topic0
+SUBSCRIBE user9 topic2
+PUBLISH topic4 dropped started passed
+SUBSCRIBE user7 topic4
+SUBSCRIBE user7 topic0
+UNSUBSCRIBE user1 topic4
+SUBSCRIBE user19 topic3
+PUBLISH topic3 started deploy deploy
+PUBLISH topic2 order build
+UNSUBSCRIBE user18 topic3
+SUBSCRIBE user7 topic3
+PUBLISH topic3 passed passed price
+UNSUBSCRIBE user9 topic1
+UNSUBSCRIBE user18 topic0
+PUBLISH topic3 build
+SUBSCRIBE user15 topic4
+SUBSCRIBE user14 topic5
+UNSUBSCRIBE user16 topic3
+UNSUBSCRIBE user14 topic3
+PUBLISH topic5 dropped dropped dropped passed
+PUBLISH topic4 build started dropped build
+SUBSCRIBE user13 topic3
+SUBSCRIBE user0 topic2
+PUBLISH topic2 order
+PUBLISH topic1 started price started price
+SUBSCRIBE user17 topic3
+PUBLISH topic1 shipped
+PUBLISH topic2 passed
+SUBSCRIBE user12 topic2
+PUBLISH topic3 order started
+SUBSCRIBE user11 topic0
+UNSUBSCRIBE user2 topic0
+SUBSCRIBE user18 topic1
+SUBSCRIBE user6 topic5
+PUBLISH topic1 deploy
+SUBSCRIBE user16 topic0
+PUBLISH topic3 passed order deploy
+PUBLISH topic1 passed order
+PUBLISH topic4 order build passed
+UNSUBSCRIBE user9 topic1
+PUBLISH topic1 deploy dropped
+SUBSCRIBE user17 topic0
+UNSUBSCRIBE user11 topic3
+PUBLISH topic2 passed price price
+SUBSCRIBE user10 topic2
+PUBLISH topic1 passed order build
+PUBLISH topic0 started
+PUBLISH topic5 passed
+SUBSCRIBE user13 topic2
+PUBLISH topic3 order
+PUBLISH topic1 passed deploy price
+PUBLISH topic3 started deploy order
+UNSUBSCRIBE user16 topic5
+PUBLISH topic0 started order shipped build
+PUBLISH topic2 price
+PUBLISH topic5 order order build
+UNSUBSCRIBE user1 topic3
+UNSUBSCRIBE user11 topic0
+PUBLISH topic5 started deploy deploy
+UNSUBSCRIBE user12 topic4
+PUBLISH topic4 dropped deploy deploy started
+UNSUBSCRIBE user0 topic4
+SUBSCRIBE user17 topic2
+PUBLISH topic3 passed price dropped deploy
+SUBSCRIBE user12 topic4
+UNSUBSCRIBE user19 topic5
+UNSUBSCRIBE user2 topic2
+SUBSCRIBE user18 topic5
+SUBSCRIBE user19 topic4
+SUBSCRIBE user12 topic5
+PUBLISH topic4 price price
+UNSUBSCRIBE user14 topic3
+UNSUBSCRIBE user15 topic4
+SUBSCRIBE user10 topic3
+UNSUBSCRIBE user2 topic2
+PUBLISH topic3 started dropped
+UNSUBSCRIBE user3 topic2
+UNSUBSCRIBE user19 topic4
+UNSUBSCRIBE user16 topic1
+PUBLISH topic0 order shipped started
+UNSUBSCRIBE user0 topic5
+PUBLISH topic5 order order passed
+PUBLISH topic2 passed
+PUBLISH topic4 order build
+SUBSCRIBE user16 topic4
+UNSUBSCRIBE user6 topic4
+SUBSCRIBE user17 topic1
+SUBSCRIBE user10 topic1
+PUBLISH topic5 price started started order
+SUBSCRIBE user6 topic3
+PUBLISH topic0 order dropped started build
+SUBSCRIBE user6 topic4
+SUBSCRIBE user14 topic2
+SUBSCRIBE user8 topic1
+SUBSCRIBE user12 topic3
+PUBLISH topic5 deploy build started
+PUBLISH topic4 passed
+PUBLISH topic3 price deploy dropped deploy
+PUBLISH topic1 started shipped shipped dropped
+PUBLISH topic4 passed deploy order
+PUBLISH topic1 price shipped
+PUBLISH topic1 shipped started deploy passed
+SUBSCRIBE user18 topic1
+SUBSCRIBE user5 topic5
+UNSUBSCRIBE user7 topic0
+SUBSCRIBE user4 topic1
+SUBSCRIBE user16 topic5
+PUBLISH topic1 shipped build
+PUBLISH topic2 build price order shipped
+PUBLISH topic1 passed shipped dropped deploy
+PUBLISH topic4 order build passed
+PUBLISH topic1 price started deploy
+UNSUBSCRIBE user12 topic3
+PUBLISH topic2 passed
+SUBSCRIBE user10 topic3
+SUBSCRIBE user16 topic0
+SUBSCRIBE user15 topic1
+PUBLISH topic2 dropped order
+SUBSCRIBE user11 topic0
+UNSUBSCRIBE user2 topic3
+PUBLISH topic3 order
+PUBLISH topic4 shipped passed deploy passed
+PUBLISH topic1 shipped deploy price
+PUBLISH topic4 started
+SUBSCRIBE user3 topic0
+PUBLISH topic4 deploy dropped dropped
+SUBSCRIBE user5 topic5
+UNSUBSCRIBE user9 topic1
+SUBSCRIBE user16 topic3
+SUBSCRIBE user14 topic1
+SUBSCRIBE user15 topic3
+SUBSCRIBE user18 topic2
+SUBSCRIBE user14 topic2
+SUBSCRIBE user4 topic1
+SUBSCRIBE user11 topic4
+UNSUBSCRIBE user11 topic5
+SUBSCRIBE user11 topic4
+UNSUBSCRIBE user18 topic5
+PUBLISH topic0 deploy passed build
+UNSUBSCRIBE user18 topic1
+SUBSCRIBE user14 topic3
+PUBLISH topic3 started
+PUBLISH topic4 shipped
+UNSUBSCRIBE user5 topic0
+PUBLISH topic1 dropped build price
+PUBLISH topic2 dropped build deploy started
+UNSUBSCRIBE user13 topic1
+PUBLISH topic0 dropped build deploy
+SUBSCRIBE user12 topic5
+UNSUBSCRIBE user6 topic2
+SUBSCRIBE user19 topic2
+SUBSCRIBE user5 topic2
+SUBSCRIBE user12 topic2
+PUBLISH topic5 passed shipped build
+PUBLISH topic2 build
+SUBSCRIBE user11 topic0
+UNSUBSCRIBE user9 topic4
+PUBLISH topic1 deploy
+SUBSCRIBE user16 topic4
+SUBSCRIBE user14 topic2
+SUBSCRIBE user19 topic5
+PUBLISH topic3 dropped deploy started shipped
+SUBSCRIBE user12 topic1
+UNSUBSCRIBE user3 topic3
+UNSUBSCRIBE user16 topic5
+SUBSCRIBE user0 topic5
+UNSUBSCRIBE user6 topic5
+PUBLISH topic2 price dropped price dropped
+UNSUBSCRIBE user9 topic5
+PUBLISH topic3 dropped
+SUBSCRIBE user7 topic4
+PUBLISH topic3 price build build
+PUBLISH topic5 passed deploy started price
+PUBLISH topic4 order order build passed
+PUBLISH topic1 deploy order
+UNSUBSCRIBE user8 topic5
+PUBLISH topic4 passed started deploy
+SUBSCRIBE user10 topic0
+UNSUBSCRIBE user4 topic0
+SUBSCRIBE user2 topic3
+UNSUBSCRIBE user6 topic5
+PUBLISH topic4 deploy
+SUBSCRIBE user6 topic2
+PUBLISH topic5 build passed
+SUBSCRIBE user14 topic1
+SUBSCRIBE user10 topic0
+PUBLISH topic2 price shipped deploy
+SUBSCRIBE user16 topic4
+PUBLISH topic1 started order shipped
+SUBSCRIBE user14 topic3
+PUBLISH topic0 build
+SUBSCRIBE user8 topic2
+SUBSCRIBE user18 topic4
+UNSUBSCRIBE user9 topic0
+SUBSCRIBE user1 topic0
+SUBSCRIBE user18 topic1
+SUBSCRIBE user7 topic4
+SUBSCRIBE user13 topic4
+UNSUBSCRIBE user9 topic5
+PUBLISH topic5 shipped order shipped
+SUBSCRIBE user9 topic4
+UNSUBSCRIBE user4 topic1
+SUBSCRIBE user13 topic5
+UNSUBSCRIBE user12 topic2
+PUBLISH topic3 passed deploy started
+PUBLISH topic0 deploy dropped dropped
+SUBSCRIBE user12 topic3
+UNSUBSCRIBE user17 topic0
+SUBSCRIBE user16 topic2
+SUBSCRIBE user4 topic1
+PUBLISH topic4 price deploy order build
+SUBSCRIBE user17 topic2
+PUBLISH topic0 deploy
+PUBLISH topic5 dropped
+PUBLISH topic0 shipped passed
+PUBLISH topic1 dropped dropped price
+PUBLISH topic4 dropped order price
+PUBLISH topic4 build build price build
+SUBSCRIBE user3 topic1
+PUBLISH topic3 started price dropped
+PUBLISH topic2 dropped deploy deploy passed
+UNSUBSCRIBE user4 topic3
+SUBSCRIBE user4 topic1
+PUBLISH topic4 shipped dropped order deploy
+UNSUBSCRIBE user18 topic2
+SUBSCRIBE user8 topic4
+PUBLISH topic3 passed started started passed
+SUBSCRIBE user9 topic0
+PUBLISH topic2 build started
+PUBLISH topic1 price shipped deploy passed
+PUBLISH topic1 shipped price shipped shipped
+SUBSCRIBE user8 topic5
+UNSUBSCRIBE user19 topic5
+PUBLISH topic5 build
+PUBLISH topic1 deploy shipped
+PUBLISH topic3 price deploy
+PUBLISH topic2 order build started
+SUBSCRIBE user18 topic1
+PUBLISH topic4 shipped passed passed
+SUBSCRIBE user15 topic2
+PUBLISH topic0 dropped
+PUBLISH topic1 shipped passed order order
+PUBLISH topic1 order
+PUBLISH topic2 dropped shipped
+PUBLISH topic1 price order
+UNSUBSCRIBE user12 topic5
+UNSUBSCRIBE user18 topic3
+SUBSCRIBE user10 topic0
+PUBLISH topic2 order started started
+SUBSCRIBE user13 topic3
+PUBLISH topic3 price build dropped
+PUBLISH topic0 order dropped
+SUBSCRIBE user13 topic5
+UNSUBSCRIBE user12 topic0
+UNSUBSCRIBE user12 topic2
+UNSUBSCRIBE user12 topic0
+SUBSCRIBE user8 topic2
+PUBLISH topic2 order passed
+UNSUBSCRIBE user19 topic0
+PUBLISH topic5 started passed order
+UNSUBSCRIBE user9 topic1
+PUBLISH topic1 passed order started order
+SUBSCRIBE user13 topic1
+PUBLISH topic5 started shipped
+PUBLISH topic2 order order dropped
+UNSUBSCRIBE user2 topic5
+PUBLISH topic5 shipped shipped passed shipped
+PUBLISH topic2 build deploy started dropped
+UNSUBSCRIBE user18 topic0
+SUBSCRIBE user3 topic2
+SUBSCRIBE user4 topic0
+PUBLISH topic0 passed
+SUBSCRIBE user6 topic0
+PUBLISH topic0 build deploy passed
+UNSUBSCRIBE user14 topic5
+UNSUBSCRIBE user8 topic2
+PUBLISH topic2 dropped deploy shipped passed
+PUBLISH topic2 price
+PUBLISH topic4 order started dropped
+UNSUBSCRIBE user9 topic0
+UNSUBSCRIBE user11 topic3
+SUBSCRIBE user14 topic3
+SUBSCRIBE user15 topic1
+UNSUBSCRIBE user0 topic5
+SUBSCRIBE user4 topic1
+PUBLISH topic1 build started deploy
+SUBSCRIBE user9 topic4
+PUBLISH topic1 dropped order deploy deploy
+PUBLISH topic2 shipped build deploy shipped
+UNSUBSCRIBE user3 topic0
+UNSUBSCRIBE user1 topic0
+UNSUBSCRIBE user16 topic2
+PUBLISH topic2 started
+PUBLISH topic4 passed
+PUBLISH topic5 order deploy started order
+SUBSCRIBE user0 topic2
+PUBLISH topic5 dropped price build
+PUBLISH topic1 shipped
+PUBLISH topic4 order build started shipped
+PUBLISH topic0 build order order passed
+SUBSCRIBE user4 topic5
+SUBSCRIBE user7 topic0
+UNSUBSCRIBE user19 topic4
+UNSUBSCRIBE user14 topic0
+SUBSCRIBE user7 topic0
+SUBSCRIBE user15 topic1
+UNSUBSCRIBE user6 topic3
+SUBSCRIBE user11 topic1
+UNSUBSCRIBE user17 topic2
+SUBSCRIBE user8 topic3
+UNSUBSCRIBE user19 topic2
+SUBSCRIBE user17 topic3
+UNSUBSCRIBE user1 topic0
+SUBSCRIBE user1 topic2
+PUBLISH topic0 deploy dropped started shipped
+UNSUBSCRIBE user12 topic4
+SUBSCRIBE user2 topic1
+PUBLISH topic4 build passed build
+SUBSCRIBE user0 topic1
+SUBSCRIBE user5 topic3
+SUBSCRIBE user19 topic4
+PUBLISH topic0 passed price
+SUBSCRIBE user0 topic0
+PUBLISH topic4 order order started passed
+SUBSCRIBE user12 topic0
+PUBLISH topic5 passed build build build
+PUBLISH topic3 dropped shipped
+SUBSCRIBE user18 topic5
+UNSUBSCRIBE user11 topic2
+PUBLISH topic5 started deploy
+UNSUBSCRIBE user18 topic4
+UNSUBSCRIBE user2 topic3
+PUBLISH topic2 order deploy started
+PUBLISH topic4 dropped shipped order
+PUBLISH topic0 passed passed
+PUBLISH topic2 passed deploy passed price
+PUBLISH topic2 price
+PUBLISH topic3 build build deploy
+UNSUBSCRIBE user10 topic1
+PUBLISH topic4 dropped
+SUBSCRIBE user6 topic5
+PUBLISH topic5 dropped started order dropped
+SUBSCRIBE user2 topic0
+SUBSCRIBE user4 topic3
+SUBSCRIBE user1 topic4
+PUBLISH topic5 shipped order deploy
+UNSUBSCRIBE user3 topic4
+UNSUBSCRIBE user6 topic3
+PUBLISH topic4 order build shipped passed
+SUBSCRIBE user17 topic0
+SUBSCRIBE user12 topic0
+UNSUBSCRIBE user15 topic5
+UNSUBSCRIBE user18 topic5
+SUBSCRIBE user3 topic5
+PUBLISH topic2 shipped
+PUBLISH topic3 price shipped build
+SUBSCRIBE user6 topic5
+PUBLISH topic5 shipped price
+PUBLISH topic3 price dropped deploy
+PUBLISH topic4 passed started
+PUBLISH topic3 deploy price shipped
+SUBSCRIBE user6 topic2
+SUBSCRIBE user16 topic1
+PUBLISH topic1 dropped deploy
+PUBLISH topic4 dropped started passed started
+PUBLISH topic2 dropped dropped
+PUBLISH topic5 shipped
+UNSUBSCRIBE user14 topic5
+PUBLISH topic1 passed
+PUBLISH topic3 started passed
+PUBLISH topic2 passed order
+SUBSCRIBE user16 topic5
+PUBLISH topic4 price
+SUBSCRIBE user16 topic1
+PUBLISH topic5 dropped build dropped price
+PUBLISH topic0 build dropped
+SUBSCRIBE user19 topic4
+UNSUBSCRIBE user12 topic5
+PUBLISH topic3 passed
+PUBLISH topic5 passed price
+SUBSCRIBE user19 topic0
+SUBSCRIBE user11 topic1
+SUBSCRIBE user14 topic4
+PUBLISH topic0 build started
+SUBSCRIBE user1 topic1
+PUBLISH topic1 deploy dropped build build
+SUBSCRIBE user13 topic2
+PUBLISH topic5 order
+PUBLISH topic5 order deploy passed
+SUBSCRIBE user14 topic4
+SUBSCRIBE user8 topic3
+UNSUBSCRIBE user14 topic3
+SUBSCRIBE user17 topic0
+SUBSCRIBE user15 topic4
+SUBSCRIBE user13 topic0
+UNSUBSCRIBE user4 topic2
+SUBSCRIBE user13 topic5
+PUBLISH topic5 passed
+PUBLISH topic2 started
+PUBLISH topic1 build started
+PUBLISH topic5 price passed shipped deploy
+SUBSCRIBE user16 topic3
+PUBLISH topic5 shipped passed passed passed
+UNSUBSCRIBE user9 topic4
+SUBSCRIBE user17 topic5
+UNSUBSCRIBE user4 topic3
+SUBSCRIBE user11 topic2
+SUBSCRIBE user18 topic2
+SUBSCRIBE user19 topic4
+SUBSCRIBE user15 topic2
+SUBSCRIBE user5 topic1
+SUBSCRIBE user19 topic0
+SUBSCRIBE user19 topic0
+SUBSCRIBE user8 topic0
+PUBLISH topic5 started shipped passed started
+UNSUBSCRIBE user10 topic5
+PUBLISH topic2 deploy started build dropped
+SUBSCRIBE user16 topic2
+SUBSCRIBE user19 topic3
+SUBSCRIBE user16 topic0
+UNSUBSCRIBE user9 topic5
+UNSUBSCRIBE user9 topic0
+SUBSCRIBE user10 topic4
+SUBSCRIBE user12 topic1
+UNSUBSCRIBE user7 topic2
+UNSUBSCRIBE user19 topic5
+PUBLISH topic3 price deploy started build
+SUBSCRIBE user11 topic1
+UNSUBSCRIBE user16 topic4
+SUBSCRIBE user6 topic3
+PUBLISH topic2 dropped build dropped
+PUBLISH topic1 shipped started deploy shipped
+SUBSCRIBE user7 topic3
+PUBLISH topic4 dropped
+PUBLISH topic0 shipped dropped
+UNSUBSCRIBE user9 topic3
+SUBSCRIBE user1 topic4
+SUBSCRIBE user3 topic3
+SUBSCRIBE user7 topic0
+SUBSCRIBE user15 topic2
+SUBSCRIBE user13 topic1
+PUBLISH topic4 deploy shipped order
+PUBLISH topic5 price
+PUBLISH topic5 deploy started order build
+PUBLISH topic4 order started shipped deploy
+UNSUBSCRIBE user12 topic2
+UNSUBSCRIBE user4 topic1
+SUBSCRIBE user15 topic4
+SUBSCRIBE user17 topic0
+PUBLISH topic5 build price
+PUBLISH topic2 passed dropped
+SUBSCRIBE user6 topic0
+UNSUBSCRIBE user8 topic3
+SUBSCRIBE user10 topic1
+SUBSCRIBE user11 topic2
+PUBLISH topic5 order order
+SUBSCRIBE user10 topic4
+PUBLISH topic4 shipped started
+PUBLISH topic1 dropped
+PUBLISH topic5 price passed dropped
+PUBLISH topic0 build shipped
+PUBLISH topic3 dropped dropped dropped price
+PUBLISH topic3 shipped shipped
+SUBSCRIBE user3 topic4
+PUBLISH topic3 order
+SUBSCRIBE user4 topic3
+UNSUBSCRIBE user16 topic1
+UNSUBSCRIBE user14 topic5
+UNSUBSCRIBE user6 topic2
+PUBLISH topic2 passed dropped order build
+SUBSCRIBE user15 topic4
+SUBSCRIBE user11 topic0
+SUBSCRIBE user19 topic1
+UNSUBSCRIBE user19 topic1
+SUBSCRIBE user4 topic0
+SUBSCRIBE user17 topic2
+PUBLISH topic2 passed
+SUBSCRIBE user19 topic5
+PUBLISH topic3 started
+UNSUBSCRIBE user16 topic4
+PUBLISH topic5 started
+SUBSCRIBE user3 topic0
+SUBSCRIBE user18 topic3
+SUBSCRIBE user5 topic4
+SUBSCRIBE user4 topic1
+PUBLISH topic2 started started
+SUBSCRIBE user8 topic2
+UNSUBSCRIBE user10 topic1
+PUBLISH topic0 dropped build
+PUBLISH topic0 dropped
+PUBLISH topic3 passed order
+SUBSCRIBE user7 topic5
+PUBLISH topic4 order shipped started dropped
+PUBLISH topic5 shipped shipped
+PUBLISH topic1 order
+PUBLISH topic2 build deploy shipped deploy
+SUBSCRIBE user4 topic4
+PUBLISH topic4 build deploy dropped
+UNSUBSCRIBE user2 topic0
+SUBSCRIBE user0 topic0
+SUBSCRIBE user17 topic4
+PUBLISH topic4 shipped price order
+PUBLISH topic3 started dropped
+SUBSCRIBE user14 topic5
+SUBSCRIBE user10 topic3
+PUBLISH topic4 deploy price
+UNSUBSCRIBE user13 topic4
+SUBSCRIBE user7 topic4
+SUBSCRIBE user15 topic4
+UNSUBSCRIBE user11 topic5
+SUBSCRIBE user1 topic1
+SUBSCRIBE user1 topic5
+PUBLISH topic5 dropped price passed
+UNSUBSCRIBE user2 topic4
+PUBLISH topic4 price shipped deploy dropped
+UNSUBSCRIBE user8 topic3
+SUBSCRIBE user17 topic5
+UNSUBSCRIBE user4 topic2
+PUBLISH topic5 deploy price order build
+PUBLISH topic2 passed shipped deploy
+SUBSCRIBE user3 topic0
+SUBSCRIBE user0 topic4
+PUBLISH topic5 started started
+SUBSCRIBE user3 topic2
+SUBSCRIBE user16 topic2
+UNSUBSCRIBE user12 topic0
+SUBSCRIBE user11 topic1
+PUBLISH topic3 started shipped shipped price
+SUBSCRIBE user0 topic0
+SUBSCRIBE user1 topic4
+UNSUBSCRIBE user10 topic3
+SUBSCRIBE user4 topic2
+PUBLISH topic3 dropped shipped dropped build
+SUBSCRIBE user11 topic2
+PUBLISH topic1 deploy
+SUBSCRIBE user19 topic3
+UNSUBSCRIBE user12 topic1
+UNSUBSCRIBE user12 topic0
+SUBSCRIBE user9 topic3
+PUBLISH topic3 dropped
+SUBSCRIBE user2 topic0
+SUBSCRIBE user9 topic1
+SUBSCRIBE user14 topic4
+SUBSCRIBE user16 topic2
+PUBLISH topic5 price dropped dropped
+SUBSCRIBE user13 topic4
+SUBSCRIBE user0 topic4
+UNSUBSCRIBE user15 topic5
+PUBLISH topic0 price
+SUBSCRIBE user9 topic4
+UNSUBSCRIBE user4 topic1
+PUBLISH topic2 price build deploy order
+PUBLISH topic3 order
+SUBSCRIBE user4 topic0
+PUBLISH topic3 shipped started price
+PUBLISH topic1 price order build
+PUBLISH topic3 shipped order started
+SUBSCRIBE user12 topic2
+SUBSCRIBE user5 topic4
+PUBLISH topic1 shipped build
+SUBSCRIBE user3 topic3
+PUBLISH topic4 price
+UNSUBSCRIBE user0 topic3
+SUBSCRIBE user8 topic3
+UNSUBSCRIBE user7 topic4
+PUBLISH topic4 order started passed
+UNSUBSCRIBE user13 topic3
+PUBLISH topic0 passed started
+PUBLISH topic5 shipped passed order order
+SUBSCRIBE user5 topic3
+SUBSCRIBE user6 topic2
+PUBLISH topic3 order order build
+PUBLISH topic5 passed dropped
+SUBSCRIBE user9 topic4
+SUBSCRIBE user10 topic1
+UNSUBSCRIBE user4 topic2
+PUBLISH topic5 started order
+PUBLISH topic0 dropped started deploy
+SUBSCRIBE user9 topic1
+SUBSCRIBE user2 topic5
+UNSUBSCRIBE user1 topic1
+PUBLISH topic5 order order order price
+UNSUBSCRIBE user5 topic1
+PUBLISH topic2 dropped price shipped dropped
+SUBSCRIBE user19 topic0
+SUBSCRIBE user19 topic3
+UNSUBSCRIBE user18 topic0
+SUBSCRIBE user17 topic0
+SUBSCRIBE user12 topic0
+SUBSCRIBE user1 topic1
+SUBSCRIBE user9 topic4
+PUBLISH topic2 dropped started
+SUBSCRIBE user13 topic4
+SUBSCRIBE user8 topic2
+PUBLISH topic5 order build order price
+PUBLISH topic2 deploy shipped
+SUBSCRIBE user19 topic0
+PUBLISH topic3 build started
+PUBLISH topic3 passed
+SUBSCRIBE user18 topic2
+PUBLISH topic4 started order passed deploy
+SUBSCRIBE user3 topic4
+UNSUBSCRIBE user4 topic5
+UNSUBSCRIBE user19 topic1
+UNSUBSCRIBE user19 topic5
+UNSUBSCRIBE user8 topic3
+PUBLISH topic5 order dropped passed
+UNSUBSCRIBE user9 topic3
+SUBSCRIBE user2 topic5
+PUBLISH topic1 shipped
+SUBSCRIBE user16 topic3
+SUBSCRIBE user16 topic2
+PUBLISH topic5 dropped
+SUBSCRIBE user1 topic0
+SUBSCRIBE user3 topic0
+SUBSCRIBE user17 topic5
+UNSUBSCRIBE user14 topic0
+PUBLISH topic5 passed dropped price
+PUBLISH topic0 dropped deploy
+SUBSCRIBE user14 topic1
+UNSUBSCRIBE user10 topic4
+SUBSCRIBE user11 topic3
+UNSUBSCRIBE user9 topic3
+SUBSCRIBE user11 topic5
+UNSUBSCRIBE user5 topic1
+SUBSCRIBE user12 topic4
+SUBSCRIBE user18 topic3
+SUBSCRIBE user1 topic5
+UNSUBSCRIBE user15 topic2
+SUBSCRIBE user7 topic0
+SUBSCRIBE user10 topic2
+PUBLISH topic5 started passed price build
+UNSUBSCRIBE user2 topic4
+PUBLISH topic3 dropped dropped shipped
+PUBLISH topic1 price
+SUBSCRIBE user5 topic2
+UNSUBSCRIBE user12 topic3
+PUBLISH topic4 started order price
+PUBLISH topic5 shipped shipped dropped
+UNSUBSCRIBE user17 topic0
+PUBLISH topic2 deploy dropped dropped shipped
+PUBLISH topic1 shipped started
+SUBSCRIBE user12 topic5
+PUBLISH topic0 passed
+SUBSCRIBE user14 topic2
+PUBLISH topic2 shipped
+PUBLISH topic1 shipped price build passed
+SUBSCRIBE user5 topic1
+PUBLISH topic0 shipped price
+UNSUBSCRIBE user17 topic2
+PUBLISH topic3 deploy
+SUBSCRIBE user10 topic0
+PUBLISH topic0 order build
+PUBLISH topic1 dropped
+UNSUBSCRIBE user6 topic4
+SUBSCRIBE user16 topic0
+SUBSCRIBE user11 topic3
+SUBSCRIBE user10 topic0
+PUBLISH topic4 order price dropped started
+SUBSCRIBE user10 topic5
+PUBLISH topic4 order
+PUBLISH topic5 deploy shipped price
+PUBLISH topic5 deploy dropped
+SUBSCRIBE user15 topic3
+PUBLISH topic4 started shipped price passed
+SUBSCRIBE user18 topic5
+UNSUBSCRIBE user1 topic2
+UNSUBSCRIBE user4 topic4
+PUBLISH topic5 price dropped
+PUBLISH topic0 order deploy dropped
+UNSUBSCRIBE user8 topic5
+SUBSCRIBE user13 topic2
+PUBLISH topic0 dropped passed started
+SUBSCRIBE user13 topic2
+PUBLISH topic3 started passed dropped started
+SUBSCRIBE user2 topic5
+PUBLISH topic1 dropped build deploy
+SUBSCRIBE user3 topic4
+SUBSCRIBE user16 topic1
+PUBLISH topic5 order build order price
+PUBLISH topic1 started build deploy
+PUBLISH topic0 dropped
+PUBLISH topic4 shipped dropped dropped shipped
+PUBLISH topic0 order order
+UNSUBSCRIBE user15 topic4
+SUBSCRIBE user3 topic2
+SUBSCRIBE user16 topic4
+SUBSCRIBE user13 topic3
+UNSUBSCRIBE user12 topic0
+SUBSCRIBE user15 topic2
+PUBLISH topic2 passed build
+PUBLISH topic5 build
+SUBSCRIBE user19 topic2
+SUBSCRIBE user7 topic3
+PUBLISH topic2 deploy deploy
+UNSUBSCRIBE user0 topic1
+SUBSCRIBE user16 topic0
+PUBLISH topic1 deploy passed shipped
+SUBSCRIBE user4 topic0
+UNSUBSCRIBE user17 topic4
+SUBSCRIBE user4 topic0
+SUBSCRIBE user0 topic3
+SUBSCRIBE user13 topic2
+PUBLISH topic2 started shipped
+UNSUBSCRIBE user8 topic5
+UNSUBSCRIBE user6 topic0
+UNSUBSCRIBE user7 topic5
+PUBLISH topic3 price price dropped price
+SUBSCRIBE user0 topic3
+PUBLISH topic3 started build deploy started
+PUBLISH topic1 deploy passed dropped deploy
+UNSUBSCRIBE user12 topic1
+SUBSCRIBE user17 topic3
+UNSUBSCRIBE user10 topic4
+UNSUBSCRIBE user10 topic1
+SUBSCRIBE user3 topic3
+SUBSCRIBE user5 topic1
+SUBSCRIBE user16 topic3
+PUBLISH topic2 passed dropped
+UNSUBSCRIBE user4 topic1
+UNSUBSCRIBE user4 topic0
+PUBLISH topic1 shipped started
+SUBSCRIBE user9 topic4
+PUBLISH topic2 price
+PUBLISH topic0 order
+PUBLISH topic5 passed deploy passed build
+PUBLISH topic3 price price
+PUBLISH topic1 shipped shipped order build
+PUBLISH topic5 order shipped
+SUBSCRIBE user8 topic3
+UNSUBSCRIBE user18 topic1
+SUBSCRIBE user18 topic2
+SUBSCRIBE user8 topic4
+UNSUBSCRIBE user13 topic1
+PUBLISH topic5 order shipped build started
+SUBSCRIBE user3 topic2
+PUBLISH topic4 shipped build
+PUBLISH topic1 shipped passed dropped build
+PUBLISH topic4 shipped deploy dropped shipped
+SUBSCRIBE user4 topic4
+UNSUBSCRIBE user6 topic0
+UNSUBSCRIBE user16 topic2
+PUBLISH topic3 deploy price started deploy
+SUBSCRIBE user4 topic5
+SUBSCRIBE user3 topic0
+PUBLISH topic4 dropped price shipped passed
+PUBLISH topic1 order passed
+UNSUBSCRIBE user1 topic1
+SUBSCRIBE user7 topic4
+PUBLISH topic5 dropped passed shipped price
+PUBLISH topic2 order
+SUBSCRIBE user3 topic0
+UNSUBSCRIBE user8 topic3
+PUBLISH topic5 deploy
+PUBLISH topic1 dropped deploy
+PUBLISH topic1 build build
+UNSUBSCRIBE user3 topic1
+PUBLISH topic2 passed started passed
+PUBLISH topic4 order price passed
+PUBLISH topic3 price
+UNSUBSCRIBE user0 topic3
+PUBLISH topic3 order
+UNSUBSCRIBE user13 topic0
+UNSUBSCRIBE user3 topic5
+UNSUBSCRIBE user10 topic5
+PUBLISH topic3 started
+UNSUBSCRIBE user7 topic5
+SUBSCRIBE user8 topic2
+UNSUBSCRIBE user17 topic3
+UNSUBSCRIBE user12 topic4
+SUBSCRIBE user12 topic5
+SUBSCRIBE user3 topic5
+SUBSCRIBE user17 topic5
+SUBSCRIBE user15 topic3
+PUBLISH topic4 started passed order
+SUBSCRIBE user18 topic2
+SUBSCRIBE user7 topic1
+UNSUBSCRIBE user6 topic1
+UNSUBSCRIBE user15 topic2
+SUBSCRIBE user9 topic1
+PUBLISH topic0 dropped build
+SUBSCRIBE user6 topic3
+PUBLISH topic4 dropped dropped dropped
+SUBSCRIBE user5 topic4
+SUBSCRIBE user18 topic5
+SUBSCRIBE user9 topic1
+UNSUBSCRIBE user9 topic0
+SUBSCRIBE user6 topic5
+UNSUBSCRIBE user12 topic1
+PUBLISH topic2 build build build
+PUBLISH topic1 build dropped started
+SUBSCRIBE user16 topic1
+PUBLISH topic5 started
+UNSUBSCRIBE user15 topic1
+SUBSCRIBE user5 topic4
+SUBSCRIBE user12 topic1
+PUBLISH topic4 shipped
+PUBLISH topic1 shipped shipped price
+SUBSCRIBE user5 topic5
+PUBLISH topic0 passed
+UNSUBSCRIBE user14 topic0
+SUBSCRIBE user15 topic1
+PUBLISH topic2 dropped
+PUBLISH topic3 build order price dropped
+SUBSCRIBE user2 topic0
+PUBLISH topic3 passed shipped passed
+UNSUBSCRIBE user1 topic2
+UNSUBSCRIBE user19 topic1
+SUBSCRIBE user7 topic0
+PUBLISH topic1 started price dropped passed
+UNSUBSCRIBE user2 topic0
+PUBLISH topic5 dropped build passed deploy
+PUBLISH topic4 price price
+SUBSCRIBE user2 topic2
+PUBLISH topic1 price
+PUBLISH topic2 build started dropped
+SUBSCRIBE user0 topic4
+SUBSCRIBE user1 topic1
+PUBLISH topic1 price started
+PUBLISH topic5 started deploy order
+UNSUBSCRIBE user2 topic1
+UNSUBSCRIBE user10 topic1
+PUBLISH topic4 dropped shipped order deploy
+PUBLISH topic0 deploy shipped price order
+PUBLISH topic3 shipped price
+PUBLISH topic2 shipped
+SUBSCRIBE user5 topic0
+UNSUBSCRIBE user5 topic3
+SUBSCRIBE user9 topic1
+SUBSCRIBE user19 topic5
+PUBLISH topic5 shipped build passed deploy
+PUBLISH topic5 shipped dropped order
+PUBLISH topic1 order
+PUBLISH topic5 build passed shipped order
+SUBSCRIBE user14 topic2
+PUBLISH topic2 passed build
+PUBLISH topic3 price started deploy
+SUBSCRIBE user17 topic3
+SUBSCRIBE user18 topic1
+SUBSCRIBE user15 topic5
+SUBSCRIBE user4 topic5
+PUBLISH topic1 price deploy
+PUBLISH topic2 passed deploy build
+SUBSCRIBE user10 topic2
+SUBSCRIBE user18 topic0
+PUBLISH topic0 price order dropped
+UNSUBSCRIBE user17 topic2
+UNSUBSCRIBE user0 topic0
+PUBLISH topic3 order dropped
+PUBLISH topic1 build
+SUBSCRIBE user3 topic0
+SUBSCRIBE user15 topic2
+SUBSCRIBE user18 topic5
+PUBLISH topic3 price dropped started order
+PUBLISH topic5 deploy
+SUBSCRIBE user2 topic0
+PUBLISH topic5 dropped started dropped order
+SUBSCRIBE user13 topic0
+UNSUBSCRIBE user12 topic2
+PUBLISH topic2 order order
+PUBLISH topic0 deploy price price
+SUBSCRIBE user15 topic5
+PUBLISH topic5 price order deploy
+SUBSCRIBE user2 topic0
+SUBSCRIBE user15 topic1
+PUBLISH topic4 passed
+SUBSCRIBE user13 topic1
+SUBSCRIBE user13 topic5
+UNSUBSCRIBE user18 topic5
+SUBSCRIBE user8 topic5
+SUBSCRIBE user5 topic0
+PUBLISH topic3 order price passed shipped
+PUBLISH topic5 started dropped passed passed
+UNSUBSCRIBE user18 topic2
+SUBSCRIBE user13 topic2
+SUBSCRIBE user13 topic2
+SUBSCRIBE user9 topic0
+SUBSCRIBE user7 topic3
+SUBSCRIBE user7 topic4
+PUBLISH topic3 order shipped passed
+SUBSCRIBE user13 topic5
+SUBSCRIBE user10 topic5
+SUBSCRIBE user10 topic5
+SUBSCRIBE user12 topic2
+SUBSCRIBE user17 topic3
+SUBSCRIBE user7 topic3
+SUBSCRIBE user0 topic3
+UNSUBSCRIBE user15 topic4
+UNSUBSCRIBE user2 topic5
+UNSUBSCRIBE user14 topic3
+SUBSCRIBE user1 topic4
+UNSUBSCRIBE user10 topic2
+SUBSCRIBE user11 topic2
+SUBSCRIBE user2 topic3
+PUBLISH topic1 dropped started started order
+PUBLISH topic0 started deploy deploy
+UNSUBSCRIBE user10 topic1
+SUBSCRIBE user8 topic4
+UNSUBSCRIBE user3 topic5
+PUBLISH topic0 order
+UNSUBSCRIBE user7 topic3
+PUBLISH topic0 build price deploy
+PUBLISH topic4 passed
+SUBSCRIBE user8 topic5
+PUBLISH topic3 dropped deploy
+UNSUBSCRIBE user1 topic0
+SUBSCRIBE user17 topic3
+SUBSCRIBE user9 topic2
+PUBLISH topic0 started shipped
+SUBSCRIBE user16 topic0
+PUBLISH topic5 order started order order
+SUBSCRIBE user18 topic0
+PUBLISH topic0 price
+PUBLISH topic1 deploy deploy price
+PUBLISH topic3 started build
+SUBSCRIBE user11 topic4
+PUBLISH topic4 dropped dropped
+SUBSCRIBE user18 topic4
+UNSUBSCRIBE user8 topic2
+PUBLISH topic3 passed price price shipped
+SUBSCRIBE user0 topic4
+UNSUBSCRIBE user0 topic5
+PUBLISH topic0 price build shipped
+PUBLISH topic3 price build deploy price
+SUBSCRIBE user13 topic2
+SUBSCRIBE user10 topic5
+SUBSCRIBE user1 topic0
+SUBSCRIBE user5 topic0
+PUBLISH topic0 order
+SUBSCRIBE user2 topic4
+SUBSCRIBE user7 topic5
+PUBLISH topic0 build shipped deploy
+UNSUBSCRIBE user19 topic2
+PUBLISH topic1 price started build
+UNSUBSCRIBE user4 topic3
+PUBLISH topic3 passed deploy
+SUBSCRIBE user0 topic5
+SUBSCRIBE user8 topic4
+SUBSCRIBE user3 topic0
+PUBLISH topic0 shipped started
+SUBSCRIBE user4 topic2
+SUBSCRIBE user13 topic3
+SUBSCRIBE user9 topic0
+SUBSCRIBE user18 topic1
+SUBSCRIBE user4 topic2
+PUBLISH topic2 deploy order order dropped
+UNSUBSCRIBE user18 topic5
+SUBSCRIBE user19 topic4
+SUBSCRIBE user18 topic1
+UNSUBSCRIBE user2 topic1
+SUBSCRIBE user4 topic4
+PUBLISH topic2 deploy price passed
+SUBSCRIBE user11 topic1
+SUBSCRIBE user11 topic3
+PUBLISH topic3 passed dropped build dropped
+PUBLISH topic0 order
+SUBSCRIBE user2 topic5
+SUBSCRIBE user5 topic4
+UNSUBSCRIBE user19 topic4
+SUBSCRIBE user14 topic1
+SUBSCRIBE user6 topic0
+PUBLISH topic2 dropped dropped build shipped
+PUBLISH topic3 deploy started order deploy
+UNSUBSCRIBE user1 topic5
+UNSUBSCRIBE user16 topic1
+PUBLISH topic3 dropped deploy
+UNSUBSCRIBE user8 topic1
+UNSUBSCRIBE user12 topic4
+UNSUBSCRIBE user16 topic1
+SUBSCRIBE user10 topic5
+PUBLISH topic2 price build passed price
+UNSUBSCRIBE user16 topic4
+SUBSCRIBE user4 topic1
+SUBSCRIBE user10 topic2
+SUBSCRIBE user9 topic2
+PUBLISH topic4 shipped order build price
+PUBLISH topic1 passed price
+PUBLISH topic3 shipped
+UNSUBSCRIBE user12 topic5
+PUBLISH topic0 deploy price
+UNSUBSCRIBE user1 topic0
+UNSUBSCRIBE user12 topic4
+PUBLISH topic1 started build
+UNSUBSCRIBE user8 topic3
+PUBLISH topic5 passed
+PUBLISH topic1 order build started passed
+PUBLISH topic4 shipped dropped order started
+UNSUBSCRIBE user13 topic0
+PUBLISH topic2 dropped order price price
+PUBLISH topic3 dropped order order shipped
+SUBSCRIBE user10 topic3
+UNSUBSCRIBE user16 topic1
+SUBSCRIBE user12 topic3
+SUBSCRIBE user3 topic0
+PUBLISH topic2 order price
+SUBSCRIBE user14 topic4
+UNSUBSCRIBE user3 topic4
+SUBSCRIBE user2 topic1
+PUBLISH topic5 shipped order started started
+PUBLISH topic0 price passed
+UNSUBSCRIBE user11 topic0
+PUBLISH topic5 price build started started
+UNSUBSCRIBE user6 topic2
+PUBLISH topic3 passed
+PUBLISH topic2 started deploy price dropped
+SUBSCRIBE user5 topic5
+UNSUBSCRIBE user18 topic4
+SUBSCRIBE user6 topic4
+PUBLISH topic1 started build passed started
+SUBSCRIBE user11 topic4
+SUBSCRIBE user19 topic1
+PUBLISH topic4 passed
+SUBSCRIBE user6 topic4
+SUBSCRIBE user3 topic1
+SUBSCRIBE user16 topic0
+UNSUBSCRIBE user15 topic0
+PUBLISH topic2 dropped passed passed
+PUBLISH topic2 started deploy
+SUBSCRIBE user0 topic1
+UNSUBSCRIBE user1 topic2
+PUBLISH topic2 started
+PUBLISH topic2 passed passed deploy
+PUBLISH topic0 deploy dropped
+SUBSCRIBE user13 topic2
+PUBLISH topic4 passed deploy deploy
+PUBLISH topic5 passed
+PUBLISH topic5 passed
+UNSUBSCRIBE user9 topic5
+PUBLISH topic3 dropped price dropped
+SUBSCRIBE user2 topic0
+SUBSCRIBE user7 topic3
+UNSUBSCRIBE user13 topic5
+UNSUBSCRIBE user16 topic4
+UNSUBSCRIBE user19 topic0
+SUBSCRIBE user3 topic2
+PUBLISH topic5 order
+SUBSCRIBE user0 topic2
+SUBSCRIBE user9 topic1
+SUBSCRIBE user13 topic1
+PUBLISH topic0 deploy order
+SUBSCRIBE user17 topic4
+SUBSCRIBE user3 topic5
+PUBLISH topic4 passed dropped build
+SUBSCRIBE user9 topic5
+SUBSCRIBE user14 topic5
+PUBLISH topic1 dropped
+PUBLISH topic4 started passed build started
+SUBSCRIBE user11 topic2
+PUBLISH topic2 shipped
+PUBLISH topic4 shipped order started
+UNSUBSCRIBE user16 topic2
+PUBLISH topic1 shipped
+SUBSCRIBE user4 topic4
+PUBLISH topic2 started deploy deploy
+SUBSCRIBE user5 topic4
+SUBSCRIBE user4 topic1
+PUBLISH topic4 deploy passed deploy started
+UNSUBSCRIBE user1 topic1
+PUBLISH topic2 deploy deploy passed deploy
+SUBSCRIBE user17 topic0
+PUBLISH topic3 order dropped build passed
+PUBLISH topic3 dropped dropped started
+UNSUBSCRIBE user12 topic0
+PUBLISH topic1 price
+SUBSCRIBE user7 topic0
+UNSUBSCRIBE user19 topic2
+SUBSCRIBE user1 topic4
+SUBSCRIBE user19 topic2
+UNSUBSCRIBE user11 topic0
+PUBLISH topic2 build deploy shipped deploy
+UNSUBSCRIBE user17 topic0
+SUBSCRIBE user9 topic1
+SUBSCRIBE user5 topic4
+SUBSCRIBE user3 topic1
+PUBLISH topic1 dropped passed dropped started
+PUBLISH topic1 passed
+SUBSCRIBE user9 topic2
+SUBSCRIBE user11 topic1
+SUBSCRIBE user13 topic5
+PUBLISH topic3 started shipped
+SUBSCRIBE user2 topic3
+UNSUBSCRIBE user3 topic3
+UNSUBSCRIBE user19 topic1
+SUBSCRIBE user11 topic4
+SUBSCRIBE user9 topic2
+SUBSCRIBE user17 topic1
+SUBSCRIBE user0 topic1
+UNSUBSCRIBE user5 topic2
+SUBSCRIBE user10 topic5
+PUBLISH topic1 dropped started
+PUBLISH topic0 build
+PUBLISH topic0 started
+SUBSCRIBE user13 topic4
+PUBLISH topic4 shipped passed price
+PUBLISH topic1 price
+PUBLISH topic4 dropped passed
+PUBLISH topic4 passed dropped shipped started
+PUBLISH topic2 deploy
+SUBSCRIBE user3 topic1
+SUBSCRIBE user15 topic5
+UNSUBSCRIBE user3 topic4
+SUBSCRIBE user3 topic2
+PUBLISH topic2 build started started
+SUBSCRIBE user19 topic3
+UNSUBSCRIBE user9 topic2
+UNSUBSCRIBE user15 topic2
+PUBLISH topic4 build price build
+PUBLISH topic3 deploy passed passed
+SUBSCRIBE user11 topic5
+PUBLISH topic2 passed
+UNSUBSCRIBE user10 topic5
+PUBLISH topic4 passed shipped passed started
+SUBSCRIBE user1 topic1
+PUBLISH topic4 dropped order price dropped
+PUBLISH topic2 price build shipped
+PUBLISH topic1 price deploy shipped
+SUBSCRIBE user8 topic1
+PUBLISH topic3 build build build
+PUBLISH topic4 dropped passed build started
+PUBLISH topic2 started shipped price
+UNSUBSCRIBE user6 topic1
+PUBLISH topic2 passed deploy build

@@ -338,10 +338,9 @@ PROBLEMS = [
     ]),
 ]
 
-if __name__ == "__main__":
-    only = set(sys.argv[1:])
+def write_cases(problems, only):
     root = Path(__file__).resolve().parent.parent
-    for slug, solve, cases in PROBLEMS:
+    for slug, solve, cases in problems:
         if only and slug not in only:
             continue
         out = root / slug / "cases"
@@ -353,3 +352,7 @@ if __name__ == "__main__":
             (out / f"{stem}.in").write_text(inp + "\n", newline="\n")
             (out / f"{stem}.out").write_text(solve(inp + "\n") + "\n", newline="\n")
         print(slug, [solve(c[1] + "\n")[:20] for c in cases])
+
+
+if __name__ == "__main__":
+    write_cases(PROBLEMS, set(sys.argv[1:]))

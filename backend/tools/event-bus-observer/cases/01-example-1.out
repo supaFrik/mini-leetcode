@@ -1,0 +1,6 @@
+OK
+OK
+ann <- orders: order 42 shipped
+bob <- orders: order 42 shipped
+OK
+bob <- orders: order 43 shipped

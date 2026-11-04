@@ -445,22 +445,357 @@ Explanation: `"warm"` is not in `wordList`.
 - `1 <= wordList.length <= 5000`, all words distinct
 - All words use lowercase English letters and have the same length as `beginWord`.'),
 -- ---------- OOP (OOP_GRINDING) ----------
-(13, 'bank-account-class', 'Bank Account Class', 'EASY', 'OOP_GRINDING',
- 'Design a `BankAccount` class with deposit, withdraw and balance. Keep the balance private and reject invalid amounts.'),
-(14, 'shape-area-hierarchy', 'Shape Area Hierarchy', 'EASY', 'OOP_GRINDING',
- 'Model `Shape`, `Circle`, `Rectangle` and `Triangle` so every shape can report its area through one common method.'),
-(15, 'library-management-system', 'Library Management System', 'MEDIUM', 'OOP_GRINDING',
- 'Model books, members and loans. Members borrow and return items; different item types have different loan rules.'),
-(16, 'parking-lot-design', 'Parking Lot Design', 'MEDIUM', 'OOP_GRINDING',
- 'Design a parking lot with spot sizes, vehicle types and a ticketing flow. Keep each responsibility in its own class.'),
+(13, 'bank-account-class', 'Bank Account Class', 'EASY', 'ALGORITHMIC', 
+ 'Build a small bank that manages several accounts. Each account keeps its balance private and only changes it through deposits and withdrawals that pass validation.
+
+**Suggested classes**
+
+- `BankAccount`: a private `long balance`, with `deposit(amount)`, `withdraw(amount)` and `getBalance()`; invalid operations are rejected.
+- `Bank`: maps account ids to `BankAccount` objects and runs the commands.
+
+> The judge only compares what your program prints. Class design is not graded automatically, but the suggested classes are the intended way to solve it.
+
+**Input format**
+
+- Line 1: the number of commands `q`.
+- Next `q` lines: one command each, tokens separated by single spaces.
+
+**Commands and output** (print exactly one line per command unless stated otherwise)
+
+- `OPEN <id> <initial>`: create an account. Print `OK`, or `ERROR` if the id already exists or `initial < 0`.
+- `DEPOSIT <id> <amount>`: print the new balance, or `ERROR` if the account does not exist or `amount <= 0`.
+- `WITHDRAW <id> <amount>`: print the new balance, or `ERROR` if the account does not exist, `amount <= 0`, or `amount` is greater than the balance.
+- `BALANCE <id>`: print the balance, or `ERROR` if the account does not exist.
+- A command that prints `ERROR` changes nothing.
+
+**Example 1:**
+
+```
+Input:
+4
+OPEN alice 100
+DEPOSIT alice 50
+WITHDRAW alice 30
+BALANCE alice
+
+Output:
+OK
+150
+120
+120
+```
+
+Each successful change prints the new balance.
+
+**Example 2:**
+
+```
+Input:
+5
+OPEN bob 0
+WITHDRAW bob 10
+DEPOSIT bob -5
+BALANCE carol
+OPEN bob 7
+
+Output:
+OK
+ERROR
+ERROR
+ERROR
+ERROR
+```
+
+Overdrawing, a negative deposit, an unknown account and a duplicate id are all rejected.
+
+**Constraints:**
+
+- `1 <= q <= 2 * 10⁴`
+- Ids are 1 to 20 letters or digits.
+- `-10⁹ <= initial, amount <= 2 * 10⁹`
+- Balances can exceed 32-bit range; use a 64-bit integer.'),
+(14, 'shape-area-hierarchy', 'Shape Area Hierarchy', 'EASY', 'ALGORITHMIC', 
+ 'Model a family of shapes that all report their area through one common method, then print the area of each shape in the input.
+
+**Suggested classes**
+
+- `Shape`: an abstract class or interface with `double area()`.
+- `Circle`, `Rectangle`, `Triangle`: subclasses that store their own dimensions and implement `area()`.
+- A factory or parser that builds the right `Shape` from each command.
+
+> The judge only compares what your program prints. Class design is not graded automatically, but the suggested classes are the intended way to solve it.
+
+**Input format**
+
+- Line 1: the number of commands `q`.
+- Next `q` lines: one command each, tokens separated by single spaces.
+
+**Commands and output** (print exactly one line per command unless stated otherwise)
+
+- `CIRCLE <r>`: a circle with radius `r`.
+- `RECTANGLE <w> <h>`: a rectangle.
+- `TRIANGLE <a> <b> <c>`: a triangle with these side lengths; compute its area with Heron''s formula.
+- For each shape print its area with exactly two digits after the decimal point (for example `12.57`).
+- Print `INVALID` if any dimension is `<= 0`, or if the triangle sides break the strict triangle inequality (`a + b > c` for every pair).
+
+**Example 1:**
+
+```
+Input:
+3
+CIRCLE 2
+RECTANGLE 3 4
+TRIANGLE 3 4 5
+
+Output:
+12.57
+12.00
+6.00
+```
+
+π · 2² ≈ 12.566 rounds to 12.57.
+
+**Example 2:**
+
+```
+Input:
+3
+CIRCLE 0
+TRIANGLE 1 2 3
+RECTANGLE 5 -2
+
+Output:
+INVALID
+INVALID
+INVALID
+```
+
+A zero radius, a flat triangle (1 + 2 = 3) and a negative side are all invalid.
+
+**Constraints:**
+
+- `1 <= q <= 2 * 10⁴`
+- `-20 <= every dimension <= 1000`
+- Use `double` and the standard value of π (`Math.PI` or `math.pi`).'),
+(15, 'library-management-system', 'Library Management System', 'MEDIUM', 'ALGORITHMIC', 
+ 'Run a small library. Members borrow and return books, and each member type has its own loan limit.
+
+**Suggested classes**
+
+- `Book`: an id and the number of copies on the shelf.
+- `Member`: an abstract class with `int loanLimit()`; `Student` (limit 2) and `Teacher` (limit 5) extend it and track the books they hold.
+- `Library`: stores books and members and applies the rules below.
+
+> The judge only compares what your program prints. Class design is not graded automatically, but the suggested classes are the intended way to solve it.
+
+**Input format**
+
+- Line 1: the number of commands `q`.
+- Next `q` lines: one command each, tokens separated by single spaces.
+
+**Commands and output** (print exactly one line per command unless stated otherwise)
+
+- `ADD_BOOK <bookId> <copies>`: print `ERROR INVALID` if `copies <= 0`, `ERROR DUPLICATE` if the book exists, otherwise `OK`.
+- `ADD_MEMBER <memberId> <type>`: `type` is `STUDENT` or `TEACHER`. Print `ERROR INVALID` for any other type, `ERROR DUPLICATE` if the member exists, otherwise `OK`.
+- `BORROW <memberId> <bookId>`: check in this order and print the first that applies: `ERROR NO_MEMBER`, `ERROR NO_BOOK`, `ERROR ALREADY_BORROWED` (the member already holds this book), `ERROR LIMIT` (the member holds as many books as the limit), `ERROR NO_COPY` (no copy on the shelf). Otherwise take one copy and print `OK`.
+- `RETURN <memberId> <bookId>`: print `ERROR NO_MEMBER`, `ERROR NO_BOOK` or `ERROR NOT_BORROWED` (in this order), otherwise put the copy back and print `OK`.
+- `AVAILABLE <bookId>`: print the copies on the shelf, or `ERROR NO_BOOK`.
+
+**Example 1:**
+
+```
+Input:
+6
+ADD_BOOK B1 1
+ADD_MEMBER ann STUDENT
+BORROW ann B1
+AVAILABLE B1
+RETURN ann B1
+AVAILABLE B1
+
+Output:
+OK
+OK
+OK
+0
+OK
+1
+```
+
+The only copy leaves the shelf and comes back.
+
+**Example 2:**
+
+```
+Input:
+6
+ADD_BOOK B1 0
+ADD_MEMBER tom GUEST
+BORROW tom B1
+ADD_BOOK B2 1
+ADD_MEMBER tom TEACHER
+RETURN tom B2
+
+Output:
+ERROR INVALID
+ERROR INVALID
+ERROR NO_MEMBER
+OK
+OK
+ERROR NOT_BORROWED
+```
+
+Invalid adds create nothing, so `tom` does not exist until he is added as a teacher.
+
+**Constraints:**
+
+- `1 <= q <= 2 * 10⁴`
+- Ids are 1 to 20 letters or digits.
+- `-10 <= copies <= 100`'),
+(16, 'parking-lot-design', 'Parking Lot Design', 'MEDIUM', 'ALGORITHMIC', 
+ 'Run a parking lot with small (`S`), medium (`M`) and large (`L`) spots. Each vehicle type fits only some spot sizes, and every parked vehicle gets a ticket.
+
+**Suggested classes**
+
+- `Vehicle`: an abstract class with the spot sizes it fits; `Motorcycle`, `Car` and `Bus` extend it.
+- `ParkingLot`: free spots per size and the active tickets.
+- `Ticket`: the ticket id, the plate and the spot size used.
+
+> The judge only compares what your program prints. Class design is not graded automatically, but the suggested classes are the intended way to solve it.
+
+**Input format**
+
+- Line 1: three integers, the number of `S`, `M` and `L` spots.
+- Line 2: the number of commands `q`.
+- Next `q` lines: one command each.
+
+**Commands and output** (print exactly one line per command unless stated otherwise)
+
+- `PARK <plate> <type>`: `type` is `MOTORCYCLE` (fits `S`, `M`, `L`), `CAR` (fits `M`, `L`) or `BUS` (fits `L`). Print `ERROR INVALID` for any other type, `ERROR DUPLICATE` if this plate is already parked, `FULL` if no fitting spot is free. Otherwise use the **smallest** free size that fits and print `T<n> <size>`, where `n` counts successful parks starting from 1.
+- `LEAVE <ticketId>`: free the spot and print `OK`, or print `ERROR UNKNOWN_TICKET` if the ticket is not active.
+- `FREE <size>`: print the number of free spots of size `S`, `M` or `L`, or `ERROR INVALID` for any other size.
+
+**Example 1:**
+
+```
+Input:
+1 1 1
+4
+PARK m1 MOTORCYCLE
+PARK c1 CAR
+PARK c2 CAR
+PARK b1 BUS
+
+Output:
+T1 S
+T2 M
+T3 L
+FULL
+```
+
+The second car takes the large spot, so the bus finds nothing.
+
+**Example 2:**
+
+```
+Input:
+0 1 0
+5
+PARK c1 CAR
+LEAVE T1
+LEAVE T1
+PARK c1 TRUCK
+FREE M
+
+Output:
+T1 M
+OK
+ERROR UNKNOWN_TICKET
+ERROR INVALID
+1
+```
+
+A ticket can be used only once.
+
+**Constraints:**
+
+- `0 <=` spots of each size `<= 1000`
+- `1 <= q <= 2 * 10⁴`
+- Plates and ticket ids are 1 to 20 letters or digits.'),
 (17, 'multi-client-echo-server', 'Multi-Client Echo Server', 'MEDIUM', 'OOP_GRINDING',
  'Write a TCP server that echoes every line back to its sender and serves several clients at the same time.'),
 (18, 'file-transfer-over-tcp', 'File Transfer over TCP', 'MEDIUM', 'OOP_GRINDING',
  'Send a file from a client to a server over a socket, then verify its size and checksum on arrival.'),
 (19, 'tcp-chat-room', 'TCP Chat Room', 'HARD', 'OOP_GRINDING',
  'Build a chat server where clients join with a nickname and every message is broadcast to all connected clients.'),
-(20, 'event-bus-observer', 'Event Bus with Observers', 'HARD', 'OOP_GRINDING',
- 'Implement a type-safe event bus: subscribers register for an event type and are notified when it is published.');
+(20, 'event-bus-observer', 'Event Bus with Observers', 'HARD', 'ALGORITHMIC', 
+ 'Implement a publish/subscribe event bus. Subscribers register for a topic and are notified, in the order they subscribed, whenever a message is published on that topic.
+
+**Suggested classes**
+
+- `Subscriber`: an observer with a name and an `onEvent(topic, message)` method.
+- `EventBus`: keeps an ordered list of subscribers per topic and notifies them on publish.
+
+> The judge only compares what your program prints. Class design is not graded automatically, but the suggested classes are the intended way to solve it.
+
+**Input format**
+
+- Line 1: the number of commands `q`.
+- Next `q` lines: one command each, tokens separated by single spaces.
+
+**Commands and output** (print exactly one line per command unless stated otherwise)
+
+- `SUBSCRIBE <name> <topic>`: print `OK`, or `ERROR DUPLICATE` if `name` already subscribes to `topic`.
+- `UNSUBSCRIBE <name> <topic>`: print `OK`, or `ERROR NOT_SUBSCRIBED`.
+- `PUBLISH <topic> <message>`: `message` is the rest of the line. Print one line `<name> <- <topic>: <message>` for every subscriber of `topic`, in subscription order. If there is none, print `NO_SUBSCRIBERS`.
+- Subscribing again after unsubscribing puts the name at the end of the order.
+
+**Example 1:**
+
+```
+Input:
+5
+SUBSCRIBE ann orders
+SUBSCRIBE bob orders
+PUBLISH orders order 42 shipped
+UNSUBSCRIBE ann orders
+PUBLISH orders order 43 shipped
+
+Output:
+OK
+OK
+ann <- orders: order 42 shipped
+bob <- orders: order 42 shipped
+OK
+bob <- orders: order 43 shipped
+```
+
+Both subscribers get the first message; only `bob` gets the second.
+
+**Example 2:**
+
+```
+Input:
+4
+PUBLISH news hello
+SUBSCRIBE ann news
+SUBSCRIBE ann news
+UNSUBSCRIBE bob news
+
+Output:
+NO_SUBSCRIBERS
+OK
+ERROR DUPLICATE
+ERROR NOT_SUBSCRIBED
+```
+
+Publishing to an empty topic is not an error.
+
+**Constraints:**
+
+- `1 <= q <= 5000`
+- Names and topics are 1 to 20 lowercase letters, digits or `_`.
+- A message has 1 to 4 words of lowercase letters or digits.');
 
 INSERT INTO problems (title, slug, description, difficulty, time_limit_ms, memory_limit_mb, status,
                       created_by, created_at, problem_type)
@@ -474,6 +809,11 @@ ON DUPLICATE KEY UPDATE
     difficulty   = IF(problems.created_by = @seed_author, VALUES(difficulty), problems.difficulty),
     problem_type = IF(problems.created_by = @seed_author, VALUES(problem_type), problems.problem_type),
     status       = IF(problems.created_by = @seed_author, 'PUBLISHED', problems.status);
+
+-- Ba bài socket chưa chấm tự động được (trình chấm OOP không đọc testcase của bài), nên ẩn khỏi người dùng.
+UPDATE problems SET status = 'ARCHIVED'
+WHERE created_by = @seed_author
+  AND slug IN ('multi-client-echo-server', 'file-transfer-over-tcp', 'tcp-chat-room');
 
 -- 3. Chủ đề. Xoá rồi gán lại cho đúng các bài của seed_author, nên chạy lại không bị trùng.
 DROP TEMPORARY TABLE IF EXISTS seed_tag_rows;
