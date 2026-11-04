@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -30,6 +31,10 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     /** Các bài nộp (không phải "run") trong một kỳ thi, dùng để tính bảng xếp hạng. */
     List<Submission> findByContestId(Long contestId);
+
+    /** Bài nộp của nhiều kỳ thi (nạp sẵn User), để xếp hạng nhiều kỳ trong một truy vấn. */
+    @Query("select s from Submission s join fetch s.user where s.contestId in :contestIds")
+    List<Submission> findWithUserByContestIdIn(@Param("contestIds") Collection<Long> contestIds);
 
     /** Id các bài mà user đã có ít nhất một bài nộp được chấm AC → tiến độ DONE. */
     @Query("select distinct s.problem.id from Submission s "
