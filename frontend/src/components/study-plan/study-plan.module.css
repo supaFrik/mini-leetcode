@@ -1,0 +1,157 @@
+/* Số đo lấy từ docs/mockups/StudyPlan.dc.html. Màu, font, khung trang và trạng thái trống dùng chung problems.module.css. */
+
+.title {
+  margin: 0 0 16px;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.tab {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.tab[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+}
+
+.modules {
+  flex: 999 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.moduleHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-bottom: 8px;
+}
+
+.moduleHead h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.count {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 80px;
+  gap: 12px;
+  align-items: center;
+  min-height: 52px;
+  padding: 6px 16px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--hover);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.row:hover {
+  background: #f1f3f5;
+}
+
+.tick {
+  display: flex;
+  justify-content: center;
+  color: var(--solved);
+}
+
+.name {
+  font-weight: 500;
+  min-width: 0;
+}
+
+.level {
+  font-size: 14px;
+}
+
+.desc {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.done {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.big {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.bar {
+  height: 6px;
+  border-radius: 3px;
+  background: #e2e5e9;
+  overflow: hidden;
+}
+
+.bar > div {
+  height: 100%;
+  background: var(--solved);
+}
+
+.next {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.next h2 {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.next p {
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.continue {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+}

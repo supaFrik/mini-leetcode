@@ -58,8 +58,8 @@ export function SiteHeader() {
   const entries: NavEntry[] = [
     { label: "Problems", icon: List, href: "/problems", active: pathname.startsWith("/problems"), disabledReason: lockReason },
     { label: "Contest", icon: Trophy, href: "/exam", active: pathname.startsWith("/exam") },
-    { label: "Explore", icon: Compass, disabledReason: "Coming soon" },
-    { label: "Study Plan", icon: GraduationCap, disabledReason: "Coming soon" },
+    { label: "Explore", icon: Compass, href: "/explore", active: pathname.startsWith("/explore") },
+    { label: "Study Plan", icon: GraduationCap, href: "/study-plan", active: pathname.startsWith("/study-plan") },
     { label: "Submissions", icon: History, href: "/submissions", active: pathname.startsWith("/submissions") },
   ];
   if (isStaff) entries.push({ label: "Admin", href: "/admin/problems", active: pathname.startsWith("/admin") });
