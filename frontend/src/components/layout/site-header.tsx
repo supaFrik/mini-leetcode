@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Compass, GraduationCap, History, List, LogOut, Trophy, type LucideIcon } from "lucide-react";
+import { Bell, History, List, LogOut, Trophy, type LucideIcon } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { clearTokens } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -58,8 +58,6 @@ export function SiteHeader() {
   const entries: NavEntry[] = [
     { label: "Problems", icon: List, href: "/problems", active: pathname.startsWith("/problems"), disabledReason: lockReason },
     { label: "Contest", icon: Trophy, href: "/exam", active: pathname.startsWith("/exam") },
-    { label: "Explore", icon: Compass, href: "/explore", active: pathname.startsWith("/explore") },
-    { label: "Study Plan", icon: GraduationCap, href: "/study-plan", active: pathname.startsWith("/study-plan") },
     { label: "Submissions", icon: History, href: "/submissions", active: pathname.startsWith("/submissions") },
   ];
   if (isStaff) entries.push({ label: "Admin", href: "/admin/problems", active: pathname.startsWith("/admin") });
