@@ -193,6 +193,11 @@ public class OopDockerRunner {
             Thread.currentThread().interrupt();
             runDockerQuietly("kill", containerName);
             return buildFallbackReport(submissionId, "EXECUTION_FAILED", 0.0, "RE", "Execution was interrupted: " + e.getMessage());
+        } catch (IOException e) {
+            // Only processLauncher.launch throws IOException here (e.g. docker binary missing).
+            // OopGrindingJudgeStrategy matches this "Docker execution failed:" prefix and runs the in-process fallback itself.
+            log.error("Failed to launch Docker runner for submission {}", submissionId, e);
+            return buildFallbackReport(submissionId, "EXECUTION_FAILED", 0.0, "RE", "Docker execution failed: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error executing Docker runner for submission {}, falling back to in-process harness", submissionId, e);
             runDockerQuietly("kill", containerName);
