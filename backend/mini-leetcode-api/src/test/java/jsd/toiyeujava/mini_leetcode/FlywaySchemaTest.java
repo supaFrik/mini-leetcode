@@ -14,24 +14,31 @@ import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.submission.entity.Submission;
 import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.PathResource;
+import org.springframework.core.io.support.EncodedResource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.MySQLContainer;
 
+import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -268,14 +275,8 @@ class FlywaySchemaTest {
     }
 
     @Test
-    @Transactional
-    @DisplayName("Verification Gate 7: Entire seed-problems.sql file executes successfully without problem_type errors")
+    @DisplayName("Verification Gate 7: Entire seed-problems.sql file executes twice on real MySQL without error")
     void seedProblemsSql_executesSuccessfullyWithoutError() throws Exception {
-        // Ensure user id 1 exists for seed-problems.sql
-        jdbcTemplate.update(
-                "MERGE INTO users (id, username, email, password_hash, role, status) KEY(id) VALUES (1, 'seed_admin_gate7', 'admin7@leetcode.test', 'hash', 'ADMIN', 'ACTIVE')"
-        );
-
         // Seed được sinh bởi backend/tools/problems/seed_sql.py và không commit; chạy từ module api hoặc từ backend.
         Path scriptPath = Path.of("..", "tools", "seed-problems.sql");
         if (!Files.exists(scriptPath)) {
@@ -283,31 +284,31 @@ class FlywaySchemaTest {
         }
         Assumptions.assumeTrue(Files.exists(scriptPath),
                 "backend/tools/seed-problems.sql not generated; run: python backend/tools/problems/seed_sql.py");
+        // Seed dùng cú pháp MySQL (SET @var, ON DUPLICATE KEY, TEMPORARY TABLE) nên phải chạy trên MySQL thật, không phải H2.
+        Assumptions.assumeTrue(DockerClientFactory.instance().isDockerAvailable(),
+                "Docker not available; seed-problems.sql needs a real MySQL container, test skipped");
 
-        String rawSql = Files.readString(scriptPath, StandardCharsets.UTF_8);
+        try (MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")) {
+            mysql.start();
+            DataSource dataSource = new DriverManagerDataSource(mysql.getJdbcUrl(), mysql.getUsername(), mysql.getPassword());
+            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate();
 
-        // Split statements by semicolon while ignoring comments
-        String[] statements = rawSql.split(";");
-        for (String stmt : statements) {
-            String trimmed = stmt.trim();
-            if (trimmed.isEmpty() || trimmed.startsWith("--") || trimmed.toUpperCase().startsWith("SELECT")) {
-                continue;
-            }
-            String executable = Arrays.stream(trimmed.split("\n"))
-                    .map(String::trim)
-                    .filter(line -> !line.startsWith("--"))
-                    .collect(Collectors.joining(" "));
-            if (!executable.isEmpty()) {
-                jdbcTemplate.execute(executable);
+            JdbcTemplate mysqlJdbc = new JdbcTemplate(dataSource);
+            String countSql = "SELECT COUNT(*) FROM problems WHERE problem_type = 'ALGORITHMIC'";
+            Integer countAfterRun = null;
+            for (int run = 1; run <= 2; run++) {
+                // Một connection cho cả script vì seed dùng biến phiên và bảng TEMPORARY.
+                try (Connection connection = dataSource.getConnection()) {
+                    ScriptUtils.executeSqlScript(connection, new EncodedResource(new PathResource(scriptPath), StandardCharsets.UTF_8));
+                }
+                Integer count = mysqlJdbc.queryForObject(countSql, Integer.class);
+                assertThat(count).isGreaterThanOrEqualTo(10);
+                if (countAfterRun != null) {
+                    assertThat(count).as("second run must not duplicate problems").isEqualTo(countAfterRun);
+                }
+                countAfterRun = count;
             }
         }
-
-        // Verify seeded problems have defaulted to ALGORITHMIC
-        Integer algorithmicCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM problems WHERE problem_type = 'ALGORITHMIC'",
-                Integer.class
-        );
-        assertThat(algorithmicCount).isGreaterThanOrEqualTo(10);
     }
 
     private User getOrCreateTestUser(String username) {
