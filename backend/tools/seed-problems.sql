@@ -80,27 +80,370 @@ Explanation: The two equal values sit at different positions, so they form a val
 
 **Follow-up:** A pair of nested loops solves this in `O(n²)` time. Can you do it in `O(n)` time?'),
 ( 2, 'valid-parentheses', 'Valid Parentheses', 'EASY', 'ALGORITHMIC',
- 'Given a string containing only `()[]{}`, decide whether every bracket is closed by the same type in the correct order.'),
+ 'You are given a string `s` made only of the characters `(`, `)`, `[`, `]`, `{` and `}`. The string is **valid** when every opening bracket is closed by a bracket of the same type, and brackets close in the reverse order they were opened.
+
+**Input format**
+
+- Line 1: the string `s`.
+
+**Output format**
+
+Print `true` if `s` is valid, otherwise print `false` (lowercase).
+
+**Example 1:**
+
+```
+Input: s = "([]{})"
+Output: true
+Explanation: Every bracket is closed by its own type, innermost first.
+```
+
+**Example 2:**
+
+```
+Input: s = "{[}]"
+Output: false
+Explanation: `[` is still open when `}` arrives.
+```
+
+**Constraints:**
+
+- `1 <= s.length <= 10⁴`
+- `s` contains only `()[]{}`.'),
 ( 3, 'reverse-linked-list', 'Reverse Linked List', 'EASY', 'ALGORITHMIC',
- 'Given the head of a singly linked list, reverse the list and return the new head.'),
+ 'A singly linked list is given as the sequence of its node values from head to tail. Reverse the list and output the values of the reversed list from its new head to its new tail.
+
+**Input format**
+
+- Line 1: the node values separated by single spaces. The line is empty when the list has no nodes.
+
+**Output format**
+
+Print the reversed values on one line, separated by single spaces. Print an empty line for an empty list.
+
+**Example 1:**
+
+```
+Input: head = [4, 9, -2, 7]
+Output: 7 -2 9 4
+Explanation: The last node becomes the new head.
+```
+
+**Example 2:**
+
+```
+Input: head = [1, 2]
+Output: 2 1
+Explanation: Two nodes simply swap places.
+```
+
+**Constraints:**
+
+- The number of nodes is in the range `[0, 5000]`.
+- `-5000 <= Node.val <= 5000`'),
 ( 4, 'binary-search', 'Binary Search', 'EASY', 'ALGORITHMIC',
- 'Given a sorted array and a target, return the index of the target or `-1`. Your solution must run in O(log n).'),
+ 'You are given an array `nums` of **distinct** integers sorted in increasing order, and an integer `target`. Return the index of `target` in `nums`, or `-1` if it is not present. Aim for `O(log n)` time.
+
+**Input format**
+
+- Line 1: the elements of `nums`, separated by single spaces.
+- Line 2: the integer `target`.
+
+**Output format**
+
+Print the 0-based index, or `-1`.
+
+**Example 1:**
+
+```
+Input: nums = [-3, 0, 4, 8, 15], target = 8
+Output: 3
+Explanation: `nums[3] = 8`.
+```
+
+**Example 2:**
+
+```
+Input: nums = [2, 5, 9], target = 4
+Output: -1
+Explanation: 4 does not appear in `nums`.
+```
+
+**Constraints:**
+
+- `1 <= nums.length <= 10⁴`
+- `-10⁴ <= nums[i], target <= 10⁴`
+- All values in `nums` are distinct and sorted in increasing order.'),
 ( 5, 'longest-substring-without-repeating-characters', 'Longest Substring Without Repeating Characters', 'MEDIUM', 'ALGORITHMIC',
- 'Given a string `s`, find the length of the longest substring that contains no repeated characters.'),
+ 'Given a string `s`, find the length of the longest **substring** (a contiguous block of characters) in which no character appears twice.
+
+**Input format**
+
+- Line 1: the string `s`. The line is empty when `s` is empty.
+
+**Output format**
+
+Print the length as an integer.
+
+**Example 1:**
+
+```
+Input: s = "xyzxyzz"
+Output: 3
+Explanation: The answer is `"xyz"`; any longer block repeats a letter.
+```
+
+**Example 2:**
+
+```
+Input: s = "bbbb"
+Output: 1
+Explanation: Every block longer than one character contains two `"b"`.
+```
+
+**Constraints:**
+
+- `0 <= s.length <= 5 * 10⁴`
+- `s` contains printable ASCII characters except the space (codes 33 to 126).'),
 ( 6, 'number-of-islands', 'Number of Islands', 'MEDIUM', 'ALGORITHMIC',
- 'Given a grid of `1` (land) and `0` (water), count the islands. An island is land connected horizontally or vertically.'),
+ 'You are given an `m x n` grid where `1` is land and `0` is water. An **island** is a group of land cells connected horizontally or vertically (not diagonally). Count the islands. Everything outside the grid is water.
+
+**Input format**
+
+- Line 1: two integers `m` and `n`.
+- Next `m` lines: each row of the grid as a string of `n` characters, each `0` or `1`.
+
+**Output format**
+
+Print the number of islands.
+
+**Example 1:**
+
+```
+Input: m = 4, n = 5
+11000
+11000
+00100
+00011
+Output: 3
+Explanation: The top-left block, the single centre cell and the bottom-right pair.
+```
+
+**Example 2:**
+
+```
+Input: m = 3, n = 3
+111
+010
+111
+Output: 1
+Explanation: The middle cell links the top and bottom rows into one island.
+```
+
+**Constraints:**
+
+- `1 <= m, n <= 300`
+- Each cell is `0` or `1`.'),
 ( 7, 'coin-change', 'Coin Change', 'MEDIUM', 'ALGORITHMIC',
- 'Given coin denominations and an amount, return the fewest coins needed to make that amount, or `-1` if it cannot be made.'),
+ 'You are given the coin values `coins` (you have an unlimited number of each) and a target `amount`. Return the **fewest** coins whose values add up to exactly `amount`, or `-1` if no combination works.
+
+**Input format**
+
+- Line 1: the coin values, separated by single spaces.
+- Line 2: the integer `amount`.
+
+**Output format**
+
+Print the minimum number of coins, or `-1`.
+
+**Example 1:**
+
+```
+Input: coins = [2, 5, 10], amount = 27
+Output: 4
+Explanation: 27 = 10 + 10 + 5 + 2.
+```
+
+**Example 2:**
+
+```
+Input: coins = [4], amount = 7
+Output: -1
+Explanation: No multiple of 4 equals 7.
+```
+
+**Constraints:**
+
+- `1 <= coins.length <= 12`
+- `1 <= coins[i] <= 2³¹ - 1`, all values distinct
+- `0 <= amount <= 10⁴`'),
 ( 8, 'top-k-frequent-elements', 'Top K Frequent Elements', 'MEDIUM', 'ALGORITHMIC',
- 'Given an integer array and `k`, return the `k` most frequent elements in any order.'),
+ 'Given an integer array `nums` and an integer `k`, find the `k` values that occur most often. The input guarantees that this set of `k` values is unique.
+
+**Input format**
+
+- Line 1: the elements of `nums`, separated by single spaces.
+- Line 2: the integer `k`.
+
+**Output format**
+
+Print the `k` values in **increasing order**, separated by single spaces.
+
+**Example 1:**
+
+```
+Input: nums = [5, 5, 5, 2, 2, 9], k = 2
+Output: 2 5
+Explanation: 5 appears three times and 2 twice; they are printed in increasing order.
+```
+
+**Example 2:**
+
+```
+Input: nums = [-1], k = 1
+Output: -1
+Explanation: There is only one value.
+```
+
+**Constraints:**
+
+- `1 <= nums.length <= 10⁵`
+- `-10⁴ <= nums[i] <= 10⁴`
+- `1 <= k <=` the number of distinct values in `nums`
+- The answer is unique.'),
 ( 9, 'course-schedule', 'Course Schedule', 'MEDIUM', 'ALGORITHMIC',
- 'Given `n` courses and prerequisite pairs, decide whether it is possible to finish every course.'),
+ 'There are `numCourses` courses labelled `0` to `numCourses - 1`. A prerequisite pair `a b` means you must finish course `b` before course `a`. Decide whether it is possible to finish every course.
+
+**Input format**
+
+- Line 1: two integers `numCourses` and `m` (the number of pairs).
+- Next `m` lines: two integers `a` and `b`.
+
+**Output format**
+
+Print `true` if every course can be finished, otherwise `false`.
+
+**Example 1:**
+
+```
+Input: numCourses = 3, pairs = [[1, 0], [2, 1]]
+Output: true
+Explanation: Take course 0, then 1, then 2.
+```
+
+**Example 2:**
+
+```
+Input: numCourses = 2, pairs = [[1, 0], [0, 1]]
+Output: false
+Explanation: Each course waits for the other, so neither can start.
+```
+
+**Constraints:**
+
+- `1 <= numCourses <= 2000`
+- `0 <= m <= 5000`
+- `0 <= a, b < numCourses`, `a != b`
+- All pairs are distinct.'),
 (10, 'merge-k-sorted-lists', 'Merge k Sorted Lists', 'HARD', 'ALGORITHMIC',
- 'Merge `k` sorted linked lists into one sorted linked list and return its head.'),
+ 'You are given `k` linked lists, each sorted in increasing order. Merge them into a single list that is also sorted in increasing order and output its values.
+
+**Input format**
+
+- Line 1: the integer `k`.
+- Next `k` lines: the values of one list, separated by single spaces. A line is empty when that list is empty.
+
+**Output format**
+
+Print the merged values on one line, separated by single spaces. Print an empty line when there are no values at all.
+
+**Example 1:**
+
+```
+Input: lists = [[1, 4, 6], [-2, 3], [0, 5, 9, 10]]
+Output: -2 0 1 3 4 5 6 9 10
+Explanation: All nine values in increasing order.
+```
+
+**Example 2:**
+
+```
+Input: lists = [[], [7]]
+Output: 7
+Explanation: Empty lists contribute nothing.
+```
+
+**Constraints:**
+
+- `0 <= k <= 10⁴`
+- The total number of values is at most `10⁴`.
+- `-10⁴ <= value <= 10⁴`
+- Each list is sorted in increasing order.'),
 (11, 'trapping-rain-water', 'Trapping Rain Water', 'HARD', 'ALGORITHMIC',
- 'Given bar heights of width 1, compute how much water is trapped after it rains.'),
+ 'Bars of width 1 stand side by side with heights `height[0..n-1]`. After it rains, water collects in the dips between taller bars. Compute the total units of water held.
+
+**Input format**
+
+- Line 1: the heights, separated by single spaces.
+
+**Output format**
+
+Print the total amount of trapped water. It can exceed 32-bit range, so use a 64-bit integer.
+
+**Example 1:**
+
+```
+Input: height = [3, 0, 2, 0, 4]
+Output: 7
+Explanation: The dips hold 3 + 1 + 3 units.
+```
+
+**Example 2:**
+
+```
+Input: height = [5, 2, 1, 3]
+Output: 3
+Explanation: Water rises to height 3 over the bars of height 2 and 1.
+```
+
+**Constraints:**
+
+- `1 <= n <= 2 * 10⁴`
+- `0 <= height[i] <= 10⁵`'),
 (12, 'word-ladder', 'Word Ladder', 'HARD', 'ALGORITHMIC',
- 'Given a start word, an end word and a dictionary, return the length of the shortest transformation sequence changing one letter at a time.'),
+ 'Given a `beginWord`, an `endWord` and a dictionary `wordList`, build a sequence that starts at `beginWord` and ends at `endWord`, where neighbouring words differ in exactly one letter and every word after `beginWord` is in `wordList`. Return the number of words in the **shortest** such sequence, or `0` if none exists.
+
+**Input format**
+
+- Line 1: `beginWord` and `endWord`, separated by a space.
+- Line 2: the words of `wordList`, separated by single spaces.
+
+**Output format**
+
+Print the length of the shortest sequence (counting both `beginWord` and `endWord`), or `0`.
+
+**Example 1:**
+
+```
+Input: beginWord = "cold", endWord = "warm", wordList = ["cord", "card", "ward", "warm", "wore"]
+Output: 5
+Explanation: cold, cord, card, ward, warm.
+```
+
+**Example 2:**
+
+```
+Input: beginWord = "cold", endWord = "warm", wordList = ["cord", "card", "ward"]
+Output: 0
+Explanation: `"warm"` is not in `wordList`.
+```
+
+**Constraints:**
+
+- `1 <= beginWord.length <= 10`
+- `endWord.length == beginWord.length`, `beginWord != endWord`
+- `1 <= wordList.length <= 5000`, all words distinct
+- All words use lowercase English letters and have the same length as `beginWord`.'),
 -- ---------- OOP (OOP_GRINDING) ----------
 (13, 'bank-account-class', 'Bank Account Class', 'EASY', 'OOP_GRINDING',
  'Design a `BankAccount` class with deposit, withdraw and balance. Keep the balance private and reject invalid amounts.'),

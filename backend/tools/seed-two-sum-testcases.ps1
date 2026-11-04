@@ -14,16 +14,18 @@
 param(
     [Parameter(Mandatory = $true)][string]$Username,
     [Parameter(Mandatory = $true)][string]$Password,
+    # Bài khác dùng cùng script: -Slug coin-change (file ở backend\tools\<slug>\cases, sinh bằng problems\dsa.py).
+    [string]$Slug = "two-sum",
     [string]$BaseUrl = "http://localhost:8080"
 )
 $ErrorActionPreference = "Stop"
-$cases = Join-Path $PSScriptRoot "two-sum\cases"
+$cases = Join-Path $PSScriptRoot "$Slug\cases"
 
 $login = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/auth/login" -ContentType "application/json" `
     -Body (@{ usernameOrEmail = $Username; password = $Password } | ConvertTo-Json)
 $headers = @{ Authorization = "Bearer $($login.accessToken)" }
 
-$problem = Invoke-RestMethod -Uri "$BaseUrl/api/v1/problems/two-sum" -Headers $headers
+$problem = Invoke-RestMethod -Uri "$BaseUrl/api/v1/problems/$Slug" -Headers $headers
 if ($problem.data) { $problem = $problem.data }
 $base = "$BaseUrl/api/v1/problems/$($problem.id)/test-cases"
 
@@ -54,4 +56,4 @@ foreach ($in in Get-ChildItem $cases -Filter *.in | Sort-Object Name) {
 }
 Move-Status "REVIEWING"
 Move-Status "PUBLISHED"
-Write-Host "two-sum is PUBLISHED with $order test cases"
+Write-Host "$Slug is PUBLISHED with $order test cases"
