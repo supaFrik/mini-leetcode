@@ -81,6 +81,11 @@
   ::-webkit-scrollbar-thumb:hover { background: #bfbfbf; background-clip: content-box; }
   ::-webkit-scrollbar-track { background: transparent; }
 
+  /* Thanh scroll mảnh cho khung Testcase / Test Result. */
+  .thin-scroll { scrollbar-width: thin; scrollbar-color: #d9d9d9 transparent; }
+  .thin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+  .thin-scroll::-webkit-scrollbar-thumb { border-width: 1px; }
+
   /* Focus: one visible ring, blue, everywhere. */
   :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 

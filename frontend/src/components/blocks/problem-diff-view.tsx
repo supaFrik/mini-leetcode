@@ -21,12 +21,12 @@ function DiffColumn({ title, rows, tone }: { title: string; rows: DiffRow[]; ton
   return (
     <div className="min-w-0">
       <p className="eyebrow mb-1.5">{title}</p>
-      <div className="overflow-auto rounded-sm border border-border bg-card py-1 font-mono text-code text-ink">
+      <div className="thin-scroll overflow-auto rounded-sm border border-border bg-card py-1 font-mono text-code text-ink">
         {rows.map((row, i) => (
           <div
             key={i}
             className={cn(
-              "flex gap-2 px-2 py-0.5",
+              "flex min-w-max gap-2 px-2 py-0.5",
               row.diff && (tone === "red" ? "bg-destructive/10" : "bg-success/10")
             )}
           >
@@ -34,7 +34,7 @@ function DiffColumn({ title, rows, tone }: { title: string; rows: DiffRow[]; ton
             {row.text === undefined ? (
               <span className="italic text-faint">(missing line)</span>
             ) : (
-              <span className="whitespace-pre-wrap break-all">{row.text === "" ? " " : row.text}</span>
+              <span className="whitespace-pre">{row.text === "" ? " " : row.text}</span>
             )}
           </div>
         ))}

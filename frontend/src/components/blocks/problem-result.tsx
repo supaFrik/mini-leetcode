@@ -41,7 +41,7 @@ function CodeBox({ label, children }: { label: string; children: React.ReactNode
   return (
     <div>
       <p className="eyebrow mb-1.5">{label}</p>
-      <pre className="overflow-auto whitespace-pre-wrap rounded-sm border border-border bg-card px-3 py-2 font-mono text-code text-ink">
+      <pre className="thin-scroll overflow-auto whitespace-pre rounded-sm border border-border bg-card px-3 py-2 font-mono text-code text-ink">
         {children}
       </pre>
     </div>

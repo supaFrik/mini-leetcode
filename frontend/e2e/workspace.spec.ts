@@ -93,3 +93,41 @@ test.describe("Problem Solving Workspace E2E Suite", () => {
     await expect(page.getByText(/Passed \(3\/3\)/)).toBeVisible();
   });
 });
+
+test.describe("Workspace bottom panel: maximize and fold", () => {
+  test.use({ viewport: { width: 1400, height: 900 } });
+  test.beforeEach(async ({ page }) => {
+    await installFullscreenMock(page);
+    await setupMockApi(page);
+    await setMockAuthSession(page, { username: "student", role: "USER" });
+    await page.goto("/problems/two-sum", { waitUntil: "domcontentloaded" });
+    await expect(page.getByText("Solution.java")).toBeVisible();
+  });
+
+  test("maximize hides the editor and restore brings it back, also via Alt+=", async ({ page }) => {
+    await page.getByRole("button", { name: "Maximize panel" }).click();
+    await expect(page.getByText("Solution.java")).toBeHidden();
+    await page.getByRole("button", { name: "Restore panel" }).click();
+    await expect(page.getByText("Solution.java")).toBeVisible();
+
+    await page.keyboard.press("Alt+Equal");
+    await expect(page.getByRole("button", { name: "Restore panel" })).toBeVisible();
+    await page.keyboard.press("Alt+Equal");
+    await expect(page.getByRole("button", { name: "Maximize panel" })).toBeVisible();
+  });
+
+  test("fold keeps only the tab bar and clicking a tab expands it again", async ({ page }) => {
+    await page.getByRole("tab", { name: "Testcase" }).click();
+    const content = page.getByRole("tabpanel");
+    await expect(content).toBeVisible();
+
+    await page.getByRole("button", { name: "Fold panel" }).click();
+    await expect(content).toBeHidden();
+    await expect(page.getByRole("tab", { name: "Testcase" })).toBeVisible();
+    await expect(page.getByText("Solution.java")).toBeVisible();
+
+    await page.getByRole("tab", { name: "Testcase" }).click();
+    await expect(content).toBeVisible();
+    await expect(page.getByRole("button", { name: "Fold panel" })).toBeVisible();
+  });
+});

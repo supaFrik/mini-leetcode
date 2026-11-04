@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlignLeft, Copy, Download, FileCode, List, Maximize2, Minimize2, Plus, RotateCcw, Shield, Timer, Upload, X } from "lucide-react";
+import { AlignLeft, ChevronDown, ChevronUp, Copy, Download, FileCode, List, Maximize2, Minimize2, Plus, RotateCcw, Shield, Timer, Upload, X } from "lucide-react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -55,6 +55,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
   const [lastRun, setLastRun] = useState(false);
   const [maximized, setMaximized] = useState(false);
   const [tab, setTab] = useState("result");
+  const [bottomMode, setBottomMode] = useState<"normal" | "max" | "fold">("normal");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -239,6 +240,17 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
   }, [judge.error]);
   useEffect(() => { if (judge.timedOut) toast("Judging is taking longer than expected. Your submission has been saved; check Submissions.", "info"); }, [judge.timedOut]);
   useEffect(() => {
+    if (!desktop) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey && e.code === "Equal") {
+        e.preventDefault();
+        setBottomMode((m) => (m === "max" ? "normal" : "max"));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [desktop]);
+  useEffect(() => {
     if (!maximized) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMaximized(false); };
     window.addEventListener("keydown", onKey);
@@ -421,17 +433,43 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
     </div>
   );
   const bottomNode = (
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="m-2 border-b-0">
-          <TabsTrigger value="case">Testcase</TabsTrigger>
-          <TabsTrigger value="result">Test Result{resultLabel}</TabsTrigger>
-          <TabsTrigger value="subs">Submissions</TabsTrigger>
-        </TabsList>
+      <Tabs value={tab} onValueChange={setTab} className="flex h-full min-h-0 flex-col">
+        <div className="flex shrink-0 items-center gap-2 pr-3">
+          {/* Bấm vào tab (kể cả tab đang chọn) khi khung đang thu thì mở lại. */}
+          <TabsList className="m-2 border-b-0" onClick={() => bottomMode === "fold" && setBottomMode("normal")}>
+            <TabsTrigger value="case">Testcase</TabsTrigger>
+            <TabsTrigger value="result">Test Result{resultLabel}</TabsTrigger>
+            <TabsTrigger value="subs">Submissions</TabsTrigger>
+          </TabsList>
+          {desktop && (
+            <div className="ml-auto flex items-center gap-3 text-mute">
+              <button
+                type="button"
+                aria-label={bottomMode === "max" ? "Restore panel" : "Maximize panel"}
+                title={bottomMode === "max" ? "Restore (Alt + =)" : "Maximize (Alt + =)"}
+                onClick={() => setBottomMode((m) => (m === "max" ? "normal" : "max"))}
+                className="transition-colors hover:text-ink"
+              >
+                {bottomMode === "max" ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+              </button>
+              <button
+                type="button"
+                aria-label={bottomMode === "fold" ? "Expand panel" : "Fold panel"}
+                title={bottomMode === "fold" ? "Expand" : "Fold"}
+                onClick={() => setBottomMode((m) => (m === "fold" ? "normal" : "fold"))}
+                className="transition-colors hover:text-ink"
+              >
+                {bottomMode === "fold" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+            </div>
+          )}
+        </div>
+        <div className={cn("thin-scroll min-h-0 flex-1 overflow-auto", bottomMode === "fold" && desktop && "hidden")}>
         <TabsContent value="case" className="space-y-2 p-4 text-body-sm">
           {cases.filter((c) => !c.isHidden).map((c, i) => (
             <div key={c.id}>
               <p className="mb-1 text-mute">Case {i + 1}</p>
-              <pre className="overflow-auto whitespace-pre-wrap rounded-sm border border-border bg-card px-3 py-2 font-mono text-code text-ink">{c.input}</pre>
+              <pre className="thin-scroll overflow-auto whitespace-pre rounded-sm border border-border bg-card px-3 py-2 font-mono text-code text-ink">{c.input}</pre>
             </div>
           ))}
           {cases.every((c) => c.isHidden) && <p className="text-mute">No public testcases available yet.</p>}
@@ -442,6 +480,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
       <TabsContent value="subs" className="mt-0">
         <ProblemSubmissions problemId={problem.id} contestId={contestId} refreshKey={`${judge.result?.id}-${judge.result?.status}`} />
       </TabsContent>
+        </div>
     </Tabs>
   );
 
@@ -582,11 +621,22 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={60} minSize={35}>
             <ResizablePanelGroup direction="vertical" className="gap-2">
-              <ResizablePanel defaultSize={60} minSize={25} className="overflow-hidden rounded-xl border border-border bg-card">
+              {/* Maximize/fold ghi đè flex của panel bằng style; bỏ ghi đè là về đúng kích thước đã kéo. Monaco tự co giãn nhờ automaticLayout. */}
+              <ResizablePanel
+                defaultSize={60}
+                minSize={25}
+                className="overflow-hidden rounded-xl border border-border bg-card"
+                style={bottomMode === "max" ? { display: "none" } : bottomMode === "fold" ? { flex: "1 1 0px" } : undefined}
+              >
                 {editorNode}
               </ResizablePanel>
-              <ResizableHandle />
-              <ResizablePanel defaultSize={40} minSize={15} className="overflow-auto rounded-xl border border-border bg-card">
+              <ResizableHandle className={bottomMode !== "normal" ? "hidden" : undefined} />
+              <ResizablePanel
+                defaultSize={40}
+                minSize={15}
+                className="overflow-hidden rounded-xl border border-border bg-card"
+                style={bottomMode === "max" ? { flex: "1 1 0px" } : bottomMode === "fold" ? { flex: "0 0 auto" } : undefined}
+              >
                 {bottomNode}
               </ResizablePanel>
             </ResizablePanelGroup>
