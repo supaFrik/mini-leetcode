@@ -647,6 +647,17 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
       return json({ success: true, statusCode: 200, data: pagePayload, ...pagePayload });
     }
 
+    // GET /api/v1/problems/tags
+    if (path === "/api/v1/problems/tags" && method === "GET") {
+      const counts = new Map<string, number>();
+      for (const p of problems) for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+      return json(
+        Array.from(counts.entries())
+          .map(([tag, count]) => ({ tag, count }))
+          .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+      );
+    }
+
     // GET /api/v1/problems/{id}/test-cases
     const testCasesMatch = path.match(/^\/api\/v1\/problems\/(\d+)\/test-cases$/);
     if (testCasesMatch && method === "GET") {

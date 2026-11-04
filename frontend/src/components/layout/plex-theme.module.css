@@ -1,0 +1,35 @@
+/*
+ * Bảng màu và font của bản mẫu docs/mini-leetcode-problems-mockup.html.
+ * Gói trong một class để không đè lên token toàn cục của "Ink & Mesh".
+ * Dùng chung cho header và trang /problems.
+ */
+.theme {
+  --ink: #14181d;
+  --muted: #4a525c;
+  --faint: #5f6771;
+  --line: #dde1e5;
+  --control: #c5cbd2;
+  --ground: #f6f7f8;
+  --hover: #eceef0;
+  --link: #174ea6;
+  --solved: #0b6b5d;
+  --attempted: #9a4a06;
+  --off: #cdd2d8;
+  --error: #b42318;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  color: var(--ink);
+  font: 15px/1.45 var(--sans);
+}
+
+.theme :focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.theme button,
+.theme select,
+.theme input {
+  font: inherit;
+  color: var(--ink);
+}

@@ -1,341 +1,207 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Boxes,
-  Check,
-  ChevronRight,
-  Circle,
-  Code2,
-  Compass,
-  Filter,
-  GraduationCap,
-  Library,
-  Play,
-  Search,
-  Shuffle,
-  Swords,
-  Timer,
-  X,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { Box, Check, CircleDashed, CodeXml, Library, Search, Shuffle, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUrlState } from "@/hooks/use-url-state";
-import { errorMessage } from "@/lib/api";
-import { fetchContests, fetchMySubmissions, fetchProblems, fetchProblemTags } from "@/lib/services";
 import { useUser } from "@/hooks/use-user";
-import { DifficultyBadge } from "./difficulty-badge";
+import { errorMessage } from "@/lib/api";
+import { countProblems, fetchProblems, fetchProblemTags } from "@/lib/services";
+import { toast } from "@/lib/toast";
+import { LANG_PREF_KEY, LANGUAGES } from "@/lib/templates";
 import { Pagination } from "./pagination";
-import { LANG_PREF_KEY } from "@/lib/templates";
-import type { ContestInfo, Page, ProblemSummary, ProblemType, Submission } from "@/types/api";
+import theme from "@/components/layout/plex-theme.module.css";
+import s from "./problems.module.css";
+import type { Difficulty, Page, ProblemSummary, ProblemType, UserProgress } from "@/types/api";
 
-/* ------------------------------------------------------------------ *
- * Filter vocabulary
- * ------------------------------------------------------------------ */
+const PAGE_SIZE = 20;
 
-const DIFFICULTIES = [
+const TRACKS: { id: ProblemType | ""; label: string; icon: LucideIcon }[] = [
+  { id: "", label: "All problems", icon: Library },
+  { id: "ALGORITHMIC", label: "DSA (Algorithms & Data Structures)", icon: CodeXml },
+  { id: "OOP_GRINDING", label: "OOP (Object-Oriented Programming & Socket)", icon: Box },
+];
+
+const LEVELS: { value: Difficulty; label: string; rank: number }[] = [
+  { value: "EASY", label: "Easy", rank: 1 },
+  { value: "MEDIUM", label: "Medium", rank: 2 },
+  { value: "HARD", label: "Hard", rank: 3 },
+];
+const levelOf = (d: Difficulty) => LEVELS.find((l) => l.value === d) ?? LEVELS[0];
+
+const STATUSES: { value: UserProgress | ""; label: string; icon?: LucideIcon }[] = [
   { value: "", label: "Any" },
-  { value: "EASY", label: "Easy" },
-  { value: "MEDIUM", label: "Medium" },
-  { value: "HARD", label: "Hard" },
-] as const;
-
-const STATUSES = [
-  { value: "", label: "Any" },
-  { value: "DONE", label: "Solved" },
-  { value: "IN_PROGRESS", label: "Attempted" },
+  { value: "DONE", label: "Solved", icon: Check },
+  { value: "IN_PROGRESS", label: "Attempted", icon: CircleDashed },
   { value: "NEVER", label: "Todo" },
-] as const;
+];
 
-function Segmented({
-  value,
-  onChange,
-  options,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: readonly { value: string; label: string }[];
-}) {
+const STATUS_WORD: Record<UserProgress, string> = { DONE: "solved", IN_PROGRESS: "attempted", NEVER: "todo" };
+
+/** Kết quả một lần tải: đang tải, xong, hoặc lỗi (không bao giờ kẹt ở "đang tải"). */
+type Load<T> = { state: "loading" } | { state: "ok"; data: T } | { state: "error"; message: string };
+
+/* ------------------------------------------------------------------ */
+
+function ProblemRow({ p }: { p: ProblemSummary }) {
+  const level = levelOf(p.difficulty);
+  const word = p.progress ? STATUS_WORD[p.progress] : undefined;
   return (
-    <div className="flex flex-wrap gap-1 rounded-sm bg-hairline-soft p-1" role="group">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          onClick={() => onChange(o.value)}
-          aria-pressed={value === o.value}
-          className={cn(
-            "rounded-sm px-2.5 py-1.5 text-body-sm font-medium transition-colors active:translate-y-px",
-            value === o.value ? "bg-ink text-white" : "text-body hover:bg-card hover:text-ink"
-          )}
-        >
-          {o.label}
-        </button>
+    <Link
+      href={`/problems/${p.slug}`}
+      className={s.row}
+      aria-label={[p.title, level.label, word].filter(Boolean).join(", ")}
+    >
+      <span className={s.state}>
+        {p.progress === "DONE" ? (
+          <Check size={20} style={{ color: "var(--solved)" }} aria-hidden="true" />
+        ) : p.progress === "IN_PROGRESS" ? (
+          <CircleDashed size={18} style={{ color: "var(--attempted)" }} aria-hidden="true" />
+        ) : null}
+      </span>
+      <span className={cn(s.num, s.colNum)}>{String(p.id).padStart(3, "0")}</span>
+      <span className={s.name}>{p.title}</span>
+      <span className={cn(s.tags, s.colTags)}>{p.tags.join(" · ")}</span>
+      <span className={s.level}>
+        <span className={s.meter} aria-hidden="true">
+          <i className={s.on} />
+          <i className={level.rank >= 2 ? s.on : undefined} />
+          <i className={level.rank >= 3 ? s.on : undefined} />
+        </span>
+        {level.label}
+      </span>
+    </Link>
+  );
+}
+
+function SkeletonRows() {
+  return (
+    <div aria-label="Loading problems" aria-busy="true">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className={s.row} aria-hidden="true">
+          <span />
+          <span className={cn(s.skeletonBar, s.colNum)} style={{ width: 28 }} />
+          <span className={s.skeletonBar} style={{ width: `${45 + ((i * 17) % 35)}%` }} />
+          <span className={cn(s.skeletonBar, s.colTags)} style={{ width: "60%" }} />
+          <span className={s.skeletonBar} style={{ width: 60 }} />
+        </div>
       ))}
     </div>
   );
 }
 
-function Removable({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card py-1 pl-2.5 pr-1.5 text-body-sm text-body">
-      {label}
-      <button
-        aria-label={`Remove filter ${label}`}
-        onClick={onRemove}
-        className="grid h-4 w-4 place-items-center rounded-full text-mute transition-colors hover:bg-hairline-soft hover:text-ink"
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </span>
-  );
+/* ------------------------------------------------------------------ */
+
+interface Stats {
+  /** Toàn kho (mọi loại) — cho dòng tóm tắt cạnh tiêu đề. */
+  total: number;
+  solved: number | null;
+  /** Theo loại đang chọn, từng độ khó. `null` khi chưa đăng nhập. */
+  byLevel: { total: number; solved: number }[] | null;
 }
 
-/* ------------------------------------------------------------------ *
- * Left rail — the single filter surface + at-a-glance progress
- * ------------------------------------------------------------------ */
-
-interface RailProps {
-  tags: string[];
-  tagCounts: { tag: string; count: number }[];
-  onToggleTag: (t: string) => void;
-  difficulty: string;
-  onDifficulty: (v: string) => void;
-  progress: string;
-  onProgress: (v: string) => void;
-  type: string;
-  onType: (v: string) => void;
-  solvedCount: number | null;
-  totalCount: number | null;
-  nextUp: ProblemSummary | null;
-  runningContests: ContestInfo[];
-  signedIn: boolean;
-}
-
-function Rail({
-  tags,
-  tagCounts,
-  onToggleTag,
-  difficulty,
-  onDifficulty,
-  progress,
-  onProgress,
-  type,
-  onType,
-  solvedCount,
-  totalCount,
-  nextUp,
-  runningContests,
-  signedIn,
-}: RailProps) {
-  const item =
-    "group flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-body-md text-body transition-colors hover:bg-hairline-soft hover:text-ink";
-
-  return (
-    <aside
-      aria-label="Library navigation"
-      className="hidden min-h-0 w-64 shrink-0 flex-col overflow-y-auto border-r border-border px-4 py-6 sm:px-6 lg:flex"
-    >
-      <nav aria-label="Library" className="space-y-0.5">
-        <button
-          type="button"
-          onClick={() => onType("")}
-          className={cn(item, !type ? "bg-hairline-soft font-medium text-ink" : "")}
-        >
-          <Library className="h-4 w-4" />
-          <span>Tất cả bài tập</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onType("ALGORITHMIC")}
-          className={cn(
-            item,
-            type === "ALGORITHMIC"
-              ? "bg-cyan-500/10 font-medium text-cyan-600 dark:text-cyan-400"
-              : "hover:text-cyan-600"
-          )}
-        >
-          <Code2 className="h-4 w-4 text-cyan-600" />
-          <span>DSA (Thuật toán)</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onType("OOP_GRINDING")}
-          className={cn(
-            item,
-            type === "OOP_GRINDING"
-              ? "bg-purple-500/10 font-medium text-purple-600 dark:text-purple-400"
-              : "hover:text-purple-600"
-          )}
-        >
-          <Boxes className="h-4 w-4 text-purple-600" />
-          <span>OOP & Socket</span>
-        </button>
-
-        <div className="my-2 h-px bg-border/60" />
-
-        <Link href="/exam" className={item}>
-          <Swords className="h-4 w-4" />
-          Contest
-          <ChevronRight className="ml-auto h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-60" />
-        </Link>
-        <span className={cn(item, "cursor-default")}>
-          <Compass className="h-4 w-4" />
-          Explore
-        </span>
-        <span className={cn(item, "cursor-default")}>
-          <GraduationCap className="h-4 w-4" />
-          Study Plan
-        </span>
-      </nav>
-
-      {/* ---- Progress at a glance (signed-in only) ---- */}
-      {signedIn && (
-        <>
-          <div className="my-5 h-px bg-border" />
-
-          <div className="px-3">
-            <p className="eyebrow">Your progress</p>
-            {solvedCount != null && totalCount != null ? (
-              <>
-                <p className="mt-2 text-heading-md text-ink">
-                  {solvedCount}
-                  <span className="text-body-md text-mute"> / {totalCount} solved</span>
-                </p>
-                <div
-                  className="mt-2 h-1 w-full overflow-hidden rounded-full bg-hairline-soft"
-                  role="progressbar"
-                  aria-valuenow={solvedCount}
-                  aria-valuemin={0}
-                  aria-valuemax={totalCount}
-                >
-                  <div
-                    className="h-full rounded-full bg-ink transition-[width] duration-500 ease-smooth"
-                    style={{ width: `${totalCount ? (solvedCount / totalCount) * 100 : 0}%` }}
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="mt-2 h-4 w-24 animate-pulse rounded bg-hairline-soft" />
-            )}
-          </div>
-
-          {nextUp && (
-            <Link
-              href={`/problems/${nextUp.slug}`}
-              className="mt-3 flex items-start gap-2.5 rounded-sm px-3 py-2 transition-colors hover:bg-hairline-soft"
-            >
-              <Play className="mt-0.5 h-3.5 w-3.5 shrink-0 text-link" />
-              <span className="min-w-0">
-                <span className="block truncate text-body-md text-ink">{nextUp.title}</span>
-                <span className="mt-0.5 block text-body-sm text-mute">Continue where you left off</span>
-              </span>
-            </Link>
-          )}
-
-          {runningContests.length > 0 && (
-            <div className="mt-3 px-3">
-              <p className="eyebrow">Live now</p>
-              {runningContests.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/exam/${c.id}`}
-                  className="mt-2 flex items-center gap-2 rounded-sm px-0 py-1 text-body-md text-ink transition-colors hover:text-link"
-                >
-                  <Timer className="h-3.5 w-3.5 text-medium" />
-                  <span className="truncate">{c.title}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      <div className="my-5 h-px bg-border" />
-
-      {/* ---- Topics: the only topic surface, now backed by real data ---- */}
-      <div>
-        <p className="eyebrow mb-1.5 px-3">Topics</p>
-        <div className="space-y-0.5">
-          {tagCounts.map(({ tag, count }) => {
-            const on = tags.includes(tag);
-            return (
-              <button
-                key={tag}
-                onClick={() => onToggleTag(tag)}
-                aria-pressed={on}
-                className={cn(item, on && "bg-hairline-soft text-ink")}
-              >
-                <span
-                  className={cn(
-                    "h-2.5 w-2.5 shrink-0 rounded-[3px]",
-                    on ? "bg-link" : "bg-border"
-                  )}
-                />
-                <span className="flex-1 text-left">{tag}</span>
-                <span className="font-mono text-[11px] text-mute">{count}</span>
-              </button>
-            );
-          })}
-          {tagCounts.length === 0 && (
-            <div className="space-y-1.5 px-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-8 animate-pulse rounded-sm bg-hairline-soft" />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="my-5 h-px bg-border" />
-
-      {/* ---- Difficulty + status ---- */}
-      {signedIn && (
-        <div className="mb-4">
-          <p className="eyebrow mb-1.5 px-3">Status</p>
-          <div className="px-3">
-            <Segmented value={progress} onChange={onProgress} options={STATUSES} />
-          </div>
-        </div>
-      )}
-
-      <div>
-        <p className="eyebrow mb-1.5 px-3">Difficulty</p>
-        <div className="px-3">
-          <Segmented value={difficulty} onChange={onDifficulty} options={DIFFICULTIES} />
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function RowSkeleton() {
-  return (
-    <div className="grid grid-cols-[44px_1fr_100px] items-center gap-2 border-t border-border px-5 py-4 sm:grid-cols-[56px_1fr_120px]">
-      <div className="h-5 w-5 animate-pulse rounded-full bg-hairline-soft" />
-      <div className="space-y-2">
-        <div className="h-4 w-2/3 animate-pulse rounded bg-hairline-soft" />
-        <div className="flex gap-1.5">
-          <div className="h-4 w-14 animate-pulse rounded-full bg-hairline-soft" />
-          <div className="h-4 w-16 animate-pulse rounded-full bg-hairline-soft" />
-        </div>
-      </div>
-      <div className="h-5 w-16 animate-pulse rounded bg-hairline-soft" />
-    </div>
-  );
+async function loadStats(type: ProblemType | "", signedIn: boolean): Promise<Stats> {
+  const t = type || undefined;
+  if (!signedIn) {
+    return { total: await countProblems({}), solved: null, byLevel: null };
+  }
+  const calls = [
+    countProblems({}),
+    countProblems({ progress: "DONE" }),
+    ...LEVELS.flatMap((l) => [
+      countProblems({ type: t, difficulty: l.value }),
+      countProblems({ type: t, difficulty: l.value, progress: "DONE" }),
+    ]),
+  ];
+  const [total, solved, ...rest] = await Promise.all(calls);
+  return {
+    total,
+    solved,
+    byLevel: LEVELS.map((_, i) => ({ total: rest[i * 2], solved: rest[i * 2 + 1] })),
+  };
 }
 
 export function ProblemsView() {
+  const router = useRouter();
   const { sp, set } = useUrlState();
   const { user, ready: userReady } = useUser();
   const signedIn = !!user;
+
   const page = Math.max(1, Number(sp.get("page") ?? 1) || 1);
   const q = sp.get("q") ?? "";
   const difficulty = sp.get("difficulty") ?? "";
   const progress = sp.get("progress") ?? "";
   const type = (sp.get("type") ?? "") as ProblemType | "";
+  const topic = (sp.get("tags") ?? "").split(",").filter(Boolean)[0] ?? "";
+  const filtersActive = !!(q || difficulty || progress || topic);
+
+  /* ---- Search: gõ là lọc (trễ 300ms), Enter là lọc ngay, phím "/" để nhảy vào ---- */
+  const [draft, setDraft] = useState(q);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => setDraft(q), [q]);
+  useEffect(() => {
+    if (draft.trim() === q) return;
+    const id = window.setTimeout(() => set({ q: draft.trim() || null }), 300);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName) && !t.isContentEditable) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  /* ---- Danh sách bài ---- */
+  const [list, setList] = useState<Load<Page<ProblemSummary>>>({ state: "loading" });
+  const [listTry, setListTry] = useState(0);
+  useEffect(() => {
+    let ignore = false;
+    setList((prev) => (prev.state === "ok" ? prev : { state: "loading" }));
+    fetchProblems({ page, size: PAGE_SIZE, q, difficulty, progress, tags: topic ? [topic] : [], type: type || undefined })
+      .then((data) => !ignore && setList({ state: "ok", data }))
+      .catch((e) => !ignore && setList({ state: "error", message: errorMessage(e) }));
+    return () => {
+      ignore = true;
+    };
+  }, [page, q, difficulty, progress, topic, type, listTry]);
+
+  /* ---- Chủ đề (đếm theo loại đang chọn) ---- */
+  const [topics, setTopics] = useState<Load<{ tag: string; count: number }[]>>({ state: "loading" });
+  const [topicsTry, setTopicsTry] = useState(0);
+  useEffect(() => {
+    let ignore = false;
+    setTopics({ state: "loading" });
+    fetchProblemTags(type || undefined)
+      .then((data) => !ignore && setTopics({ state: "ok", data }))
+      .catch((e) => !ignore && setTopics({ state: "error", message: errorMessage(e) }));
+    return () => {
+      ignore = true;
+    };
+  }, [type, topicsTry]);
+
+  /* ---- Tóm tắt + tiến độ ---- */
+  const [stats, setStats] = useState<Load<Stats>>({ state: "loading" });
+  const [statsTry, setStatsTry] = useState(0);
+  useEffect(() => {
+    if (!userReady) return;
+    let ignore = false;
+    setStats({ state: "loading" });
+    loadStats(type, signedIn)
+      .then((data) => !ignore && setStats({ state: "ok", data }))
+      .catch((e) => !ignore && setStats({ state: "error", message: errorMessage(e) }));
+    return () => {
+      ignore = true;
+    };
+  }, [type, signedIn, userReady, statsTry]);
+
+  /* ---- Ngôn ngữ mặc định cho workspace ---- */
   const [lang, setLang] = useState("");
   useEffect(() => {
     try {
@@ -353,461 +219,279 @@ export function ProblemsView() {
       /* ignore */
     }
   };
-  const searchRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement;
-      if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName)) {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-  const tagsParam = sp.get("tags") ?? "";
-  const tags = useMemo(() => tagsParam.split(",").filter(Boolean), [tagsParam]);
 
-  const [res, setRes] = useState<Page<ProblemSummary> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [tagCounts, setTagCounts] = useState<{ tag: string; count: number }[]>([]);
-  const [subs, setSubs] = useState<Page<Submission> | null>(null);
-  const [contests, setContests] = useState<ContestInfo[] | null>(null);
-
-  useEffect(() => {
-    fetchProblemTags()
-      .then(setTagCounts)
-      .catch(() => setTagCounts([]));
-  }, []);
-
-  // Dashboard data is only meaningful for a signed-in user.
-  useEffect(() => {
-    if (!userReady) return;
-    if (!signedIn) {
-      setSubs(null);
-      setContests(null);
+  /* ---- Pick random: chọn trong toàn bộ kết quả đang lọc rồi mở bài ---- */
+  const [picking, setPicking] = useState(false);
+  const pickRandom = async () => {
+    if (list.state !== "ok" || list.data.totalElements === 0) {
+      toast("No problems to pick from.", "info");
       return;
     }
-    let off = false;
-    Promise.allSettled([fetchMySubmissions(1, 50), fetchContests()]).then(([s, c]) => {
-      if (off) return;
-      setSubs(s.status === "fulfilled" ? s.value : null);
-      setContests(c.status === "fulfilled" ? c.value : null);
-    });
-    return () => {
-      off = true;
-    };
-  }, [signedIn, userReady]);
-
-  useEffect(() => {
-    let ignore = false;
-    setLoading(true);
-    setError(null);
-    fetchProblems({ page, q, difficulty, progress, tags, type: type || undefined })
-      .then((r) => {
-        if (!ignore) setRes(r);
-      })
-      .catch((e) => {
-        if (!ignore) setError(errorMessage(e));
-      })
-      .finally(() => {
-        if (!ignore) setLoading(false);
-      });
-    return () => {
-      ignore = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, q, difficulty, progress, tagsParam, type]);
-
-  const [open, setOpen] = useState(false);
-  const [dProgress, setDProgress] = useState(progress);
-  const [dDiff, setDDiff] = useState(difficulty);
-  const activeCount = (progress ? 1 : 0) + (difficulty ? 1 : 0) + tags.length;
-
-  const toggleTag = (t: string) => {
-    const next = tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t];
-    set({ tags: next.join(",") || null });
+    setPicking(true);
+    try {
+      const idx = Math.floor(Math.random() * list.data.totalElements);
+      const one = await fetchProblems({ page: idx + 1, size: 1, q, difficulty, progress, tags: topic ? [topic] : [], type: type || undefined });
+      const pick = one.content[0];
+      if (!pick) throw new Error("Could not pick a problem. Please try again.");
+      router.push(`/problems/${pick.slug}`);
+    } catch (e) {
+      toast(errorMessage(e), "error");
+      setPicking(false);
+    }
   };
 
-  const doneOnPage = res?.content.filter((p) => p.progress === "DONE").length ?? 0;
-  const inProgressOnPage = res?.content.filter((p) => p.progress === "IN_PROGRESS").length ?? 0;
+  const clearFilters = () => set({ q: null, difficulty: null, progress: null, tags: null });
 
-  /* ---- Dashboard figures ---- */
-  const solvedProblemIds = useMemo(
-    () => new Set((subs?.content ?? []).filter((s) => s.verdict === "AC").map((s) => s.problemId)),
-    [subs]
-  );
-  const attemptedProblemIds = useMemo(
-    () => new Set((subs?.content ?? []).map((s) => s.problemId)),
-    [subs]
-  );
-  const solvedCount = subs ? solvedProblemIds.size : null;
-  const totalCount = res?.totalElements ?? null;
-  const nextUp = useMemo(() => {
-    if (!signedIn) return null;
-    const pool = res?.content ?? [];
-    return (
-      pool.find((p) => p.progress === "IN_PROGRESS") ??
-      pool.find((p) => !solvedProblemIds.has(p.id) && !attemptedProblemIds.has(p.id)) ??
-      null
-    );
-  }, [res, signedIn, solvedProblemIds, attemptedProblemIds]);
-  const runningContests = useMemo(
-    () => (contests ?? []).filter((c) => c.status === "RUNNING"),
-    [contests]
-  );
-
-  const pickRandom = () => {
-    const pool = res?.content ?? [];
-    if (!pool.length) return;
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    window.location.href = `/problems/${pick.slug}`;
-  };
+  /* ---- Dòng tóm tắt cạnh tiêu đề ---- */
+  let summary = "";
+  if (stats.state === "ok") {
+    const { total, solved } = stats.data;
+    summary = total === 0 ? "No problems yet" : solved == null ? `${total} problems` : `${total} problems, ${solved} solved`;
+  }
 
   return (
-    <div className="flex h-full min-h-0">
-      <Rail
-        tags={tags}
-        tagCounts={tagCounts}
-        onToggleTag={toggleTag}
-        difficulty={difficulty}
-        onDifficulty={(v) => set({ difficulty: v || null })}
-        progress={progress}
-        onProgress={(v) => set({ progress: v || null })}
-        type={type}
-        onType={(v) => set({ type: v || null, page: null })}
-        solvedCount={solvedCount}
-        totalCount={totalCount}
-        nextUp={nextUp}
-        runningContests={runningContests}
-        signedIn={signedIn}
-      />
+    <div className={cn(theme.theme, s.page)}>
+      <div className={s.main}>
+        <div className={s.titleRow}>
+          <h1>Problems</h1>
+          <p aria-live="polite">{summary}</p>
+        </div>
 
-      {/* Center feed — scrolls independently so the library rail stays put. */}
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-          {/* Search + actions */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-0 flex-1 basis-64">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
-              <Input
-                ref={searchRef}
-                key={q}
-                defaultValue={q}
-                className="h-10 rounded-sm bg-card pl-9 pr-14 text-body-md text-ink"
-                aria-label="Search problems"
-                placeholder="Search questions"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") set({ q: e.currentTarget.value || null });
-                }}
-              />
-              <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-sm border border-border bg-hairline-soft px-1.5 font-mono text-[10px] text-mute sm:block">
-                /
-              </kbd>
-            </div>
-            <Button variant="outline" size="icon" aria-label="Pick random problem" title="Pick random" onClick={pickRandom} className="h-10 w-10">
-              <Shuffle className="h-4 w-4" />
-            </Button>
-            <Popover
-              open={open}
-              onOpenChange={(o) => {
-                setOpen(o);
-                if (o) {
-                  setDProgress(progress);
-                  setDDiff(difficulty);
-                }
-              }}
+        <div className={s.tracks} role="group" aria-label="Problem type">
+          {TRACKS.map((t) => (
+            <button
+              key={t.id || "all"}
+              type="button"
+              className={s.track}
+              aria-pressed={type === t.id}
+              onClick={() => set({ type: t.id || null, tags: null })}
             >
-              <PopoverTrigger asChild>
-                <Button size="sm" variant="outline" className="h-10 gap-1.5 px-3.5">
-                  <Filter className="h-3.5 w-3.5" />
-                  Filter
-                  {activeCount > 0 && (
-                    <Badge className="ml-0.5 h-5 min-w-5 justify-center rounded-full px-1.5 font-mono text-[10px]">
-                      {activeCount}
-                    </Badge>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-80 space-y-4 p-4">
-                <div>
-                  <p className="eyebrow mb-1.5">Status</p>
-                  <Segmented
-                    value={dProgress}
-                    onChange={setDProgress}
-                    options={STATUSES}
-                  />
-                </div>
-                <div>
-                  <p className="eyebrow mb-1.5">Difficulty</p>
-                  <Segmented
-                    value={dDiff}
-                    onChange={setDDiff}
-                    options={DIFFICULTIES}
-                  />
-                </div>
-                <div>
-                  <p className="eyebrow mb-1.5">Preferred language</p>
-                  <Segmented value={lang} onChange={pickLang} options={[{ value: "", label: "All" }, { value: "JAVA", label: "Java" }, { value: "PYTHON", label: "Python" }]} />
-                </div>
-                <div className="flex items-center justify-between pt-1">
-                  <button
-                    className="text-body-sm text-body transition-colors hover:text-ink"
-                    onClick={() => {
-                      setDProgress("");
-                      setDDiff("");
-                    }}
-                  >
-                    Reset
-                  </button>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      set({ progress: dProgress || null, difficulty: dDiff || null });
-                      setOpen(false);
-                    }}
-                  >
-                    Apply
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+              <t.icon size={17} aria-hidden="true" />
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-          {/* Category Switcher Tabs */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-border/70 pb-3" role="tablist" aria-label="Problem categories">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!type}
-              onClick={() => set({ type: null, page: null })}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-body-sm font-medium transition-all",
-                !type
-                  ? "bg-ink text-card shadow-sm"
-                  : "border border-border bg-card text-body hover:bg-hairline-soft hover:text-ink"
-              )}
-            >
-              <Library className="h-4 w-4" />
-              <span>Tất cả bài tập</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={type === "ALGORITHMIC"}
-              onClick={() => set({ type: "ALGORITHMIC", page: null })}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-body-sm font-medium transition-all",
-                type === "ALGORITHMIC"
-                  ? "border border-cyan-500/40 bg-cyan-600 text-white shadow-sm"
-                  : "border border-border bg-card text-body hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-700 dark:hover:text-cyan-300"
-              )}
-            >
-              <Code2 className="h-4 w-4" />
-              <span>DSA (Thuật toán & Cấu trúc dữ liệu)</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={type === "OOP_GRINDING"}
-              onClick={() => set({ type: "OOP_GRINDING", page: null })}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-body-sm font-medium transition-all",
-                type === "OOP_GRINDING"
-                  ? "border border-purple-500/40 bg-purple-600 text-white shadow-sm"
-                  : "border border-border bg-card text-body hover:border-purple-500/30 hover:bg-purple-500/10 hover:text-purple-700 dark:hover:text-purple-300"
-              )}
-            >
-              <Boxes className="h-4 w-4" />
-              <span>OOP (Lập trình Hướng đối tượng & Socket)</span>
-            </button>
-          </div>
-
-          {/* Active filters */}
-          {(q || difficulty || progress || type || tags.length > 0) && (
-            <div className="flex flex-wrap items-center gap-1.5" aria-label="Active filters">
-              <span className="mr-1 text-body-sm text-mute">Active:</span>
-              {type && (
-                <Removable
-                  label={type === "OOP_GRINDING" ? "OOP & Socket" : "DSA (Thuật toán)"}
-                  onRemove={() => set({ type: null, page: null })}
+        <div className={s.layout}>
+          {/* ================= List ================= */}
+          <section className={s.list} aria-label="Problem list">
+            <div className={s.tools}>
+              <label className={s.search}>
+                <span className={s.sr}>Search problems</span>
+                <Search size={18} aria-hidden="true" />
+                <input
+                  ref={searchRef}
+                  className={s.input}
+                  type="search"
+                  aria-label="Search problems"
+                  placeholder="Search by title or number  ( / )"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") set({ q: e.currentTarget.value.trim() || null });
+                  }}
                 />
-              )}
-              {q && <Removable label={`“${q}”`} onRemove={() => set({ q: null })} />}
-              {difficulty && <Removable label={difficulty} onRemove={() => set({ difficulty: null })} />}
-              {progress && <Removable label={progress} onRemove={() => set({ progress: null })} />}
-              {tags.map((t) => (
-                <Removable
-                  key={t}
-                  label={t}
-                  onRemove={() => set({ tags: tags.filter((x) => x !== t).join(",") || null })}
-                />
-              ))}
-              <button
-                className="ml-1 text-body-sm text-body underline-offset-2 transition-colors hover:text-ink hover:underline"
-                onClick={() => set({ q: null, difficulty: null, progress: null, type: null, tags: null })}
-              >
-                Clear all
+              </label>
+              <label>
+                <span className={s.sr}>Filter by difficulty</span>
+                <select
+                  className={s.select}
+                  value={difficulty}
+                  onChange={(e) => set({ difficulty: e.target.value || null })}
+                >
+                  <option value="">All difficulties</option>
+                  {LEVELS.map((l) => (
+                    <option key={l.value} value={l.value}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button className={s.toolBtn} type="button" onClick={pickRandom} disabled={picking}>
+                <Shuffle size={17} aria-hidden="true" />
+                {picking ? "Picking…" : "Pick random"}
               </button>
             </div>
-          )}
 
-          {/* List */}
-          <section aria-label="Problem list" className="overflow-hidden rounded-xl border border-border bg-card">
-            <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
-              <div className="grid flex-1 grid-cols-[44px_1fr_100px] items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-mute sm:grid-cols-[56px_1fr_120px]">
-                <span>Status</span>
-                <span>Title</span>
-                <span className="text-right sm:text-left">Difficulty</span>
+            {filtersActive && list.state === "ok" && (
+              <div className={s.filterNote}>
+                <span>{list.data.totalElements} matching</span>
+                <button className={s.link} type="button" onClick={clearFilters}>
+                  Clear filters
+                </button>
               </div>
-              <span className="hidden shrink-0 items-center gap-3 font-mono text-[11px] text-mute sm:flex" aria-live="polite">
-                {res ? (
-                  <>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-easy" />
-                      {doneOnPage} solved
-                    </span>
-                    {inProgressOnPage > 0 && (
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-medium" />
-                        {inProgressOnPage} tried
-                      </span>
-                    )}
-                  </>
+            )}
+
+            <div className={s.table}>
+              <div className={s.head}>
+                <span aria-hidden="true" />
+                <span className={s.colNum}>No.</span>
+                <span>Title</span>
+                <span className={s.colTags}>Topics</span>
+                <span>Difficulty</span>
+              </div>
+
+              {list.state === "loading" && <SkeletonRows />}
+
+              {list.state === "error" && (
+                <div className={cn(s.empty, s.error)} role="alert">
+                  <h2>Couldn&apos;t load problems</h2>
+                  <p>{list.message}</p>
+                  <button className={cn(s.toolBtn, s.centerBtn)} type="button" onClick={() => setListTry((n) => n + 1)}>
+                    Try again
+                  </button>
+                </div>
+              )}
+
+              {list.state === "ok" &&
+                (list.data.content.length > 0 ? (
+                  list.data.content.map((p) => <ProblemRow key={p.id} p={p} />)
+                ) : filtersActive ? (
+                  <div className={s.empty}>
+                    <h2>No problems match your filters</h2>
+                    <p>Try another keyword or remove a filter.</p>
+                    <button className={cn(s.toolBtn, s.centerBtn)} type="button" onClick={clearFilters}>
+                      Clear filters
+                    </button>
+                  </div>
                 ) : (
-                  <span className="h-3 w-24 animate-pulse rounded bg-hairline-soft" />
-                )}
-              </span>
+                  <div className={s.empty}>
+                    <h2>No problems yet</h2>
+                    <p style={{ margin: 0 }}>Problems will appear here once they are added.</p>
+                  </div>
+                ))}
             </div>
 
-            {error && (
-              <div role="alert" className="space-y-2 p-10 text-center">
-                <p className="font-medium text-destructive">Couldn&apos;t load problems</p>
-                <p className="mx-auto max-w-[42ch] text-body-md text-mute">{error}</p>
-                <Button variant="outline" size="sm" className="mt-2" onClick={() => set({ page: String(page) })}>
-                  Try again
-                </Button>
-              </div>
-            )}
-
-            {loading && !res && !error && (
-              <div aria-label="Loading problems">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <RowSkeleton key={i} />
-                ))}
-              </div>
-            )}
-
-            {res?.content.map((p, i) => (
-              <Link
-                key={p.id}
-                href={`/problems/${p.slug}`}
-                style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
-                className="group grid animate-[fadeSlideIn_0.35s_cubic-bezier(0.16,1,0.3,1)_both] grid-cols-[44px_1fr_100px] items-center gap-2 border-t border-border px-5 py-4 transition-colors hover:bg-hairline-soft sm:grid-cols-[56px_1fr_120px]"
-              >
-                <span
-                  aria-label={
-                    p.progress === "DONE" ? `Solved: ${p.title}` : p.progress === "IN_PROGRESS" ? `Attempted: ${p.title}` : `Todo: ${p.title}`
-                  }
-                >
-                  {p.progress === "DONE" ? (
-                    <span className="grid h-5 w-5 place-items-center rounded-full bg-easy text-white">
-                      <Check className="h-3 w-3" strokeWidth={3} />
-                    </span>
-                  ) : (
-                    <Circle
-                      className={cn(
-                        "h-5 w-5",
-                        p.progress === "IN_PROGRESS" ? "fill-medium/20 text-medium" : "text-faint"
-                      )}
-                    />
-                  )}
+            {list.state === "ok" && list.data.totalPages > 1 && (
+              <div className={s.pager}>
+                <span className={s.mono}>
+                  Showing {list.data.number * list.data.size + 1}–{list.data.number * list.data.size + list.data.content.length} of{" "}
+                  {list.data.totalElements}
                 </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-body-md text-ink transition-colors group-hover:text-link">
-                    <span className="mr-1.5 font-mono text-mute">{p.id}.</span>
-                    {p.title}
-                    {p.type === "OOP_GRINDING" ? (
-                      <span className="ml-2 inline-flex items-center rounded border border-purple-500/25 bg-purple-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-purple-600 dark:text-purple-400">
-                        OOP
-                      </span>
-                    ) : (
-                      <span className="ml-2 inline-flex items-center rounded border border-cyan-500/25 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-cyan-600 dark:text-cyan-400">
-                        DSA
-                      </span>
-                    )}
-                  </span>
-                  {p.tags.length > 0 && (
-                    <span className="mt-1.5 hidden flex-wrap gap-1 sm:flex" aria-label={`Topics: ${p.tags.join(", ")}`}>
-                      {p.tags.slice(0, 3).map((t) => (
-                        <span key={t} className="rounded-full bg-hairline-soft px-2 py-px font-mono text-[10px] text-mute">
-                          {t}
-                        </span>
-                      ))}
-                    </span>
-                  )}
-                </span>
-                <span className="flex justify-end sm:justify-start">
-                  <DifficultyBadge value={p.difficulty} />
-                </span>
-              </Link>
-            ))}
-
-            {res && res.content.length === 0 && (
-              <div className="border-t border-border p-12 text-center">
-                <div className="mx-auto mb-4 grid h-11 w-11 place-items-center rounded-xl bg-hairline-soft">
-                  <Search className="h-5 w-5 text-mute" />
-                </div>
-                <p className="font-medium text-ink">No problems match your filters</p>
-                <p className="mx-auto mt-1 max-w-[40ch] text-body-md text-mute">
-                  Try a different keyword, or clear difficulty, status and topic filters.
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-5"
-                  onClick={() => set({ q: null, difficulty: null, progress: null, tags: null })}
-                >
-                  Clear filters
-                </Button>
-              </div>
-            )}
-
-            {res && res.content.length > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-hairline-soft px-5 py-3">
-                <span className="font-mono text-[11px] text-mute">
-                  Showing {res.totalElements === 0 ? 0 : res.number * res.size + 1}–
-                  {res.number * res.size + res.content.length} of {res.totalElements}
-                </span>
-                <Pagination page={page} totalPages={res.totalPages} onChange={(np) => set({ page: String(np) })} />
+                <Pagination page={page} totalPages={list.data.totalPages} onChange={(np) => set({ page: String(np) })} />
               </div>
             )}
           </section>
 
-          <p className="px-1 font-mono text-[11px] text-mute">
-            Tip: press <kbd className="rounded-sm border border-border bg-card px-1">/</kbd> to jump to search.
-          </p>
+          {/* ================= Aside ================= */}
+          <aside className={s.aside} aria-label="Filters and progress">
+            {signedIn && (
+              <section>
+                <h2>Status</h2>
+                <div className={s.status} role="group" aria-label="Filter by status">
+                  {STATUSES.map((st) => (
+                    <button
+                      key={st.value || "any"}
+                      type="button"
+                      aria-pressed={progress === st.value}
+                      onClick={() => set({ progress: st.value || null })}
+                    >
+                      {st.icon && <st.icon size={15} aria-hidden="true" />}
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section>
+              <h2>Your progress</h2>
+              {!userReady || stats.state === "loading" ? (
+                <p className={s.note} aria-busy="true">
+                  Loading…
+                </p>
+              ) : stats.state === "error" ? (
+                <div role="alert">
+                  <p className={s.inlineError}>Couldn&apos;t load progress. {stats.message}</p>
+                  <button className={s.link} style={{ paddingLeft: 0 }} type="button" onClick={() => setStatsTry((n) => n + 1)}>
+                    Try again
+                  </button>
+                </div>
+              ) : !stats.data.byLevel ? (
+                <p className={s.note}>
+                  <Link href="/login?next=/problems" className={s.link} style={{ padding: 0 }}>
+                    Log in
+                  </Link>{" "}
+                  to track your progress.
+                </p>
+              ) : (
+                <>
+                  <p className={s.score}>
+                    <b>{stats.data.byLevel.reduce((a, l) => a + l.solved, 0)}</b> / {stats.data.byLevel.reduce((a, l) => a + l.total, 0)} solved
+                  </p>
+                  {LEVELS.map((l, i) => {
+                    const { total, solved } = stats.data.byLevel![i];
+                    return (
+                      <div key={l.value} className={s.prog}>
+                        <div className={s.progHead}>
+                          <span>{l.label}</span>
+                          <span className={s.mono}>
+                            {solved}/{total}
+                          </span>
+                        </div>
+                        <div
+                          className={s.trackBar}
+                          role="progressbar"
+                          aria-label={`${l.label} solved`}
+                          aria-valuemin={0}
+                          aria-valuemax={total}
+                          aria-valuenow={solved}
+                        >
+                          <i style={{ width: `${total ? (solved / total) * 100 : 0}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </section>
+
+            <section>
+              <h2 style={{ marginBottom: 6 }}>Topics</h2>
+              {topics.state === "loading" ? (
+                <p className={s.note} aria-busy="true">
+                  Loading…
+                </p>
+              ) : topics.state === "error" ? (
+                <div role="alert">
+                  <p className={s.inlineError}>Couldn&apos;t load topics. {topics.message}</p>
+                  <button className={s.link} style={{ paddingLeft: 0 }} type="button" onClick={() => setTopicsTry((n) => n + 1)}>
+                    Try again
+                  </button>
+                </div>
+              ) : topics.data.length === 0 ? (
+                <p className={s.note}>No topics yet.</p>
+              ) : (
+                <div>
+                  {topics.data.map(({ tag, count }) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className={s.topic}
+                      aria-pressed={topic === tag}
+                      onClick={() => set({ tags: topic === tag ? null : tag })}
+                    >
+                      <span>{tag}</span>
+                      <span className={s.mono}>{count}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section>
+              <h2>Preferred language</h2>
+              <div className={s.langRow} role="group" aria-label="Preferred language">
+                {[{ value: "", label: "All" }, ...LANGUAGES].map((l) => (
+                  <button key={l.value || "all"} type="button" aria-pressed={lang === l.value} onClick={() => pickLang(l.value)}>
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          </aside>
         </div>
       </div>
-
-      <style jsx global>{`
-        @keyframes fadeSlideIn {
-          from {
-            opacity: 0;
-            transform: translateY(6px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          a[class*="animate-"] {
-            animation: none !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
