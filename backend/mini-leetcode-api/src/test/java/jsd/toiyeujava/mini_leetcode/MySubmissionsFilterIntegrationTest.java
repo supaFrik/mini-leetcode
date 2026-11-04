@@ -130,6 +130,13 @@ class MySubmissionsFilterIntegrationTest {
     }
 
     @Test
+    @DisplayName("Caps the page size at 100")
+    void capsPageSize() throws Exception {
+        my("?size=500").andExpect(jsonPath("$.data.page.size").value(100));
+        my("?size=500&verdict=AC").andExpect(jsonPath("$.data.page.size").value(100));
+    }
+
+    @Test
     @DisplayName("Rejects an unknown verdict with 400")
     void rejectsUnknownVerdict() throws Exception {
         mockMvc.perform(get("/api/v1/submissions/my?verdict=NOPE").header("Authorization", aliceToken))

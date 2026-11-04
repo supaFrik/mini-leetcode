@@ -387,6 +387,8 @@ public class SubmissionController {
         SourcePathValidator.sanitizeAndValidatePath(path);
     }
 
+    private static final int MAX_MY_PAGE_SIZE = 100;
+
     @GetMapping("/submissions/my")
     @Operation(summary = "Get my submissions", description = "Returns a paginated list of submissions for the current authenticated user, newest first, optionally filtered by verdict and language")
     public ResponseEntity<ApiResponse<Page<SubmissionResponse>>> getMySubmissions(
@@ -396,10 +398,13 @@ public class SubmissionController {
             @RequestParam(required = false) SubmissionLanguage language,
             @PageableDefault(size = 20) Pageable pageable
     ) {
+        Pageable page = pageable.getPageSize() > MAX_MY_PAGE_SIZE
+                ? org.springframework.data.domain.PageRequest.of(pageable.getPageNumber(), MAX_MY_PAGE_SIZE, pageable.getSort())
+                : pageable;
         // Không lọc thì giữ nguyên đường cũ cho các chỗ đang gọi.
         Page<SubmissionResponse> responses = (verdict == null || verdict.isBlank()) && language == null
-                ? submissionService.getUserSubmissions(currentUser.getId(), pageable)
-                : submissionService.getUserSubmissions(currentUser.getId(), verdict, language, pageable);
+                ? submissionService.getUserSubmissions(currentUser.getId(), page)
+                : submissionService.getUserSubmissions(currentUser.getId(), verdict, language, page);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
