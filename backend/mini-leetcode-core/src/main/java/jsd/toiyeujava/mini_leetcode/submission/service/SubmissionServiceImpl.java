@@ -280,7 +280,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             try {
                 wanted = SubmissionVerdict.valueOf(verdict);
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Unknown verdict: " + verdict);
+                throw new jsd.toiyeujava.mini_leetcode.exception.InvalidVerdictException(verdict);
             }
         }
         return submissionRepository.findMine(userId, wanted, pending, language, pageable)

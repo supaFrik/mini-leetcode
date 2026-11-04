@@ -140,7 +140,9 @@ class MySubmissionsFilterIntegrationTest {
     @DisplayName("Rejects an unknown verdict with 400")
     void rejectsUnknownVerdict() throws Exception {
         mockMvc.perform(get("/api/v1/submissions/my?verdict=NOPE").header("Authorization", aliceToken))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertThat(result.getResolvedException())
+                        .isInstanceOf(jsd.toiyeujava.mini_leetcode.exception.InvalidVerdictException.class));
     }
 
     @Test

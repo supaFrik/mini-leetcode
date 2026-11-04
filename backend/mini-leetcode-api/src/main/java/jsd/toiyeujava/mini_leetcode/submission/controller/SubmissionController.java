@@ -2,6 +2,7 @@ package jsd.toiyeujava.mini_leetcode.submission.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -393,7 +394,8 @@ public class SubmissionController {
     @Operation(summary = "Get my submissions", description = "Returns a paginated list of submissions for the current authenticated user, newest first, optionally filtered by verdict and language")
     public ResponseEntity<ApiResponse<Page<SubmissionResponse>>> getMySubmissions(
             @AuthenticationPrincipal UserPrincipal currentUser,
-            @Parameter(description = "Verdict name (AC, WA, TLE, MLE, RE, CE) or PENDING; a FAILED submission without verdict counts as RE")
+            @Parameter(description = "Verdict name or PENDING; a FAILED submission without verdict counts as RE. Any other value returns 400",
+                    schema = @Schema(type = "string", allowableValues = {"AC", "WA", "TLE", "MLE", "CE", "RE", "SV", "FLAGGED_CHEATING", "PENDING"}))
             @RequestParam(required = false) String verdict,
             @RequestParam(required = false) SubmissionLanguage language,
             @PageableDefault(size = 20) Pageable pageable
