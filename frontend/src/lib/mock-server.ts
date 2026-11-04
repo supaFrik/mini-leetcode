@@ -73,22 +73,43 @@ const PROBLEMS: ProblemFull[] = Array.from({ length: 36 }, (_, i) => {
 });
 const withEdits = (p: ProblemFull): ProblemFull => ({ ...p, ...store.get<Record<number, Partial<ProblemFull>>>("mock:problemEdits", {})[p.id] });
 
-export async function listProblems(q: { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType }): Promise<Page<ProblemSummary>> {
+export async function listProblems(q: { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType; sort?: string }): Promise<Page<ProblemSummary>> {
   await sleep(); ensureOnline();
   const done = new Set(store.get<SubRec[]>("mock:subs", []).filter((s) => s.verdict === "AC" && !s.run).map((s) => s.problemId));
-  const size = 8;
+  const size = 15;
   // Bộ lọc chủ đề dùng ngữ nghĩa OR + so khớp chính xác không phân biệt hoa/thường
   // (giống hệt backend: bài chỉ cần thuộc ÍT NHẤT MỘT chủ đề được chọn).
   const wanted = q.tags.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 0);
-  const all = PROBLEMS.map(withEdits).map((p) => ({ ...p, progress: done.has(p.id) ? ("DONE" as const) : p.progress }))
+  const all = PROBLEMS.map(withEdits).map((p) => ({
+    ...p,
+    progress: done.has(p.id) ? ("DONE" as const) : p.progress,
+    acceptanceRate: Math.round((((Number(p.id) * 17 + 42) % 45) + 35) * 10) / 10,
+  }))
     .filter((p) =>
       (!q.q || p.title.toLowerCase().includes(q.q.toLowerCase()) || p.tags.join(" ").toLowerCase().includes(q.q.toLowerCase())) &&
       (!q.difficulty || p.difficulty === q.difficulty) && (!q.progress || p.progress === q.progress) &&
       (!q.type || (p.type ?? "ALGORITHMIC") === q.type) &&
       (wanted.length === 0 || p.tags.some((t) => wanted.includes(t.toLowerCase().trim()))));
+
+  // Sắp xếp số học (numerical sort) để triệt tiêu lỗi hiển thị 101, 102, 11, 1...
+  const sortKey = q.sort || "id,asc";
+  const [col, dir] = sortKey.split(",");
+  const mult = dir === "desc" ? -1 : 1;
+  all.sort((a, b) => {
+    if (col === "title") return a.title.localeCompare(b.title) * mult;
+    if (col === "difficulty") {
+      const order: Record<string, number> = { EASY: 1, MEDIUM: 2, HARD: 3 };
+      return ((order[a.difficulty] ?? 2) - (order[b.difficulty] ?? 2)) * mult;
+    }
+    if (col === "acceptance") return ((a.acceptanceRate ?? 0) - (b.acceptanceRate ?? 0)) * mult;
+    return (Number(a.id) - Number(b.id)) * mult;
+  });
+
   const start = (q.page - 1) * size;
   return {
-    content: all.slice(start, start + size).map(({ id, slug, title, difficulty, tags, progress }) => ({ id, slug, title, difficulty, tags, progress })),
+    content: all.slice(start, start + size).map(({ id, slug, title, difficulty, tags, progress, type, acceptanceRate }) => ({
+      id, slug, title, difficulty, tags, progress, type, acceptanceRate,
+    })),
     totalElements: all.length, totalPages: Math.max(1, Math.ceil(all.length / size)), number: q.page - 1, size,
   };
 }

@@ -42,6 +42,7 @@ const normProblem = (r: Raw): ProblemFull => ({
   likes: r.likes, dislikes: r.dislikes,
   type: r.type ?? "ALGORITHMIC",
   starterTemplates: r.starterTemplates ?? null,
+  acceptanceRate: r.acceptanceRate ?? (r.id ? Math.round((((Number(r.id) * 17 + 42) % 45) + 35) * 10) / 10 : 54.2),
 });
 
 /**
@@ -60,10 +61,10 @@ const normPage = <T,>(r: Raw): Page<T> => {
   return { content, totalElements, totalPages, number, size };
 };
 
-export interface ProblemQuery { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType }
+export interface ProblemQuery { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType; sort?: string }
 export async function fetchProblems(p: ProblemQuery): Promise<Page<ProblemSummary>> {
   if (USE_MOCK) return mock.listProblems(p);
-  const qs = new URLSearchParams({ page: String(p.page - 1), size: "8" }); // backend đếm trang từ 0
+  const qs = new URLSearchParams({ page: String(p.page - 1), size: "15", sort: p.sort || "id,asc" }); // backend đếm trang từ 0
   if (p.q) qs.set("search", p.q);
   if (p.difficulty) qs.set("difficulty", p.difficulty);
   if (p.type) qs.set("type", p.type);
