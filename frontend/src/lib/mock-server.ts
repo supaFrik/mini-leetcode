@@ -301,12 +301,17 @@ export async function getSubmission(id: number): Promise<Submission> {
   const r = findSub(id);
   return toSubmission(r, Date.now() - r.createdAt);
 }
-export async function mySubmissions(page: number, size: number): Promise<Page<Submission>> {
+/** Khoá verdict như backend: bài FAILED chưa có verdict là RE, chưa chấm xong là PENDING. */
+const verdictKey = (s: Submission) => s.verdict ?? (s.status === "FAILED" ? "RE" : "PENDING");
+
+export async function mySubmissions(page: number, size: number, filter: { verdict?: string; language?: string } = {}): Promise<Page<Submission>> {
   await sleep(); ensureOnline();
   const u = me();
-  const mine = store.get<SubRec[]>("mock:subs", []).filter((s) => s.userId === u.id && !s.run).sort((a, b) => b.createdAt - a.createdAt);
+  const mine = store.get<SubRec[]>("mock:subs", []).filter((s) => s.userId === u.id && !s.run).sort((a, b) => b.createdAt - a.createdAt)
+    .map((r) => toSubmission(r, Date.now() - r.createdAt))
+    .filter((s) => (!filter.verdict || verdictKey(s) === filter.verdict) && (!filter.language || s.language === filter.language));
   return {
-    content: mine.slice(page * size, page * size + size).map((r) => toSubmission(r, Date.now() - r.createdAt)),
+    content: mine.slice(page * size, page * size + size),
     totalElements: mine.length, totalPages: Math.max(1, Math.ceil(mine.length / size)), number: page, size,
   };
 }
@@ -316,7 +321,7 @@ export async function mySubmissionSummary(): Promise<Record<string, number>> {
   const u = me();
   const counts: Record<string, number> = {};
   for (const r of store.get<SubRec[]>("mock:subs", []).filter((s) => s.userId === u.id && !s.run)) {
-    const key = toSubmission(r, Date.now() - r.createdAt).verdict ?? "PENDING";
+    const key = verdictKey(toSubmission(r, Date.now() - r.createdAt));
     counts[key] = (counts[key] ?? 0) + 1;
   }
   return counts;

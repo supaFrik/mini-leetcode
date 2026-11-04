@@ -223,7 +223,7 @@ export async function fetchSubmission(id: number): Promise<Submission> {
 }
 /** `verdict` là tên verdict hoặc PENDING; server lọc và phân trang. Bỏ trống là không lọc. */
 export async function fetchMySubmissions(page: number, size = 15, filter: { verdict?: string; language?: string } = {}): Promise<Page<Submission>> {
-  if (USE_MOCK) return mock.mySubmissions(page - 1, size);
+  if (USE_MOCK) return mock.mySubmissions(page - 1, size, filter);
   const qs = new URLSearchParams({ page: String(page - 1), size: String(size) });
   if (filter.verdict) qs.set("verdict", filter.verdict);
   if (filter.language) qs.set("language", filter.language);

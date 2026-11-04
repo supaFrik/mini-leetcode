@@ -814,13 +814,20 @@ const quickRunIds = new Set<number>();
 
     // GET /api/v1/submissions/my
     if (path === "/api/v1/submissions/my" && method === "GET") {
-      const list = Array.from(submissions.values()).filter((x) => !quickRunIds.has(x.id));
+      // Như backend: lọc verdict (FAILED chưa có verdict là RE, chưa chấm là PENDING) và language, rồi phân trang.
+      const verdict = url.searchParams.get("verdict");
+      const language = url.searchParams.get("language");
+      const number = Number(url.searchParams.get("page") ?? 0);
+      const size = Math.min(100, Number(url.searchParams.get("size") ?? 20));
+      const list = Array.from(submissions.values())
+        .filter((x) => !quickRunIds.has(x.id))
+        .filter((x) => (!verdict || (x.verdict ?? (x.status === "FAILED" ? "RE" : "PENDING")) === verdict) && (!language || x.language === language));
       const pagePayload = {
-        content: list,
+        content: list.slice(number * size, number * size + size),
         totalElements: list.length,
-        totalPages: 1,
-        number: 0,
-        size: 15,
+        totalPages: Math.max(1, Math.ceil(list.length / size)),
+        number,
+        size,
       };
       return json({ success: true, data: pagePayload, ...pagePayload });
     }
