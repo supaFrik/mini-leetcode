@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Download, FileCode, List, Maximize2, Minimize2, Plus, RotateCcw, Shield, Timer, Upload, X } from "lucide-react";
+import { AlignLeft, Copy, Download, FileCode, List, Maximize2, Minimize2, Plus, RotateCcw, Shield, Timer, Upload, X } from "lucide-react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -32,6 +32,7 @@ import { parseApiDate } from "@/lib/datetime";
 import { fmtDuration } from "@/lib/format";
 import { DRAFT_SYNC, downloadStarterZip, finalizeContestSubmission, loadDraft, RUN_ENABLED, saveDraft, submitCodeMultipart, transitionProblem } from "@/lib/services";
 import { FILE_NAME, LANG_PREF_KEY, LANGUAGES, TEMPLATES } from "@/lib/templates";
+import { formatCode } from "@/lib/format-code";
 import { toast } from "@/lib/toast";
 import { VERDICT } from "@/lib/verdict";
 import type { ContestInfo, Language, ProblemFull, ProctoringEventType, Role, SubmissionFile, TestCase } from "@/types/api";
@@ -301,6 +302,15 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
               <Copy className="h-3.5 w-3.5" />
             </button>
           )}
+          <button aria-label="Format code" title="Format code" disabled={locked} onClick={() => {
+            if (isOopGrinding) {
+              if (activeFile) updateActiveContent(formatCode(activeFile.content, "JAVA"));
+            } else {
+              setCodes((c) => ({ ...c, [lang]: formatCode(c[lang], lang) }));
+            }
+          }} className="text-mute transition-colors hover:text-ink disabled:opacity-40">
+            <AlignLeft className="h-3.5 w-3.5" />
+          </button>
           <button aria-label="Reset template" title="Reset template" disabled={locked} onClick={() => {
             if (window.confirm("Reset code to default template? Current changes will be lost.")) {
               if (isOopGrinding) {
