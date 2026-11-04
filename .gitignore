@@ -122,3 +122,6 @@ docs/generate_docx.py
 
 # local scratch/utility scripts (not tracked)
 /scripts/
+
+# graphify knowledge-graph output (generated locally)
+graphify-out/
