@@ -2,8 +2,11 @@
 
 Testcase (`<slug>/cases/`) không được commit. Sinh lại từ generator (random có seed cố định nên ra đúng các file cũ), rồi nạp qua API.
 
+`seed-problems.sql` cũng không được commit. Muốn sửa bài thì sửa `problems/problems.json` (metadata, chủ đề) và `problems/statements/<slug>.md` (đề), rồi sinh lại.
+
 ```powershell
-# 1. Bài, đề và chủ đề
+# 1. Bài, đề và chủ đề: sinh seed-problems.sql rồi nạp vào MySQL
+python backend\tools\problems\seed_sql.py
 Get-Content backend\tools\seed-problems.sql -Raw | docker exec -i mini_leetcode_mysql mysql --default-character-set=utf8mb4 -u leetcode -pleetcode_password mini_leetcode
 
 # 2. Sinh testcase vào backend\tools\<slug>\cases\
