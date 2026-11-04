@@ -28,6 +28,8 @@
 		<springdoc.version>2.6.0</springdoc.version>
 		<minio.version>8.5.12</minio.version>
 		<jjwt.version>0.12.6</jjwt.version>
+		<!-- Boot 3.3.4 ships 1.19.8, which Docker Engine 29+ rejects (API version too old). -->
+		<testcontainers.version>1.21.4</testcontainers.version>
 		<argLine></argLine>
 	</properties>
 
