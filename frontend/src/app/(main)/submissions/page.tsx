@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { SubmissionsView } from "@/components/submissions/submission-views";
+import { SubmissionsList } from "@/components/submissions/submissions-list";
 
 export default function SubmissionsPage() {
-  return <Suspense fallback={null}><SubmissionsView /></Suspense>;
+  return <Suspense fallback={null}><SubmissionsList /></Suspense>;
 }

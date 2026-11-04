@@ -1,0 +1,129 @@
+/* Số đo lấy từ docs/mockups/Submissions.dc.html. Màu, font, bảng và trạng thái trống dùng chung problems.module.css. */
+
+.title {
+  margin: 0 0 20px;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.head,
+.row {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) 84px 76px 76px 110px;
+  gap: 12px;
+  align-items: center;
+}
+
+.head {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.row {
+  min-height: 52px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--hover);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.row:hover {
+  background: #f1f3f5;
+}
+
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.ac {
+  color: var(--solved);
+}
+
+.fail {
+  color: #b3261e;
+}
+
+.warn {
+  color: var(--attempted);
+}
+
+.pending {
+  color: var(--muted);
+}
+
+.problem {
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.small {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.num {
+  font: 13px var(--mono);
+}
+
+.summaryList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summaryItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.summaryItem span:last-child {
+  font: 13px var(--mono);
+  color: var(--muted);
+}
+
+.browse {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .head {
+    display: none;
+  }
+
+  .row {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+
+  .hideSm {
+    display: none;
+  }
+}
