@@ -19,11 +19,11 @@ test.describe("Proctored Contest & Exam Journey E2E Suite", () => {
   test("navigates contest listing, views overview, and accepts ExamGate rules", async ({ page }) => {
     // 1. Contest Listing
     await page.goto("/exam", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Live" })).toBeVisible();
+    await expect(page.getByText("Live now")).toBeVisible();
     await expect(page.getByText("Mini LeetCode Weekly Contest 101")).toBeVisible();
 
     // 2. Contest Overview
-    await page.getByText("Mini LeetCode Weekly Contest 101").click();
+    await page.getByRole("link", { name: "Mini LeetCode Weekly Contest 101" }).click();
     await page.waitForURL("/exam/101");
     await expect(page.getByRole("heading", { name: "Mini LeetCode Weekly Contest 101" })).toBeVisible();
     await expect(page.getByText(/ACM\/ICPC/)).toBeVisible();

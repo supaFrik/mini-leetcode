@@ -1,6 +1,8 @@
 package jsd.toiyeujava.mini_leetcode.submission.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +41,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -291,10 +294,14 @@ public class SubmissionController {
             submissionArchiveService.packageAndValidate(null, null, request.code(), request.language());
         }
 
-        Submission submission = submissionService.createSubmission(problemId, currentUser.getId(), request);
-
         boolean isRunEndpoint = httpRequest != null && httpRequest.getRequestURI() != null && httpRequest.getRequestURI().endsWith("/run");
         boolean isQuickRun = isRunEndpoint || Boolean.TRUE.equals(request.isQuickRun());
+        // /run không gửi cờ trong body; ghi cờ vào request trước khi lưu để DB khớp với task.
+        SubmitCodeRequest toSave = isQuickRun == Boolean.TRUE.equals(request.isQuickRun()) ? request
+                : new SubmitCodeRequest(request.problemId(), request.language(), request.code(), request.files(),
+                        request.contestId(), true, request.archiveBytes(), request.codeStorageUri());
+
+        Submission submission = submissionService.createSubmission(problemId, currentUser.getId(), toSave);
 
         SubmissionTaskMessage taskMessage = new SubmissionTaskMessage(
                 submission.getId(),
@@ -381,14 +388,34 @@ public class SubmissionController {
         SourcePathValidator.sanitizeAndValidatePath(path);
     }
 
+    private static final int MAX_MY_PAGE_SIZE = 100;
+
     @GetMapping("/submissions/my")
-    @Operation(summary = "Get my submissions", description = "Returns a paginated list of submissions for the current authenticated user")
+    @Operation(summary = "Get my submissions", description = "Returns a paginated list of submissions for the current authenticated user, newest first, optionally filtered by verdict and language")
     public ResponseEntity<ApiResponse<Page<SubmissionResponse>>> getMySubmissions(
             @AuthenticationPrincipal UserPrincipal currentUser,
+            @Parameter(description = "Verdict name or PENDING; a FAILED submission without verdict counts as RE. Any other value returns 400",
+                    schema = @Schema(type = "string", allowableValues = {"AC", "WA", "TLE", "MLE", "CE", "RE", "SV", "FLAGGED_CHEATING", "PENDING"}))
+            @RequestParam(required = false) String verdict,
+            @RequestParam(required = false) SubmissionLanguage language,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        Page<SubmissionResponse> responses = submissionService.getUserSubmissions(currentUser.getId(), pageable);
+        Pageable page = pageable.getPageSize() > MAX_MY_PAGE_SIZE
+                ? org.springframework.data.domain.PageRequest.of(pageable.getPageNumber(), MAX_MY_PAGE_SIZE, pageable.getSort())
+                : pageable;
+        // Không lọc thì giữ nguyên đường cũ cho các chỗ đang gọi.
+        Page<SubmissionResponse> responses = (verdict == null || verdict.isBlank()) && language == null
+                ? submissionService.getUserSubmissions(currentUser.getId(), page)
+                : submissionService.getUserSubmissions(currentUser.getId(), verdict, language, page);
         return ResponseEntity.ok(ApiResponse.success(responses));
+    }
+
+    @GetMapping("/submissions/my/summary")
+    @Operation(summary = "Summarise my submissions", description = "Counts all of the current user's submissions per verdict (plus PENDING)")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getMySubmissionSummary(
+            @AuthenticationPrincipal UserPrincipal currentUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(submissionService.getUserSubmissionSummary(currentUser.getId())));
     }
 
     @GetMapping("/problems/{problemId}/submissions")

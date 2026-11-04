@@ -1,0 +1,226 @@
+[
+  {
+    "section": "DSA (ALGORITHMIC)",
+    "seq": 1,
+    "slug": "two-sum",
+    "title": "Two Sum",
+    "difficulty": "EASY",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Array",
+      "Hash Map"
+    ]
+  },
+  {
+    "seq": 2,
+    "slug": "valid-parentheses",
+    "title": "Valid Parentheses",
+    "difficulty": "EASY",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Stack",
+      "String"
+    ]
+  },
+  {
+    "seq": 3,
+    "slug": "reverse-linked-list",
+    "title": "Reverse Linked List",
+    "difficulty": "EASY",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Linked List"
+    ]
+  },
+  {
+    "seq": 4,
+    "slug": "binary-search",
+    "title": "Binary Search",
+    "difficulty": "EASY",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Array",
+      "Binary Search"
+    ]
+  },
+  {
+    "seq": 5,
+    "slug": "longest-substring-without-repeating-characters",
+    "title": "Longest Substring Without Repeating Characters",
+    "difficulty": "MEDIUM",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "String",
+      "Hash Map",
+      "Sliding Window"
+    ]
+  },
+  {
+    "seq": 6,
+    "slug": "number-of-islands",
+    "title": "Number of Islands",
+    "difficulty": "MEDIUM",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Graph",
+      "Matrix"
+    ]
+  },
+  {
+    "seq": 7,
+    "slug": "coin-change",
+    "title": "Coin Change",
+    "difficulty": "MEDIUM",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Dynamic Programming"
+    ]
+  },
+  {
+    "seq": 8,
+    "slug": "top-k-frequent-elements",
+    "title": "Top K Frequent Elements",
+    "difficulty": "MEDIUM",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Array",
+      "Hash Map",
+      "Heap"
+    ]
+  },
+  {
+    "seq": 9,
+    "slug": "course-schedule",
+    "title": "Course Schedule",
+    "difficulty": "MEDIUM",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Graph",
+      "Topological Sort"
+    ]
+  },
+  {
+    "seq": 10,
+    "slug": "merge-k-sorted-lists",
+    "title": "Merge k Sorted Lists",
+    "difficulty": "HARD",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Linked List",
+      "Heap"
+    ]
+  },
+  {
+    "seq": 11,
+    "slug": "trapping-rain-water",
+    "title": "Trapping Rain Water",
+    "difficulty": "HARD",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Array",
+      "Two Pointers"
+    ]
+  },
+  {
+    "seq": 12,
+    "slug": "word-ladder",
+    "title": "Word Ladder",
+    "difficulty": "HARD",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Graph",
+      "String"
+    ]
+  },
+  {
+    "section": "OOP (OOP_GRINDING)",
+    "seq": 13,
+    "slug": "bank-account-class",
+    "title": "Bank Account Class",
+    "difficulty": "EASY",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Encapsulation"
+    ]
+  },
+  {
+    "seq": 14,
+    "slug": "shape-area-hierarchy",
+    "title": "Shape Area Hierarchy",
+    "difficulty": "EASY",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Inheritance",
+      "Polymorphism"
+    ]
+  },
+  {
+    "seq": 15,
+    "slug": "library-management-system",
+    "title": "Library Management System",
+    "difficulty": "MEDIUM",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Inheritance",
+      "Polymorphism"
+    ]
+  },
+  {
+    "seq": 16,
+    "slug": "parking-lot-design",
+    "title": "Parking Lot Design",
+    "difficulty": "MEDIUM",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Encapsulation",
+      "Design Patterns"
+    ]
+  },
+  {
+    "seq": 17,
+    "archived": true,
+    "slug": "multi-client-echo-server",
+    "title": "Multi-Client Echo Server",
+    "difficulty": "MEDIUM",
+    "problemType": "OOP_GRINDING",
+    "tags": [
+      "Socket",
+      "Multithreading"
+    ]
+  },
+  {
+    "seq": 18,
+    "archived": true,
+    "slug": "file-transfer-over-tcp",
+    "title": "File Transfer over TCP",
+    "difficulty": "MEDIUM",
+    "problemType": "OOP_GRINDING",
+    "tags": [
+      "Socket",
+      "Streams"
+    ]
+  },
+  {
+    "seq": 19,
+    "archived": true,
+    "slug": "tcp-chat-room",
+    "title": "TCP Chat Room",
+    "difficulty": "HARD",
+    "problemType": "OOP_GRINDING",
+    "tags": [
+      "Socket",
+      "Multithreading"
+    ]
+  },
+  {
+    "seq": 20,
+    "slug": "event-bus-observer",
+    "title": "Event Bus with Observers",
+    "difficulty": "HARD",
+    "problemType": "ALGORITHMIC",
+    "tags": [
+      "Design Patterns",
+      "Interfaces"
+    ]
+  }
+]

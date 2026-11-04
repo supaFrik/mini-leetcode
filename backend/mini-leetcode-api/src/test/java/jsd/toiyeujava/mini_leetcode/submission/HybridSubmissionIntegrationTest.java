@@ -54,7 +54,9 @@ import java.util.zip.ZipOutputStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -803,6 +805,28 @@ public class HybridSubmissionIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.success").value(true));
+
+        // Body không có isQuickRun, nhưng /run phải lưu bài là quick run.
+        verify(submissionService).createSubmission(eq(oopProblem.getId()), eq(student.getId()),
+                argThat(r -> Boolean.TRUE.equals(r.isQuickRun())));
+    }
+
+    @Test
+    @DisplayName("Tier 1.6.4b: /problems/{id}/submit saves the submission as a real submission, not a quick run")
+    void testQuickRun_SubmitEndpointIsNotQuickRun() throws Exception {
+        SubmitCodeRequest request = new SubmitCodeRequest(
+                SubmissionLanguage.JAVA,
+                "public class Solution { public static void main(String[] args){} }"
+        );
+
+        mockMvc.perform(post("/api/v1/problems/" + oopProblem.getId() + "/submit")
+                        .header("Authorization", studentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isAccepted());
+
+        verify(submissionService).createSubmission(eq(oopProblem.getId()), eq(student.getId()),
+                argThat(r -> Boolean.FALSE.equals(r.isQuickRun())));
     }
 
     @Test

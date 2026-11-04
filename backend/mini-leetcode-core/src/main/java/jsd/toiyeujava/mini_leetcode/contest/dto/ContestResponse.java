@@ -21,6 +21,10 @@ public record ContestResponse(
         Integer maxViolationsAllowed,
         List<ContestProblemResponse> problems,
         ParticipantStatus myStatus,
-        Integer myViolations
+        Integer myViolations,
+        /** Hạng của user hiện tại khi kỳ thi đã kết thúc (null nếu không tham gia hoặc bị loại). */
+        Integer myRank,
+        /** Số bài user hiện tại đã giải trong kỳ thi đã kết thúc (null nếu không tham gia). */
+        Integer mySolved
 ) {
 }

@@ -127,6 +127,10 @@ export interface ContestInfo {
   problems: ContestProblem[];
   myStatus?: ParticipantStatus;
   myViolations?: number;
+  /** Hạng của user ở kỳ thi đã kết thúc (null nếu không tham gia hoặc bị loại). */
+  myRank?: number | null;
+  /** Số bài user đã giải ở kỳ thi đã kết thúc. */
+  mySolved?: number | null;
 }
 export interface ProctoringResult {
   contestId: number;

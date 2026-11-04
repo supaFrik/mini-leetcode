@@ -59,8 +59,7 @@ public class ContestService {
 
     @Transactional(readOnly = true)
     public List<ContestResponse> getContests(Long userId) {
-        return contestRepository.findAll().stream()
-                .map(c -> toResponse(c, userId))
+        return toResponses(contestRepository.findAll(), userId).stream()
                 .sorted(Comparator
                         .comparing((ContestResponse c) -> c.status() == ContestStatus.RUNNING ? 0 : c.status() == ContestStatus.SCHEDULED ? 1 : 2)
                         .thenComparing(ContestResponse::startTime, Comparator.nullsLast(Comparator.naturalOrder())))
@@ -71,7 +70,7 @@ public class ContestService {
     public ContestResponse getContest(Long contestId, Long userId) {
         Contest contest = contestRepository.findById(contestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contest not found with id: " + contestId));
-        return toResponse(contest, userId);
+        return toResponses(List.of(contest), userId).get(0);
     }
 
     @Transactional
@@ -97,42 +96,84 @@ public class ContestService {
                         .penaltyTimeMinutes(0)
                         .build()));
 
-        return toResponse(contest, userId);
+        return toResponses(List.of(contest), userId).get(0);
     }
 
-    private ContestResponse toResponse(Contest contest, Long userId) {
-        List<ContestProblemResponse> problems = contestProblemRepository
-                .findByContestIdOrderByOrderIndexAsc(contest.getId()).stream()
-                .map(cp -> new ContestProblemResponse(
-                        cp.getProblem().getId(),
-                        cp.getProblem().getSlug(),
-                        cp.getProblem().getTitle(),
-                        cp.getProblem().getDifficulty(),
-                        cp.getLabel()))
-                .collect(Collectors.toList());
+    /**
+     * Dựng ContestResponse cho nhiều kỳ thi với số truy vấn cố định, không phụ thuộc số kỳ thi:
+     * bài của mọi kỳ, các lượt đăng ký của user, và (chỉ khi cần) bài nộp + thí sinh của các kỳ đã kết thúc
+     * mà user tham gia, để lấy myRank/mySolved bằng đúng logic của bảng xếp hạng.
+     */
+    private List<ContestResponse> toResponses(List<Contest> contests, Long userId) {
+        if (contests.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = contests.stream().map(Contest::getId).toList();
 
-        ParticipantStatus myStatus = null;
-        Integer myViolations = null;
-        if (userId != null) {
-            ContestParticipant participant = participantRepository
-                    .findByContestIdAndUserId(contest.getId(), userId).orElse(null);
-            if (participant != null) {
-                myStatus = participant.getStatus();
-                myViolations = participant.getViolationCount();
+        // Truy vấn đã sắp theo orderIndex nên mỗi nhóm giữ đúng thứ tự bài trong kỳ thi.
+        Map<Long, List<ContestProblem>> problemsByContest = contestProblemRepository.findWithProblemByContestIdIn(ids).stream()
+                .collect(Collectors.groupingBy(cp -> cp.getContest().getId()));
+
+        Map<Long, ContestParticipant> mine = userId == null ? Map.of()
+                : participantRepository.findByUserId(userId).stream()
+                        .collect(Collectors.toMap(p -> p.getContest().getId(), p -> p, (a, b) -> a));
+
+        // Kết quả của chính user ở kỳ thi đã kết thúc, lấy từ bảng xếp hạng (không lưu thêm vào DB).
+        List<Long> rankedIds = contests.stream()
+                .filter(c -> mine.containsKey(c.getId()) && c.resolveStatus() == ContestStatus.COMPLETED)
+                .map(Contest::getId)
+                .toList();
+        Map<Long, LeaderboardRowResponse> myRows = new HashMap<>();
+        if (!rankedIds.isEmpty()) {
+            Map<Long, List<Submission>> submissionsByContest = submissionRepository.findWithUserByContestIdIn(rankedIds).stream()
+                    .collect(Collectors.groupingBy(Submission::getContestId));
+            Map<Long, List<ContestParticipant>> participantsByContest = participantRepository.findWithUserByContestIdIn(rankedIds).stream()
+                    .collect(Collectors.groupingBy(p -> p.getContest().getId()));
+            for (Contest contest : contests) {
+                if (!rankedIds.contains(contest.getId())) {
+                    continue;
+                }
+                computeLeaderboard(contest,
+                        problemIdsOf(problemsByContest.getOrDefault(contest.getId(), List.of())),
+                        submissionsByContest.getOrDefault(contest.getId(), List.of()),
+                        participantsByContest.getOrDefault(contest.getId(), List.of())).stream()
+                        .filter(r -> userId.equals(r.userId()))
+                        .findFirst()
+                        .ifPresent(r -> myRows.put(contest.getId(), r));
             }
         }
 
-        return new ContestResponse(
-                contest.getId(),
-                contest.getTitle(),
-                contest.getStartTime(),
-                contest.getEndTime(),
-                contest.resolveStatus(),
-                contest.getScoringPolicy(),
-                contest.getMaxViolationsAllowed(),
-                problems,
-                myStatus,
-                myViolations);
+        List<ContestResponse> responses = new ArrayList<>();
+        for (Contest contest : contests) {
+            List<ContestProblemResponse> problems = problemsByContest.getOrDefault(contest.getId(), List.of()).stream()
+                    .map(cp -> new ContestProblemResponse(
+                            cp.getProblem().getId(),
+                            cp.getProblem().getSlug(),
+                            cp.getProblem().getTitle(),
+                            cp.getProblem().getDifficulty(),
+                            cp.getLabel()))
+                    .collect(Collectors.toList());
+            ContestParticipant participant = mine.get(contest.getId());
+            LeaderboardRowResponse myRow = myRows.get(contest.getId());
+            responses.add(new ContestResponse(
+                    contest.getId(),
+                    contest.getTitle(),
+                    contest.getStartTime(),
+                    contest.getEndTime(),
+                    contest.resolveStatus(),
+                    contest.getScoringPolicy(),
+                    contest.getMaxViolationsAllowed(),
+                    problems,
+                    participant == null ? null : participant.getStatus(),
+                    participant == null ? null : participant.getViolationCount(),
+                    myRow == null ? null : myRow.rank(),
+                    myRow == null ? null : myRow.solved()));
+        }
+        return responses;
+    }
+
+    private static List<Long> problemIdsOf(List<ContestProblem> contestProblems) {
+        return contestProblems.stream().map(cp -> cp.getProblem().getId()).toList();
     }
 
     // ---------------- Leaderboard ----------------
@@ -142,13 +183,17 @@ public class ContestService {
         Contest contest = contestRepository.findById(contestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contest not found with id: " + contestId));
 
-        List<ContestProblem> contestProblems = contestProblemRepository
-                .findByContestIdOrderByOrderIndexAsc(contestId);
-        List<Long> problemIds = contestProblems.stream().map(cp -> cp.getProblem().getId()).toList();
+        return computeLeaderboard(contest,
+                problemIdsOf(contestProblemRepository.findByContestIdOrderByOrderIndexAsc(contestId)),
+                submissionRepository.findByContestId(contestId),
+                participantRepository.findByContestId(contestId));
+    }
 
-        List<Submission> submissions = submissionRepository.findByContestId(contestId);
-        List<ContestParticipant> participants = participantRepository.findByContestId(contestId);
-
+    /** Xếp hạng từ dữ liệu đã nạp; dùng chung cho bảng xếp hạng và myRank/mySolved của danh sách kỳ thi. */
+    private List<LeaderboardRowResponse> computeLeaderboard(Contest contest,
+                                                            List<Long> problemIds,
+                                                            List<Submission> submissions,
+                                                            List<ContestParticipant> participants) {
         // Gom bài nộp theo (userId, problemId), sắp xếp theo thời gian tăng dần.
         Map<Long, Map<Long, List<Submission>>> byUser = new HashMap<>();
         for (Submission s : submissions) {
@@ -342,7 +387,7 @@ public class ContestService {
             participantRepository.save(participant);
         }
 
-        return toResponse(contest, userId);
+        return toResponses(List.of(contest), userId).get(0);
     }
 
     // ---------------- Plagiarism ----------------

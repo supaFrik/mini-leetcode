@@ -221,9 +221,18 @@ export async function fetchSubmission(id: number): Promise<Submission> {
   if (USE_MOCK) return mock.getSubmission(id);
   return api<Submission>(`/api/v1/submissions/${id}`);
 }
-export async function fetchMySubmissions(page: number, size = 15): Promise<Page<Submission>> {
-  if (USE_MOCK) return mock.mySubmissions(page - 1, size);
-  return normPage<Submission>(await api<Raw>(`/api/v1/submissions/my?page=${page - 1}&size=${size}`));
+/** `verdict` là tên verdict hoặc PENDING; server lọc và phân trang. Bỏ trống là không lọc. */
+export async function fetchMySubmissions(page: number, size = 15, filter: { verdict?: string; language?: string } = {}): Promise<Page<Submission>> {
+  if (USE_MOCK) return mock.mySubmissions(page - 1, size, filter);
+  const qs = new URLSearchParams({ page: String(page - 1), size: String(size) });
+  if (filter.verdict) qs.set("verdict", filter.verdict);
+  if (filter.language) qs.set("language", filter.language);
+  return normPage<Submission>(await api<Raw>(`/api/v1/submissions/my?${qs}`));
+}
+/** Số bài nộp theo verdict (thêm PENDING) trên toàn bộ bài nộp của user. */
+export async function fetchMySubmissionSummary(): Promise<Record<string, number>> {
+  if (USE_MOCK) return mock.mySubmissionSummary();
+  return (await api<Record<string, number>>("/api/v1/submissions/my/summary")) ?? {};
 }
 export async function fetchSubmissionCode(id: number): Promise<string> {
   if (USE_MOCK) return mock.submissionCode(id);

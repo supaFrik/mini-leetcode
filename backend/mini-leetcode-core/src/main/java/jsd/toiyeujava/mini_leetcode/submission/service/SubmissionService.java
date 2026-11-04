@@ -1,7 +1,10 @@
 package jsd.toiyeujava.mini_leetcode.submission.service;
 
+import jsd.toiyeujava.mini_leetcode.entity.SubmissionLanguage;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionStatus;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
+
+import java.util.Map;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionResponse;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmitCodeRequest;
 import jsd.toiyeujava.mini_leetcode.submission.entity.Submission;
@@ -19,6 +22,12 @@ public interface SubmissionService {
     String getSubmissionCode(Long id);
 
     Page<SubmissionResponse> getUserSubmissions(Long userId, Pageable pageable);
+
+    /** Như trên nhưng lọc theo verdict (tên verdict hoặc PENDING) và ngôn ngữ; null là không lọc. */
+    Page<SubmissionResponse> getUserSubmissions(Long userId, String verdict, SubmissionLanguage language, Pageable pageable);
+
+    /** Số bài nộp của user theo verdict (thêm PENDING), tính trên toàn bộ bài nộp. */
+    Map<String, Long> getUserSubmissionSummary(Long userId);
 
     Page<SubmissionResponse> getProblemSubmissions(Long problemId, Pageable pageable);
 

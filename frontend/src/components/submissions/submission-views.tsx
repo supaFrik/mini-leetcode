@@ -4,16 +4,14 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pagination } from "@/components/problems/pagination";
 import { VerdictBadge } from "@/components/shared/verdict-badge";
 import { CodeEditor } from "@/components/workspace/code-editor";
 import { ResultPanel } from "@/components/workspace/result-panel";
-import { useUrlState } from "@/hooks/use-url-state";
 import { errorMessage } from "@/lib/api";
-import { fmtDateTime, fmtMemory } from "@/lib/format";
-import { fetchMySubmissions, fetchSubmission, fetchSubmissionCode, fetchSubmissionResults } from "@/lib/services";
+import { fmtDateTime } from "@/lib/format";
+import { fetchSubmission, fetchSubmissionCode, fetchSubmissionResults } from "@/lib/services";
 import { FILE_NAME, LANGUAGES } from "@/lib/templates";
-import type { CaseResult, Page, Submission } from "@/types/api";
+import type { CaseResult, Submission } from "@/types/api";
 
 const Note = ({ children, error }: { children: React.ReactNode; error?: boolean }) => (
   <p role={error ? "alert" : undefined} className={`p-10 text-center text-body-md ${error ? "text-destructive" : "text-mute"}`}>
@@ -21,102 +19,6 @@ const Note = ({ children, error }: { children: React.ReactNode; error?: boolean 
   </p>
 );
 const langLabel = (l?: string) => LANGUAGES.find((x) => x.value === l)?.label ?? l ?? "—";
-
-/**
- * Số lần bài nộp bị chấm lại. Bài nộp bị chấm lại khi judge worker chết giữa
- * chừng và message trong Redis Stream được XCLAIM lại.
- */
-const attemptsLabel = (retryCount?: number | null) => (retryCount != null && retryCount > 0 ? String(retryCount + 1) : "1");
-const attemptsTitle = (retryCount?: number | null) =>
-  retryCount != null && retryCount > 0
-    ? `Bài nộp được chấm lại ${retryCount} lần do worker bị gián đoạn`
-    : "Chấm lần đầu";
-
-export function SubmissionsView() {
-  const { sp, set } = useUrlState();
-  const page = Math.max(1, Number(sp.get("page") ?? 1) || 1);
-  const [res, setRes] = useState<Page<Submission> | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let off = false;
-    setError(null);
-    fetchMySubmissions(page)
-      .then((r) => {
-        if (!off) setRes(r);
-      })
-      .catch((e) => {
-        if (!off) setError(errorMessage(e));
-      });
-    return () => {
-      off = true;
-    };
-  }, [page]);
-
-  if (error) return <Note error>{error}</Note>;
-  if (!res) return <Note>Loading submissions…</Note>;
-  return (
-    <div className="mx-auto max-w-5xl space-y-5 px-4 py-8 sm:px-6">
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <table className="w-full min-w-[640px] text-body-md">
-          <thead>
-            <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wider text-mute">
-              <th className="px-5 py-3">Time</th>
-              <th className="px-2 py-3">Problem</th>
-              <th className="px-2 py-3">Language</th>
-              <th className="px-2 py-3">Status</th>
-              <th className="px-2 py-3">Runtime</th>
-              <th className="px-2 py-3">Peak memory</th>
-              <th className="px-2 py-3">Attempts</th>
-            </tr>
-          </thead>
-          <tbody>
-            {res.content.map((s) => (
-              <tr key={s.id} className="border-b border-border last:border-b-0 transition-colors hover:bg-hairline-soft">
-                <td className="px-5 py-3">
-                  <Link href={`/submissions/${s.id}`} className="text-ink underline-offset-2 hover:underline">
-                    {fmtDateTime(s.createdAt)}
-                  </Link>
-                </td>
-                <td className="px-2 py-3 text-ink">
-                  {s.problemTitle ?? `#${s.problemId}`}
-                  {s.contestId && (
-                    <span className="ml-2 rounded-full bg-hairline-soft px-2 py-0.5 text-body-sm text-body">Exam</span>
-                  )}
-                </td>
-                <td className="px-2 py-3 text-body">{langLabel(s.language)}</td>
-                <td className="px-2 py-3">
-                  <VerdictBadge verdict={s.verdict} status={s.status} />
-                </td>
-                <td className="px-2 py-3 font-mono text-ink">
-                  {s.executionTimeMs != null ? `${s.executionTimeMs} ms` : "—"}
-                </td>
-                <td className="px-2 py-3 font-mono text-ink">{fmtMemory(s.memoryUsedKb)}</td>
-                <td className="px-2 py-3 font-mono text-ink" title={attemptsTitle(s.retryCount)}>
-                  {attemptsLabel(s.retryCount)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {res.content.length === 0 && (
-          <Note>
-            You haven&apos;t submitted any solutions yet. Pick a problem from the{" "}
-            <Link className="underline" href="/problems">
-              problem list
-            </Link>
-            .
-          </Note>
-        )}
-      </div>
-      {res.totalPages > 1 && (
-        <div className="flex justify-end">
-          <Pagination page={page} totalPages={res.totalPages} onChange={(p) => set({ page: String(p) })} />
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function SubmissionDetail({ id }: { id: number }) {
   const [sub, setSub] = useState<Submission | null>(null);

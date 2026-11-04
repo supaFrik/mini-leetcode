@@ -14,6 +14,7 @@ import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.submission.entity.Submission;
 import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -275,11 +276,13 @@ class FlywaySchemaTest {
                 "MERGE INTO users (id, username, email, password_hash, role, status) KEY(id) VALUES (1, 'seed_admin_gate7', 'admin7@leetcode.test', 'hash', 'ADMIN', 'ACTIVE')"
         );
 
-        Path scriptPath = Path.of("..", "..", "scripts", "seed-problems.sql");
+        // Seed được sinh bởi backend/tools/problems/seed_sql.py và không commit; chạy từ module api hoặc từ backend.
+        Path scriptPath = Path.of("..", "tools", "seed-problems.sql");
         if (!Files.exists(scriptPath)) {
-            scriptPath = Path.of("scripts", "seed-problems.sql");
+            scriptPath = Path.of("tools", "seed-problems.sql");
         }
-        assertThat(Files.exists(scriptPath)).isTrue();
+        Assumptions.assumeTrue(Files.exists(scriptPath),
+                "backend/tools/seed-problems.sql not generated; run: python backend/tools/problems/seed_sql.py");
 
         String rawSql = Files.readString(scriptPath, StandardCharsets.UTF_8);
 
