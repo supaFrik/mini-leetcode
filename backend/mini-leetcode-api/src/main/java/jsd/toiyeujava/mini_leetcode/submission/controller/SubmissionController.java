@@ -1,6 +1,7 @@
 package jsd.toiyeujava.mini_leetcode.submission.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +40,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -382,13 +384,27 @@ public class SubmissionController {
     }
 
     @GetMapping("/submissions/my")
-    @Operation(summary = "Get my submissions", description = "Returns a paginated list of submissions for the current authenticated user")
+    @Operation(summary = "Get my submissions", description = "Returns a paginated list of submissions for the current authenticated user, newest first, optionally filtered by verdict and language")
     public ResponseEntity<ApiResponse<Page<SubmissionResponse>>> getMySubmissions(
             @AuthenticationPrincipal UserPrincipal currentUser,
+            @Parameter(description = "Verdict name (AC, WA, TLE, MLE, RE, CE) or PENDING; a FAILED submission without verdict counts as RE")
+            @RequestParam(required = false) String verdict,
+            @RequestParam(required = false) SubmissionLanguage language,
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        Page<SubmissionResponse> responses = submissionService.getUserSubmissions(currentUser.getId(), pageable);
+        // Không lọc thì giữ nguyên đường cũ cho các chỗ đang gọi.
+        Page<SubmissionResponse> responses = (verdict == null || verdict.isBlank()) && language == null
+                ? submissionService.getUserSubmissions(currentUser.getId(), pageable)
+                : submissionService.getUserSubmissions(currentUser.getId(), verdict, language, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
+    }
+
+    @GetMapping("/submissions/my/summary")
+    @Operation(summary = "Summarise my submissions", description = "Counts all of the current user's submissions per verdict (plus PENDING)")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getMySubmissionSummary(
+            @AuthenticationPrincipal UserPrincipal currentUser
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(submissionService.getUserSubmissionSummary(currentUser.getId())));
     }
 
     @GetMapping("/problems/{problemId}/submissions")

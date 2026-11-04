@@ -1,5 +1,6 @@
 package jsd.toiyeujava.mini_leetcode.submission.repository;
 
+import jsd.toiyeujava.mini_leetcode.entity.SubmissionLanguage;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionStatus;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
 import jsd.toiyeujava.mini_leetcode.submission.entity.Submission;
@@ -17,6 +18,26 @@ import java.util.List;
 public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     Page<Submission> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+
+    /**
+     * Bài nộp của user, lọc ở server. Khớp cách trang Submissions gọi tên verdict: bài chưa có verdict
+     * mà FAILED được tính là RE, còn lại là PENDING.
+     */
+    @Query("select s from Submission s where s.user.id = :userId"
+            + " and (:language is null or s.language = :language)"
+            + " and (:verdict is null or s.verdict = :verdict or (:verdict = jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict.RE"
+            + "      and s.verdict is null and s.status = jsd.toiyeujava.mini_leetcode.entity.SubmissionStatus.FAILED))"
+            + " and (:pending = false or (s.verdict is null and s.status <> jsd.toiyeujava.mini_leetcode.entity.SubmissionStatus.FAILED))"
+            + " order by s.createdAt desc")
+    Page<Submission> findMine(@Param("userId") Long userId,
+                              @Param("verdict") SubmissionVerdict verdict,
+                              @Param("pending") boolean pending,
+                              @Param("language") SubmissionLanguage language,
+                              Pageable pageable);
+
+    /** Số bài nộp của user theo (verdict, status), để tóm tắt trên toàn bộ dữ liệu. */
+    @Query("select s.verdict, s.status, count(s) from Submission s where s.user.id = :userId group by s.verdict, s.status")
+    List<Object[]> countByVerdictAndStatus(@Param("userId") Long userId);
 
     Page<Submission> findByProblemIdOrderByCreatedAtDesc(Long problemId, Pageable pageable);
 

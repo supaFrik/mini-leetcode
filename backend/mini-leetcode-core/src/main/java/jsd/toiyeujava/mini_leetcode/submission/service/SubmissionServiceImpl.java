@@ -30,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -264,6 +266,38 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
         return submissionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
                 .map(SubmissionResponse::fromEntity);
+    }
+
+    @Override
+    public Page<SubmissionResponse> getUserSubmissions(Long userId, String verdict, SubmissionLanguage language, Pageable pageable) {
+        if (userId == null) {
+            throw new ResourceNotFoundException("User not found with id: null");
+        }
+        boolean pending = "PENDING".equals(verdict);
+        SubmissionVerdict wanted = null;
+        if (verdict != null && !verdict.isBlank() && !pending) {
+            try {
+                wanted = SubmissionVerdict.valueOf(verdict);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Unknown verdict: " + verdict);
+            }
+        }
+        return submissionRepository.findMine(userId, wanted, pending, language, pageable)
+                .map(SubmissionResponse::fromEntity);
+    }
+
+    @Override
+    public Map<String, Long> getUserSubmissionSummary(Long userId) {
+        if (userId == null) {
+            throw new ResourceNotFoundException("User not found with id: null");
+        }
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (Object[] row : submissionRepository.countByVerdictAndStatus(userId)) {
+            SubmissionVerdict v = (SubmissionVerdict) row[0];
+            String key = v != null ? v.name() : row[1] == SubmissionStatus.FAILED ? "RE" : "PENDING";
+            counts.merge(key, (Long) row[2], Long::sum);
+        }
+        return counts;
     }
 
     @Override

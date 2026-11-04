@@ -799,6 +799,16 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
       return json({ success: true, data: "// Solution submitted code" });
     }
 
+    // GET /api/v1/submissions/my/summary
+    if (path === "/api/v1/submissions/my/summary" && method === "GET") {
+      const counts: Record<string, number> = {};
+      for (const s of Array.from(submissions.values())) {
+        const key = s.verdict ?? (s.status === "FAILED" ? "RE" : "PENDING");
+        counts[key] = (counts[key] ?? 0) + 1;
+      }
+      return json({ success: true, data: counts });
+    }
+
     // GET /api/v1/submissions/my
     if (path === "/api/v1/submissions/my" && method === "GET") {
       const list = Array.from(submissions.values());

@@ -7,7 +7,7 @@ import { useUrlState } from "@/hooks/use-url-state";
 import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
 import { fmtMemory } from "@/lib/format";
-import { fetchMySubmissions } from "@/lib/services";
+import { fetchMySubmissionSummary, fetchMySubmissions } from "@/lib/services";
 import { VERDICT } from "@/lib/verdict";
 import { Pagination } from "@/components/problems/pagination";
 import theme from "@/components/layout/plex-theme.module.css";
@@ -15,10 +15,8 @@ import p from "@/components/problems/problems.module.css";
 import s from "./submissions.module.css";
 import type { Submission, Verdict } from "@/types/api";
 
-/** API chưa lọc/tổng hợp phía server, nên tải tối đa chừng này bài nộp gần nhất rồi lọc tại client. */
-const FETCH_SIZE = 100;
-const MAX_PAGES = 5;
 const PAGE_SIZE = 20;
+const LANGUAGES = ["JAVA", "PYTHON"];
 
 type Key = Verdict | "PENDING";
 const keyOf = (x: Submission): Key => (x.verdict ?? (x.status === "FAILED" ? "RE" : "PENDING")) as Key;
@@ -58,14 +56,23 @@ function fmtWhen(iso?: string, now = Date.now()) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(d.getFullYear() !== new Date(now).getFullYear() ? { year: "numeric" } : {}) });
 }
 
-type Load = { state: "loading" } | { state: "ok"; items: Submission[]; truncated: boolean } | { state: "error"; message: string };
+type Load<T> = { state: "loading" } | { state: "ok"; data: T } | { state: "error"; message: string };
 
-async function loadAll(): Promise<{ items: Submission[]; truncated: boolean }> {
-  const first = await fetchMySubmissions(1, FETCH_SIZE);
-  const items = [...first.content];
-  const pages = Math.min(first.totalPages, MAX_PAGES);
-  for (let i = 2; i <= pages; i++) items.push(...(await fetchMySubmissions(i, FETCH_SIZE)).content);
-  return { items, truncated: first.totalPages > MAX_PAGES };
+/** Tải dữ liệu theo deps; không bao giờ kẹt ở "đang tải". */
+function useLoad<T>(fn: () => Promise<T>, deps: unknown[]): Load<T> {
+  const [load, setLoad] = useState<Load<T>>({ state: "loading" });
+  useEffect(() => {
+    let off = false;
+    setLoad({ state: "loading" });
+    fn()
+      .then((data) => !off && setLoad({ state: "ok", data }))
+      .catch((e) => !off && setLoad({ state: "error", message: errorMessage(e) }));
+    return () => {
+      off = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+  return load;
 }
 
 export function SubmissionsList() {
@@ -73,33 +80,19 @@ export function SubmissionsList() {
   const verdict = sp.get("verdict") ?? "";
   const language = sp.get("language") ?? "";
   const page = Math.max(1, Number(sp.get("page") ?? 1) || 1);
+  const filtered = !!(verdict || language);
 
-  const [load, setLoad] = useState<Load>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    let off = false;
-    setLoad({ state: "loading" });
-    loadAll()
-      .then((r) => !off && setLoad({ state: "ok", ...r }))
-      .catch((e) => !off && setLoad({ state: "error", message: errorMessage(e) }));
-    return () => {
-      off = true;
-    };
-  }, [attempt]);
+  // Server lọc và phân trang; Summary đếm toàn bộ bài nộp nên không phụ thuộc bộ lọc.
+  const load = useLoad(() => fetchMySubmissions(page, PAGE_SIZE, { verdict, language }), [page, verdict, language, attempt]);
+  const summary = useLoad(fetchMySubmissionSummary, [attempt]);
 
-  const all = useMemo(() => (load.state === "ok" ? load.items : []), [load]);
-  const shown = useMemo(
-    () => all.filter((x) => (!verdict || keyOf(x) === verdict) && (!language || x.language === language)),
-    [all, verdict, language]
-  );
-  const languages = useMemo(() => Array.from(new Set(["JAVA", "PYTHON", ...all.map((x) => x.language).filter(Boolean)])) as string[], [all]);
-  const totalPages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
-  const rows = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const counts = useMemo(() => {
-    const c = new Map<Key, number>();
-    all.forEach((x) => c.set(keyOf(x), (c.get(keyOf(x)) ?? 0) + 1));
-    return c;
-  }, [all]);
+  const rows = load.state === "ok" ? load.data.content : [];
+  const total = load.state === "ok" ? load.data.totalElements : 0;
+  const totalPages = load.state === "ok" ? Math.max(1, load.data.totalPages) : 1;
+  const languages = language && !LANGUAGES.includes(language) ? [...LANGUAGES, language] : LANGUAGES;
+  const counts = useMemo(() => new Map(Object.entries(summary.state === "ok" ? summary.data : {})), [summary]);
+  const summaryTotal = Array.from(counts.values()).reduce((a, b) => a + b, 0);
   const summaryKeys = [...SUMMARY_BASE, ...VERDICT_OPTIONS.filter((k) => !SUMMARY_BASE.includes(k) && counts.get(k))];
 
   return (
@@ -111,7 +104,7 @@ export function SubmissionsList() {
             <div className={p.tools}>
               <label>
                 <span className={p.sr}>Filter by verdict</span>
-                <select className={p.select} value={verdict} onChange={(e) => set({ verdict: e.target.value || null })}>
+                <select className={p.select} value={verdict} onChange={(e) => set({ verdict: e.target.value || null, page: null })}>
                   <option value="">All verdicts</option>
                   {VERDICT_OPTIONS.map((k) => (
                     <option key={k} value={k}>
@@ -122,7 +115,7 @@ export function SubmissionsList() {
               </label>
               <label>
                 <span className={p.sr}>Filter by language</span>
-                <select className={p.select} value={language} onChange={(e) => set({ language: e.target.value || null })}>
+                <select className={p.select} value={language} onChange={(e) => set({ language: e.target.value || null, page: null })}>
                   <option value="">All languages</option>
                   {languages.map((l) => (
                     <option key={l} value={l}>
@@ -160,7 +153,7 @@ export function SubmissionsList() {
               )}
 
               {load.state === "ok" &&
-                (all.length === 0 ? (
+                (total === 0 && !filtered ? (
                   <div className={p.empty}>
                     <h2>No submissions yet</h2>
                     <p>Solve a problem and your attempts will appear here.</p>
@@ -199,7 +192,7 @@ export function SubmissionsList() {
             {load.state === "ok" && totalPages > 1 && (
               <div className={p.pager}>
                 <span className={p.mono}>
-                  Showing {(page - 1) * PAGE_SIZE + 1}–{(page - 1) * PAGE_SIZE + rows.length} of {shown.length}
+                  Showing {(page - 1) * PAGE_SIZE + 1}–{(page - 1) * PAGE_SIZE + rows.length} of {total}
                 </span>
                 <Pagination page={page} totalPages={totalPages} onChange={(np) => set({ page: String(np) })} />
               </div>
@@ -209,10 +202,10 @@ export function SubmissionsList() {
           <aside className={p.aside} aria-label="Submission summary">
             <section>
               <h2>Summary</h2>
-              {load.state === "ok" ? (
+              {summary.state === "ok" ? (
                 <>
                   <p className={p.score}>
-                    <b>{counts.get("AC") ?? 0}</b> / {all.length} accepted
+                    <b>{counts.get("AC") ?? 0}</b> / {summaryTotal} accepted
                   </p>
                   <div className={s.summaryList}>
                     {summaryKeys.map((k) => (
@@ -222,9 +215,8 @@ export function SubmissionsList() {
                       </div>
                     ))}
                   </div>
-                  {load.truncated && <p className={p.note}>Based on your latest {FETCH_SIZE * MAX_PAGES} submissions.</p>}
                 </>
-              ) : load.state === "error" ? (
+              ) : summary.state === "error" ? (
                 <p className={p.inlineError}>Summary unavailable.</p>
               ) : (
                 <p className={p.note}>Loading…</p>

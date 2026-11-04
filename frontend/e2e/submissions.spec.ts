@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Route } from "@playwright/test";
 import { installFullscreenMock, setMockAuthSession, setupMockApi } from "./fixtures/mock-api";
 
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60000).toISOString();
@@ -10,13 +10,29 @@ const SUBMISSIONS = [
   { id: 8, problemId: 1, problemTitle: "Two Sum", language: "JAVA", status: "COMPLETED", verdict: "AC", executionTimeMs: 98, memoryUsedKb: 45056, createdAt: minutesAgo(180), contestId: 1 },
 ].map((s) => ({ passTestCases: 0, totalTestCases: 0, errorMessage: null, ...s }));
 
-async function serveSubmissions(page: Page, content: unknown[]) {
-  await page.route(/\/api\/v1\/submissions\/my/, (route) =>
-    route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({ success: true, data: { content, page: { number: 0, size: 100, totalElements: content.length, totalPages: 1 } } }),
-    })
-  );
+type Sub = { verdict: string | null; status: string; language: string };
+const keyOf = (x: { verdict: string | null; status: string }) => x.verdict ?? (x.status === "FAILED" ? "RE" : "PENDING");
+
+/** Giả lập API: lọc verdict/language, phân trang ở "server", và /summary đếm toàn bộ. */
+function respond(route: Route, all: Sub[]) {
+  const url = new URL(route.request().url());
+  if (url.pathname.endsWith("/summary")) {
+    const counts: Record<string, number> = {};
+    all.forEach((x) => (counts[keyOf(x)] = (counts[keyOf(x)] ?? 0) + 1));
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: counts }) });
+  }
+  const verdict = url.searchParams.get("verdict");
+  const language = url.searchParams.get("language");
+  const number = Number(url.searchParams.get("page") ?? 0);
+  const size = Number(url.searchParams.get("size") ?? 20);
+  const list = all.filter((x) => (!verdict || keyOf(x) === verdict) && (!language || x.language === language));
+  const content = list.slice(number * size, number * size + size);
+  const pageInfo = { number, size, totalElements: list.length, totalPages: Math.max(1, Math.ceil(list.length / size)) };
+  return route.fulfill({ contentType: "application/json", body: JSON.stringify({ success: true, data: { content, page: pageInfo } }) });
+}
+
+async function serveSubmissions(page: Page, all: Sub[]) {
+  await page.route(/\/api\/v1\/submissions\/my/, (route) => respond(route, all));
 }
 
 const rows = (page: Page) => page.getByRole("region", { name: "Submission history" }).getByRole("link");
@@ -51,7 +67,9 @@ test.describe("/submissions", () => {
     await page.goto("/submissions");
     await expect(rows(page)).toHaveCount(4);
 
+    const filteredRequest = page.waitForRequest((r) => /submissions\/my\?.*verdict=AC/.test(r.url()));
     await page.getByLabel("Filter by verdict").selectOption("AC");
+    await filteredRequest;
     await expect(page).toHaveURL(/verdict=AC/);
     await expect(rows(page)).toHaveCount(2);
 
@@ -77,10 +95,7 @@ test.describe("/submissions", () => {
     await page.route(/\/api\/v1\/submissions\/my/, (route) =>
       fail
         ? route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ title: "Internal Server Error", detail: "Boom" }) })
-        : route.fulfill({
-            contentType: "application/json",
-            body: JSON.stringify({ success: true, data: { content: SUBMISSIONS, page: { number: 0, size: 100, totalElements: 4, totalPages: 1 } } }),
-          })
+        : respond(route, SUBMISSIONS)
     );
     await page.goto("/submissions");
 
@@ -89,5 +104,24 @@ test.describe("/submissions", () => {
     fail = false;
     await page.getByRole("button", { name: "Try again" }).click();
     await expect(rows(page)).toHaveCount(4);
+  });
+
+  test("pages on the server while the summary counts every submission", async ({ page }) => {
+    const many = Array.from({ length: 25 }, (_, i) => ({
+      ...SUBMISSIONS[2],
+      id: 100 + i,
+      verdict: i < 20 ? "AC" : "WA",
+      createdAt: minutesAgo(i + 1),
+    }));
+    await serveSubmissions(page, many);
+    await page.goto("/submissions");
+
+    await expect(rows(page)).toHaveCount(20);
+    await expect(page.getByRole("complementary", { name: "Submission summary" })).toContainText("20 / 25 accepted");
+    await expect(page.getByText("Showing 1–20 of 25")).toBeVisible();
+
+    await page.getByRole("button", { name: "2", exact: true }).click();
+    await expect(rows(page)).toHaveCount(5);
+    await expect(page.getByText("Showing 21–25 of 25")).toBeVisible();
   });
 });
