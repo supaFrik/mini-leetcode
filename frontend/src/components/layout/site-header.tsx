@@ -1,127 +1,127 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { Bell, LogOut, Search } from "lucide-react";
+import { Bell, Compass, GraduationCap, History, List, LogOut, Trophy, type LucideIcon } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { clearTokens } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import theme from "./plex-theme.module.css";
+import s from "./site-header.module.css";
+
+interface NavEntry {
+  label: string;
+  icon?: LucideIcon;
+  href?: string;
+  active?: boolean;
+  /** Lý do không bấm được (hiện ở tooltip). */
+  disabledReason?: string;
+}
+
+function NavItem({ label, icon: Icon, href, active, disabledReason }: NavEntry) {
+  const body = (
+    <>
+      {Icon && <Icon size={16} aria-hidden="true" />}
+      {label}
+    </>
+  );
+  if (!href || disabledReason) {
+    return (
+      <span className={s.navItem} aria-disabled="true" title={disabledReason}>
+        {body}
+      </span>
+    );
+  }
+  return (
+    <Link href={href} className={s.navItem} aria-current={active ? "page" : undefined}>
+      {body}
+    </Link>
+  );
+}
 
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, ready } = useUser();
-  const [q, setQ] = useState("");
 
-  const inExam = pathname.startsWith("/exam");
   const inExamWorkspace = /^\/exam\/[^\/]+\/problems\//.test(pathname);
-  const onProblems = pathname.startsWith("/problems");
-  const onAdmin = pathname.startsWith("/admin");
   const isStaff = user?.role === "ADMIN" || user?.role === "INSTRUCTOR";
-  const tab = (active: boolean) =>
-    cn(
-      "rounded-full px-3 py-1.5 text-body-md font-medium transition-colors",
-      active ? "bg-hairline-soft text-ink" : "text-body hover:bg-hairline-soft hover:text-ink"
-    );
+  const lockReason = inExamWorkspace ? "Cannot leave the exam room while in progress" : undefined;
+
+  const entries: NavEntry[] = [
+    { label: "Problems", icon: List, href: "/problems", active: pathname.startsWith("/problems"), disabledReason: lockReason },
+    { label: "Contest", icon: Trophy, href: "/exam", active: pathname.startsWith("/exam") },
+    { label: "Explore", icon: Compass, disabledReason: "Coming soon" },
+    { label: "Study Plan", icon: GraduationCap, disabledReason: "Coming soon" },
+    { label: "Submissions", icon: History, href: "/submissions", active: pathname.startsWith("/submissions") },
+  ];
+  if (isStaff) entries.push({ label: "Admin", href: "/admin/problems", active: pathname.startsWith("/admin") });
+
+  const signOut = () => {
+    clearTokens();
+    router.push("/login");
+  };
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-3 text-body sm:gap-4 sm:px-5">
-      <Link href="/" className="flex items-center gap-2 whitespace-nowrap" aria-label="Mini LeetCode Home">
-        <span className="grid h-7 w-7 place-items-center rounded-md bg-ink font-mono text-[11px] font-bold text-white">
-          &lt;/&gt;
-        </span>
-        <span className="hidden text-[15px] font-semibold tracking-tight text-ink sm:inline">Mini LeetCode</span>
-      </Link>
-
-      <nav aria-label="Primary" className="flex items-center gap-0.5 sm:gap-1">
-        {inExamWorkspace ? (
-          <span className={cn(tab(false), "cursor-not-allowed opacity-50")} title="Cannot leave the exam room while in progress">
-            Problems
-          </span>
-        ) : (
-          <Link href="/problems" aria-current={onProblems ? "page" : undefined} className={tab(onProblems)}>
-            Problems
-          </Link>
-        )}
-        <Link href="/exam" aria-current={inExam ? "page" : undefined} className={tab(inExam)}>
-          Contest
+    <header className={cn(theme.theme, s.header)}>
+      <div className={s.bar}>
+        <Link href="/" className={s.brand} aria-label="Mini LeetCode Home">
+          <span aria-hidden="true">&lt;/&gt;</span>
+          Mini LeetCode
         </Link>
-        {isStaff && (
-          <Link href="/admin/problems" aria-current={onAdmin ? "page" : undefined} className={tab(onAdmin)}>
-            Admin
-          </Link>
-        )}
-      </nav>
 
-      {!inExamWorkspace && (
-        <form
-          className="relative mx-auto hidden w-full max-w-xl md:block"
-          onSubmit={(e) => {
-            e.preventDefault();
-            router.push(q ? `/problems?q=${encodeURIComponent(q)}` : "/problems");
-          }}
-        >
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="h-9 rounded-pill border-border bg-card pl-9 pr-3 text-body-md text-ink placeholder:text-faint"
-            placeholder="Search"
-            aria-label="Search problems"
-          />
-        </form>
-      )}
+        <nav aria-label="Main" className={s.nav}>
+          {entries.map((e) => (
+            <NavItem key={e.label} {...e} />
+          ))}
+        </nav>
 
-      <div className="ml-auto flex items-center gap-1.5">
-        {!ready ? null : user ? (
-          <>
-            <Link href="/submissions" className="mr-1 hidden whitespace-nowrap text-body-md text-body transition-colors hover:text-ink xl:inline">
-              Submissions
-            </Link>
-            <Button variant="ghost" size="icon" className="text-body hover:text-ink" aria-label="Notifications">
-              <span className="relative">
-                <Bell className="h-4 w-4" />
-                <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-destructive" />
-              </span>
-            </Button>
-            <div className="ml-1 flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-1">
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="bg-hairline-soft text-[11px] font-medium text-ink">
-                  {user.username?.[0]?.toUpperCase() ?? "?"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden leading-tight sm:block">
-                <div className="text-body-md text-ink">{user.username}</div>
-                <div className="font-mono text-[10px] text-mute">{user.role ?? "—"}</div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="text-body hover:text-ink"
-                aria-label="Sign out"
-                onClick={() => {
-                  clearTokens();
-                  router.push("/login");
-                }}
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
-          </>
-        ) : (
-          // Chưa đăng nhập: chỉ mời gọi hành động, không hiện avatar hay nút "Start Solving".
-          <>
-            <Button asChild variant="ghost" size="sm" className="text-body hover:text-ink">
-              <Link href="/login">Log in</Link>
-            </Button>
-            <Button asChild size="sm" className="rounded-sm bg-ink px-3.5 text-white hover:bg-ink/90">
-              <Link href="/register">Register</Link>
-            </Button>
-          </>
-        )}
+        <div className={s.user}>
+          {!ready ? null : user ? (
+            <>
+              <button className={s.ghost} type="button" aria-label="Notifications">
+                <Bell size={20} aria-hidden="true" />
+              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={cn(s.ghost, s.account)} type="button" aria-label={`Account: ${user.username}`}>
+                    <span className={s.avatar} aria-hidden="true">
+                      {user.username?.[0]?.toUpperCase() ?? "?"}
+                    </span>
+                    <span>{user.username}</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-44">
+                  <DropdownMenuLabel>
+                    <div>{user.username}</div>
+                    <div className={s.menuRole}>{user.role ?? "USER"}</div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={signOut}>
+                    <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className={s.ghost} style={{ padding: "0 12px" }}>
+                Log in
+              </Link>
+              <Link href="/register" className={s.solid}>
+                Register
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

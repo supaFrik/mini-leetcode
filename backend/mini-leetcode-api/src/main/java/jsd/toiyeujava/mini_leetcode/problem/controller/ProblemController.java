@@ -161,8 +161,10 @@ public class ProblemController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Successfully retrieved tag list")
     })
-    public ResponseEntity<List<ProblemService.TagCount>> getTags() {
-        return ResponseEntity.ok(problemService.getTagCounts());
+    public ResponseEntity<List<ProblemService.TagCount>> getTags(
+            @Parameter(description = "Only count problems of this type (ALGORITHMIC, OOP_GRINDING)")
+            @RequestParam(required = false) ProblemType type) {
+        return ResponseEntity.ok(problemService.getTagCounts(type));
     }
 
     @GetMapping("/{idOrSlug}")

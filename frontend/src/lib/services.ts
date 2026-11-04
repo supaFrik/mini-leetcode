@@ -61,10 +61,11 @@ const normPage = <T,>(r: Raw): Page<T> => {
   return { content, totalElements, totalPages, number, size };
 };
 
-export interface ProblemQuery { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType; sort?: string }
+export interface ProblemQuery { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType; size?: number; sort?: string }
 export async function fetchProblems(p: ProblemQuery): Promise<Page<ProblemSummary>> {
   if (USE_MOCK) return mock.listProblems(p);
-  const qs = new URLSearchParams({ page: String(p.page - 1), size: "15", sort: p.sort || "id,asc" }); // backend đếm trang từ 0
+  // `size` cho phép caller chọn page size; `sort` theo định dạng Spring (`prop,dir`).
+  const qs = new URLSearchParams({ page: String(p.page - 1), size: String(p.size ?? 15), sort: p.sort ?? "id,asc" }); // backend đếm trang từ 0
   if (p.q) qs.set("search", p.q);
   if (p.difficulty) qs.set("difficulty", p.difficulty);
   if (p.type) qs.set("type", p.type);
@@ -78,10 +79,19 @@ export async function fetchProblems(p: ProblemQuery): Promise<Page<ProblemSummar
   return { ...page, content: page.content.map(normProblem) };
 }
 
-/** Danh sách chủ đề đang có trong catalogue, kèm số bài. */
-export async function fetchProblemTags(): Promise<{ tag: string; count: number }[]> {
-  if (USE_MOCK) return mock.listTags();
-  const raw = await api<Raw[]>("/api/v1/problems/tags");
+/**
+ * Đếm số bài khớp bộ lọc mà không tải nội dung: gọi trang 1 với size=1 rồi đọc totalElements.
+ * Dùng cho "Your progress" vì backend chưa có endpoint thống kê riêng.
+ */
+export async function countProblems(p: Partial<Omit<ProblemQuery, "page" | "size">>): Promise<number> {
+  const r = await fetchProblems({ page: 1, size: 1, q: p.q ?? "", difficulty: p.difficulty ?? "", progress: p.progress ?? "", tags: p.tags ?? [], type: p.type });
+  return r.totalElements;
+}
+
+/** Danh sách chủ đề đang có trong catalogue, kèm số bài. `type` lọc theo DSA/OOP. */
+export async function fetchProblemTags(type?: ProblemType): Promise<{ tag: string; count: number }[]> {
+  if (USE_MOCK) return mock.listTags(type);
+  const raw = await api<Raw[]>(`/api/v1/problems/tags${type ? `?type=${type}` : ""}`);
   return (raw ?? []).map((t) => ({ tag: String(t.tag), count: Number(t.count) }));
 }
 export async function fetchProblem(idOrSlug: string): Promise<ProblemFull> {

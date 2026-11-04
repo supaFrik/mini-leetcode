@@ -46,6 +46,8 @@ export interface ProblemSummary {
   type?: ProblemType;
   /** Tiến độ của user hiện tại. `undefined` khi chưa đăng nhập. */
   progress?: UserProgress;
+  /** Tỉ lệ AC của bài (%). Backend chưa trả field này nên được suy ra từ id khi thiếu. */
+  acceptanceRate?: number;
 }
 export interface ProblemFull extends ProblemSummary {
   description: string; // Markdown

@@ -73,10 +73,11 @@ const PROBLEMS: ProblemFull[] = Array.from({ length: 36 }, (_, i) => {
 });
 const withEdits = (p: ProblemFull): ProblemFull => ({ ...p, ...store.get<Record<number, Partial<ProblemFull>>>("mock:problemEdits", {})[p.id] });
 
-export async function listProblems(q: { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType; sort?: string }): Promise<Page<ProblemSummary>> {
+export async function listProblems(q: { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType; size?: number; sort?: string }): Promise<Page<ProblemSummary>> {
   await sleep(); ensureOnline();
   const done = new Set(store.get<SubRec[]>("mock:subs", []).filter((s) => s.verdict === "AC" && !s.run).map((s) => s.problemId));
-  const size = 15;
+  const size = q.size ?? 15;
+  const qText = q.q.trim();
   // Bộ lọc chủ đề dùng ngữ nghĩa OR + so khớp chính xác không phân biệt hoa/thường
   // (giống hệt backend: bài chỉ cần thuộc ÍT NHẤT MỘT chủ đề được chọn).
   const wanted = q.tags.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 0);
@@ -86,7 +87,7 @@ export async function listProblems(q: { page: number; q: string; difficulty: str
     acceptanceRate: Math.round((((Number(p.id) * 17 + 42) % 45) + 35) * 10) / 10,
   }))
     .filter((p) =>
-      (!q.q || p.title.toLowerCase().includes(q.q.toLowerCase()) || p.tags.join(" ").toLowerCase().includes(q.q.toLowerCase())) &&
+      (!qText || p.title.toLowerCase().includes(qText.toLowerCase()) || p.tags.join(" ").toLowerCase().includes(qText.toLowerCase()) || (/^[0-9]+$/.test(qText) && p.id === Number(qText))) &&
       (!q.difficulty || p.difficulty === q.difficulty) && (!q.progress || p.progress === q.progress) &&
       (!q.type || (p.type ?? "ALGORITHMIC") === q.type) &&
       (wanted.length === 0 || p.tags.some((t) => wanted.includes(t.toLowerCase().trim()))));
@@ -108,16 +109,17 @@ export async function listProblems(q: { page: number; q: string; difficulty: str
   const start = (q.page - 1) * size;
   return {
     content: all.slice(start, start + size).map(({ id, slug, title, difficulty, tags, progress, type, acceptanceRate }) => ({
-      id, slug, title, difficulty, tags, progress, type, acceptanceRate,
+      id, slug, title, difficulty, tags, progress, type: type ?? "ALGORITHMIC", acceptanceRate,
     })),
     totalElements: all.length, totalPages: Math.max(1, Math.ceil(all.length / size)), number: q.page - 1, size,
   };
 }
 /** Danh sách chủ đề đang có trong catalogue, kèm số bài tương ứng. */
-export async function listTags(): Promise<{ tag: string; count: number }[]> {
+export async function listTags(type?: ProblemType): Promise<{ tag: string; count: number }[]> {
   await sleep(); ensureOnline();
   const counts = new Map<string, number>();
   for (const p of PROBLEMS) {
+    if (type && (p.type ?? "ALGORITHMIC") !== type) continue;
     for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
   }
   return Array.from(counts.entries())
