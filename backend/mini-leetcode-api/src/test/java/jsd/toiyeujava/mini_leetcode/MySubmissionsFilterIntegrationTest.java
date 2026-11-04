@@ -3,6 +3,9 @@ package jsd.toiyeujava.mini_leetcode;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.auth.repository.UserRepository;
 import jsd.toiyeujava.mini_leetcode.auth.security.JwtTokenProvider;
+import jakarta.persistence.EntityManager;
+import jsd.toiyeujava.mini_leetcode.contest.entity.Contest;
+import jsd.toiyeujava.mini_leetcode.contest.repository.ContestRepository;
 import jsd.toiyeujava.mini_leetcode.entity.*;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
@@ -19,6 +22,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -36,6 +43,8 @@ class MySubmissionsFilterIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private ProblemRepository problemRepository;
     @Autowired private SubmissionRepository submissionRepository;
+    @Autowired private ContestRepository contestRepository;
+    @Autowired private EntityManager entityManager;
 
     private User alice;
     private String aliceToken;
@@ -73,6 +82,34 @@ class MySubmissionsFilterIntegrationTest {
         submit(alice, SubmissionLanguage.JAVA, SubmissionStatus.FAILED, null);   // không có verdict nhưng FAILED -> RE
         submit(alice, SubmissionLanguage.PYTHON, SubmissionStatus.PENDING, null); // -> PENDING
         submit(bob, SubmissionLanguage.JAVA, SubmissionStatus.COMPLETED, SubmissionVerdict.AC);
+        // Run (chạy thử) của alice: không được xuất hiện trong danh sách hay Summary.
+        run(alice, problem, SubmissionVerdict.AC, null);
+        run(alice, problem, SubmissionVerdict.WA, null);
+    }
+
+    private Submission run(User u, Problem p, SubmissionVerdict v, Long contestId) {
+        return submissionRepository.save(Submission.builder().user(u).problem(p).language(SubmissionLanguage.JAVA)
+                .codeStorageUri("minio://test/run").status(SubmissionStatus.COMPLETED).verdict(v)
+                .contestId(contestId).quickRun(true).build());
+    }
+
+    @Test
+    @DisplayName("A quick run with AC does not mark the problem as solved or count on a contest leaderboard")
+    void quickRunIsNotSolved() {
+        Problem onlyRun = problemRepository.save(Problem.builder().title("Run only").slug("run-only").description("d")
+                .difficulty(Difficulty.EASY).createdBy(alice).build());
+        Long contestId = contestRepository.save(Contest.builder().title("Run contest").slug("run-contest")
+                .startTime(LocalDateTime.now().minusHours(1)).endTime(LocalDateTime.now().plusHours(1))
+                .status(ContestStatus.RUNNING).createdBy(alice).build()).getId();
+        Long runId = run(alice, onlyRun, SubmissionVerdict.AC, contestId).getId();
+        entityManager.flush();
+        entityManager.clear(); // đọc lại từ DB để chắc cột is_quick_run được lưu
+
+        assertThat(submissionRepository.findById(runId).orElseThrow().isQuickRun()).isTrue();
+        assertThat(submissionRepository.findSolvedProblemIdsByUserId(alice.getId(), SubmissionVerdict.AC))
+                .containsExactly(problem.getId());
+        assertThat(submissionRepository.findByContestId(contestId)).isEmpty();
+        assertThat(submissionRepository.findWithUserByContestIdIn(List.of(contestId))).isEmpty();
     }
 
     @Test

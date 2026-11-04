@@ -81,6 +81,11 @@ public class Submission {
     @Column(name = "score_breakdown", columnDefinition = "json")
     private String scoreBreakdown;
 
+    /** Run (chạy thử) chứ không phải Submit: không tính vào thống kê, bài đã giải, bảng xếp hạng. */
+    @Column(name = "is_quick_run", nullable = false)
+    @Builder.Default
+    private boolean quickRun = false;
+
     @Column(name = "retry_count", nullable = false)
     @Builder.Default
     private Integer retryCount = 0;

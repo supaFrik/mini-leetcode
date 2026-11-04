@@ -231,7 +231,7 @@ export async function fetchMySubmissions(page: number, size = 15, filter: { verd
 }
 /** Số bài nộp theo verdict (thêm PENDING) trên toàn bộ bài nộp của user. */
 export async function fetchMySubmissionSummary(): Promise<Record<string, number>> {
-  if (USE_MOCK) return {}; // shortcut: chế độ mock không có số liệu tóm tắt, cần thì tính từ mock.mySubmissions.
+  if (USE_MOCK) return mock.mySubmissionSummary();
   return (await api<Record<string, number>>("/api/v1/submissions/my/summary")) ?? {};
 }
 export async function fetchSubmissionCode(id: number): Promise<string> {

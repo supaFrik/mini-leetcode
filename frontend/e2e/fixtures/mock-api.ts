@@ -430,6 +430,8 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
 
   let nextSubmissionId = 1000;
   const submissions = new Map<number, Submission>();
+/** Id của bài chạy thử (Run): vẫn poll được, nhưng như backend không nằm trong /submissions/my và /summary. */
+const quickRunIds = new Set<number>();
   const drafts = new Map<string, { value: string; savedAt: number }>();
 
   // Main Route Handler
@@ -716,6 +718,7 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
         createdAt: new Date().toISOString(),
       };
       submissions.set(runId, result);
+      quickRunIds.add(runId);
       return json({ success: true, statusCode: 200, data: result, ...result });
     }
 
@@ -802,7 +805,7 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
     // GET /api/v1/submissions/my/summary
     if (path === "/api/v1/submissions/my/summary" && method === "GET") {
       const counts: Record<string, number> = {};
-      for (const s of Array.from(submissions.values())) {
+      for (const s of Array.from(submissions.values()).filter((x) => !quickRunIds.has(x.id))) {
         const key = s.verdict ?? (s.status === "FAILED" ? "RE" : "PENDING");
         counts[key] = (counts[key] ?? 0) + 1;
       }
@@ -811,7 +814,7 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
 
     // GET /api/v1/submissions/my
     if (path === "/api/v1/submissions/my" && method === "GET") {
-      const list = Array.from(submissions.values());
+      const list = Array.from(submissions.values()).filter((x) => !quickRunIds.has(x.id));
       const pagePayload = {
         content: list,
         totalElements: list.length,

@@ -310,6 +310,17 @@ export async function mySubmissions(page: number, size: number): Promise<Page<Su
     totalElements: mine.length, totalPages: Math.max(1, Math.ceil(mine.length / size)), number: page, size,
   };
 }
+/** Như /submissions/my/summary: đếm theo verdict (chưa chấm xong là PENDING), bỏ Run. */
+export async function mySubmissionSummary(): Promise<Record<string, number>> {
+  await sleep(); ensureOnline();
+  const u = me();
+  const counts: Record<string, number> = {};
+  for (const r of store.get<SubRec[]>("mock:subs", []).filter((s) => s.userId === u.id && !s.run)) {
+    const key = toSubmission(r, Date.now() - r.createdAt).verdict ?? "PENDING";
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
 export async function submissionCode(id: number): Promise<string> { await sleep(100); return findSub(id).code; }
 
 const wrong = (s: string) => (s.trim() !== "" && !Number.isNaN(Number(s)) ? String(Number(s) + 1) : "wrong");

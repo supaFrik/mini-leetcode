@@ -17,13 +17,13 @@ import java.util.List;
 @Repository
 public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
-    Page<Submission> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+    Page<Submission> findByUserIdAndQuickRunFalseOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     /**
      * Bài nộp của user, lọc ở server. Khớp cách trang Submissions gọi tên verdict: bài chưa có verdict
      * mà FAILED được tính là RE, còn lại là PENDING.
      */
-    @Query("select s from Submission s where s.user.id = :userId"
+    @Query("select s from Submission s where s.user.id = :userId and s.quickRun = false"
             + " and (:language is null or s.language = :language)"
             + " and (:verdict is null or s.verdict = :verdict or (:verdict = jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict.RE"
             + "      and s.verdict is null and s.status = jsd.toiyeujava.mini_leetcode.entity.SubmissionStatus.FAILED))"
@@ -36,7 +36,8 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
                               Pageable pageable);
 
     /** Số bài nộp của user theo (verdict, status), để tóm tắt trên toàn bộ dữ liệu. */
-    @Query("select s.verdict, s.status, count(s) from Submission s where s.user.id = :userId group by s.verdict, s.status")
+    @Query("select s.verdict, s.status, count(s) from Submission s where s.user.id = :userId and s.quickRun = false"
+            + " group by s.verdict, s.status")
     List<Object[]> countByVerdictAndStatus(@Param("userId") Long userId);
 
     Page<Submission> findByProblemIdOrderByCreatedAtDesc(Long problemId, Pageable pageable);
@@ -51,15 +52,16 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     long countByProblemId(Long problemId);
 
     /** Các bài nộp (không phải "run") trong một kỳ thi, dùng để tính bảng xếp hạng. */
-    List<Submission> findByContestId(Long contestId);
+    @Query("select s from Submission s where s.contestId = :contestId and s.quickRun = false")
+    List<Submission> findByContestId(@Param("contestId") Long contestId);
 
     /** Bài nộp của nhiều kỳ thi (nạp sẵn User), để xếp hạng nhiều kỳ trong một truy vấn. */
-    @Query("select s from Submission s join fetch s.user where s.contestId in :contestIds")
+    @Query("select s from Submission s join fetch s.user where s.contestId in :contestIds and s.quickRun = false")
     List<Submission> findWithUserByContestIdIn(@Param("contestIds") Collection<Long> contestIds);
 
     /** Id các bài mà user đã có ít nhất một bài nộp được chấm AC → tiến độ DONE. */
     @Query("select distinct s.problem.id from Submission s "
-            + "where s.user.id = :userId and s.verdict = :verdict")
+            + "where s.user.id = :userId and s.verdict = :verdict and s.quickRun = false")
     List<Long> findSolvedProblemIdsByUserId(@Param("userId") Long userId,
                                              @Param("verdict") SubmissionVerdict verdict);
 

@@ -293,10 +293,14 @@ public class SubmissionController {
             submissionArchiveService.packageAndValidate(null, null, request.code(), request.language());
         }
 
-        Submission submission = submissionService.createSubmission(problemId, currentUser.getId(), request);
-
         boolean isRunEndpoint = httpRequest != null && httpRequest.getRequestURI() != null && httpRequest.getRequestURI().endsWith("/run");
         boolean isQuickRun = isRunEndpoint || Boolean.TRUE.equals(request.isQuickRun());
+        // /run không gửi cờ trong body; ghi cờ vào request trước khi lưu để DB khớp với task.
+        SubmitCodeRequest toSave = isQuickRun == Boolean.TRUE.equals(request.isQuickRun()) ? request
+                : new SubmitCodeRequest(request.problemId(), request.language(), request.code(), request.files(),
+                        request.contestId(), true, request.archiveBytes(), request.codeStorageUri());
+
+        Submission submission = submissionService.createSubmission(problemId, currentUser.getId(), toSave);
 
         SubmissionTaskMessage taskMessage = new SubmissionTaskMessage(
                 submission.getId(),

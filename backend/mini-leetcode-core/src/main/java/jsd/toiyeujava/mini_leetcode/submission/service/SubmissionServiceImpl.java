@@ -192,6 +192,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .contestId(request.contestId())
                 .language(request.language())
                 .codeStorageUri(codeStorageUri)
+                .quickRun(Boolean.TRUE.equals(request.isQuickRun()))
                 .status(SubmissionStatus.PENDING)
                 .verdict(null)
                 .passTestCases(0)
@@ -264,7 +265,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (userId == null) {
             throw new ResourceNotFoundException("User not found with id: null");
         }
-        return submissionRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
+        return submissionRepository.findByUserIdAndQuickRunFalseOrderByCreatedAtDesc(userId, pageable)
                 .map(SubmissionResponse::fromEntity);
     }
 

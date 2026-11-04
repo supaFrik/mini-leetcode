@@ -566,7 +566,7 @@ class SubmissionServiceTest {
                 .build();
 
         PageRequest pageable = PageRequest.of(0, 10);
-        when(submissionRepository.findByUserIdOrderByCreatedAtDesc(1L, pageable))
+        when(submissionRepository.findByUserIdAndQuickRunFalseOrderByCreatedAtDesc(1L, pageable))
                 .thenReturn(new PageImpl<>(List.of(s1), pageable, 1));
 
         Page<SubmissionResponse> responses = submissionService.getUserSubmissions(1L, pageable);

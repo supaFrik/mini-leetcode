@@ -106,6 +106,22 @@ test.describe("/submissions", () => {
     await expect(rows(page)).toHaveCount(4);
   });
 
+  test("a quick run is left out of the list and the summary", async ({ page }) => {
+    await page.goto("/submissions");
+    await expect(page.getByText("No submissions yet")).toBeVisible();
+
+    await page.evaluate(async () => {
+      const post = (url: string) =>
+        fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ language: "JAVA", code: "class A {}" }) });
+      await post("/api/v1/problems/1/run");
+      await post("/api/v1/problems/1/submit");
+    });
+    await page.reload();
+
+    await expect(rows(page)).toHaveCount(1);
+    await expect(page.getByRole("complementary", { name: "Submission summary" })).toContainText("1 / 1 accepted");
+  });
+
   test("pages on the server while the summary counts every submission", async ({ page }) => {
     const many = Array.from({ length: 25 }, (_, i) => ({
       ...SUBMISSIONS[2],
