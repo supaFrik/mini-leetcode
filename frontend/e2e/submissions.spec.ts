@@ -60,6 +60,7 @@ test.describe("/submissions", () => {
     const summary = page.getByRole("complementary", { name: "Submission summary" });
     await expect(summary).toContainText("2 / 4 accepted");
     await expect(summary.getByText("Wrong Answer").locator("..")).toContainText("1");
+    await expect(summary.getByText("Runtime Error").locator("..")).toContainText("0");
   });
 
   test("filters by verdict and language, with a no-match state", async ({ page }) => {

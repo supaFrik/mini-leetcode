@@ -24,7 +24,7 @@ const labelOf = (k: Key) => (k === "PENDING" ? "Pending" : VERDICT[k]?.label ?? 
 
 const VERDICT_OPTIONS: Key[] = ["AC", "WA", "TLE", "MLE", "RE", "CE", "PENDING"];
 /** Luôn hiện trong Summary (như bản mẫu); verdict khác chỉ hiện khi có. */
-const SUMMARY_BASE: Key[] = ["AC", "WA", "TLE", "CE", "PENDING"];
+const SUMMARY_BASE: Key[] = ["AC", "WA", "TLE", "RE", "CE", "PENDING"];
 
 const LANG_LABEL: Record<string, string> = { JAVA: "Java 17", PYTHON: "Python 3", CPP: "C++ 20" };
 const langLabel = (l?: string) => (l ? LANG_LABEL[l] ?? l : "—");
