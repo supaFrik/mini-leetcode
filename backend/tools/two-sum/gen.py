@@ -38,15 +38,15 @@ def pair_count(nums, target):
 def long_case(rng, n, i, j):
     """Mảng n phần tử, đáp án duy nhất tại (i, j)."""
     while True:
-        nums = [rng.randint(-LIMIT, LIMIT) for _ in range(n)]
-        target = rng.randint(-LIMIT, LIMIT)
-        nums[i] = rng.randint(max(-LIMIT, target - LIMIT), min(LIMIT, target + LIMIT))
+        nums = [rng.randint(-LIMIT, LIMIT) for _ in range(n)]  # NOSONAR test data generation, not security-sensitive
+        target = rng.randint(-LIMIT, LIMIT)  # NOSONAR test data generation, not security-sensitive
+        nums[i] = rng.randint(max(-LIMIT, target - LIMIT), min(LIMIT, target + LIMIT))  # NOSONAR test data generation, not security-sensitive
         nums[j] = target - nums[i]
         if pair_count(nums, target) == 1:
             return nums, target
 
 
-rng = random.Random(20261104)
+rng = random.Random(20261104)  # NOSONAR test data generation, not security-sensitive
 CASES = [
     # (tên, nums, target, ẩn?)
     ("example-1", [3, 8, 11, 5], 13, False),

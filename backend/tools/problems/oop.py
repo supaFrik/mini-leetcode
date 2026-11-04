@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dsa import write_cases  # noqa: E402
 
-rng = random.Random(20261105)
+rng = random.Random(20261105)  # NOSONAR test data generation, not security-sensitive
 
 
 # ---------------------------------------------------------------- lời giải chuẩn
@@ -178,14 +178,14 @@ def bank_random(q):
     ids = [f"acc{i}" for i in range(40)]
     rows = []
     for _ in range(q):
-        r = rng.random()
-        who = rng.choice(ids)
+        r = rng.random()  # NOSONAR test data generation, not security-sensitive
+        who = rng.choice(ids)  # NOSONAR test data generation, not security-sensitive
         if r < 0.1:
-            rows.append(f"OPEN {who} {rng.choice([0, -5, rng.randint(1, 10**9)])}")
+            rows.append(f"OPEN {who} {rng.choice([0, -5, rng.randint(1, 10**9)])}")  # NOSONAR test data generation, not security-sensitive
         elif r < 0.4:
-            rows.append(f"DEPOSIT {who} {rng.choice([0, -1, rng.randint(1, 10**9)])}")
+            rows.append(f"DEPOSIT {who} {rng.choice([0, -1, rng.randint(1, 10**9)])}")  # NOSONAR test data generation, not security-sensitive
         elif r < 0.8:
-            rows.append(f"WITHDRAW {who} {rng.randint(-1, 2 * 10**9)}")
+            rows.append(f"WITHDRAW {who} {rng.randint(-1, 2 * 10**9)}")  # NOSONAR test data generation, not security-sensitive
         else:
             rows.append(f"BALANCE {who}")
     return cmds(rows)
@@ -194,9 +194,9 @@ def bank_random(q):
 def safe_area_line():
     """Một hình có diện tích không nằm sát mốc làm tròn .xx5, để mọi ngôn ngữ in giống nhau."""
     while True:
-        kind = rng.choice(["CIRCLE", "RECTANGLE", "TRIANGLE"])
+        kind = rng.choice(["CIRCLE", "RECTANGLE", "TRIANGLE"])  # NOSONAR test data generation, not security-sensitive
         n = {"CIRCLE": 1, "RECTANGLE": 2, "TRIANGLE": 3}[kind]
-        vals = [rng.randint(-20, 1000) if rng.random() < 0.05 else rng.randint(1, 1000) for _ in range(n)]
+        vals = [rng.randint(-20, 1000) if rng.random() < 0.05 else rng.randint(1, 1000) for _ in range(n)]  # NOSONAR test data generation, not security-sensitive
         row = f"{kind} {' '.join(map(str, vals))}"
         if solve_shape_area(f"1\n{row}") == "INVALID" or not near_half(kind, vals):
             return row
@@ -218,17 +218,17 @@ def library_random(q):
     members = [f"M{i}" for i in range(25)]
     rows = []
     for _ in range(q):
-        r = rng.random()
+        r = rng.random()  # NOSONAR test data generation, not security-sensitive
         if r < 0.08:
-            rows.append(f"ADD_BOOK {rng.choice(books)} {rng.randint(-1, 4)}")
+            rows.append(f"ADD_BOOK {rng.choice(books)} {rng.randint(-1, 4)}")  # NOSONAR test data generation, not security-sensitive
         elif r < 0.15:
-            rows.append(f"ADD_MEMBER {rng.choice(members)} {rng.choice(['STUDENT', 'TEACHER', 'GUEST'])}")
+            rows.append(f"ADD_MEMBER {rng.choice(members)} {rng.choice(['STUDENT', 'TEACHER', 'GUEST'])}")  # NOSONAR test data generation, not security-sensitive
         elif r < 0.6:
-            rows.append(f"BORROW {rng.choice(members)} {rng.choice(books)}")
+            rows.append(f"BORROW {rng.choice(members)} {rng.choice(books)}")  # NOSONAR test data generation, not security-sensitive
         elif r < 0.9:
-            rows.append(f"RETURN {rng.choice(members)} {rng.choice(books)}")
+            rows.append(f"RETURN {rng.choice(members)} {rng.choice(books)}")  # NOSONAR test data generation, not security-sensitive
         else:
-            rows.append(f"AVAILABLE {rng.choice(books)}")
+            rows.append(f"AVAILABLE {rng.choice(books)}")  # NOSONAR test data generation, not security-sensitive
     return cmds(rows)
 
 
@@ -236,14 +236,14 @@ def parking_random(s, m, l, q):
     plates = [f"P{i:03d}" for i in range(200)]
     rows, issued = [], 0
     for _ in range(q):
-        r = rng.random()
+        r = rng.random()  # NOSONAR test data generation, not security-sensitive
         if r < 0.55:
-            rows.append(f"PARK {rng.choice(plates)} {rng.choice(['MOTORCYCLE', 'CAR', 'CAR', 'BUS', 'TRUCK'])}")
+            rows.append(f"PARK {rng.choice(plates)} {rng.choice(['MOTORCYCLE', 'CAR', 'CAR', 'BUS', 'TRUCK'])}")  # NOSONAR test data generation, not security-sensitive
             issued += 1
         elif r < 0.9:
-            rows.append(f"LEAVE T{rng.randint(1, max(1, issued))}")
+            rows.append(f"LEAVE T{rng.randint(1, max(1, issued))}")  # NOSONAR test data generation, not security-sensitive
         else:
-            rows.append(f"FREE {rng.choice('SMLX')}")
+            rows.append(f"FREE {rng.choice('SMLX')}")  # NOSONAR test data generation, not security-sensitive
     return f"{s} {m} {l}\n{len(rows)}\n" + "\n".join(rows)
 
 
@@ -253,13 +253,13 @@ def events_random(q):
     words = ["build", "passed", "deploy", "started", "order", "shipped", "price", "dropped"]
     rows = []
     for _ in range(q):
-        r = rng.random()
+        r = rng.random()  # NOSONAR test data generation, not security-sensitive
         if r < 0.4:
-            rows.append(f"SUBSCRIBE {rng.choice(users)} {rng.choice(topics)}")
+            rows.append(f"SUBSCRIBE {rng.choice(users)} {rng.choice(topics)}")  # NOSONAR test data generation, not security-sensitive
         elif r < 0.6:
-            rows.append(f"UNSUBSCRIBE {rng.choice(users)} {rng.choice(topics)}")
+            rows.append(f"UNSUBSCRIBE {rng.choice(users)} {rng.choice(topics)}")  # NOSONAR test data generation, not security-sensitive
         else:
-            rows.append(f"PUBLISH {rng.choice(topics)} {' '.join(rng.choices(words, k=rng.randint(1, 4)))}")
+            rows.append(f"PUBLISH {rng.choice(topics)} {' '.join(rng.choices(words, k=rng.randint(1, 4)))}")  # NOSONAR test data generation, not security-sensitive
     return cmds(rows)
 
 

@@ -12,7 +12,7 @@ import string
 import sys
 from pathlib import Path
 
-rng = random.Random(20261104)
+rng = random.Random(20261104)  # NOSONAR test data generation, not security-sensitive
 
 
 # ---------------------------------------------------------------- lời giải chuẩn
@@ -187,10 +187,10 @@ def line(nums):
 def brackets(n, valid):
     out, stack = [], []
     for i in range(n):
-        if stack and (rng.random() < 0.5 or len(stack) >= n - i):
+        if stack and (rng.random() < 0.5 or len(stack) >= n - i):  # NOSONAR test data generation, not security-sensitive
             out.append({"(": ")", "[": "]", "{": "}"}[stack.pop()])
         else:
-            ch = rng.choice("([{")
+            ch = rng.choice("([{")  # NOSONAR test data generation, not security-sensitive
             out.append(ch)
             stack.append(ch)
     s = "".join(out)
@@ -198,49 +198,49 @@ def brackets(n, valid):
 
 
 def grid(m, n, p):
-    return f"{m} {n}\n" + "\n".join("".join("1" if rng.random() < p else "0" for _ in range(n)) for _ in range(m))
+    return f"{m} {n}\n" + "\n".join("".join("1" if rng.random() < p else "0" for _ in range(n)) for _ in range(m))  # NOSONAR test data generation, not security-sensitive
 
 
 def top_k_case(distinct, k, low, high):
-    values = rng.sample(range(-10000, 10001), distinct)
-    freq = [rng.randint(high + 1, high + 60) for _ in range(k)] + [rng.randint(low, high) for _ in range(distinct - k)]
+    values = rng.sample(range(-10000, 10001), distinct)  # NOSONAR test data generation, not security-sensitive
+    freq = [rng.randint(high + 1, high + 60) for _ in range(k)] + [rng.randint(low, high) for _ in range(distinct - k)]  # NOSONAR test data generation, not security-sensitive
     nums = [v for v, f in zip(values, freq) for _ in range(f)]
-    rng.shuffle(nums)
+    rng.shuffle(nums)  # NOSONAR test data generation, not security-sensitive
     return f"{line(nums)}\n{k}"
 
 
 def dag(n, m, cycle):
     order = list(range(n))
-    rng.shuffle(order)
+    rng.shuffle(order)  # NOSONAR test data generation, not security-sensitive
     edges = set()
     while len(edges) < m:
-        i, j = sorted(rng.sample(range(n), 2))
+        i, j = sorted(rng.sample(range(n), 2))  # NOSONAR test data generation, not security-sensitive
         edges.add((order[j], order[i]))  # học order[j] cần học order[i] trước
     edges = list(edges)
     if cycle:
         a, b = edges[0]
         edges.append((b, a))
-    rng.shuffle(edges)
+    rng.shuffle(edges)  # NOSONAR test data generation, not security-sensitive
     return f"{n} {len(edges)}\n" + "\n".join(f"{a} {b}" for a, b in edges)
 
 
 def sorted_lists(sizes):
-    lists = [sorted(rng.randint(-10000, 10000) for _ in range(s)) for s in sizes]
+    lists = [sorted(rng.randint(-10000, 10000) for _ in range(s)) for s in sizes]  # NOSONAR test data generation, not security-sensitive
     return f"{len(lists)}\n" + "\n".join(line(x) for x in lists)
 
 
 def ladder(length, steps, noise):
     letters = string.ascii_lowercase
-    w = "".join(rng.choice(letters) for _ in range(length))
+    w = "".join(rng.choice(letters) for _ in range(length))  # NOSONAR test data generation, not security-sensitive
     begin, path = w, []
     for _ in range(steps):
-        i = rng.randrange(length)
-        w = w[:i] + rng.choice(letters.replace(w[i], "")) + w[i + 1:]
+        i = rng.randrange(length)  # NOSONAR test data generation, not security-sensitive
+        w = w[:i] + rng.choice(letters.replace(w[i], "")) + w[i + 1:]  # NOSONAR test data generation, not security-sensitive
         path.append(w)
-    words = set(path) | {"".join(rng.choice(letters) for _ in range(length)) for _ in range(noise)}
+    words = set(path) | {"".join(rng.choice(letters) for _ in range(length)) for _ in range(noise)}  # NOSONAR test data generation, not security-sensitive
     words.discard(begin)
     words = sorted(words)
-    rng.shuffle(words)
+    rng.shuffle(words)  # NOSONAR test data generation, not security-sensitive
     return f"{begin} {path[-1]}\n{' '.join(words)}"
 
 
@@ -260,23 +260,23 @@ PROBLEMS = [
         ("empty", "", True),
         ("single", "42", True),
         ("duplicates", "3 3 -1 3 0 0", True),
-        ("long", line(rng.randint(-5000, 5000) for _ in range(5000)), True),
+        ("long", line(rng.randint(-5000, 5000) for _ in range(5000)), True),  # NOSONAR test data generation, not security-sensitive
     ]),
     ("binary-search", solve_binary_search, [
         ("example-1", "-3 0 4 8 15\n8", False),
         ("example-2", "2 5 9\n4", False),
         ("single-found", "7\n7", True),
         ("single-missing", "7\n-7", True),
-        ("long-last", (lambda a: f"{line(a)}\n{a[-1]}")(sorted(rng.sample(range(-10000, 10001), 10000))), True),
-        ("long-below-min", (lambda a: f"{line(a)}\n{a[0] - 1}")(sorted(rng.sample(range(-9999, 10001), 10000))), True),
+        ("long-last", (lambda a: f"{line(a)}\n{a[-1]}")(sorted(rng.sample(range(-10000, 10001), 10000))), True),  # NOSONAR test data generation, not security-sensitive
+        ("long-below-min", (lambda a: f"{line(a)}\n{a[0] - 1}")(sorted(rng.sample(range(-9999, 10001), 10000))), True),  # NOSONAR test data generation, not security-sensitive
     ]),
     ("longest-substring-without-repeating-characters", solve_longest_substring, [
         ("example-1", "xyzxyzz", False),
         ("example-2", "bbbb", False),
         ("empty", "", True),
         ("single", "Q", True),
-        ("all-printable", "".join(rng.sample([chr(c) for c in range(33, 127)], 94)), True),
-        ("long-mixed", "".join(rng.choice(string.ascii_letters + string.digits + "!@#$%") for _ in range(50000)), True),
+        ("all-printable", "".join(rng.sample([chr(c) for c in range(33, 127)], 94)), True),  # NOSONAR test data generation, not security-sensitive
+        ("long-mixed", "".join(rng.choice(string.ascii_letters + string.digits + "!@#$%") for _ in range(50000)), True),  # NOSONAR test data generation, not security-sensitive
     ]),
     ("number-of-islands", solve_number_of_islands, [
         ("example-1", "4 5\n11000\n11000\n00100\n00011", False),
@@ -293,7 +293,7 @@ PROBLEMS = [
         ("only-ones", "1\n10000", True),
         ("huge-coin", "2147483647 3\n9999", True),
         ("even-coins-odd-amount", "2 4 6 8 10 12 14 16 18 20 22 24\n9999", True),
-        ("random-12", f"{line(rng.sample(range(1, 500), 12))}\n10000", True),
+        ("random-12", f"{line(rng.sample(range(1, 500), 12))}\n10000", True),  # NOSONAR test data generation, not security-sensitive
     ]),
     ("top-k-frequent-elements", solve_top_k_frequent, [
         ("example-1", "5 5 5 2 2 9\n2", False),
@@ -326,7 +326,7 @@ PROBLEMS = [
         ("single-bar", "7", True),
         ("increasing", line(range(20000)), True),
         ("deep-valley", "100000 0 0 0 0 100000", True),
-        ("long-random", line(rng.randint(0, 100000) for _ in range(20000)), True),
+        ("long-random", line(rng.randint(0, 100000) for _ in range(20000)), True),  # NOSONAR test data generation, not security-sensitive
     ]),
     ("word-ladder", solve_word_ladder, [
         ("example-1", "cold warm\ncord card ward warm wore", False),

@@ -10,7 +10,16 @@ const INDENT = "    ";
 export function formatCode(code: string, lang: Language): string {
   const lines = code.replace(/\r\n?/g, "\n").replace(/\t/g, INDENT).split("\n").map((l) => l.trimEnd());
   const out = lang === "JAVA" ? reindentJava(lines) : lines;
-  return out.join("\n").replace(/\n{3,}/g, "\n\n").replace(/\n*$/, "\n");
+  // Mỗi dòng đã trimEnd nên trimEnd ở đây chỉ bỏ các dòng trống cuối, tránh regex /\n*$/ (backtracking).
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+}
+
+/** Vị trí ngay sau dấu đóng của chuỗi hoặc ký tự mở tại `start` (bỏ qua ký tự đứng sau `\`). */
+function skipQuoted(line: string, start: number): number {
+  const quote = line[start];
+  let j = start + 1;
+  while (j < line.length && line[j] !== quote) j += line[j] === "\\" ? 2 : 1;
+  return j + 1;
 }
 
 function reindentJava(lines: string[]): string[] {
@@ -28,7 +37,8 @@ function reindentJava(lines: string[]): string[] {
     let open = 0;
     let leadingClose = 0;
     let seenCode = false;
-    for (let i = 0; i < line.length; i++) {
+    let i = 0;
+    while (i < line.length) {
       const ch = line[i];
       if (ch === "/" && line[i + 1] === "/") break;
       if (ch === "/" && line[i + 1] === "*") {
@@ -37,11 +47,11 @@ function reindentJava(lines: string[]): string[] {
           inBlockComment = true;
           break;
         }
-        i = end + 1;
+        i = end + 2;
         continue;
       }
       if (ch === '"' || ch === "'") {
-        for (i++; i < line.length && line[i] !== ch; i++) if (line[i] === "\\") i++;
+        i = skipQuoted(line, i);
         seenCode = true;
         continue;
       }
@@ -50,6 +60,7 @@ function reindentJava(lines: string[]): string[] {
         if (!seenCode) leadingClose++;
         open--;
       } else if (ch !== " ") seenCode = true;
+      i++;
     }
     const text = INDENT.repeat(Math.max(0, depth - leadingClose)) + line;
     depth = Math.max(0, depth + open);

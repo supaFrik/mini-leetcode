@@ -46,6 +46,13 @@ test.describe("formatCode", () => {
     );
   });
 
+  test("skips escaped quotes and block comments that close on the same line", () => {
+    const code = ['class A {', 'String t = "a\\"{";', "char c = '\\'';", "/* { */ int x = 1;", "}"].join("\n");
+    expect(formatCode(code, "JAVA")).toBe(
+      ['class A {', '    String t = "a\\"{";', "    char c = '\\'';", "    /* { */ int x = 1;", "}", ""].join("\n")
+    );
+  });
+
   test("keeps Python indentation, only expands tabs and trims trailing spaces", () => {
     expect(formatCode("def f():\n\treturn 1   \n", "PYTHON")).toBe("def f():\n    return 1\n");
   });
