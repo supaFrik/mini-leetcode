@@ -308,7 +308,14 @@ public class ProblemService {
                     query.distinct(true);
                 }
             }
-            if (progress != null && userId != null) {
+            if (progress != null && userId == null) {
+                // Khách (hoặc token hết hạn → server coi là khách) chưa giải / chưa thử bài nào:
+                // DONE và IN_PROGRESS rỗng, NEVER là toàn bộ. Không được bỏ qua bộ lọc,
+                // nếu không "đã giải" sẽ bằng tổng số bài.
+                if (progress == UserProgress.DONE || progress == UserProgress.IN_PROGRESS) {
+                    predicates.add(cb.disjunction());
+                }
+            } else if (progress != null) {
                 switch (progress) {
                     case DONE -> predicates.add(root.get("id").in(solved));
                     case IN_PROGRESS -> predicates.add(cb.and(

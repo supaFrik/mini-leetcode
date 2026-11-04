@@ -96,29 +96,36 @@ function SkeletonRows() {
 interface Stats {
   /** Toàn kho (mọi loại) — cho dòng tóm tắt cạnh tiêu đề. */
   total: number;
-  solved: number | null;
-  /** Theo loại đang chọn, từng độ khó. `null` khi chưa đăng nhập. */
-  byLevel: { total: number; solved: number }[] | null;
+  /** Số bài user có bài nộp Accepted (toàn kho). 0 khi server không nhận ra user. */
+  solved: number;
+  /** Server có nhận ra user hay không (mỗi bài trả về có trường `progress`). */
+  recognized: boolean;
+  /** Theo loại đang chọn, từng độ khó. */
+  byLevel: { total: number; solved: number }[];
 }
 
-async function loadStats(type: ProblemType | "", signedIn: boolean): Promise<Stats> {
+/**
+ * Số "đã giải" chỉ tin vào server: nếu server không nhận ra user (chưa đăng nhập, token
+ * hết hạn...) thì các bài không có `progress` và số đã giải là 0, dù localStorage còn token.
+ * Nhờ vậy dòng tóm tắt, Your progress, dấu tick và bộ lọc Status luôn cùng một nguồn.
+ */
+async function loadStats(type: ProblemType | ""): Promise<Stats> {
   const t = type || undefined;
-  if (!signedIn) {
-    return { total: await countProblems({}), solved: null, byLevel: null };
+  const probe = await fetchProblems({ page: 1, size: 1, q: "", difficulty: "", progress: "", tags: [] });
+  const recognized = probe.content[0]?.progress != null;
+  const totals = await Promise.all(LEVELS.map((l) => countProblems({ type: t, difficulty: l.value })));
+  if (!recognized) {
+    return { total: probe.totalElements, solved: 0, recognized, byLevel: totals.map((total) => ({ total, solved: 0 })) };
   }
-  const calls = [
-    countProblems({}),
+  const [solved, ...solvedByLevel] = await Promise.all([
     countProblems({ progress: "DONE" }),
-    ...LEVELS.flatMap((l) => [
-      countProblems({ type: t, difficulty: l.value }),
-      countProblems({ type: t, difficulty: l.value, progress: "DONE" }),
-    ]),
-  ];
-  const [total, solved, ...rest] = await Promise.all(calls);
+    ...LEVELS.map((l) => countProblems({ type: t, difficulty: l.value, progress: "DONE" })),
+  ]);
   return {
-    total,
+    total: probe.totalElements,
     solved,
-    byLevel: LEVELS.map((_, i) => ({ total: rest[i * 2], solved: rest[i * 2 + 1] })),
+    recognized,
+    byLevel: totals.map((total, i) => ({ total, solved: solvedByLevel[i] })),
   };
 }
 
@@ -170,7 +177,7 @@ export function ProblemsView() {
     return () => {
       ignore = true;
     };
-  }, [page, q, difficulty, progress, topic, type, listTry]);
+  }, [page, q, difficulty, progress, topic, type, listTry, signedIn]);
 
   /* ---- Chủ đề (đếm theo loại đang chọn) ---- */
   const [topics, setTopics] = useState<Load<{ tag: string; count: number }[]>>({ state: "loading" });
@@ -193,7 +200,7 @@ export function ProblemsView() {
     if (!userReady) return;
     let ignore = false;
     setStats({ state: "loading" });
-    loadStats(type, signedIn)
+    loadStats(type)
       .then((data) => !ignore && setStats({ state: "ok", data }))
       .catch((e) => !ignore && setStats({ state: "error", message: errorMessage(e) }));
     return () => {
@@ -246,7 +253,7 @@ export function ProblemsView() {
   let summary = "";
   if (stats.state === "ok") {
     const { total, solved } = stats.data;
-    summary = total === 0 ? "No problems yet" : solved == null ? `${total} problems` : `${total} problems, ${solved} solved`;
+    summary = total === 0 ? "No problems yet" : `${total} problems, ${solved} solved`;
   }
 
   return (
@@ -375,24 +382,22 @@ export function ProblemsView() {
 
           {/* ================= Aside ================= */}
           <aside className={s.aside} aria-label="Filters and progress">
-            {signedIn && (
-              <section>
-                <h2>Status</h2>
-                <div className={s.status} role="group" aria-label="Filter by status">
-                  {STATUSES.map((st) => (
-                    <button
-                      key={st.value || "any"}
-                      type="button"
-                      aria-pressed={progress === st.value}
-                      onClick={() => set({ progress: st.value || null })}
-                    >
-                      {st.icon && <st.icon size={15} aria-hidden="true" />}
-                      {st.label}
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
+            <section>
+              <h2>Status</h2>
+              <div className={s.status} role="group" aria-label="Filter by status">
+                {STATUSES.map((st) => (
+                  <button
+                    key={st.value || "any"}
+                    type="button"
+                    aria-pressed={progress === st.value}
+                    onClick={() => set({ progress: st.value || null })}
+                  >
+                    {st.icon && <st.icon size={15} aria-hidden="true" />}
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+            </section>
 
             <section>
               <h2>Your progress</h2>
@@ -407,20 +412,13 @@ export function ProblemsView() {
                     Try again
                   </button>
                 </div>
-              ) : !stats.data.byLevel ? (
-                <p className={s.note}>
-                  <Link href="/login?next=/problems" className={s.link} style={{ padding: 0 }}>
-                    Log in
-                  </Link>{" "}
-                  to track your progress.
-                </p>
               ) : (
                 <>
                   <p className={s.score}>
                     <b>{stats.data.byLevel.reduce((a, l) => a + l.solved, 0)}</b> / {stats.data.byLevel.reduce((a, l) => a + l.total, 0)} solved
                   </p>
                   {LEVELS.map((l, i) => {
-                    const { total, solved } = stats.data.byLevel![i];
+                    const { total, solved } = stats.data.byLevel[i];
                     return (
                       <div key={l.value} className={s.prog}>
                         <div className={s.progHead}>
@@ -442,6 +440,14 @@ export function ProblemsView() {
                       </div>
                     );
                   })}
+                  {!stats.data.recognized && (
+                    <p className={s.note}>
+                      <Link href="/login?next=/problems" className={s.link} style={{ padding: 0, minHeight: 0 }}>
+                        Log in
+                      </Link>{" "}
+                      to track your progress.
+                    </p>
+                  )}
                 </>
               )}
             </section>

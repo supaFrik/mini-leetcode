@@ -12,6 +12,8 @@ import jsd.toiyeujava.mini_leetcode.entity.Role;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.entity.UserStatus;
 import jsd.toiyeujava.mini_leetcode.auth.repository.UserRepository;
+import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
+import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -54,6 +56,9 @@ class ProblemAndTestCaseIntegrationTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ProblemRepository problemRepository;
 
     @MockBean
     private StorageService storageService;
@@ -472,5 +477,48 @@ class ProblemAndTestCaseIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.title").value("Bad Request"));
+    }
+
+    @Test
+    @DisplayName("Progress filter: anonymous / unrecognised callers and users without submissions have solved nothing")
+    void progressFilter_withoutSolvedSubmissions_countsZeroSolved() throws Exception {
+        User author = userRepository.findByUsername("instructor1").orElseThrow();
+        for (String slug : new String[]{"progress-one", "progress-two"}) {
+            problemRepository.save(Problem.builder()
+                    .title(slug).slug(slug).description("Desc").difficulty(Difficulty.EASY)
+                    .status(ProblemStatus.PUBLISHED).createdBy(author).build());
+        }
+        long published = objectMapper.readTree(mockMvc.perform(get("/api/v1/problems").param("size", "100"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString())
+                .get("page").get("totalElements").asLong();
+        assertThat(published).isGreaterThanOrEqualTo(2);
+
+        // Anonymous, and an invalid/expired token (the filter treats it as anonymous):
+        // DONE / IN_PROGRESS must be empty instead of silently ignoring the filter.
+        for (String auth : new String[]{null, "Bearer not.a.valid-token"}) {
+            for (String progress : new String[]{"DONE", "IN_PROGRESS"}) {
+                var req = get("/api/v1/problems").param("progress", progress).param("size", "100");
+                if (auth != null) req = req.header("Authorization", auth);
+                mockMvc.perform(req)
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.page.totalElements").value(0));
+            }
+            var never = get("/api/v1/problems").param("progress", "NEVER").param("size", "100");
+            if (auth != null) never = never.header("Authorization", auth);
+            mockMvc.perform(never)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.page.totalElements").value(published));
+        }
+
+        // A signed-in user with no submissions: same counts, and every row says NEVER.
+        mockMvc.perform(get("/api/v1/problems").param("progress", "DONE").param("size", "100")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page.totalElements").value(0));
+        mockMvc.perform(get("/api/v1/problems").param("progress", "NEVER").param("size", "100")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page.totalElements").value(published))
+                .andExpect(jsonPath("$.content[?(@.progress != 'NEVER')]").isEmpty());
     }
 }
