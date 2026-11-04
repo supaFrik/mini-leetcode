@@ -387,7 +387,7 @@ public class ContestService {
             participantRepository.save(participant);
         }
 
-        return toResponse(contest, userId);
+        return toResponses(List.of(contest), userId).get(0);
     }
 
     // ---------------- Plagiarism ----------------
