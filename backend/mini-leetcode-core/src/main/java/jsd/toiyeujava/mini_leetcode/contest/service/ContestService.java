@@ -122,17 +122,33 @@ public class ContestService {
             }
         }
 
+        // Kết quả của chính user ở kỳ thi đã kết thúc, lấy từ bảng xếp hạng (không lưu thêm vào DB).
+        ContestStatus effective = contest.resolveStatus();
+        Integer myRank = null;
+        Integer mySolved = null;
+        if (userId != null && myStatus != null && effective == ContestStatus.COMPLETED) {
+            LeaderboardRowResponse mine = getLeaderboard(contest.getId()).stream()
+                    .filter(r -> userId.equals(r.userId()))
+                    .findFirst().orElse(null);
+            if (mine != null) {
+                myRank = mine.rank();
+                mySolved = mine.solved();
+            }
+        }
+
         return new ContestResponse(
                 contest.getId(),
                 contest.getTitle(),
                 contest.getStartTime(),
                 contest.getEndTime(),
-                contest.resolveStatus(),
+                effective,
                 contest.getScoringPolicy(),
                 contest.getMaxViolationsAllowed(),
                 problems,
                 myStatus,
-                myViolations);
+                myViolations,
+                myRank,
+                mySolved);
     }
 
     // ---------------- Leaderboard ----------------

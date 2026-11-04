@@ -8,10 +8,10 @@ import { DifficultyBadge } from "@/components/problems/difficulty-badge";
 import { useCountdown } from "@/hooks/use-countdown";
 import { USE_MOCK, errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
-import { fetchContest, fetchContests, fetchLeaderboard, registerContest, resetMockExam } from "@/lib/services";
+import { fetchContest, fetchLeaderboard, registerContest, resetMockExam } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import { ContestReport } from "./contest-report";
-import { fmtDateTime, fmtDuration, fmtLong } from "@/lib/format";
+import { fmtDateTime, fmtDuration } from "@/lib/format";
 import { useUser } from "@/hooks/use-user";
 import type { ContestInfo, ContestStatus, LeaderboardRow } from "@/types/api";
 
@@ -54,87 +54,6 @@ function useAsync<T>(load: () => Promise<T>, deps: unknown[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, n]);
   return { data, error, reload: () => setN((x) => x + 1) };
-}
-
-function Countdown({ target, prefix }: { target: number; prefix: string }) {
-  const left = useCountdown(target);
-  return (
-    <span className="font-mono text-body-sm text-mute">
-      {left == null ? "" : `${prefix} ${fmtLong(left)}`}
-    </span>
-  );
-}
-
-const SECTIONS: { status: ContestStatus; title: string; empty: string }[] = [
-  { status: "RUNNING", title: "Live", empty: "No contests currently in progress." },
-  { status: "SCHEDULED", title: "Upcoming", empty: "No upcoming contests scheduled." },
-  { status: "COMPLETED", title: "Ended", empty: "No past contests found." },
-];
-
-export function ContestList() {
-  const { data, error, reload } = useAsync(fetchContests, []);
-  if (error)
-    return (
-      <Note error>
-        {error}{" "}
-        <button className="underline" onClick={reload}>
-          Try again
-        </button>
-      </Note>
-    );
-  if (!data)
-    return (
-      <div className="mx-auto max-w-3xl space-y-3 p-6">
-        {Array.from({ length: 3 }, (_, i) => (
-          <div key={i} className="h-20 animate-pulse rounded-xl border border-border bg-hairline-soft" />
-        ))}
-      </div>
-    );
-  return (
-    <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
-      {SECTIONS.map(({ status, title, empty }) => {
-        const list = data.filter((c) => c.status === status);
-        return (
-          <section key={status} className="space-y-3" aria-label={title}>
-            <h2 className="text-heading-md text-ink">
-              {title} <span className="font-normal text-mute">({list.length})</span>
-            </h2>
-            {list.length === 0 && (
-              <p className="rounded-xl border border-dashed border-border p-5 text-body-md text-mute">{empty}</p>
-            )}
-            {list.map((c) => (
-              <Link
-                key={c.id}
-                href={`/exam/${c.id}`}
-                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-5 transition-colors hover:bg-hairline-soft"
-              >
-                <div className="min-w-0 space-y-1">
-                  <p className="font-medium text-ink">{c.title}</p>
-                  <p className="text-body-sm text-mute">
-                    {fmtDateTime(c.startTime)} to {fmtDateTime(c.endTime)}
-                  </p>
-                  {c.status === "RUNNING" && <Countdown target={parseApiDate(c.endTime)} prefix="Remaining" />}
-                  {c.status === "SCHEDULED" && <Countdown target={parseApiDate(c.startTime)} prefix="Starts in" />}
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <StatusPill s={c.status} />
-                  {c.myStatus === "DISQUALIFIED" ? (
-                    <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-body-sm text-destructive">
-                      Disqualified
-                    </span>
-                  ) : c.myStatus ? (
-                    <span className="rounded-full bg-hairline-soft px-2 py-0.5 text-body-sm text-body">Registered</span>
-                  ) : c.status !== "COMPLETED" ? (
-                    <span className="text-body-sm text-[#8a5a00]">Not registered</span>
-                  ) : null}
-                </div>
-              </Link>
-            ))}
-          </section>
-        );
-      })}
-    </div>
-  );
 }
 
 export function ContestOverview({ contestId }: { contestId: number }) {
