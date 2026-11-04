@@ -130,9 +130,11 @@ test.describe("Authentication and Registration E2E Suite", () => {
       expect(accessToken).toBeTruthy();
       expect(refreshToken).toBeTruthy();
 
-      // Header shows student username and user role
+      // Header shows the username; the role lives in the account menu
       await expect(page.getByText("student", { exact: true })).toBeVisible();
-      await expect(page.getByText("USER", { exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "Account: student" }).click();
+      await expect(page.getByRole("menu").getByText("USER", { exact: true })).toBeVisible();
+      await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
     });
 
     test("persists authenticated session across full page reloads", async ({ page }) => {

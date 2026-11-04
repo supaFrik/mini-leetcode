@@ -287,7 +287,14 @@ public class ProblemService {
                 String searchPattern = "%" + search.toLowerCase(Locale.ROOT).trim() + "%";
                 Predicate titleMatch = cb.like(cb.lower(root.get("title")), searchPattern);
                 Predicate descMatch = cb.like(cb.lower(root.get("description")), searchPattern);
-                predicates.add(cb.or(titleMatch, descMatch));
+                // Cho phép tìm theo số bài: "12" khớp thêm bài có id 12.
+                String trimmed = search.trim();
+                if (trimmed.matches("[0-9]{1,18}")) {
+                    Predicate idMatch = cb.equal(root.get("id"), Long.parseLong(trimmed));
+                    predicates.add(cb.or(titleMatch, descMatch, idMatch));
+                } else {
+                    predicates.add(cb.or(titleMatch, descMatch));
+                }
             }
             if (tags != null && !tags.isEmpty()) {
                 List<String> normalized = TagNormalizer.normalize(tags);
@@ -301,7 +308,14 @@ public class ProblemService {
                     query.distinct(true);
                 }
             }
-            if (progress != null && userId != null) {
+            if (progress != null && userId == null) {
+                // Khách (hoặc token hết hạn → server coi là khách) chưa giải / chưa thử bài nào:
+                // DONE và IN_PROGRESS rỗng, NEVER là toàn bộ. Không được bỏ qua bộ lọc,
+                // nếu không "đã giải" sẽ bằng tổng số bài.
+                if (progress == UserProgress.DONE || progress == UserProgress.IN_PROGRESS) {
+                    predicates.add(cb.disjunction());
+                }
+            } else if (progress != null) {
                 switch (progress) {
                     case DONE -> predicates.add(root.get("id").in(solved));
                     case IN_PROGRESS -> predicates.add(cb.and(
@@ -359,10 +373,19 @@ public class ProblemService {
     /** Danh sách chủ đề đang có trong catalogue, kèm số bài tương ứng. */
     @Transactional(readOnly = true)
     public List<TagCount> getTagCounts() {
+        return getTagCounts(null);
+    }
+
+    /** Như {@link #getTagCounts()}, nhưng khi {@code type} khác null chỉ đếm bài thuộc loại đó. */
+    @Transactional(readOnly = true)
+    public List<TagCount> getTagCounts(ProblemType type) {
         if (problemTagRepository == null) {
             return List.of();
         }
-        return problemTagRepository.findTagCounts().stream()
+        List<Object[]> rows = type == null
+                ? problemTagRepository.findTagCounts()
+                : problemTagRepository.findTagCountsByType(type.name());
+        return rows.stream()
                 .map(row -> new TagCount(String.valueOf(row[0]), ((Number) row[1]).intValue()))
                 .toList();
     }

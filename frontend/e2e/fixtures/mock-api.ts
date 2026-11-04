@@ -23,6 +23,8 @@ export interface MockApiOptions {
   existingUsers?: MockUser[];
   customProblems?: ProblemFull[];
   customContests?: ContestInfo[];
+  /** Access tokens to treat as invalid/expired: the problem list serves them as anonymous. */
+  rejectedTokens?: string[];
 }
 
 export interface MockApiController {
@@ -423,6 +425,9 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
     },
   ];
 
+  /** Access tokens the mock server treats as invalid (e.g. expired), set by tests. */
+  const rejectedTokens = new Set<string>(options.rejectedTokens ?? []);
+
   let nextSubmissionId = 1000;
   const submissions = new Map<number, Submission>();
   const drafts = new Map<string, { value: string; savedAt: number }>();
@@ -621,6 +626,23 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
       if (difficulty) {
         filtered = filtered.filter((p) => p.difficulty === difficulty);
       }
+      const problemType = url.searchParams.get("type") || "";
+      if (problemType) {
+        filtered = filtered.filter((p) => (p.type ?? "ALGORITHMIC") === problemType);
+      }
+
+      // Like the real backend: a request without a recognised bearer token is anonymous.
+      // Anonymous callers get no per-row progress, and have solved/attempted nothing.
+      const authHeader = request.headers()["authorization"] || "";
+      const recognised = /^Bearer\s+\S+/.test(authHeader) && !rejectedTokens.has(authHeader.replace(/^Bearer\s+/, ""));
+      const progressFilter = (url.searchParams.get("progress") || "").toUpperCase();
+      if (progressFilter) {
+        filtered = recognised
+          ? filtered.filter((p) => (p.progress || "NEVER") === progressFilter)
+          : progressFilter === "NEVER"
+            ? filtered
+            : [];
+      }
 
       const totalElements = filtered.length;
       const totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
@@ -631,7 +653,8 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
         title: p.title,
         difficulty: p.difficulty,
         tags: p.tags,
-        progress: p.progress || "NEVER",
+        type: p.type ?? "ALGORITHMIC",
+        ...(recognised ? { progress: p.progress || "NEVER" } : {}),
       }));
 
       const pagePayload = {
@@ -645,6 +668,17 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
       };
 
       return json({ success: true, statusCode: 200, data: pagePayload, ...pagePayload });
+    }
+
+    // GET /api/v1/problems/tags
+    if (path === "/api/v1/problems/tags" && method === "GET") {
+      const counts = new Map<string, number>();
+      for (const p of problems) for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+      return json(
+        Array.from(counts.entries())
+          .map(([tag, count]) => ({ tag, count }))
+          .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+      );
     }
 
     // GET /api/v1/problems/{id}/test-cases
