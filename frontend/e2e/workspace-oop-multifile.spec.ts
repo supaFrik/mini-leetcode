@@ -32,6 +32,30 @@ Implement the \`double calculateArea()\` method in each subclass.`,
   dislikes: 12,
 };
 
+/**
+ * Send a request from the page itself. `page.request` is an APIRequestContext: it skips the
+ * `page.route` mocks below and goes through the Next rewrite to a real backend, unauthenticated
+ * and without the seeded problem 42. A fetch from the page uses the same origin and is mocked.
+ */
+async function pageRequest(page: Page, method: "GET" | "POST", path: string, init: { headers?: Record<string, string>; data?: string } = {}) {
+  const r = await page.evaluate(async ({ method, path, init }) => {
+    const res = await fetch(path, { method, headers: init.headers, body: init.data });
+    return {
+      status: res.status,
+      headers: Object.fromEntries(res.headers.entries()),
+      bytes: Array.from(new Uint8Array(await res.arrayBuffer())),
+    };
+  }, { method, path, init });
+  const body = Buffer.from(r.bytes);
+  return {
+    status: () => r.status,
+    ok: () => r.status >= 200 && r.status < 300,
+    headers: () => r.headers,
+    body: async () => body,
+    json: async () => JSON.parse(body.toString("utf8")),
+  };
+}
+
 async function setupOopMockRoutes(page: Page) {
   // Mock starter template download API
   await page.route("**/api/v1/problems/*/starter*", async (route) => {
@@ -226,7 +250,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
       // Verifies the intercepted route responds 202
-      const response = await page.request.post("http://localhost:3005/api/v1/submissions", {
+      const response = await pageRequest(page, "POST", "/api/v1/submissions", {
         headers: { "Content-Type": "application/json" },
         data: JSON.stringify({ problemId: 42, language: "JAVA", files: [{ path: "Shape.java", content: "code" }] }),
       });
@@ -236,7 +260,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
     test("1.3.3: verifies multi-file payload submission structure", async ({ page }) => {
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const response = await page.request.post("http://localhost:3005/api/v1/submissions", {
+      const response = await pageRequest(page, "POST", "/api/v1/submissions", {
         headers: { "Content-Type": "application/json" },
         data: JSON.stringify({
           problemId: 42,
@@ -273,7 +297,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
         return route.continue();
       });
 
-      const response = await page.request.post("http://localhost:3005/api/v1/submissions", {
+      const response = await pageRequest(page, "POST", "/api/v1/submissions", {
         headers: { "Content-Type": "application/json" },
         data: JSON.stringify({ problemId: 42, language: "JAVA", files: [] }),
       });
@@ -283,7 +307,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
     test("1.3.5: verifies submission response retains submission id for polling", async ({ page }) => {
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const response = await page.request.post("http://localhost:3005/api/v1/submissions", {
+      const response = await pageRequest(page, "POST", "/api/v1/submissions", {
         headers: { "Content-Type": "application/json" },
         data: JSON.stringify({ problemId: 42, language: "JAVA", files: [{ path: "Shape.java", content: "code" }] }),
       });
@@ -297,7 +321,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
       // Directly invoke the starter download endpoint
-      const response = await page.request.get("http://localhost:3005/api/v1/problems/42/starter-template");
+      const response = await pageRequest(page, "GET", "/api/v1/problems/42/starter-template");
       expect(response.status()).toBe(200);
       expect(response.headers()["content-type"]).toContain("zip");
       expect(response.headers()["content-disposition"]).toContain("shape-hierarchy-starter.zip");
@@ -306,7 +330,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
     test("1.4.2: verifies downloaded starter zip contains non-zero byte stream", async ({ page }) => {
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const response = await page.request.get("http://localhost:3005/api/v1/problems/42/starter-template");
+      const response = await pageRequest(page, "GET", "/api/v1/problems/42/starter-template");
       const body = await response.body();
       expect(body.length).toBeGreaterThan(0);
       // Valid ZIP magic bytes: PK (0x50, 0x4B)
@@ -317,7 +341,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
     test("1.4.3: validates Content-Disposition filename format {slug}-starter.zip", async ({ page }) => {
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const response = await page.request.get("http://localhost:3005/api/v1/problems/42/starter-template");
+      const response = await pageRequest(page, "GET", "/api/v1/problems/42/starter-template");
       const disposition = response.headers()["content-disposition"];
       expect(disposition).toMatch(/attachment;\s*filename="shape-hierarchy-starter\.zip"/);
     });
@@ -325,14 +349,14 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
     test("1.4.4: starter download is accessible to authenticated students", async ({ page }) => {
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const response = await page.request.get("http://localhost:3005/api/v1/problems/42/starter-template");
+      const response = await pageRequest(page, "GET", "/api/v1/problems/42/starter-template");
       expect(response.ok()).toBe(true);
     });
 
     test("1.4.5: download completes with application/zip content type", async ({ page }) => {
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const response = await page.request.get("http://localhost:3005/api/v1/problems/42/starter-template");
+      const response = await pageRequest(page, "GET", "/api/v1/problems/42/starter-template");
       expect(response.headers()["content-type"]).toBe("application/zip");
     });
   });
@@ -456,7 +480,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
         return route.continue();
       });
 
-      const response = await page.request.post("http://localhost:3005/api/v1/submissions", {
+      const response = await pageRequest(page, "POST", "/api/v1/submissions", {
         headers: { "Content-Type": "application/json" },
         data: JSON.stringify({ problemId: 42, language: "JAVA", files: [{ path: "Shape\0.java", content: "code" }] }),
       });
@@ -479,7 +503,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
         });
       });
 
-      const response = await page.request.post("http://localhost:3005/api/v1/submissions", {
+      const response = await pageRequest(page, "POST", "/api/v1/submissions", {
         headers: { "Content-Type": "application/json" },
         data: JSON.stringify({ problemId: 42, language: "JAVA", files: [{ path: "Huge.java", content: "huge content" }] }),
       });
@@ -507,7 +531,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
         return route.continue();
       });
 
-      const response = await page.request.post("http://localhost:3005/api/v1/submissions", {
+      const response = await pageRequest(page, "POST", "/api/v1/submissions", {
         headers: { "Content-Type": "application/json" },
         data: JSON.stringify({ problemId: 42, language: "JAVA", files: [{ path: "exploit.sh", content: "#!/bin/sh" }] }),
       });
@@ -598,7 +622,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
       // Step 1: Download starter
-      const downloadRes = await page.request.get("http://localhost:3005/api/v1/problems/42/starter-template");
+      const downloadRes = await pageRequest(page, "GET", "/api/v1/problems/42/starter-template");
       expect(downloadRes.status()).toBe(200);
 
       // Step 2: Submit
@@ -649,7 +673,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
       await expect(page.getByRole("heading", { name: "Shape Hierarchy & Area Calculation" })).toBeVisible();
 
       // Step 2: Student downloads starter template
-      const templateRes = await page.request.get("http://localhost:3005/api/v1/problems/42/starter-template");
+      const templateRes = await pageRequest(page, "GET", "/api/v1/problems/42/starter-template");
       expect(templateRes.status()).toBe(200);
       const zipBytes = await templateRes.body();
       expect(zipBytes.length).toBeGreaterThan(0);
