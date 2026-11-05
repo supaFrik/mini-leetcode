@@ -102,9 +102,19 @@ public enum LanguageRuntime {
      * đúng mã lỗi của lệnh gốc.
      */
     public String runScript(int memoryLimitMb) {
+        return runScriptFor(baseRunCommand(memoryLimitMb));
+    }
+
+    /**
+     * Bọc một lệnh bất kỳ trong script shell có đo peak memory của cgroup.
+     *
+     * <p>Dùng cho các lớp chạy tùy biến (console OOP, probe đo số liệu) khi
+     * không thuộc {@link #baseRunCommand(int)} của một {@link LanguageRuntime} cụ thể.
+     */
+    public static String runScriptFor(List<String> command) {
         StringBuilder script = new StringBuilder();
         script.append("#!/bin/sh\n");
-        for (String part : baseRunCommand(memoryLimitMb)) {
+        for (String part : command) {
             script.append(shellQuote(part)).append(' ');
         }
         script.append("\nrc=$?\n");

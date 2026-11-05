@@ -114,6 +114,50 @@ export interface SubmitBody {
   contestId?: number;
 }
 
+// ===== Console OOP (stdin/stdout tương tác) =====
+/** Chế độ chạy của console OOP. */
+export type ConsoleMode = "EVALUATE" | "PROGRAM";
+export interface ConsoleExecuteRequest {
+  /** Mã nguồn hiện tại trong editor. */
+  files: SubmissionFile[];
+  /** Nội dung stdin gửi cho `main` (có thể rỗng). */
+  input?: string;
+  /** Biểu thức REPL khi ở chế độ `EVALUATE`. */
+  expression?: string;
+  /** Id kỳ thi nếu đang ở chế độ thi — server sẽ chặn console. */
+  contestId?: number | null;
+  /** Chế độ chạy; mặc định `EVALUATE`. */
+  mode?: ConsoleMode;
+}
+export interface ConsoleExecuteResponse {
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  /** Wall-clock thực tế của container (ms). */
+  runtimeMs: number | null;
+  /** Peak memory của cgroup (KB). */
+  peakMemoryKb: number | null;
+  /** Lỗi biên dịch (null nếu biên dịch thành công). */
+  compileErrors: string | null;
+  truncated: boolean;
+  timedOut: boolean;
+}
+export interface ConsoleTranscriptEntry {
+  input: string;
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  runtimeMs: number | null;
+  peakMemoryKb: number | null;
+  compileErrors?: string | null;
+  at: string;
+}
+export interface ConsoleTranscriptResponse {
+  entries: ConsoleTranscriptEntry[];
+  limit: number;
+  used: number;
+}
+
 // ===== Kỳ thi =====
 export interface ContestProblem { id: number; slug: string; title: string; difficulty: Difficulty; label: string }
 export interface ContestInfo {

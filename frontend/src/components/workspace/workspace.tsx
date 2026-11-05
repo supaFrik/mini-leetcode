@@ -18,6 +18,7 @@ import {
   ComboboxValue,
 } from "@/components/ui/combobox";
 import { CodeEditor } from "./code-editor";
+import { ConsolePanel } from "./console-panel";
 import { ProblemDetailPanel } from "./problem-detail-panel";
 import { ProblemSubmissions } from "./problem-submissions";
 import { ResultPanel } from "./result-panel";
@@ -99,6 +100,8 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
   const canAct = !locked && autosave.ready && !judge.judging;
 
   const isOopGrinding = problem.type === "OOP_GRINDING";
+  // Console OOP chỉ mở cho bài OOP, ngoài kỳ thi và khi phiên chưa bị khoá.
+  const consoleEnabled = isOopGrinding && !examMode && !locked;
   const defaultFiles = useMemo<SubmissionFile[]>(() => {
     if (problem.starterTemplates) {
       try {
@@ -437,9 +440,10 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
         <div className="flex shrink-0 items-center gap-2 pr-3">
           {/* Bấm vào tab (kể cả tab đang chọn) khi khung đang thu thì mở lại. */}
           <TabsList className="m-2 border-b-0" onClick={() => bottomMode === "fold" && setBottomMode("normal")}>
-            <TabsTrigger value="case">Testcase</TabsTrigger>
+            <TabsTrigger value="case">{isOopGrinding ? "Examples" : "Testcase"}</TabsTrigger>
             <TabsTrigger value="result">Test Result{resultLabel}</TabsTrigger>
             <TabsTrigger value="subs">Submissions</TabsTrigger>
+            {consoleEnabled ? <TabsTrigger value="console">Console</TabsTrigger> : null}
           </TabsList>
           {desktop && (
             <div className="ml-auto flex items-center gap-3 text-mute">
@@ -466,10 +470,22 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
         </div>
         <div className={cn("thin-scroll min-h-0 flex-1 overflow-auto", bottomMode === "fold" && desktop && "hidden")}>
         <TabsContent value="case" className="space-y-2 p-4 text-body-sm">
+          {isOopGrinding ? (
+            <p className="text-mute">
+              Examples for the OOP console. These are not graded — they show how to exercise the classes you
+              design. Use them in the Console tab.
+            </p>
+          ) : null}
           {cases.filter((c) => !c.isHidden).map((c, i) => (
             <div key={c.id}>
               <p className="mb-1 text-mute">Case {i + 1}</p>
               <pre className="thin-scroll overflow-auto whitespace-pre rounded-sm border border-border bg-card px-3 py-2 font-mono text-code text-ink">{c.input}</pre>
+              {isOopGrinding ? (
+                <>
+                  <p className="mb-1 mt-2 text-mute">Expected result</p>
+                  <pre className="thin-scroll overflow-auto whitespace-pre rounded-sm border border-border bg-card px-3 py-2 font-mono text-code text-ink">{c.expectedOutput}</pre>
+                </>
+              ) : null}
             </div>
           ))}
           {cases.every((c) => c.isHidden) && <p className="text-mute">No public testcases available yet.</p>}
@@ -480,6 +496,17 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
       <TabsContent value="subs" className="mt-0">
         <ProblemSubmissions problemId={problem.id} contestId={contestId} refreshKey={`${judge.result?.id}-${judge.result?.status}`} />
       </TabsContent>
+      {consoleEnabled ? (
+        <TabsContent value="console" className="mt-0 h-full">
+          <ConsolePanel
+            problemId={problem.id}
+            files={multiFiles}
+            cases={cases}
+            contestId={contestId ?? null}
+            disabled={locked}
+          />
+        </TabsContent>
+      ) : null}
         </div>
     </Tabs>
   );

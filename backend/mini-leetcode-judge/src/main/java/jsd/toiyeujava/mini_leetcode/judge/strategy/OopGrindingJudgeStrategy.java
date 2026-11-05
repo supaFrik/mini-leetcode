@@ -14,8 +14,12 @@ import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.compilation.OopGrindingCo
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.ExecutionReport;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.HarnessConfig;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.OopConstraintRule;
+import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.OopExecutionMetrics;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.SocketScenarioConfig;
+import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner.OopContainerExecutor;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner.OopDockerRunner;
+import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner.OopMainClassDetector;
+import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner.OopProbeHarnessGenerator;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionTaskMessage;
@@ -48,6 +52,8 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
     private final OopDockerRunner oopDockerRunner;
     private final SubmissionRepository submissionRepository;
     private final OopScoreCalculator scoreCalculator;
+    private final OopContainerExecutor oopContainerExecutor;
+    private final OopProbeHarnessGenerator probeHarnessGenerator;
 
     @Autowired
     public OopGrindingJudgeStrategy(
@@ -59,7 +65,9 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             DockerExecutor dockerExecutor,
             OopDockerRunner oopDockerRunner,
             SubmissionRepository submissionRepository,
-            @Autowired(required = false) OopScoreCalculator scoreCalculator) {
+            @Autowired(required = false) OopScoreCalculator scoreCalculator,
+            @Autowired(required = false) OopContainerExecutor oopContainerExecutor,
+            @Autowired(required = false) OopProbeHarnessGenerator probeHarnessGenerator) {
         this.submissionService = submissionService;
         this.storageService = storageService;
         this.sourceExtractor = sourceExtractor;
@@ -69,6 +77,22 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
         this.oopDockerRunner = oopDockerRunner;
         this.submissionRepository = submissionRepository;
         this.scoreCalculator = scoreCalculator != null ? scoreCalculator : new OopScoreCalculator(this.objectMapper);
+        this.oopContainerExecutor = oopContainerExecutor;
+        this.probeHarnessGenerator = probeHarnessGenerator;
+    }
+
+    public OopGrindingJudgeStrategy(
+            SubmissionService submissionService,
+            StorageService storageService,
+            MultiFileSourceExtractor sourceExtractor,
+            OopGrindingCompiler compiler,
+            ObjectMapper objectMapper,
+            DockerExecutor dockerExecutor,
+            OopDockerRunner oopDockerRunner,
+            SubmissionRepository submissionRepository,
+            OopScoreCalculator scoreCalculator) {
+        this(submissionService, storageService, sourceExtractor, compiler, objectMapper, dockerExecutor,
+                oopDockerRunner, submissionRepository, scoreCalculator, null, null);
     }
 
     public OopGrindingJudgeStrategy(
@@ -80,7 +104,8 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             DockerExecutor dockerExecutor,
             OopDockerRunner oopDockerRunner,
             SubmissionRepository submissionRepository) {
-        this(submissionService, storageService, sourceExtractor, compiler, objectMapper, dockerExecutor, oopDockerRunner, submissionRepository, null);
+        this(submissionService, storageService, sourceExtractor, compiler, objectMapper, dockerExecutor,
+                oopDockerRunner, submissionRepository, null, null, null);
     }
 
     public OopGrindingJudgeStrategy(
@@ -91,7 +116,8 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             ObjectMapper objectMapper,
             DockerExecutor dockerExecutor,
             SubmissionRepository submissionRepository) {
-        this(submissionService, storageService, sourceExtractor, compiler, objectMapper, dockerExecutor, null, submissionRepository, null);
+        this(submissionService, storageService, sourceExtractor, compiler, objectMapper, dockerExecutor, null,
+                submissionRepository, null, null, null);
     }
 
     @Override
@@ -178,8 +204,49 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             executionReport = oopDockerRunner.runInProcessHarness(submissionId, workDir, harnessConfig);
         }
 
-        // 5. Update submission results
-        recordExecutionResults(submissionId, executionReport, harnessConfig);
+        // 5. Đo số liệu thật (wall-clock + peak memory) trong 1 container ephemeral.
+        //    Bắt buộc phải chạy trong container thì mới đọc được cgroup memory.peak
+        //    và có wall-clock thật; nếu không đo được thì ghi null (UI hiển thị "—").
+        OopExecutionMetrics metrics = measureExecutionMetrics(submissionId, workDir);
+
+        // 6. Update submission results
+        recordExecutionResults(submissionId, executionReport, harnessConfig, metrics);
+    }
+
+    /**
+     * Chạy 1 container ephemeral để đo wall-clock và peak memory của mã nguồn OOP.
+     *
+     * <p>Trả về {@link OopExecutionMetrics#unavailable(String)} nếu không đo được
+     * (thiếu Docker, không sinh được probe...). Khi đó số đo được ghi là {@code null}
+     * chứ không phải {@code 0} — vì {@code 0} bị UI hiển thị thành "0 KB" gây hiểu nhầm.
+     */
+    private OopExecutionMetrics measureExecutionMetrics(Long submissionId, Path workDir) {
+        if (oopContainerExecutor == null || probeHarnessGenerator == null) {
+            log.info("OOP metrics executor is not configured for submission {}; metrics will be null", submissionId);
+            return OopExecutionMetrics.unavailable("Metrics executor not configured");
+        }
+        try {
+            String mainClass = OopMainClassDetector.detectMainClass(workDir.resolve("classes")).orElse(null);
+            if (!probeHarnessGenerator.generateAndCompile(workDir, mainClass)) {
+                return OopExecutionMetrics.unavailable("Failed to compile metrics probe");
+            }
+            OopExecutionMetrics metrics = oopContainerExecutor.measure(
+                    workDir,
+                    OopProbeHarnessGenerator.PROBE_CLASS_NAME,
+                    "",
+                    10_000L,
+                    256);
+            if (metrics.measured()) {
+                log.info("OOP metrics for submission {}: runtimeMs={}, peakMemoryKb={}, exitCode={}",
+                        submissionId, metrics.runtimeMs(), metrics.peakMemoryKb(), metrics.exitCode());
+            } else {
+                log.warn("OOP metrics unavailable for submission {}: {}", submissionId, metrics.errorMessage());
+            }
+            return metrics;
+        } catch (Exception e) {
+            log.warn("Failed to measure OOP execution metrics for submission {}: {}", submissionId, e.getMessage());
+            return OopExecutionMetrics.unavailable("Failed to measure metrics: " + e.getMessage());
+        }
     }
 
     private HarnessConfig loadOrCreateHarnessConfig(Long submissionId, Problem problem, Path workDir) {
@@ -280,7 +347,8 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
                 .build();
     }
 
-    private void recordExecutionResults(Long submissionId, ExecutionReport report, HarnessConfig config) {
+    private void recordExecutionResults(Long submissionId, ExecutionReport report, HarnessConfig config,
+                                        OopExecutionMetrics metrics) {
         if (report != null && scoreCalculator != null) {
             if (report.getTotalScore() == null) {
                 report = scoreCalculator.aggregateAndEnrich(report, config);
@@ -299,14 +367,22 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             totalCount = report.getPhases().getUnitTest().getTotalCount();
         }
 
+        // Số đo thật: null khi không đo được (UI hiển thị "—"), không phải 0.
+        Integer runtimeMs = metrics != null ? metrics.runtimeMs() : null;
+        Integer peakMemoryKb = metrics != null ? metrics.peakMemoryKb() : null;
+        if (report != null) {
+            report.setRuntimeMs(runtimeMs);
+            report.setPeakMemoryKb(peakMemoryKb);
+        }
+
         String scoreBreakdownJson = scoreCalculator.formatScoreBreakdownJson(report);
 
         submissionService.updateSubmissionVerdict(
                 submissionId,
                 SubmissionStatus.COMPLETED,
                 verdict,
-                0,
-                0,
+                runtimeMs,
+                peakMemoryKb,
                 passedCount,
                 totalCount,
                 report != null ? report.getErrorMessage() : null
@@ -339,12 +415,14 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
     }
 
     private void recordFailureVerdict(Long submissionId, String breakdown, String errorMessage) {
+        // CE (lỗi biên dịch / lỗi trích xuất): KHÔNG có số đo thực thi nào để báo,
+        // nên ghi null cho cả hai cột — UI hiển thị "Runtime: — ms | Peak memory: —".
         submissionService.updateSubmissionVerdict(
                 submissionId,
                 SubmissionStatus.COMPLETED,
                 SubmissionVerdict.CE,
-                0,
-                0,
+                null,
+                null,
                 0,
                 0,
                 errorMessage

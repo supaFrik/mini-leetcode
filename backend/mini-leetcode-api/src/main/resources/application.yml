@@ -35,6 +35,20 @@ app:
     legacy-queue-key: ${JUDGE_LEGACY_QUEUE_KEY:queue.submissions}
     consumer-group: ${JUDGE_CONSUMER_GROUP:judge-group}
     consumer-name: ${JUDGE_CONSUMER_NAME:}
+  console:
+    # Judge worker chạy servlet web nội bộ (KHÔNG publish port ra host).
+    judge-base-url: ${JUDGE_BASE_URL:http://localhost:8081}
+    # Token nội bộ khớp với app.console.internal-token của mini-leetcode-judge.
+    internal-token: ${JUDGE_INTERNAL_TOKEN:mini-leetcode-internal-token}
+    # Số lệnh tối đa cho mỗi phiên console (theo user + problem).
+    max-commands-per-session: ${CONSOLE_MAX_COMMANDS_PER_SESSION:50}
+    # TTL transcript trong Redis (giây).
+    transcript-ttl-seconds: ${CONSOLE_TRANSCRIPT_TTL_SECONDS:3600}
+    # Giới hạn payload mã nguồn.
+    max-source-bytes: ${CONSOLE_MAX_SOURCE_BYTES:20971520}
+    max-files: ${CONSOLE_MAX_FILES:100}
+    # Timeout gọi judge worker (ms).
+    request-timeout-ms: ${CONSOLE_REQUEST_TIMEOUT_MS:20000}
   bootstrap:
     # Tạo tài khoản admin đầu tiên khi khởi động (chỉ khi user chưa tồn tại).
     # Để trống để tắt. Mật khẩu phải được cấu hình qua biến môi trường.

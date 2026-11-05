@@ -10,7 +10,7 @@ import { setTokens } from "./auth";
 import * as mock from "./mock-server";
 import type { PollFetch } from "./polling";
 import type {
-  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
+  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ConsoleExecuteRequest, ConsoleExecuteResponse, ConsoleTranscriptResponse, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
 } from "@/types/api";
 
@@ -299,6 +299,33 @@ export async function fetchPlagiarism(id: number): Promise<PlagiarismRow[]> {
   return api<PlagiarismRow[]>(`/api/v1/contests/${id}/plagiarism`);
 }
 export function resetMockExam(contestId: number) { mock.resetExam(contestId); }
+
+// ---------- Console OOP ----------
+/**
+ * Chạy một lệnh console cho bài OOP.
+ *
+ * Mã nguồn học viên được biên dịch & chạy trong Docker sandbox của judge worker;
+ * API server KHÔNG bao giờ thực thi code học viên trong JVM của mình.
+ */
+export async function executeConsoleCommand(
+  problemId: number,
+  body: ConsoleExecuteRequest,
+): Promise<ConsoleExecuteResponse> {
+  return api<ConsoleExecuteResponse>(`/api/v1/problems/${problemId}/console/execute`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+/** Đọc transcript console của phiên hiện tại (sống ~1h trên server). */
+export async function fetchConsoleTranscript(problemId: number): Promise<ConsoleTranscriptResponse> {
+  return api<ConsoleTranscriptResponse>(`/api/v1/problems/${problemId}/console/transcript`);
+}
+
+/** Xoá transcript console của phiên hiện tại. */
+export async function clearConsoleTranscript(problemId: number): Promise<void> {
+  await api<unknown>(`/api/v1/problems/${problemId}/console/transcript`, { method: "DELETE" });
+}
 
 // ---------- Draft (chống rớt mạng) ----------
 // [ĐỀ XUẤT] GET/PUT /api/v1/contests/{cid}/problems/{pid}/draft?language=

@@ -433,6 +433,20 @@ export async function setupMockApi(page: Page, options: MockApiOptions = {}): Pr
 /** Id của bài chạy thử (Run): vẫn poll được, nhưng như backend không nằm trong /submissions/my và /summary. */
 const quickRunIds = new Set<number>();
   const drafts = new Map<string, { value: string; savedAt: number }>();
+  /** Transcript console OOP, key = `${problemId}:console`. */
+  const consoleTranscripts = new Map<
+    string,
+    {
+      input: string;
+      stdout: string;
+      stderr: string;
+      exitCode: number | null;
+      runtimeMs: number | null;
+      peakMemoryKb: number | null;
+      compileErrors: string | null;
+      at: string;
+    }[]
+  >();
 
   // Main Route Handler
   await page.route("**/api/v1/**", async (route, request) => {
@@ -833,7 +847,84 @@ const quickRunIds = new Set<number>();
     }
 
     // ----------------------------------------------------
-    // 4. CONTESTS & PROCTORING ENDPOINTS
+    // 4. CONSOLE OOP ENDPOINTS (stdin/stdout interactive console)
+    // ----------------------------------------------------
+
+    // POST /api/v1/problems/{id}/console/execute
+    const consoleExecuteMatch = path.match(/^\/api\/v1\/problems\/(\d+)\/console\/execute$/);
+    if (consoleExecuteMatch && method === "POST") {
+      const pId = parseInt(consoleExecuteMatch[1], 10);
+      let body: any = {};
+      try {
+        body = JSON.parse(request.postData() || "{}");
+      } catch {}
+
+      const command: string = body.expression || body.input || "";
+      const transcriptKey = `${pId}:console`;
+
+      // Biên dịch lỗi → trả compileErrors (HTTP 200, không phải lỗi HTTP).
+      if (command.includes("COMPILE_ERROR") || command.includes("BROKEN")) {
+        const payload = {
+          stdout: "",
+          stderr: "",
+          exitCode: null,
+          runtimeMs: null,
+          peakMemoryKb: null,
+          compileErrors: "Circle.java:2: error: ';' expected",
+          truncated: false,
+          timedOut: false,
+        };
+        return json({ success: true, statusCode: 200, message: "Console command executed", data: payload, ...payload });
+      }
+
+      const stdout = command.includes("42")
+        ? "42"
+        : `12.566370614359172`;
+      const payload = {
+        stdout,
+        stderr: "",
+        exitCode: 0,
+        runtimeMs: 87,
+        peakMemoryKb: 24576,
+        compileErrors: null,
+        truncated: false,
+        timedOut: false,
+      };
+
+      const entries = consoleTranscripts.get(transcriptKey) ?? [];
+      entries.push({
+        input: command,
+        stdout,
+        stderr: "",
+        exitCode: 0,
+        runtimeMs: 87,
+        peakMemoryKb: 24576,
+        compileErrors: null,
+        at: new Date().toISOString(),
+      });
+      consoleTranscripts.set(transcriptKey, entries);
+
+      return json({ success: true, statusCode: 200, message: "Console command executed", data: payload, ...payload });
+    }
+
+    // GET /api/v1/problems/{id}/console/transcript
+    const consoleTranscriptMatch = path.match(/^\/api\/v1\/problems\/(\d+)\/console\/transcript$/);
+    if (consoleTranscriptMatch) {
+      const pId = parseInt(consoleTranscriptMatch[1], 10);
+      const key = `${pId}:console`;
+      if (method === "DELETE") {
+        consoleTranscripts.delete(key);
+        return route.fulfill({ status: 204, body: "" });
+      }
+      if (method === "GET") {
+        const entries = consoleTranscripts.get(key) ?? [];
+        const payload = { entries, limit: 50, used: entries.length };
+        return json({ success: true, statusCode: 200, data: payload, ...payload });
+      }
+    }
+
+    // ----------------------------------------------------
+    // 5. CONTESTS & PROCTORING ENDPOINTS
     // ----------------------------------------------------
 
     // GET /api/v1/contests

@@ -68,6 +68,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/submissions/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/problems/*/submit").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/problems/*/submissions/**").authenticated()
+                        // Console OOP: cần đăng nhập; bài không phải OOP / đang thi sẽ bị chặn ở tầng service.
+                        .requestMatchers("/api/v1/problems/*/console/**").authenticated()
                         // Problems public reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/problems/**").permitAll()
                         // Testcase management (more specific paths must come before general problem routes)

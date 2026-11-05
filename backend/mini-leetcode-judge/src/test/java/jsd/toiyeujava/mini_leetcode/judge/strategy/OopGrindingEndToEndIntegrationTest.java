@@ -195,8 +195,8 @@ public class OopGrindingEndToEndIntegrationTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.WA),
-                anyInt(),
-                anyInt(),
+                isNull(),
+                isNull(),
                 eq(3), // 3 passed test cases
                 eq(4), // 4 total test cases
                 isNull()
@@ -278,8 +278,8 @@ public class OopGrindingEndToEndIntegrationTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.RE),
-                eq(0),
-                eq(0),
+                isNull(),
+                isNull(),
                 eq(0),
                 eq(0),
                 contains("Container exited with code 1")
@@ -321,8 +321,8 @@ public class OopGrindingEndToEndIntegrationTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0),
-                eq(0),
+                isNull(),
+                isNull(),
                 eq(0),
                 eq(0),
                 contains("error: illegal start of expression")
@@ -413,8 +413,8 @@ public class OopGrindingEndToEndIntegrationTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.AC),
-                anyInt(),
-                anyInt(),
+                isNull(),
+                isNull(),
                 eq(2),
                 eq(2),
                 isNull()
@@ -499,8 +499,8 @@ public class OopGrindingEndToEndIntegrationTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.WA),
-                anyInt(),
-                anyInt(),
+                isNull(),
+                isNull(),
                 eq(1),
                 eq(2),
                 isNull()
@@ -617,8 +617,8 @@ public class OopGrindingEndToEndIntegrationTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.AC),
-                anyInt(),
-                anyInt(),
+                isNull(),
+                isNull(),
                 eq(1),
                 eq(1),
                 isNull()

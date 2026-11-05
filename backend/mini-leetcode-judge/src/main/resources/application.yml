@@ -2,7 +2,9 @@ spring:
   application:
     name: mini_leetcode_judge
   main:
-    web-application-type: none
+    # Judge worker là servlet web app để phục vụ endpoint console OOP nội bộ.
+    # Cổng KHÔNG được publish ra host (chỉ trong docker network nội bộ).
+    web-application-type: servlet
   task:
     scheduling:
       pool:
@@ -42,3 +44,23 @@ app:
     access-key: ${MINIO_ACCESS_KEY:minioadmin}
     secret-key: ${MINIO_SECRET_KEY:minioadminpassword}
     bucket-name: ${MINIO_BUCKET_NAME:testcases}
+  console:
+    # Token nội bộ dùng cho header X-Internal-Token khi API gọi judge worker.
+    # PHẢI khớp với app.judge.internal-token của module mini-leetcode-api.
+    internal-token: ${JUDGE_INTERNAL_TOKEN:mini-leetcode-internal-token}
+    # Số lệnh tối đa cho mỗi phiên console (theo user + problem).
+    max-commands-per-session: ${CONSOLE_MAX_COMMANDS_PER_SESSION:50}
+    # Timeout mỗi lệnh console (ms) + phần khởi động JVM.
+    timeout-ms: ${CONSOLE_TIMEOUT_MS:3000}
+    startup-allowance-ms: ${CONSOLE_STARTUP_ALLOWANCE_MS:2000}
+    memory-limit-mb: ${CONSOLE_MEMORY_LIMIT_MB:256}
+    max-output-bytes: ${CONSOLE_MAX_OUTPUT_BYTES:65536}
+    # TTL transcript trong Redis (giây).
+    transcript-ttl-seconds: ${CONSOLE_TRANSCRIPT_TTL_SECONDS:3600}
+    max-source-bytes: ${CONSOLE_MAX_SOURCE_BYTES:20971520}
+    max-files: ${CONSOLE_MAX_FILES:100}
+
+server:
+  # Cổng nội bộ — KHÔNG publish ra host trong docker-compose.
+  port: ${JUDGE_SERVER_PORT:8081}
+  shutdown: graceful

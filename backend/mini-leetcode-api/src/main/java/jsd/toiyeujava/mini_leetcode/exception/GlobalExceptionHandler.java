@@ -161,6 +161,33 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(SandboxUnavailableException.class)
+    public ProblemDetail handleSandboxUnavailable(SandboxUnavailableException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        problem.setTitle("Sandbox Unavailable");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/sandbox-unavailable"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(ConsoleRateLimitExceededException.class)
+    public ProblemDetail handleConsoleRateLimit(ConsoleRateLimitExceededException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+        problem.setTitle("Too Many Requests");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/too-many-requests"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(ConsoleDisabledException.class)
+    public ProblemDetail handleConsoleDisabled(ConsoleDisabledException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problem.setTitle("Forbidden");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/forbidden"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenericException(Exception ex) {
         org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class).error("Unhandled exception: ", ex);

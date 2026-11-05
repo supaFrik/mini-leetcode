@@ -146,8 +146,8 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0),
-                eq(0),
+                isNull(),
+                isNull(),
                 eq(0),
                 eq(0),
                 contains("error: illegal start of expression")
@@ -202,7 +202,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("cannot find symbol")
         );
 
@@ -249,7 +249,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("No Java source files (.java) found")
         );
 
@@ -306,7 +306,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("Zip Slip")
         );
 
@@ -357,7 +357,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("Illegal null byte")
         );
 
@@ -405,7 +405,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("Zip Slip")
         );
 
@@ -731,7 +731,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("20MB")
         );
 

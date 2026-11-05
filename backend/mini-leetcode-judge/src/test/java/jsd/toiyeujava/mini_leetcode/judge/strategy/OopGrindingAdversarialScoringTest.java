@@ -228,8 +228,8 @@ public class OopGrindingAdversarialScoringTest {
                     eq(submissionId),
                     eq(SubmissionStatus.COMPLETED),
                     eq(SubmissionVerdict.WA),
-                    anyInt(),
-                    anyInt(),
+                    isNull(),
+                isNull(),
                     eq(3),
                     eq(4),
                     isNull()
