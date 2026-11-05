@@ -972,6 +972,15 @@ const quickRunIds = new Set<number>();
       return json({ success: true, statusCode: 200, data: dynamicContest, ...dynamicContest });
     }
 
+    // POST /api/v1/contests/{id}/finalize — sent by the workspace when time runs out.
+    // Unmocked, it fell through to a real backend (if one is running) and its 401 logged the user out.
+    const finalizeMatch = path.match(/^\/api\/v1\/contests\/(\d+)\/finalize$/);
+    if (finalizeMatch && method === "POST") {
+      const contest = contests.find((c) => c.id === parseInt(finalizeMatch[1], 10));
+      if (!contest) return problemDetail(404, "Not Found", `Contest ${finalizeMatch[1]} not found`, "not-found");
+      return json({ success: true, statusCode: 200, data: contest, ...contest });
+    }
+
     // GET & PUT /api/v1/contests/{cid}/problems/{pid}/draft
     const draftMatch = path.match(/^\/api\/v1\/contests\/(\d+)\/problems\/([^/]+)\/draft$/);
     if (draftMatch) {
