@@ -263,8 +263,14 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
       e.preventDefault();
       proctor.reportPaste();
     };
+    // Monaco's `contextmenu: false` only hides its own menu; the native one (with Paste) still opens.
+    const onContextMenu = (e: MouseEvent) => e.preventDefault();
     window.addEventListener("paste", onPaste, true);
-    return () => window.removeEventListener("paste", onPaste, true);
+    window.addEventListener("contextmenu", onContextMenu, true);
+    return () => {
+      window.removeEventListener("paste", onPaste, true);
+      window.removeEventListener("contextmenu", onContextMenu, true);
+    };
   }, [examMode, proctor]);
 
   const publish = async () => {

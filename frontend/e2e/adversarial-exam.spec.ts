@@ -172,6 +172,9 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
     test("suppresses right-click context menu in exam mode", async ({ page }) => {
       await enterExamWorkspace(page);
 
+      // Monaco loads from a CDN after the workspace renders; dispatch only once an editor exists.
+      await expect(page.locator('.monaco-editor, textarea[aria-label="Source code"]').first()).toBeVisible();
+
       // Check contextmenu event cancellation in editor
       const isDefaultPrevented = await page.evaluate(() => {
         const target = document.querySelector(".monaco-editor") || document.querySelector('textarea[aria-label="Source code"]') || document.body;
@@ -199,6 +202,9 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
 
     test("intercepts drag-and-drop code injection into editor", async ({ page }) => {
       await enterExamWorkspace(page);
+
+      // Monaco loads from a CDN after the workspace renders; dispatch only once an editor exists.
+      await expect(page.locator('.monaco-editor, textarea[aria-label="Source code"]').first()).toBeVisible();
 
       const dropPrevented = await page.evaluate(() => {
         const editor = document.querySelector(".monaco-editor") || document.querySelector('textarea[aria-label="Source code"]');
@@ -234,7 +240,7 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await expect(page.getByText(/Your exam session has been locked due to exceeding allowed violations/)).toBeVisible();
 
       // Verify submit button is disabled in DOM
-      const submitBtn = page.locator('button:has-text("Submit Solution")');
+      const submitBtn = page.locator("button", { hasText: /^Submit$/ });
       await expect(submitBtn).toBeDisabled();
 
       // Track any POST /submit calls
@@ -302,6 +308,9 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       };
 
       await setupMockApi(page, { customContests: [expiredContest] });
+      await page.addInitScript(() => {
+        sessionStorage.setItem("exam_started_106", "true");
+      });
       await enterExamWorkspace(page, 106, 1, false);
 
       // TimeUpOverlay appears
@@ -310,7 +319,7 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await expect(page.getByText(/The contest has ended/)).toBeVisible();
 
       // Submit button must be disabled
-      const submitBtn = page.locator('button:has-text("Submit Solution")');
+      const submitBtn = page.locator("button", { hasText: /^Submit$/ });
       await expect(submitBtn).toBeDisabled();
 
       // Link to leaderboard must be available
