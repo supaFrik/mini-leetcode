@@ -11,6 +11,8 @@ export class ApiError extends Error {
 
 // Chênh lệch giữa giờ server và giờ máy, cập nhật từ trường `timestamp` của mỗi response.
 let serverOffsetMs = 0;
+// Several requests can hit 401 together; a second redirect would abort the first navigation.
+let redirectingToLogin = false;
 export const getServerOffset = () => serverOffsetMs;
 
 const emit = (name: string) => { if (typeof window !== "undefined") window.dispatchEvent(new Event(name)); };
@@ -110,7 +112,10 @@ export async function request<T>(path: string, init: RequestInit = {}, canRetry 
   if (!res.ok) {
     if (res.status === 401 && !isAuthCall && typeof window !== "undefined") {
       clearTokens();
-      window.location.href = "/login";
+      if (!redirectingToLogin) {
+        redirectingToLogin = true;
+        window.location.href = "/login";
+      }
     }
     throw new ApiError(res.status, body as ProblemDetail | null);
   }
