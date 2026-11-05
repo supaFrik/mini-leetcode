@@ -211,6 +211,15 @@ class OopMainClassDetectorTest {
         assertThat(OopMainClassDetector.detectMainClass(classes)).isEmpty();
     }
 
+    @Test
+    @DisplayName("Two student classes with main → both reported (console asks the user to keep one)")
+    void detectMainClasses_TwoMains_ReturnsBoth() throws IOException {
+        compile("Animal.java", "public class Animal { public static void main(String[] a) {} }");
+        Path classes = compile("Main.java", "public class Main { public static void main(String[] a) {} }");
+
+        assertThat(OopMainClassDetector.detectMainClasses(classes)).containsExactly("Animal", "Main");
+    }
+
     // ------------------------------------------------------------------ helpers
 
     /** Biên dịch source Java rồi trả về thư mục chứa {@code .class}. */

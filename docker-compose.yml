@@ -148,7 +148,7 @@ services:
       JUDGE_CONSUMER_NAME: ${JUDGE_CONSUMER_NAME:-}
       # Console OOP: API gọi judge worker qua HTTP nội bộ (KHÔNG publish port judge ra host).
       JUDGE_BASE_URL: ${JUDGE_BASE_URL:-http://mini-leetcode-judge:8081}
-      JUDGE_INTERNAL_TOKEN: ${JUDGE_INTERNAL_TOKEN:-mini-leetcode-internal-token}
+      JUDGE_INTERNAL_TOKEN: ${JUDGE_INTERNAL_TOKEN:-}
       # Tài khoản admin đầu tiên (AdminBootstrapRunner). Để trống để tắt.
       BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
@@ -213,7 +213,7 @@ services:
       JUDGE_MAX_PARALLEL_TESTCASES: ${JUDGE_MAX_PARALLEL_TESTCASES:-4}
       # Console OOP: judge worker phục vụ endpoint nội bộ POST /internal/console/execute.
       # Token nội bộ PHẢI khớp với service mini-leetcode-api.
-      JUDGE_INTERNAL_TOKEN: ${JUDGE_INTERNAL_TOKEN:-mini-leetcode-internal-token}
+      JUDGE_INTERNAL_TOKEN: ${JUDGE_INTERNAL_TOKEN:-}
       CONSOLE_TIMEOUT_MS: ${CONSOLE_TIMEOUT_MS:-3000}
       CONSOLE_MEMORY_LIMIT_MB: ${CONSOLE_MEMORY_LIMIT_MB:-256}
       DB_URL: jdbc:mysql://mysql:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC

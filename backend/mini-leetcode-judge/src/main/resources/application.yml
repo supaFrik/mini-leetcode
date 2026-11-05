@@ -46,11 +46,13 @@ app:
     bucket-name: ${MINIO_BUCKET_NAME:testcases}
   console:
     # Token nội bộ dùng cho header X-Internal-Token khi API gọi judge worker.
-    # PHẢI khớp với app.judge.internal-token của module mini-leetcode-api.
-    internal-token: ${JUDGE_INTERNAL_TOKEN:mini-leetcode-internal-token}
+    # PHẢI khớp với app.console.internal-token của mini-leetcode-api. Rỗng ⇒ console tắt (401).
+    internal-token: ${JUDGE_INTERNAL_TOKEN:}
     # Timeout mỗi lần chạy (ms), cộng 2s khởi động JVM.
     timeout-ms: ${CONSOLE_TIMEOUT_MS:3000}
     memory-limit-mb: ${CONSOLE_MEMORY_LIMIT_MB:256}
+    # Số lượt chạy console đồng thời (mỗi lượt = 1 container); đầy ⇒ 503.
+    max-concurrent-runs: ${CONSOLE_MAX_CONCURRENT_RUNS:4}
     max-source-bytes: ${CONSOLE_MAX_SOURCE_BYTES:20971520}
     max-files: ${CONSOLE_MAX_FILES:100}
 

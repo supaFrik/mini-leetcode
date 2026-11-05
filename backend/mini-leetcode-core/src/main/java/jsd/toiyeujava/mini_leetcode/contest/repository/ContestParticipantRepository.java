@@ -1,5 +1,6 @@
 package jsd.toiyeujava.mini_leetcode.contest.repository;
 
+import jsd.toiyeujava.mini_leetcode.contest.entity.Contest;
 import jsd.toiyeujava.mini_leetcode.contest.entity.ContestParticipant;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,6 +20,10 @@ public interface ContestParticipantRepository extends JpaRepository<ContestParti
 
     /** Mọi kỳ thi user đã đăng ký, trong một truy vấn. */
     List<ContestParticipant> findByUserId(Long userId);
+
+    /** Các kỳ thi user tham gia (đã nạp sẵn) — dùng để khoá console khi thí sinh đang thi. */
+    @Query("select p.contest from ContestParticipant p where p.user.id = :userId")
+    List<Contest> findContestsByUserId(@Param("userId") Long userId);
 
     /** Thí sinh của nhiều kỳ thi (nạp sẵn User để lấy username khi xếp hạng). */
     @Query("select p from ContestParticipant p join fetch p.user where p.contest.id in :contestIds")

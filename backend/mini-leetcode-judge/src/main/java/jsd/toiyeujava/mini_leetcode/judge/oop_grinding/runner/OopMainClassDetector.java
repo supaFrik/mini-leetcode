@@ -71,17 +71,24 @@ public final class OopMainClassDetector {
      * @return tên lớp đầy đủ (dấu chấm) hoặc {@link Optional#empty()} nếu không có
      */
     public static Optional<String> detectMainClass(Path classesDir) {
+        return detectMainClasses(classesDir).stream().findFirst();
+    }
+
+    /**
+     * Mọi lớp học viên có {@code public static void main(String[])}, theo thứ tự ổn định.
+     * Console dùng để báo lỗi khi có nhiều hơn một entry point.
+     */
+    public static List<String> detectMainClasses(Path classesDir) {
+        List<String> mains = new ArrayList<>();
         if (classesDir == null || !Files.isDirectory(classesDir)) {
-            return Optional.empty();
+            return mains;
         }
-        List<Path> classFiles = listClassFiles(classesDir);
-        for (Path classFile : classFiles) {
-            Optional<String> main = detectMainClassInFile(classFile);
-            if (main.isPresent() && !GENERATED_HARNESS_CLASSES.contains(main.get())) {
-                return main;
-            }
+        for (Path classFile : listClassFiles(classesDir)) {
+            detectMainClassInFile(classFile)
+                    .filter(name -> !GENERATED_HARNESS_CLASSES.contains(name))
+                    .ifPresent(mains::add);
         }
-        return Optional.empty();
+        return mains;
     }
 
     /** Danh sách file {@code .class}, sắp xếp ổn định để kết quả không phụ thuộc thứ tự đọc thư mục. */

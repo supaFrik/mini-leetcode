@@ -15,7 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.Semaphore;
 
 /**
  * Console OOP kiểu terminal IDE: biên dịch mã nguồn, chạy {@code main} với
@@ -36,6 +36,7 @@ public class ConsoleSessionService {
     private final MultiFileSourceExtractor sourceExtractor;
     private final OopGrindingCompiler compiler;
     private final OopContainerExecutor containerExecutor;
+    private final Semaphore runSlots;
 
     public ConsoleSessionService(ConsoleProperties properties,
                                  MultiFileSourceExtractor sourceExtractor,
@@ -45,12 +46,26 @@ public class ConsoleSessionService {
         this.sourceExtractor = sourceExtractor;
         this.compiler = compiler;
         this.containerExecutor = containerExecutor;
+        this.runSlots = new Semaphore(Math.max(1, properties.getMaxConcurrentRuns()));
     }
 
     public ConsoleResponse execute(ConsoleRequest request) {
         if (request == null) {
             return ConsoleResponse.failure("Invalid console request");
         }
+        // Mỗi lượt chạy = 1 container 256MB; không chặn thì N request song song có thể làm host hết RAM
+        // và tranh tài nguyên với việc chấm bài. Đầy ⇒ 503 ngay, không xếp hàng giữ thread.
+        if (!runSlots.tryAcquire()) {
+            return ConsoleResponse.failure("Docker sandbox is unavailable: console is busy, try again in a moment");
+        }
+        try {
+            return run(request);
+        } finally {
+            runSlots.release();
+        }
+    }
+
+    private ConsoleResponse run(ConsoleRequest request) {
         if (request.files().size() > properties.getMaxFiles()) {
             return ConsoleResponse.failure("Payload exceeds the allowed limit: too many files");
         }
@@ -77,14 +92,18 @@ public class ConsoleSessionService {
                 return ConsoleResponse.compileError(compiled.output());
             }
 
-            Optional<String> mainClass = OopMainClassDetector.detectMainClass(workDir.resolve("classes"));
-            if (mainClass.isEmpty()) {
+            List<String> mains = OopMainClassDetector.detectMainClasses(workDir.resolve("classes"));
+            if (mains.isEmpty()) {
                 return ConsoleResponse.failure(
                         "No 'public static void main(String[])' found in your code. Add a main method to run it.");
             }
+            if (mains.size() > 1) {
+                return ConsoleResponse.failure("Found more than one main method (" + String.join(", ", mains)
+                        + "). Keep main in only one class to run it.");
+            }
 
             OopContainerExecutor.SandboxResult result = containerExecutor.runClass(
-                    workDir, mainClass.get(), List.of(), request.input(),
+                    workDir, mains.get(0), List.of(), request.input(),
                     properties.getTimeoutMs(), properties.getMemoryLimitMb());
             if (!result.measured()) {
                 return ConsoleResponse.failure("Docker sandbox is unavailable: " + result.errorMessage());

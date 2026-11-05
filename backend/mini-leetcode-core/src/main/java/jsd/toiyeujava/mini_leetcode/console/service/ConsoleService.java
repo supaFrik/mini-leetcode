@@ -4,7 +4,7 @@ import jsd.toiyeujava.mini_leetcode.console.config.ConsoleGatewayProperties;
 import jsd.toiyeujava.mini_leetcode.console.dto.ConsoleExecuteRequest;
 import jsd.toiyeujava.mini_leetcode.console.dto.ConsoleExecuteResponse;
 import jsd.toiyeujava.mini_leetcode.contest.entity.Contest;
-import jsd.toiyeujava.mini_leetcode.contest.repository.ContestProblemRepository;
+import jsd.toiyeujava.mini_leetcode.contest.repository.ContestParticipantRepository;
 import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.exception.ConsoleDisabledException;
@@ -18,7 +18,6 @@ import jsd.toiyeujava.mini_leetcode.submission.service.SourcePathValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -39,24 +38,28 @@ public class ConsoleService {
     private static final Duration RATE_WINDOW = Duration.ofHours(1);
 
     private final ProblemRepository problemRepository;
-    private final ContestProblemRepository contestProblemRepository;
+    private final ContestParticipantRepository contestParticipantRepository;
     private final JudgeWorkerClient judgeWorkerClient;
     private final StringRedisTemplate redisTemplate;
     private final ConsoleGatewayProperties properties;
 
     public ConsoleService(ProblemRepository problemRepository,
-                          ContestProblemRepository contestProblemRepository,
+                          ContestParticipantRepository contestParticipantRepository,
                           JudgeWorkerClient judgeWorkerClient,
                           StringRedisTemplate redisTemplate,
                           ConsoleGatewayProperties properties) {
         this.problemRepository = problemRepository;
-        this.contestProblemRepository = contestProblemRepository;
+        this.contestParticipantRepository = contestParticipantRepository;
         this.judgeWorkerClient = judgeWorkerClient;
         this.redisTemplate = redisTemplate;
         this.properties = properties;
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * KHÔNG {@code @Transactional}: lời gọi judge chặn tới {@code request-timeout-ms}; bọc trong
+     * transaction sẽ giữ 1 kết nối DB suốt thời gian đó ⇒ vài người chạy cùng lúc là cạn pool.
+     * Mỗi truy vấn repository tự chạy trong transaction ngắn của nó (open-in-view đã tắt).
+     */
     public ConsoleExecuteResponse execute(Long userId, Long problemId, ConsoleExecuteRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Console request is required");
@@ -66,9 +69,9 @@ public class ConsoleService {
         if (problem.getProblemType() != ProblemType.OOP_GRINDING) {
             throw new IllegalArgumentException("Console is only available for OOP problems");
         }
-        assertNotDuringContest(problemId);
+        assertNotInRunningContest(userId);
         List<JudgeWorkerClient.JudgeWorkerFile> files = validateFiles(request);
-        consumeRun(userId, problemId);
+        consumeRun(userId);
 
         JudgeWorkerClient.JudgeWorkerResponse r = judgeWorkerClient.execute(
                 new JudgeWorkerClient.JudgeWorkerRequest(files, request.input()));
@@ -81,9 +84,12 @@ public class ConsoleService {
                 r.truncated(), r.timedOut());
     }
 
-    /** Mỗi lần chạy = 1 container ⇒ giới hạn theo cửa sổ 1 giờ (INCR atomic). */
-    private void consumeRun(Long userId, Long problemId) {
-        String key = "console:runs:" + userId + ":" + problemId;
+    /**
+     * Mỗi lần chạy = 1 container ⇒ giới hạn theo user, cửa sổ 1 giờ (INCR atomic).
+     * Không gắn với problemId: code chạy là tuỳ ý, đổi bài không được thêm lượt.
+     */
+    private void consumeRun(Long userId) {
+        String key = "console:runs:" + userId;
         Long runs = redisTemplate.opsForValue().increment(key);
         if (runs != null && runs == 1) {
             redisTemplate.expire(key, RATE_WINDOW);
@@ -94,9 +100,13 @@ public class ConsoleService {
         }
     }
 
-    /** Console bị khoá khi bài đang nằm trong một kỳ thi đang diễn ra. */
-    private void assertNotDuringContest(Long problemId) {
-        for (Contest contest : contestProblemRepository.findContestsByProblemId(problemId)) {
+    /**
+     * Khoá console khi USER đang tham gia một kỳ thi đang diễn ra — ở MỌI bài, vì code gửi lên
+     * là tuỳ ý (khoá theo bài thì chỉ cần gửi bài thi vào một problemId khác là lách được).
+     * Người không thi (kể cả staff) vẫn dùng bình thường.
+     */
+    private void assertNotInRunningContest(Long userId) {
+        for (Contest contest : contestParticipantRepository.findContestsByUserId(userId)) {
             if (contest != null && contest.resolveStatus() == ContestStatus.RUNNING) {
                 throw new ConsoleDisabledException("Console is disabled during the exam");
             }

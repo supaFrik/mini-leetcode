@@ -21,16 +21,6 @@ public class ExecutionReport {
     private String executionPhase;
     private Double totalScore;
     private String verdict;
-    /**
-     * Wall-clock thực tế (ms) của lần chạy mã nguồn OOP trong container.
-     * {@code null} khi không đo được (VD: Docker không khả dụng).
-     */
-    private Integer runtimeMs;
-    /**
-     * Peak memory của cgroup (KB) của lần chạy mã nguồn OOP trong container.
-     * {@code null} khi không đo được.
-     */
-    private Integer peakMemoryKb;
     private PhaseBreakdown phases;
     private String rawOutput;
     private String errorMessage;

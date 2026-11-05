@@ -4,7 +4,7 @@ import jsd.toiyeujava.mini_leetcode.console.config.ConsoleGatewayProperties;
 import jsd.toiyeujava.mini_leetcode.console.dto.ConsoleExecuteRequest;
 import jsd.toiyeujava.mini_leetcode.console.dto.ConsoleExecuteResponse;
 import jsd.toiyeujava.mini_leetcode.contest.entity.Contest;
-import jsd.toiyeujava.mini_leetcode.contest.repository.ContestProblemRepository;
+import jsd.toiyeujava.mini_leetcode.contest.repository.ContestParticipantRepository;
 import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.exception.ConsoleDisabledException;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 class ConsoleServiceTest {
 
     @Mock private ProblemRepository problemRepository;
-    @Mock private ContestProblemRepository contestProblemRepository;
+    @Mock private ContestParticipantRepository contestParticipantRepository;
     @Mock private JudgeWorkerClient judgeWorkerClient;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private ValueOperations<String, String> valueOps;
@@ -58,19 +58,19 @@ class ConsoleServiceTest {
     void setUp() {
         properties = new ConsoleGatewayProperties();
         consoleService = new ConsoleService(
-                problemRepository, contestProblemRepository, judgeWorkerClient, redisTemplate, properties);
+                problemRepository, contestParticipantRepository, judgeWorkerClient, redisTemplate, properties);
     }
 
     private void mockOopProblem() {
         Problem problem = Problem.builder().id(PROBLEM_ID).problemType(ProblemType.OOP_GRINDING).build();
         when(problemRepository.findById(PROBLEM_ID)).thenReturn(Optional.of(problem));
-        when(contestProblemRepository.findContestsByProblemId(PROBLEM_ID)).thenReturn(List.of());
+        when(contestParticipantRepository.findContestsByUserId(USER_ID)).thenReturn(List.of());
     }
 
     /** Redis INCR trả về số lần chạy hiện tại (sau khi tăng). */
     private void runCountWillBe(long n) {
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
-        when(valueOps.increment("console:runs:" + USER_ID + ":" + PROBLEM_ID)).thenReturn(n);
+        when(valueOps.increment("console:runs:" + USER_ID)).thenReturn(n);
     }
 
     private ConsoleExecuteRequest request(String... paths) {
@@ -105,11 +105,11 @@ class ConsoleServiceTest {
     }
 
     @Test
-    @DisplayName("Running contest → console disabled (403)")
+    @DisplayName("User is a participant of a RUNNING contest → console disabled on ANY problem (403)")
     void execute_DuringRunningContest_ThrowsConsoleDisabled() {
         mockOopProblem();
         Contest running = Contest.builder().id(101L).status(ContestStatus.RUNNING).build();
-        when(contestProblemRepository.findContestsByProblemId(PROBLEM_ID)).thenReturn(List.of(running));
+        when(contestParticipantRepository.findContestsByUserId(USER_ID)).thenReturn(List.of(running));
 
         assertThatThrownBy(() -> consoleService.execute(USER_ID, PROBLEM_ID, request("A.java")))
                 .isInstanceOf(ConsoleDisabledException.class);

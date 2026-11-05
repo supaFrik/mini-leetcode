@@ -18,8 +18,8 @@ import org.springframework.stereotype.Component;
 public class ConsoleGatewayProperties {
     private String judgeBaseUrl = "http://localhost:8081";
     /** Rỗng ⇒ console bị tắt (503). */
-    private String internalToken = "mini-leetcode-internal-token";
-    /** Số lần chạy tối đa mỗi giờ, theo user + bài (mỗi lần = 1 container Docker). */
+    private String internalToken = "";
+    /** Số lần chạy tối đa mỗi giờ cho mỗi user, cộng dồn mọi bài (mỗi lần = 1 container Docker). */
     private int maxRunsPerHour = 50;
     private long maxSourceBytes = 20L * 1024 * 1024;
     private int maxFiles = 100;

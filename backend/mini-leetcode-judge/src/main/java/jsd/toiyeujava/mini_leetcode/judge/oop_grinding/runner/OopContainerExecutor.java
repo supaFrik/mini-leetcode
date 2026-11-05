@@ -3,9 +3,10 @@ package jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner;
 import jsd.toiyeujava.mini_leetcode.judge.LanguageRuntime;
 import jsd.toiyeujava.mini_leetcode.judge.MemoryProbe;
 import jsd.toiyeujava.mini_leetcode.judge.SandboxHostPathResolver;
-import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.OopExecutionMetrics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -27,22 +28,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Chạy mã nguồn OOP trong MỘT container Docker ephemeral để đo được số liệu thật.
- *
- * <p>Vì sao cần container riêng? Phần chấm điểm OOP chạy harness (unit test,
- * socket scenario) và harness đó có thể chạy in-process trong JVM của judge
- * worker. Khi đó không đọc được {@code cgroup memory.peak} của container thí sinh
- * và cũng không có wall-clock thật ⇒ cột {@code execution_time_ms} và
- * {@code memory_used_kb} bị ghi 0 ⇒ UI hiển thị "Runtime: 0 ms | Peak memory: —".
- *
- * <p>Lớp này giải quyết đúng chỗ đó: chạy 1 container riêng với đúng các cờ
- * sandbox đã dùng cho bài thuật toán, đo wall-clock qua
+ * Chạy một lớp Java đã biên dịch (console OOP) trong MỘT container Docker ephemeral
+ * với các cờ sandbox của bài thuật toán; đo wall-clock qua
  * {@code docker inspect StartedAt/FinishedAt} và peak memory qua sentinel
- * {@code __MEM_PEAK_KB__} (tái dụng {@link MemoryProbe}).
+ * {@code __MEM_PEAK_KB__} ({@link MemoryProbe}).
  *
- * <p>TUYỆT ĐỐI không fallback sang chạy in-process: nếu Docker không khả dụng thì
- * trả {@link OopExecutionMetrics#unavailable(String)} để số đo được ghi là
- * {@code null} (hiển thị "—") thay vì số bịa.
+ * <p>TUYỆT ĐỐI không fallback sang chạy in-process: Docker không khả dụng ⇒
+ * {@link SandboxResult#unavailable(String)}.
  */
 @Slf4j
 @Component
@@ -77,31 +69,19 @@ public class OopContainerExecutor {
     }
 
     /**
-     * Đo số liệu của mã nguồn đã biên dịch bằng cách chạy một lớp probe.
-     *
-     * @param workDir        thư mục làm việc chứa {@code classes/}
-     * @param probeClassName lớp probe cần chạy (VD: {@code __OopMetricsProbe})
-     * @param input          nội dung stdin
-     * @param timeoutMs      giới hạn thời gian cho code thí sinh
-     * @param memoryLimitMb  giới hạn bộ nhớ của container
+     * Kéo sẵn image sandbox khi worker khởi động. Nếu không, lần chạy đầu trên máy
+     * mới sẽ tính cả thời gian {@code docker pull} vào timeout ⇒ báo "timed out" sai.
      */
-    public OopExecutionMetrics measure(Path workDir, String probeClassName, String input,
-                                        long timeoutMs, int memoryLimitMb) {
-        SandboxResult result = runClass(workDir, probeClassName, List.of(), input, timeoutMs, memoryLimitMb);
-        if (!result.measured()) {
-            return OopExecutionMetrics.unavailable(result.errorMessage());
+    @EventListener(ApplicationReadyEvent.class)
+    public void prePullRunnerImage() {
+        try {
+            new ProcessBuilder("docker", "pull", DEFAULT_RUNNER_IMAGE)
+                    .redirectErrorStream(true)
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .start();
+        } catch (IOException e) {
+            log.warn("Could not pre-pull sandbox image {}: {}", DEFAULT_RUNNER_IMAGE, e.getMessage());
         }
-        return new OopExecutionMetrics(
-                result.runtimeMs(),
-                result.peakMemoryKb(),
-                result.exitCode(),
-                result.stdout(),
-                result.stderr(),
-                result.timedOut(),
-                result.oomKilled(),
-                result.truncated(),
-                true,
-                null);
     }
 
     /**
@@ -158,18 +138,17 @@ public class OopContainerExecutor {
                 log.warn("OOP sandbox container {} timed out after {} ms", containerName, hardTimeoutMs);
                 // `docker rm -f` trong finally đã kill container; không cần `docker kill` riêng (tốn thêm ~3s).
                 process.destroyForcibly();
-                return SandboxResult.timedOut(effectiveTimeout);
+                // Giữ phần output chương trình đã in trước khi treo (client chết ⇒ pipe EOF).
+                String partialOut = stdoutFuture.completeOnTimeout("", 1, TimeUnit.SECONDS).join();
+                String partialErr = stderrFuture.completeOnTimeout("", 1, TimeUnit.SECONDS).join();
+                return SandboxResult.timedOut(effectiveTimeout, partialOut,
+                        MemoryProbe.parse(partialErr).cleanStderr(), outputTruncated.get());
             }
 
             int exitCode = process.exitValue();
             String stdout = stdoutFuture.join();
             String stderr = stderrFuture.join();
             boolean truncated = outputTruncated.get();
-
-            if (exitCode == 137) {
-                log.warn("OOP sandbox container {} was killed with exit code 137 (OOM)", containerName);
-                return SandboxResult.oomKilled(stdout, stderr);
-            }
 
             String inspect = runDocker("inspect", containerName,
                     "--format", "{{.State.OOMKilled}} {{.State.ExitCode}} {{.State.StartedAt}} {{.State.FinishedAt}}");
@@ -180,6 +159,11 @@ public class OopContainerExecutor {
             }
             boolean oomKilled = Boolean.parseBoolean(state[0]);
             int containerExitCode = parseIntOrDefault(state[1], exitCode);
+            // Chỉ tin cờ OOMKilled của Docker: exit 137 cũng có thể là System.exit(137) hay SIGKILL khác.
+            if (oomKilled) {
+                log.warn("OOP sandbox container {} was OOM-killed", containerName);
+                return SandboxResult.oomKilled(stdout, MemoryProbe.parse(stderr).cleanStderr());
+            }
             if (state[2].startsWith("0001-01-01")) {
                 return SandboxResult.unavailable("Container never started (StartedAt=" + state[2] + ")");
             }
@@ -303,23 +287,44 @@ public class OopContainerExecutor {
         }
     }
 
-    private String readLimited(InputStream in, AtomicBoolean outputTruncated) {
+    /** Số byte cuối luôn được giữ lại để không mất sentinel bộ nhớ khi output bị cắt. */
+    private static final int TAIL_BYTES = 256;
+
+    String readLimited(InputStream in, AtomicBoolean outputTruncated) {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         byte[] chunk = new byte[8192];
+        byte[] tail = new byte[0];
+        boolean overflowed = false;
         try {
             int n;
             while ((n = in.read(chunk)) != -1) {
                 int room = MAX_OUTPUT_BYTES - buffer.size();
                 if (room > 0) {
                     buffer.write(chunk, 0, Math.min(n, room));
-                } else if (n > 0) {
+                }
+                if (n > room) {
+                    overflowed = true;
                     outputTruncated.set(true);
                 }
+                // Giữ TAIL_BYTES cuối cùng đã đọc.
+                byte[] joined = new byte[tail.length + n];
+                System.arraycopy(tail, 0, joined, 0, tail.length);
+                System.arraycopy(chunk, 0, joined, tail.length, n);
+                tail = java.util.Arrays.copyOfRange(joined, Math.max(0, joined.length - TAIL_BYTES), joined.length);
             }
         } catch (IOException ignored) {
             // luồng bị đóng khi container bị kill — giữ phần đã đọc được.
         }
-        return buffer.toString(StandardCharsets.UTF_8);
+        String out = buffer.toString(StandardCharsets.UTF_8);
+        if (overflowed) {
+            // Sentinel __MEM_PEAK_KB__ là dòng cuối stderr: phần đầu bị cắt thì lấy lại từ đuôi.
+            String tailText = new String(tail, StandardCharsets.UTF_8);
+            int i = tailText.lastIndexOf(LanguageRuntime.MEMORY_SENTINEL);
+            if (i >= 0) {
+                out += "\n" + tailText.substring(i);
+            }
+        }
+        return out;
     }
 
     /**
@@ -343,9 +348,11 @@ public class OopContainerExecutor {
             return new SandboxResult(null, null, null, "", "", false, false, false, false, errorMessage);
         }
 
-        public static SandboxResult timedOut(long timeoutMs) {
-            return new SandboxResult(null, null, 124, "", "Execution timed out after " + timeoutMs + "ms",
-                    true, false, false, true, null);
+        public static SandboxResult timedOut(long timeoutMs, String stdout, String stderr, boolean truncated) {
+            String message = "Execution timed out after " + timeoutMs + "ms";
+            return new SandboxResult(null, null, 124, stdout,
+                    stderr == null || stderr.isBlank() ? message : stderr + "\n" + message,
+                    true, false, truncated, true, null);
         }
 
         public static SandboxResult oomKilled(String stdout, String stderr) {
