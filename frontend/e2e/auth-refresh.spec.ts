@@ -111,9 +111,11 @@ test.describe("API token refresh", () => {
   test("a 401 after a successful refresh is not retried forever", async ({ page }) => {
     await seedTokensOnce(page, createMockJwt({ id: 1, username: "student", role: "USER" }));
     const refreshCalls = countRefreshCalls(page);
-    let submissionCalls = 0;
+    // The page loads the list and the summary together; each must be retried exactly once.
+    const submissionCalls: Record<string, number> = {};
     await page.route(/\/api\/v1\/submissions\/my/, (route) => {
-      submissionCalls++;
+      const path = new URL(route.request().url()).pathname;
+      submissionCalls[path] = (submissionCalls[path] ?? 0) + 1;
       return route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ title: "Unauthorized" }) });
     });
 
@@ -121,7 +123,7 @@ test.describe("API token refresh", () => {
     await page.waitForURL(/\/login/);
 
     expect(refreshCalls).toHaveLength(1);
-    expect(submissionCalls).toBe(2); // original + exactly one retry
+    expect(submissionCalls).toEqual({ "/api/v1/submissions/my": 2, "/api/v1/submissions/my/summary": 2 }); // original + exactly one retry
     expect((await storedTokens(page)).access).toBeNull();
   });
 

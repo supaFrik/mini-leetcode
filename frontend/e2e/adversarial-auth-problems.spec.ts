@@ -246,9 +246,8 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       await page.waitForLoadState("domcontentloaded");
 
       // App must not crash; decodeUser handles JSON parse failure gracefully
-      // Header reflects unauthenticated Guest state
-      await expect(page.getByText("Guest")).toBeVisible();
-      await expect(page.getByText("#—")).toBeVisible();
+      // Header reflects unauthenticated state
+      await expect(page.getByRole("banner").getByRole("link", { name: "Log in" })).toBeVisible();
     });
 
     test("handles expired JWT and forces re-authentication on 401 API response", async ({ page }) => {
@@ -263,7 +262,10 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       const payload = Buffer.from(JSON.stringify(expiredPayload)).toString("base64url");
       const expiredToken = `${header}.${payload}.expired_sig`;
 
+      // Seed once: an init script runs on every navigation and would put the token back after the redirect to /login.
       await page.addInitScript((tok) => {
+        if (sessionStorage.getItem("__seeded")) return;
+        sessionStorage.setItem("__seeded", "1");
         localStorage.setItem("access_token", tok);
         localStorage.setItem("refresh_token", "mock_refresh_expired");
       }, expiredToken);
@@ -297,7 +299,7 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       await page.goto("/problems");
       await page.waitForLoadState("domcontentloaded");
 
-      const searchInput = page.getByLabel("Tìm trong danh sách");
+      const searchInput = page.getByLabel("Search problems");
       await expect(searchInput).toBeVisible({ timeout: 10000 });
 
       // Adversarial search string with HTML tags, ampersands, and quotes
@@ -310,10 +312,10 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       expect(page.url()).toContain("q=");
 
       // Filter chip displays text safely without HTML injection
-      await expect(page.getByText("Không có bài nào khớp bộ lọc.")).toBeVisible();
+      await expect(page.getByText("No problems match your filters")).toBeVisible();
 
       // Clear filter returns to full problem list
-      await page.getByRole("button", { name: "Xoá bộ lọc" }).click();
+      await page.getByRole("button", { name: "Clear filters" }).last().click();
       await expect(page.getByText("Two Sum")).toBeVisible();
     });
 
@@ -322,11 +324,11 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       await page.waitForLoadState("domcontentloaded");
 
       // Table should render cleanly with empty message instead of crashing
-      await expect(page.getByText("Status", { exact: true })).toBeVisible({ timeout: 10000 });
-      await expect(page.getByText("Không có bài nào khớp bộ lọc.")).toBeVisible();
+      await expect(page.getByText("No.", { exact: true })).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText("No problems match your filters")).toBeVisible();
 
       // Clicking reset restores list
-      await page.getByRole("button", { name: "Xoá bộ lọc" }).click();
+      await page.getByRole("button", { name: "Clear filters" }).last().click();
       await expect(page.getByText("Two Sum")).toBeVisible();
     });
 
@@ -336,13 +338,13 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
 
       // Page is normalized to 1, Two Sum is visible
       await expect(page.getByText("Two Sum")).toBeVisible({ timeout: 10000 });
-      await expect(page.getByText("Showing 1-8 of 14 Problems")).toBeVisible();
+      await expect(page.getByRole("region", { name: "Problem list" }).locator('a[href^="/problems/"]')).toHaveCount(14);
 
       // Test non-numeric page parameter
       await page.goto("/problems?page=not_a_number");
       await page.waitForLoadState("domcontentloaded");
       await expect(page.getByText("Two Sum")).toBeVisible({ timeout: 10000 });
-      await expect(page.getByText("Showing 1-8 of 14 Problems")).toBeVisible();
+      await expect(page.getByRole("region", { name: "Problem list" }).locator('a[href^="/problems/"]')).toHaveCount(14);
     });
 
     test("survives rapid consecutive filter toggling without stale UI state", async ({ page }) => {
@@ -352,8 +354,9 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       await expect(page.getByText("Two Sum")).toBeVisible({ timeout: 10000 });
 
       // Rapidly toggle tags in succession
-      const arrayTagBtn = page.getByRole("button", { name: "Array", exact: true });
-      const hashTagBtn = page.getByRole("button", { name: "Hash Table", exact: true });
+      // Topic buttons are labelled with the tag followed by its problem count
+      const arrayTagBtn = page.getByRole("button", { name: /^Array \d+$/ });
+      const hashTagBtn = page.getByRole("button", { name: /^Hash Table \d+$/ });
 
       // Click multiple times rapidly
       await arrayTagBtn.click();
@@ -361,7 +364,7 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       await arrayTagBtn.click();
 
       // Allow DOM to settle
-      await expect(page.getByText("Status", { exact: true })).toBeVisible();
+      await expect(page.getByText("No.", { exact: true })).toBeVisible();
       const problemRows = page.locator('a[href^="/problems/"]');
       const count = await problemRows.count();
       expect(count).toBeGreaterThan(0);

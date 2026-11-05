@@ -353,7 +353,8 @@ export function ProblemsView() {
               {list.state === "ok" &&
                 (list.data.content.length > 0 ? (
                   list.data.content.map((p) => <ProblemRow key={p.id} p={p} />)
-                ) : filtersActive ? (
+                ) : filtersActive || page > 1 ? (
+                  // An out-of-range ?page= is not "no problems yet"; "Clear filters" also resets the page.
                   <div className={s.empty}>
                     <h2>No problems match your filters</h2>
                     <p>Try another keyword or remove a filter.</p>
