@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Engine thực thi lệnh console OOP.
@@ -46,8 +45,6 @@ public class ConsoleSessionService {
 
     /** Cache class đã biên dịch: hash mã nguồn → thư mục chứa {@code classes/}. */
     private final Map<String, Path> compileCache = new ConcurrentHashMap<>();
-    /** Số lệnh đã chạy theo khóa phiên (userId:problemId). */
-    private final Map<String, AtomicInteger> sessionCounters = new ConcurrentHashMap<>();
 
     @Autowired
     public ConsoleSessionService(ConsoleProperties properties,
@@ -70,13 +67,7 @@ public class ConsoleSessionService {
         if (request == null) {
             return ConsoleResponse.failure("Invalid console request");
         }
-        String sessionKey = sessionKey(request.userId(), request.problemId());
-        int used = sessionCounters.computeIfAbsent(sessionKey, k -> new AtomicInteger()).get();
-        if (used >= properties.getMaxCommandsPerSession()) {
-            return ConsoleResponse.failure(
-                    "Console command limit reached for this session (" + properties.getMaxCommandsPerSession() + " commands)");
-        }
-
+        // Giới hạn số lệnh do API (Redis) quản lý; judge là executor stateless.
         List<ConsoleRequest.ConsoleFile> javaFiles = request.files().stream()
                 .filter(f -> f.path() != null && f.path().toLowerCase().endsWith(".java"))
                 .toList();
@@ -93,7 +84,10 @@ public class ConsoleSessionService {
             return ConsoleResponse.failure("Payload exceeds the allowed limit (20MB)");
         }
 
-        String sourceHash = hashSource(javaFiles);
+        // Cache theo từng user: thư mục cache bị ghi (script chạy, probe REPL) mỗi
+        // request, nên học viên khác nhau cùng starter template không được dùng chung.
+        // ponytail: 2 tab của cùng user vẫn có thể race; tách script ra thư mục riêng nếu cần.
+        String sourceHash = request.userId() + "-" + hashSource(javaFiles);
         Path workDir;
         try {
             workDir = prepareWorkspace(request, sourceHash);
@@ -168,8 +162,6 @@ public class ConsoleSessionService {
             return ConsoleResponse.failure(message);
         }
 
-        sessionCounters.computeIfAbsent(sessionKey, k -> new AtomicInteger()).incrementAndGet();
-
         String stdout = result.stdout() == null ? "" : result.stdout();
         String stderr = result.stderr() == null ? "" : result.stderr();
         // Với REPL: dòng báo lỗi đánh giá biểu thức được đưa vào stderr cho gọn.
@@ -183,21 +175,6 @@ public class ConsoleSessionService {
 
         return ConsoleResponse.success(stdout, stderr, result.exitCode(),
                 result.runtimeMs(), result.peakMemoryKb(), result.truncated(), result.timedOut());
-    }
-
-    /** Số lệnh đã dùng trong phiên hiện tại. */
-    public int usedCommands(Long userId, Long problemId) {
-        AtomicInteger counter = sessionCounters.get(sessionKey(userId, problemId));
-        return counter == null ? 0 : counter.get();
-    }
-
-    /** Đặt lại bộ đếm của phiên (dùng khi xóa transcript). */
-    public void resetSession(Long userId, Long problemId) {
-        sessionCounters.remove(sessionKey(userId, problemId));
-    }
-
-    private String sessionKey(Long userId, Long problemId) {
-        return (userId == null ? "anon" : userId) + ":" + (problemId == null ? "0" : problemId);
     }
 
     /**

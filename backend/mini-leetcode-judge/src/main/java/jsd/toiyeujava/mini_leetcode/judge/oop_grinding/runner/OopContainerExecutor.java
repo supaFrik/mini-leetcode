@@ -53,7 +53,8 @@ public class OopContainerExecutor {
     public static final int MAX_OUTPUT_BYTES = 64 * 1024;
     public static final long DEFAULT_TIMEOUT_MS = 30_000L;
     public static final String CLASSES_DIR = "classes";
-    private static final long STARTUP_ALLOWANCE_MS = 5_000L;
+    // ponytail: hằng số khớp app.console.startup-allowance-ms mặc định; nối vào ConsoleProperties nếu cần chỉnh.
+    private static final long STARTUP_ALLOWANCE_MS = 2_000L;
     private static final String SCRIPT_FILE = "oop-probe-run.sh";
 
     private final ProcessLauncher processLauncher;
@@ -64,8 +65,6 @@ public class OopContainerExecutor {
         t.setDaemon(true);
         return t;
     });
-    /** Cờ báo output bị cắt cụt — dùng chung cho cả stdout và stderr của một lần chạy. */
-    private final AtomicBoolean outputTruncated = new AtomicBoolean(false);
 
     @Autowired
     public OopContainerExecutor(SandboxHostPathResolver hostPathResolver) {
@@ -127,7 +126,8 @@ public class OopContainerExecutor {
         }
 
         String containerName = "judge-oop-probe-" + UUID.randomUUID();
-        outputTruncated.set(false);
+        // Cục bộ theo từng lần chạy: executor là singleton dùng chung giữa các request.
+        AtomicBoolean outputTruncated = new AtomicBoolean(false);
         try {
             Files.writeString(workDir.resolve(SCRIPT_FILE),
                     LanguageRuntime.runScriptFor(buildRunCommand(className, args, memoryLimitMb)));
@@ -137,9 +137,9 @@ public class OopContainerExecutor {
 
             Process process = processLauncher.launch(new ProcessBuilder(command));
             CompletableFuture<String> stdoutFuture =
-                    CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream()), ioExecutor);
+                    CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream(), outputTruncated), ioExecutor);
             CompletableFuture<String> stderrFuture =
-                    CompletableFuture.supplyAsync(() -> readLimited(process.getErrorStream()), ioExecutor);
+                    CompletableFuture.supplyAsync(() -> readLimited(process.getErrorStream(), outputTruncated), ioExecutor);
 
             // Ghi stdin bất đồng bộ để không bị nghẽn pipe khi chương trình không đọc input.
             CompletableFuture.runAsync(() -> {
@@ -156,9 +156,8 @@ public class OopContainerExecutor {
             boolean finished = process.waitFor(hardTimeoutMs, TimeUnit.MILLISECONDS);
             if (!finished) {
                 log.warn("OOP sandbox container {} timed out after {} ms", containerName, hardTimeoutMs);
-                runDockerQuietly("kill", containerName);
+                // `docker rm -f` trong finally đã kill container; không cần `docker kill` riêng (tốn thêm ~3s).
                 process.destroyForcibly();
-                process.waitFor(2, TimeUnit.SECONDS);
                 return SandboxResult.timedOut(effectiveTimeout);
             }
 
@@ -304,7 +303,7 @@ public class OopContainerExecutor {
         }
     }
 
-    private String readLimited(InputStream in) {
+    private String readLimited(InputStream in, AtomicBoolean outputTruncated) {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         byte[] chunk = new byte[8192];
         try {

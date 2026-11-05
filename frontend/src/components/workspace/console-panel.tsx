@@ -78,7 +78,7 @@ export function ConsolePanel({ problemId, files, cases, contestId, disabled }: C
         if (cancelled) return;
         const restored: LogLine[] = [];
         for (const entry of transcript.entries ?? []) {
-          restored.push(...toLines(entry));
+          restored.push({ id: crypto.randomUUID(), kind: "command", text: entry.input }, ...toLines(entry));
         }
         setLines(restored);
         setRemaining(transcript.limit != null ? Math.max(0, transcript.limit - transcript.used) : null);

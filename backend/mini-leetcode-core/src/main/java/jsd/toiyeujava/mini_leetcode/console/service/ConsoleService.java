@@ -131,7 +131,7 @@ public class ConsoleService {
     public ConsoleTranscriptResponse getTranscript(Long userId, Long problemId) {
         List<ConsoleTranscriptEntry> entries = transcriptStore.read(userId, problemId);
         int limit = properties.getMaxCommandsPerSession();
-        return new ConsoleTranscriptResponse(entries, limit, entries.size());
+        return new ConsoleTranscriptResponse(entries, limit, transcriptStore.count(userId, problemId));
     }
 
     /** Xóa transcript của phiên console. */

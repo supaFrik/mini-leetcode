@@ -44,6 +44,10 @@ public class ConsoleTranscriptStore {
         return KEY_PREFIX + userId + ":" + problemId;
     }
 
+    private String countKey(Long userId, Long problemId) {
+        return "console:count:" + userId + ":" + problemId;
+    }
+
     /** Đọc transcript (cũ nhất trước). */
     public List<ConsoleTranscriptEntry> read(Long userId, Long problemId) {
         try {
@@ -75,9 +79,13 @@ public class ConsoleTranscriptStore {
                 return;
             }
             redisTemplate.opsForList().rightPush(key, json);
-            // Giới hạn số bản ghi để transcript không phình vô hạn.
-            redisTemplate.opsForList().trim(key, 0, MAX_ENTRIES - 1);
+            // Giữ MAX_ENTRIES bản ghi MỚI nhất.
+            redisTemplate.opsForList().trim(key, -MAX_ENTRIES, -1);
             redisTemplate.expire(key, ttl);
+            // Bộ đếm lệnh tách khỏi transcript ⇒ "Clear" không reset giới hạn phiên.
+            String countKey = countKey(userId, problemId);
+            redisTemplate.opsForValue().increment(countKey);
+            redisTemplate.expire(countKey, ttl);
         } catch (Exception e) {
             log.warn("Failed to append console transcript for user {} problem {}: {}",
                     userId, problemId, e.getMessage());
@@ -97,8 +105,8 @@ public class ConsoleTranscriptStore {
     /** Số bản ghi hiện có trong transcript. */
     public int count(Long userId, Long problemId) {
         try {
-            Long size = redisTemplate.opsForList().size(key(userId, problemId));
-            return size == null ? 0 : size.intValue();
+            String value = redisTemplate.opsForValue().get(countKey(userId, problemId));
+            return value == null ? 0 : Integer.parseInt(value);
         } catch (Exception e) {
             return 0;
         }

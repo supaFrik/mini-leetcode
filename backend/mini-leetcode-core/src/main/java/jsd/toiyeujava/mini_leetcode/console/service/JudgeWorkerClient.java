@@ -32,7 +32,10 @@ public class JudgeWorkerClient {
     public JudgeWorkerClient(ConsoleGatewayProperties properties, RestClient.Builder builder) {
         this.properties = properties;
         String baseUrl = normalizeBaseUrl(properties.getJudgeBaseUrl());
-        this.restClient = builder.baseUrl(baseUrl).build();
+        var requestFactory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(5_000);
+        requestFactory.setReadTimeout((int) properties.getRequestTimeoutMs());
+        this.restClient = builder.baseUrl(baseUrl).requestFactory(requestFactory).build();
     }
 
     private String normalizeBaseUrl(String raw) {
@@ -71,6 +74,10 @@ public class JudgeWorkerClient {
                     .onStatus(status -> status.value() == 401 || status.value() == 403, (req, res) -> {
                         throw new SandboxUnavailableException(
                                 "Console worker rejected the request: " + extractMessage(res));
+                    })
+                    // 400 từ worker là lỗi của request (không có main, path sai...) ⇒ 400, không phải 503.
+                    .onStatus(status -> status.value() == 400, (req, res) -> {
+                        throw new IllegalArgumentException(extractMessage(res));
                     })
                     .onStatus(status -> status.isError(), (req, res) -> {
                         throw new SandboxUnavailableException(
