@@ -8,14 +8,10 @@ import jakarta.validation.Valid;
 import jsd.toiyeujava.mini_leetcode.auth.security.UserPrincipal;
 import jsd.toiyeujava.mini_leetcode.console.dto.ConsoleExecuteRequest;
 import jsd.toiyeujava.mini_leetcode.console.dto.ConsoleExecuteResponse;
-import jsd.toiyeujava.mini_leetcode.console.dto.ConsoleTranscriptResponse;
 import jsd.toiyeujava.mini_leetcode.console.service.ConsoleService;
 import jsd.toiyeujava.mini_leetcode.dto.ApiResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,23 +46,5 @@ public class ConsoleController {
             @AuthenticationPrincipal UserPrincipal currentUser) {
         ConsoleExecuteResponse response = consoleService.execute(currentUser.getId(), problemId, request);
         return ResponseEntity.ok(ApiResponse.success("Console command executed", response));
-    }
-
-    @GetMapping("/transcript")
-    @Operation(summary = "Get the console transcript for the current session")
-    public ResponseEntity<ApiResponse<ConsoleTranscriptResponse>> getTranscript(
-            @Parameter(description = "Problem ID") @PathVariable Long problemId,
-            @AuthenticationPrincipal UserPrincipal currentUser) {
-        ConsoleTranscriptResponse transcript = consoleService.getTranscript(currentUser.getId(), problemId);
-        return ResponseEntity.ok(ApiResponse.success(transcript));
-    }
-
-    @DeleteMapping("/transcript")
-    @Operation(summary = "Clear the console transcript for the current session")
-    public ResponseEntity<Void> clearTranscript(
-            @Parameter(description = "Problem ID") @PathVariable Long problemId,
-            @AuthenticationPrincipal UserPrincipal currentUser) {
-        consoleService.clearTranscript(currentUser.getId(), problemId);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

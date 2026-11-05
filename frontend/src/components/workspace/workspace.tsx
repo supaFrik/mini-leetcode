@@ -498,13 +498,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
       </TabsContent>
       {consoleEnabled ? (
         <TabsContent value="console" className="mt-0 h-full">
-          <ConsolePanel
-            problemId={problem.id}
-            files={multiFiles}
-            cases={cases}
-            contestId={contestId ?? null}
-            disabled={locked}
-          />
+          <ConsolePanel problemId={problem.id} files={multiFiles} cases={cases} />
         </TabsContent>
       ) : null}
         </div>

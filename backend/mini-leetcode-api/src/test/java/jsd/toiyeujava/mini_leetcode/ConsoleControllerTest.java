@@ -5,7 +5,6 @@ import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.auth.repository.UserRepository;
 import jsd.toiyeujava.mini_leetcode.auth.security.JwtTokenProvider;
 import jsd.toiyeujava.mini_leetcode.console.dto.ConsoleExecuteResponse;
-import jsd.toiyeujava.mini_leetcode.console.dto.ConsoleTranscriptResponse;
 import jsd.toiyeujava.mini_leetcode.console.service.ConsoleService;
 import jsd.toiyeujava.mini_leetcode.entity.Role;
 import jsd.toiyeujava.mini_leetcode.entity.UserStatus;
@@ -28,8 +27,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -38,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Kiểm thử tích hợp endpoint console OOP.
  *
  * <p>Kiểm tra: yêu cầu phải đăng nhập; payload hợp lệ được chuyển tới service;
- * transcript đọc/xoá hoạt động; lỗi sandbox ⇒ 503; lỗi rate limit ⇒ 429.
+ * lỗi sandbox ⇒ 503; lỗi rate limit ⇒ 429.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -94,8 +91,7 @@ class ConsoleControllerTest {
 
         String body = objectMapper.writeValueAsString(Map.of(
                 "files", List.of(Map.of("path", "Circle.java", "content", "public class Circle {}")),
-                "input", "42",
-                "expression", "new Circle(2).getArea()"));
+                "input", "42"));
 
         mockMvc.perform(post("/api/v1/problems/42/console/execute")
                         .header("Authorization", "Bearer " + token)
@@ -110,26 +106,4 @@ class ConsoleControllerTest {
         verify(consoleService).execute(eq(student.getId()), eq(42L), any());
     }
 
-    @Test
-    @DisplayName("GET /console/transcript returns the stored entries")
-    void transcript_ReturnsEntries() throws Exception {
-        when(consoleService.getTranscript(student.getId(), 42L))
-                .thenReturn(new ConsoleTranscriptResponse(List.of(), 50, 0));
-
-        mockMvc.perform(get("/api/v1/problems/42/console/transcript")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.limit").value(50))
-                .andExpect(jsonPath("$.data.used").value(0));
-    }
-
-    @Test
-    @DisplayName("DELETE /console/transcript returns 204")
-    void transcript_ClearReturnsNoContent() throws Exception {
-        mockMvc.perform(delete("/api/v1/problems/42/console/transcript")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isNoContent());
-
-        verify(consoleService).clearTranscript(student.getId(), 42L);
-    }
 }

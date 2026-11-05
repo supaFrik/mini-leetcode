@@ -114,20 +114,12 @@ export interface SubmitBody {
   contestId?: number;
 }
 
-// ===== Console OOP (stdin/stdout tương tác) =====
-/** Chế độ chạy của console OOP. */
-export type ConsoleMode = "EVALUATE" | "PROGRAM";
+// ===== Console OOP (terminal: chạy main với stdin) =====
 export interface ConsoleExecuteRequest {
   /** Mã nguồn hiện tại trong editor. */
   files: SubmissionFile[];
   /** Nội dung stdin gửi cho `main` (có thể rỗng). */
   input?: string;
-  /** Biểu thức REPL khi ở chế độ `EVALUATE`. */
-  expression?: string;
-  /** Id kỳ thi nếu đang ở chế độ thi — server sẽ chặn console. */
-  contestId?: number | null;
-  /** Chế độ chạy; mặc định `EVALUATE`. */
-  mode?: ConsoleMode;
 }
 export interface ConsoleExecuteResponse {
   stdout: string;
@@ -141,21 +133,6 @@ export interface ConsoleExecuteResponse {
   compileErrors: string | null;
   truncated: boolean;
   timedOut: boolean;
-}
-export interface ConsoleTranscriptEntry {
-  input: string;
-  stdout: string;
-  stderr: string;
-  exitCode: number | null;
-  runtimeMs: number | null;
-  peakMemoryKb: number | null;
-  compileErrors?: string | null;
-  at: string;
-}
-export interface ConsoleTranscriptResponse {
-  entries: ConsoleTranscriptEntry[];
-  limit: number;
-  used: number;
 }
 
 // ===== Kỳ thi =====

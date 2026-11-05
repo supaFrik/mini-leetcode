@@ -10,7 +10,7 @@ import { setTokens } from "./auth";
 import * as mock from "./mock-server";
 import type { PollFetch } from "./polling";
 import type {
-  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ConsoleExecuteRequest, ConsoleExecuteResponse, ConsoleTranscriptResponse, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
+  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ConsoleExecuteRequest, ConsoleExecuteResponse, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
 } from "@/types/api";
 
@@ -315,16 +315,6 @@ export async function executeConsoleCommand(
     method: "POST",
     body: JSON.stringify(body),
   });
-}
-
-/** Đọc transcript console của phiên hiện tại (sống ~1h trên server). */
-export async function fetchConsoleTranscript(problemId: number): Promise<ConsoleTranscriptResponse> {
-  return api<ConsoleTranscriptResponse>(`/api/v1/problems/${problemId}/console/transcript`);
-}
-
-/** Xoá transcript console của phiên hiện tại. */
-export async function clearConsoleTranscript(problemId: number): Promise<void> {
-  await api<unknown>(`/api/v1/problems/${problemId}/console/transcript`, { method: "DELETE" });
 }
 
 // ---------- Draft (chống rớt mạng) ----------

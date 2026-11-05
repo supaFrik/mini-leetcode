@@ -214,7 +214,6 @@ services:
       # Console OOP: judge worker phục vụ endpoint nội bộ POST /internal/console/execute.
       # Token nội bộ PHẢI khớp với service mini-leetcode-api.
       JUDGE_INTERNAL_TOKEN: ${JUDGE_INTERNAL_TOKEN:-mini-leetcode-internal-token}
-      CONSOLE_MAX_COMMANDS_PER_SESSION: ${CONSOLE_MAX_COMMANDS_PER_SESSION:-50}
       CONSOLE_TIMEOUT_MS: ${CONSOLE_TIMEOUT_MS:-3000}
       CONSOLE_MEMORY_LIMIT_MB: ${CONSOLE_MEMORY_LIMIT_MB:-256}
       DB_URL: jdbc:mysql://mysql:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC

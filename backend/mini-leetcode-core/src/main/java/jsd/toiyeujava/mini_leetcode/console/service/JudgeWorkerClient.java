@@ -3,8 +3,6 @@ package jsd.toiyeujava.mini_leetcode.console.service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jsd.toiyeujava.mini_leetcode.console.config.ConsoleGatewayProperties;
-import jsd.toiyeujava.mini_leetcode.entity.ConsoleMode;
-import jsd.toiyeujava.mini_leetcode.exception.ConsoleRateLimitExceededException;
 import jsd.toiyeujava.mini_leetcode.exception.SandboxUnavailableException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -49,8 +47,7 @@ public class JudgeWorkerClient {
     /**
      * Thực thi một lệnh console trên judge worker.
      *
-     * @throws SandboxUnavailableException      khi Docker/judge worker không khả dụng
-     * @throws ConsoleRateLimitExceededException khi vượt giới hạn lệnh của phiên
+     * @throws SandboxUnavailableException khi Docker/judge worker không khả dụng
      */
     public JudgeWorkerResponse execute(JudgeWorkerRequest request) {
         String token = properties.getInternalToken();
@@ -68,9 +65,6 @@ public class JudgeWorkerClient {
                     .onStatus(status -> status.value() == 503, (req, res) -> {
                         throw new SandboxUnavailableException(extractMessage(res));
                     })
-                    .onStatus(status -> status.value() == 429, (req, res) -> {
-                        throw new ConsoleRateLimitExceededException(extractMessage(res));
-                    })
                     .onStatus(status -> status.value() == 401 || status.value() == 403, (req, res) -> {
                         throw new SandboxUnavailableException(
                                 "Console worker rejected the request: " + extractMessage(res));
@@ -85,7 +79,7 @@ public class JudgeWorkerClient {
                     })
                     .body(JudgeWorkerResponse.class);
             return response == null ? JudgeWorkerResponse.empty() : response;
-        } catch (SandboxUnavailableException | ConsoleRateLimitExceededException e) {
+        } catch (SandboxUnavailableException e) {
             throw e;
         } catch (RestClientException e) {
             log.warn("Failed to reach judge worker at {}: {}", properties.getJudgeBaseUrl(), e.getMessage());
@@ -119,19 +113,10 @@ public class JudgeWorkerClient {
     }
 
     /** Payload gửi sang judge worker. */
-    public record JudgeWorkerRequest(
-            Long userId,
-            Long problemId,
-            List<JudgeWorkerFile> files,
-            String input,
-            String expression,
-            ConsoleMode mode
-    ) {
+    public record JudgeWorkerRequest(List<JudgeWorkerFile> files, String input) {
         public JudgeWorkerRequest {
             files = files == null ? List.of() : List.copyOf(files);
             input = input == null ? "" : input;
-            expression = expression == null ? "" : expression;
-            mode = mode == null ? ConsoleMode.EVALUATE : mode;
         }
     }
 

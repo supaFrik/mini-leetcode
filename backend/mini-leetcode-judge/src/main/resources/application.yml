@@ -48,15 +48,9 @@ app:
     # Token nội bộ dùng cho header X-Internal-Token khi API gọi judge worker.
     # PHẢI khớp với app.judge.internal-token của module mini-leetcode-api.
     internal-token: ${JUDGE_INTERNAL_TOKEN:mini-leetcode-internal-token}
-    # Số lệnh tối đa cho mỗi phiên console (theo user + problem).
-    max-commands-per-session: ${CONSOLE_MAX_COMMANDS_PER_SESSION:50}
-    # Timeout mỗi lệnh console (ms) + phần khởi động JVM.
+    # Timeout mỗi lần chạy (ms), cộng 2s khởi động JVM.
     timeout-ms: ${CONSOLE_TIMEOUT_MS:3000}
-    startup-allowance-ms: ${CONSOLE_STARTUP_ALLOWANCE_MS:2000}
     memory-limit-mb: ${CONSOLE_MEMORY_LIMIT_MB:256}
-    max-output-bytes: ${CONSOLE_MAX_OUTPUT_BYTES:65536}
-    # TTL transcript trong Redis (giây).
-    transcript-ttl-seconds: ${CONSOLE_TRANSCRIPT_TTL_SECONDS:3600}
     max-source-bytes: ${CONSOLE_MAX_SOURCE_BYTES:20971520}
     max-files: ${CONSOLE_MAX_FILES:100}
 

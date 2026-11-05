@@ -53,10 +53,6 @@ public class InternalConsoleController {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                         .body(Map.of("message", message));
             }
-            if (message.contains("limit reached")) {
-                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                        .body(Map.of("message", message));
-            }
             return ResponseEntity.badRequest().body(Map.of("message", message));
         }
 
