@@ -262,7 +262,10 @@ test.describe("Adversarial Stress Testing: Auth and Problems Flows", () => {
       const payload = Buffer.from(JSON.stringify(expiredPayload)).toString("base64url");
       const expiredToken = `${header}.${payload}.expired_sig`;
 
+      // Seed once: an init script runs on every navigation and would put the token back after the redirect to /login.
       await page.addInitScript((tok) => {
+        if (sessionStorage.getItem("__seeded")) return;
+        sessionStorage.setItem("__seeded", "1");
         localStorage.setItem("access_token", tok);
         localStorage.setItem("refresh_token", "mock_refresh_expired");
       }, expiredToken);
