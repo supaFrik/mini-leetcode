@@ -124,6 +124,23 @@ class ProblemAuthoringIntegrationTest {
                 .andExpect(jsonPath("$.problemType").value("OOP_GRINDING"));
     }
 
+    /** Hồi quy: editor admin luôn gửi tags (có thể rỗng); TagNormalizer từng trả List.of() ⇒ 500 khi lưu. */
+    @Test
+    void savingDetailsWithEmptyTagsSucceeds() throws Exception {
+        mockMvc.perform(put("/api/v1/problems/" + problemId).header("Authorization", bearer())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Mini Bank v2\",\"description\":\"d\",\"difficulty\":\"EASY\","
+                                + "\"timeLimitMs\":1000,\"memoryLimitMb\":256,\"tags\":[],\"type\":\"OOP_GRINDING\","
+                                + "\"starterTemplates\":null}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Mini Bank v2"));
+        problemRepository.flush();
+        mockMvc.perform(put("/api/v1/problems/" + problemId).header("Authorization", bearer())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"tags\":[]}"))
+                .andExpect(status().isOk());
+        problemRepository.flush();
+    }
+
     @Test
     void gradingConfigIsValidatedByJudgeAndHiddenFromPublicApi() throws Exception {
         when(judge.validateGradingConfig("{\"rules\":[{}]}")).thenReturn(new JudgeAuthoringClient.ValidationResult(

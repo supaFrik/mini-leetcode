@@ -30,11 +30,15 @@ public final class TagNormalizer {
     /**
      * Chuẩn hoá danh sách tag đầu vào. {@code null} → danh sách rỗng.
      *
+     * <p>Luôn trả về danh sách SỬA ĐƯỢC: kết quả được gán vào {@code @ElementCollection} của entity, và
+     * Hibernate cần clear/add trên chính danh sách đó khi lưu. {@code List.of()} ⇒ UnsupportedOperationException
+     * (lưu bài không có chủ đề trả 500).
+     *
      * @throws IllegalArgumentException nếu tag vượt quá {@link #MAX_TAG_LENGTH} ký tự
      */
     public static List<String> normalize(List<String> tags) {
         if (tags == null || tags.isEmpty()) {
-            return List.of();
+            return new ArrayList<>();
         }
         Map<String, String> dedup = new LinkedHashMap<>();
         for (String raw : tags) {
