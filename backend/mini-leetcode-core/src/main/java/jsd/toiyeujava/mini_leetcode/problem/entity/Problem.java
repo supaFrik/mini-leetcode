@@ -62,6 +62,14 @@ public class Problem {
     private String starterTemplates;
 
     /**
+     * Cấu hình chấm OOP phía server: {@code {"rules": [...], "socketScenarios": [...]}}.
+     * Chỉ judge đọc; KHÔNG đưa vào DTO công khai để học viên không thấy rule chấm.
+     */
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "grading_config", columnDefinition = "JSON")
+    private String gradingConfig;
+
+    /**
      * Chủ đề của bài tập (Array, String, Hash Table...).
      * Dùng bảng nối {@code problem_tags} để lọc được ở tầng SQL.
      */

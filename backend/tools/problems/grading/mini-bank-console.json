@@ -1,0 +1,56 @@
+{
+  "rules": [
+    {
+      "ruleName": "ACCOUNT_IS_ABSTRACT_BASE",
+      "targetClassName": "Account",
+      "expectedType": "ABSTRACT_CLASS",
+      "weight": 2.0,
+      "fields": [{"name": "*", "matchAllFields": true, "forbiddenModifiers": ["public"]}],
+      "methods": [
+        {"name": "canWithdraw", "returnType": "boolean", "parameterTypes": ["long"], "requiredModifiers": ["abstract"]},
+        {"name": "endOfMonth", "returnType": "void", "requiredModifiers": ["abstract"]},
+        {"name": "getType", "returnType": "String", "requiredModifiers": ["abstract"]},
+        {"name": "deposit", "returnType": "long", "parameterTypes": ["long"], "requiredModifiers": ["public"]},
+        {"name": "withdraw", "returnType": "long", "parameterTypes": ["long"], "requiredModifiers": ["public"]}
+      ],
+      "customFailureMessage": "Account phải là lớp abstract, không có field public, khai báo canWithdraw/endOfMonth/getType là abstract"
+    },
+    {
+      "ruleName": "SAVINGS_EXTENDS_ACCOUNT",
+      "targetClassName": "SavingsAccount",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Account",
+      "methods": [
+        {"name": "canWithdraw", "returnType": "boolean", "parameterTypes": ["long"], "forbiddenModifiers": ["abstract"]},
+        {"name": "endOfMonth", "returnType": "void", "forbiddenModifiers": ["abstract"]}
+      ]
+    },
+    {
+      "ruleName": "CHECKING_EXTENDS_ACCOUNT",
+      "targetClassName": "CheckingAccount",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Account",
+      "methods": [
+        {"name": "canWithdraw", "returnType": "boolean", "parameterTypes": ["long"], "forbiddenModifiers": ["abstract"]},
+        {"name": "endOfMonth", "returnType": "void", "forbiddenModifiers": ["abstract"]}
+      ]
+    },
+    {
+      "ruleName": "CHECKED_INSUFFICIENT_FUNDS",
+      "targetClassName": "InsufficientFundsException",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Exception",
+      "customFailureMessage": "InsufficientFundsException phải là checked exception (extends Exception)"
+    },
+    {
+      "ruleName": "BANK_ENCAPSULATION",
+      "targetClassName": "Bank",
+      "expectedType": "CLASS",
+      "enforceEncapsulation": true,
+      "methods": [
+        {"name": "open", "returnType": "Account", "parameterTypes": ["String", "String", "long"], "requiredModifiers": ["public"]},
+        {"name": "transfer", "returnType": "void", "parameterTypes": ["int", "int", "long"], "requiredModifiers": ["public"]}
+      ]
+    }
+  ]
+}

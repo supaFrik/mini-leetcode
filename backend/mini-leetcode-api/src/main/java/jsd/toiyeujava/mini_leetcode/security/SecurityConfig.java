@@ -68,6 +68,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/submissions/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/problems/*/submit").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/problems/*/submissions/**").authenticated()
+                        // Console live: handshake WebSocket công khai, JWT được kiểm tra ở frame "start" đầu tiên
+                        // (trình duyệt không gửi được header Authorization khi mở WebSocket).
+                        .requestMatchers("/api/v1/console/ws").permitAll()
                         // Problems public reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/problems/**").permitAll()
                         // Testcase management (more specific paths must come before general problem routes)

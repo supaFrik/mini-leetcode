@@ -40,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
@@ -146,8 +147,8 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0),
-                eq(0),
+                isNull(),
+                isNull(),
                 eq(0),
                 eq(0),
                 contains("error: illegal start of expression")
@@ -202,7 +203,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("cannot find symbol")
         );
 
@@ -249,7 +250,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("No Java source files (.java) found")
         );
 
@@ -306,7 +307,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("Zip Slip")
         );
 
@@ -357,7 +358,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("Illegal null byte")
         );
 
@@ -405,7 +406,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("Zip Slip")
         );
 
@@ -464,7 +465,7 @@ public class OopGrindingPipelineRobustnessTest {
                         OopFieldConstraint.builder().name("name").type("String").requiredModifiers(List.of("private", "final")).build()
                 ))
                 .build();
-        Files.writeString(workDir.resolve("rules.json"), objectMapper.writeValueAsString(List.of(rule)));
+        
 
         SocketScenarioConfig socketConfig = SocketScenarioConfig.builder()
                 .scenarioName("SERVICE_SOCKET")
@@ -472,7 +473,9 @@ public class OopGrindingPipelineRobustnessTest {
                 .targetClass("Service")
                 .role(SocketRole.CLIENT)
                 .build();
-        Files.writeString(workDir.resolve("socket-scenarios.json"), objectMapper.writeValueAsString(List.of(socketConfig)));
+        // Cấu hình chấm nằm ở server (problems.grading_config); *Test.java trong bài nộp bị bỏ qua.
+        problem.setGradingConfig(objectMapper.writeValueAsString(
+                Map.of("rules", List.of(rule), "socketScenarios", List.of(socketConfig))));
 
         // Stage mock execution report for in-process harness simulation
         ExecutionReport mockReport = ExecutionReport.builder()
@@ -543,25 +546,25 @@ public class OopGrindingPipelineRobustnessTest {
         JsonNode oopNode = phases.get("oopInspection");
         assertThat(oopNode).isNotNull();
         assertThat(oopNode.get("score").asDouble()).isEqualTo(100.0);
-        assertThat(oopNode.get("weight").asDouble()).isEqualTo(0.30);
-        assertThat(oopNode.get("weightedScore").asDouble()).isEqualTo(30.0);
+        assertThat(oopNode.get("weight").asDouble()).isEqualTo(0.50);
+        assertThat(oopNode.get("weightedScore").asDouble()).isEqualTo(50.0);
         assertThat(oopNode.get("rules")).isNotEmpty();
 
         // Phase 3: Unit Test
         JsonNode unitNode = phases.get("unitTest");
         assertThat(unitNode).isNotNull();
         assertThat(unitNode.get("score").asDouble()).isEqualTo(100.0);
-        assertThat(unitNode.get("weight").asDouble()).isEqualTo(0.40);
-        assertThat(unitNode.get("weightedScore").asDouble()).isEqualTo(40.0);
-        assertThat(unitNode.get("passedCount").asInt()).isEqualTo(1);
-        assertThat(unitNode.get("totalCount").asInt()).isEqualTo(1);
+        assertThat(unitNode.get("weight").asDouble()).isEqualTo(0.0);
+        assertThat(unitNode.get("weightedScore").asDouble()).isEqualTo(0.0);
+        assertThat(unitNode.get("passedCount").asInt()).isEqualTo(0); // ServiceTest.java của học viên không được chạy
+        assertThat(unitNode.get("totalCount").asInt()).isEqualTo(0);
 
         // Phase 4: Socket Integration
         JsonNode socketNode = phases.get("socketIntegration");
         assertThat(socketNode).isNotNull();
         assertThat(socketNode.get("score").asDouble()).isEqualTo(100.0);
-        assertThat(socketNode.get("weight").asDouble()).isEqualTo(0.30);
-        assertThat(socketNode.get("weightedScore").asDouble()).isEqualTo(30.0);
+        assertThat(socketNode.get("weight").asDouble()).isEqualTo(0.50);
+        assertThat(socketNode.get("weightedScore").asDouble()).isEqualTo(50.0);
         assertThat(socketNode.get("scenarios")).isNotEmpty();
 
         // Mathematical summation integrity check
@@ -625,7 +628,7 @@ public class OopGrindingPipelineRobustnessTest {
                         OopFieldConstraint.builder().name("port").type("int").requiredModifiers(List.of("private", "final")).build()
                 ))
                 .build();
-        Files.writeString(workDir.resolve("rules.json"), objectMapper.writeValueAsString(List.of(rule)));
+        
 
         // Socket scenario configured but server crashed -> 0% socket
         SocketScenarioConfig socketConfig = SocketScenarioConfig.builder()
@@ -634,7 +637,9 @@ public class OopGrindingPipelineRobustnessTest {
                 .targetClass("EchoServer")
                 .role(SocketRole.CLIENT)
                 .build();
-        Files.writeString(workDir.resolve("socket-scenarios.json"), objectMapper.writeValueAsString(List.of(socketConfig)));
+        // Cấu hình chấm nằm ở server (problems.grading_config); *Test.java trong bài nộp bị bỏ qua.
+        problem.setGradingConfig(objectMapper.writeValueAsString(
+                Map.of("rules", List.of(rule), "socketScenarios", List.of(socketConfig))));
 
         when(submissionService.getSubmissionById(submissionId)).thenReturn(submission);
         when(submissionService.getSubmissionCode(submissionId)).thenReturn(codeBundle);
@@ -646,17 +651,17 @@ public class OopGrindingPipelineRobustnessTest {
         verify(submissionRepository, atLeastOnce()).save(captor.capture());
         Submission saved = captor.getValue();
 
-        // Total score = 0.30 * 100 (OOP) + 0.40 * 75 (Unit 3/4) + 0.30 * 0 (Socket) = 30.0 + 30.0 + 0 = 60.0
-        assertThat(saved.getScore()).isNotNull().isEqualTo(60.0);
+        // Total = 0.50 * 100 (OOP) + 0.50 * 0 (Socket) = 50.0 — ServerTest.java của học viên không được tính
+        assertThat(saved.getScore()).isNotNull().isEqualTo(50.0);
         assertThat(saved.getExecutionPhase()).isNotNull().isEqualTo("COMPLETED");
 
         JsonNode root = objectMapper.readTree(saved.getScoreBreakdown());
-        assertThat(root.get("totalScore").asDouble()).isEqualTo(60.0);
+        assertThat(root.get("totalScore").asDouble()).isEqualTo(50.0);
         assertThat(root.get("verdict").asText()).isEqualTo("WA");
 
         JsonNode phases = root.get("phases");
-        assertThat(phases.get("oopInspection").get("weightedScore").asDouble()).isEqualTo(30.0);
-        assertThat(phases.get("unitTest").get("weightedScore").asDouble()).isEqualTo(30.0);
+        assertThat(phases.get("oopInspection").get("weightedScore").asDouble()).isEqualTo(50.0);
+        assertThat(phases.get("unitTest").get("weightedScore").asDouble()).isEqualTo(0.0);
         assertThat(phases.get("socketIntegration").get("weightedScore").asDouble()).isEqualTo(0.0);
     }
 
@@ -731,7 +736,7 @@ public class OopGrindingPipelineRobustnessTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0), eq(0), eq(0), eq(0),
+                isNull(), isNull(), eq(0), eq(0),
                 contains("20MB")
         );
 

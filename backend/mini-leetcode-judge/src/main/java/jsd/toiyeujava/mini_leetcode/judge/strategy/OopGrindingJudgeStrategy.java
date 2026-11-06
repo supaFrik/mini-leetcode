@@ -1,6 +1,7 @@
 package jsd.toiyeujava.mini_leetcode.judge.strategy;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionLanguage;
@@ -8,30 +9,37 @@ import jsd.toiyeujava.mini_leetcode.entity.SubmissionStatus;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
 import jsd.toiyeujava.mini_leetcode.judge.CompileResult;
 import jsd.toiyeujava.mini_leetcode.judge.DockerExecutor;
+import jsd.toiyeujava.mini_leetcode.judge.OutputComparator;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.calculator.OopScoreCalculator;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.compilation.MultiFileSourceExtractor;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.compilation.OopGrindingCompiler;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.ExecutionReport;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.HarnessConfig;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.OopConstraintRule;
+import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.OopExecutionMetrics;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.SocketScenarioConfig;
+import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner.OopContainerExecutor;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner.OopDockerRunner;
+import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner.OopMainClassDetector;
+import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner.OopProbeHarnessGenerator;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionTaskMessage;
 import jsd.toiyeujava.mini_leetcode.submission.entity.Submission;
 import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
 import jsd.toiyeujava.mini_leetcode.submission.service.SubmissionService;
+import jsd.toiyeujava.mini_leetcode.testcase.entity.TestCase;
+import jsd.toiyeujava.mini_leetcode.testcase.repository.TestCaseRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Stream;
 
 @Slf4j
 @Component
@@ -48,6 +56,12 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
     private final OopDockerRunner oopDockerRunner;
     private final SubmissionRepository submissionRepository;
     private final OopScoreCalculator scoreCalculator;
+    private final OopContainerExecutor oopContainerExecutor;
+    private final OopProbeHarnessGenerator probeHarnessGenerator;
+
+    /** Testcase stdin/stdout của bài (bảng test_cases); null trong unit test không cần tới. */
+    @Autowired(required = false)
+    private TestCaseRepository testCaseRepository;
 
     @Autowired
     public OopGrindingJudgeStrategy(
@@ -59,7 +73,9 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             DockerExecutor dockerExecutor,
             OopDockerRunner oopDockerRunner,
             SubmissionRepository submissionRepository,
-            @Autowired(required = false) OopScoreCalculator scoreCalculator) {
+            @Autowired(required = false) OopScoreCalculator scoreCalculator,
+            @Autowired(required = false) OopContainerExecutor oopContainerExecutor,
+            @Autowired(required = false) OopProbeHarnessGenerator probeHarnessGenerator) {
         this.submissionService = submissionService;
         this.storageService = storageService;
         this.sourceExtractor = sourceExtractor;
@@ -69,6 +85,22 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
         this.oopDockerRunner = oopDockerRunner;
         this.submissionRepository = submissionRepository;
         this.scoreCalculator = scoreCalculator != null ? scoreCalculator : new OopScoreCalculator(this.objectMapper);
+        this.oopContainerExecutor = oopContainerExecutor;
+        this.probeHarnessGenerator = probeHarnessGenerator;
+    }
+
+    public OopGrindingJudgeStrategy(
+            SubmissionService submissionService,
+            StorageService storageService,
+            MultiFileSourceExtractor sourceExtractor,
+            OopGrindingCompiler compiler,
+            ObjectMapper objectMapper,
+            DockerExecutor dockerExecutor,
+            OopDockerRunner oopDockerRunner,
+            SubmissionRepository submissionRepository,
+            OopScoreCalculator scoreCalculator) {
+        this(submissionService, storageService, sourceExtractor, compiler, objectMapper, dockerExecutor,
+                oopDockerRunner, submissionRepository, scoreCalculator, null, null);
     }
 
     public OopGrindingJudgeStrategy(
@@ -80,7 +112,8 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             DockerExecutor dockerExecutor,
             OopDockerRunner oopDockerRunner,
             SubmissionRepository submissionRepository) {
-        this(submissionService, storageService, sourceExtractor, compiler, objectMapper, dockerExecutor, oopDockerRunner, submissionRepository, null);
+        this(submissionService, storageService, sourceExtractor, compiler, objectMapper, dockerExecutor,
+                oopDockerRunner, submissionRepository, null, null, null);
     }
 
     public OopGrindingJudgeStrategy(
@@ -91,7 +124,8 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             ObjectMapper objectMapper,
             DockerExecutor dockerExecutor,
             SubmissionRepository submissionRepository) {
-        this(submissionService, storageService, sourceExtractor, compiler, objectMapper, dockerExecutor, null, submissionRepository, null);
+        this(submissionService, storageService, sourceExtractor, compiler, objectMapper, dockerExecutor, null,
+                submissionRepository, null, null, null);
     }
 
     @Override
@@ -160,96 +194,102 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             return;
         }
 
-        // 4. Phase 2, 3 & 4: OOP Grinding Harness Execution (Docker Runner / In-Process Fallback)
-        HarnessConfig harnessConfig = loadOrCreateHarnessConfig(submissionId, problem, workDir);
-        ExecutionReport executionReport = null;
-        try {
-            executionReport = oopDockerRunner.runHarness(submissionId, workDir, harnessConfig, 30_000L);
-        } catch (Exception e) {
-            log.warn("runHarness threw exception for submission {}, attempting fallback", submissionId, e);
+        // 4. Cấu hình chấm CHỈ lấy từ server: problems.grading_config (rule cấu trúc, kịch bản socket)
+        //    + bảng test_cases (stdin/stdout). Mọi file .json / lớp *Test trong bài nộp bị bỏ qua,
+        //    để học viên không thể tự viết cách chấm cho chính mình.
+        HarnessConfig harnessConfig = buildServerHarnessConfig(submissionId, problem);
+        List<TestCase> testCases = testCaseRepository == null || problem == null ? List.of()
+                : testCaseRepository.findByProblemIdOrderByOrderIndexAsc(problem.getId());
+        if (!harnessConfig.getOopInspection().isEnabled() && !harnessConfig.getSocketIntegration().isEnabled()
+                && testCases.isEmpty()) {
+            submissionService.failSubmission(submissionId,
+                    "This OOP problem has no grading configuration yet (no rules, socket scenarios or test cases)");
+            return;
         }
+        harnessConfig.getUnitTest().setEnabled(!testCases.isEmpty());
 
-        if (executionReport == null ||
-                (executionReport.getErrorMessage() != null &&
-                        (executionReport.getErrorMessage().startsWith("Docker execution failed:")
-                                || executionReport.getErrorMessage().contains("Unable to find image")
-                                || executionReport.getErrorMessage().contains("Container exited with code 125")))) {
-            log.info("Docker daemon or runner image unavailable, running in-process harness for submission {}", submissionId);
-            executionReport = oopDockerRunner.runInProcessHarness(submissionId, workDir, harnessConfig);
+        // Phase 2: rule cấu trúc bằng reflection (Class.forName(.., false, ..) — không chạy code học viên)
+        // + kịch bản socket nếu bài có cấu hình.
+        ExecutionReport executionReport = oopDockerRunner.runInProcessHarness(submissionId, workDir, harnessConfig);
+        // Phase 3: testcase stdin/stdout — chạy main của học viên trong Docker sandbox, so output như bài thuật toán.
+        if (!testCases.isEmpty()) {
+            ExecutionReport.UnitTestPhase ioPhase = runTestCases(workDir, problem, testCases);
+            if (ioPhase == null) {
+                submissionService.failSubmission(submissionId, "Docker sandbox is unavailable, cannot run test cases");
+                return;
+            }
+            executionReport.getPhases().setUnitTest(ioPhase);
         }
+        executionReport = scoreCalculator.aggregateAndEnrich(executionReport, harnessConfig);
 
-        // 5. Update submission results
-        recordExecutionResults(submissionId, executionReport, harnessConfig);
+        // 5. Đo số liệu thật (wall-clock + peak memory) trong 1 container ephemeral.
+        //    Bắt buộc phải chạy trong container thì mới đọc được cgroup memory.peak
+        //    và có wall-clock thật; nếu không đo được thì ghi null (UI hiển thị "—").
+        OopExecutionMetrics metrics = measureExecutionMetrics(submissionId, workDir);
+
+        // 6. Update submission results
+        recordExecutionResults(submissionId, executionReport, harnessConfig, metrics);
     }
 
-    private HarnessConfig loadOrCreateHarnessConfig(Long submissionId, Problem problem, Path workDir) {
-        Path harnessConfigPath = workDir.resolve("harness-config.json");
-        if (Files.exists(harnessConfigPath)) {
-            try {
-                HarnessConfig parsed = objectMapper.readValue(harnessConfigPath.toFile(), HarnessConfig.class);
-                boolean hasSocket = parsed.getSocketIntegration() != null
-                        && parsed.getSocketIntegration().isEnabled()
-                        && parsed.getSocketIntegration().getScenarios() != null
-                        && !parsed.getSocketIntegration().getScenarios().isEmpty();
-                if (hasSocket && parsed.getSocketIntegration().getWeight() == 0.0) {
-                    parsed.getSocketIntegration().setWeight(0.30);
-                    if (parsed.getOopInspection() != null) parsed.getOopInspection().setWeight(0.30);
-                    if (parsed.getUnitTest() != null) parsed.getUnitTest().setWeight(0.40);
-                }
-                return parsed;
-            } catch (Exception e) {
-                log.warn("Failed to parse existing harness-config.json in {}", workDir, e);
-            }
+    /**
+     * Chạy 1 container ephemeral để đo wall-clock và peak memory của mã nguồn OOP.
+     *
+     * <p>Trả về {@link OopExecutionMetrics#unavailable(String)} nếu không đo được
+     * (thiếu Docker, không sinh được probe...). Khi đó số đo được ghi là {@code null}
+     * chứ không phải {@code 0} — vì {@code 0} bị UI hiển thị thành "0 KB" gây hiểu nhầm.
+     */
+    private OopExecutionMetrics measureExecutionMetrics(Long submissionId, Path workDir) {
+        if (oopContainerExecutor == null || probeHarnessGenerator == null) {
+            log.info("OOP metrics executor is not configured for submission {}; metrics will be null", submissionId);
+            return OopExecutionMetrics.unavailable("Metrics executor not configured");
         }
+        try {
+            String mainClass = OopMainClassDetector.detectMainClass(workDir.resolve("classes")).orElse(null);
+            if (!probeHarnessGenerator.generateAndCompile(workDir, mainClass)) {
+                return OopExecutionMetrics.unavailable("Failed to compile metrics probe");
+            }
+            OopExecutionMetrics metrics = oopContainerExecutor.measure(
+                    workDir,
+                    OopProbeHarnessGenerator.PROBE_CLASS_NAME,
+                    "",
+                    10_000L,
+                    256);
+            if (metrics.measured()) {
+                log.info("OOP metrics for submission {}: runtimeMs={}, peakMemoryKb={}, exitCode={}",
+                        submissionId, metrics.runtimeMs(), metrics.peakMemoryKb(), metrics.exitCode());
+            } else {
+                log.warn("OOP metrics unavailable for submission {}: {}", submissionId, metrics.errorMessage());
+            }
+            return metrics;
+        } catch (Exception e) {
+            log.warn("Failed to measure OOP execution metrics for submission {}: {}", submissionId, e.getMessage());
+            return OopExecutionMetrics.unavailable("Failed to measure metrics: " + e.getMessage());
+        }
+    }
 
+    /**
+     * Cấu hình chấm từ {@code problems.grading_config}. KHÔNG đọc bất kỳ file nào trong bài nộp.
+     * Phase không có cấu hình thì bị tắt (trọng số 0) thay vì tự được 100 điểm.
+     */
+    private HarnessConfig buildServerHarnessConfig(Long submissionId, Problem problem) {
         List<OopConstraintRule> rules = new ArrayList<>();
-        Path rulesPath = workDir.resolve("rules.json");
-        if (Files.exists(rulesPath)) {
-            try {
-                String rulesJson = Files.readString(rulesPath);
-                rules = objectMapper.readValue(rulesJson, new TypeReference<List<OopConstraintRule>>() {});
-            } catch (Exception e) {
-                log.warn("Failed to parse rules.json in {}", workDir, e);
-            }
-        }
-
-        List<String> testClasses = new ArrayList<>();
-        Path classesDir = workDir.resolve("classes");
-        if (Files.exists(classesDir)) {
-            try (Stream<Path> stream = Files.walk(classesDir)) {
-                stream.filter(p -> p.getFileName().toString().endsWith("Test.class"))
-                        .forEach(p -> {
-                            Path rel = classesDir.relativize(p);
-                            String fqcn = rel.toString()
-                                    .replace('/', '.')
-                                    .replace('\\', '.')
-                                    .replaceAll("\\.class$", "");
-                            testClasses.add(fqcn);
-                        });
-            } catch (Exception e) {
-                log.warn("Failed to discover test classes in {}", classesDir, e);
-            }
-        }
-
         List<SocketScenarioConfig> socketScenarios = new ArrayList<>();
-        Path socketScenariosPath = workDir.resolve("socket-scenarios.json");
-        if (!Files.exists(socketScenariosPath)) {
-            socketScenariosPath = workDir.resolve("scenarios.json");
-        }
-        if (Files.exists(socketScenariosPath)) {
+        String raw = problem != null ? problem.getGradingConfig() : null;
+        if (raw != null && !raw.isBlank()) {
             try {
-                String scenariosJson = Files.readString(socketScenariosPath);
-                socketScenarios = objectMapper.readValue(scenariosJson, new TypeReference<List<SocketScenarioConfig>>() {});
+                JsonNode root = objectMapper.readTree(raw);
+                if (root.has("rules")) {
+                    rules = objectMapper.convertValue(root.get("rules"), new TypeReference<List<OopConstraintRule>>() {});
+                }
+                if (root.has("socketScenarios")) {
+                    socketScenarios = objectMapper.convertValue(root.get("socketScenarios"),
+                            new TypeReference<List<SocketScenarioConfig>>() {});
+                }
             } catch (Exception e) {
-                log.warn("Failed to parse socket scenarios in {}", socketScenariosPath, e);
+                log.error("Invalid grading_config for problem {}; treating it as empty", problem.getId(), e);
             }
         }
-
         boolean hasSocket = !socketScenarios.isEmpty();
-        double oopWeight = hasSocket ? 0.30 : 0.40;
-        double unitWeight = hasSocket ? 0.40 : 0.60;
-        double socketWeight = hasSocket ? 0.30 : 0.0;
-
         return HarnessConfig.builder()
                 .submissionId(submissionId)
                 .problemId(problem != null ? problem.getId() : null)
@@ -262,25 +302,92 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
                         .socketScenarioTimeoutSeconds(3)
                         .build())
                 .oopInspection(HarnessConfig.OopInspectionConfig.builder()
-                        .enabled(true)
-                        .weight(oopWeight)
+                        .enabled(!rules.isEmpty())
+                        .weight(hasSocket ? 0.30 : 0.40)
                         .rules(rules)
                         .build())
+                // "unitTest" chứa kết quả testcase stdin/stdout (bật khi bài có test_cases).
                 .unitTest(HarnessConfig.UnitTestConfig.builder()
-                        .enabled(true)
-                        .weight(unitWeight)
-                        .testClassNames(testClasses)
+                        .enabled(false)
+                        .weight(hasSocket ? 0.40 : 0.60)
+                        .testClassNames(List.of())
                         .timeoutSecondsPerTest(2)
                         .build())
                 .socketIntegration(HarnessConfig.SocketIntegrationConfig.builder()
                         .enabled(hasSocket)
-                        .weight(socketWeight)
+                        .weight(hasSocket ? 0.30 : 0.0)
                         .scenarios(socketScenarios)
                         .build())
                 .build();
     }
 
-    private void recordExecutionResults(Long submissionId, ExecutionReport report, HarnessConfig config) {
+    /**
+     * Chạy {@code main} của học viên với stdin của từng testcase trong container sandbox và so stdout.
+     *
+     * @return kết quả phase, hoặc {@code null} nếu không có sandbox (không bao giờ chạy in-process)
+     */
+    private ExecutionReport.UnitTestPhase runTestCases(Path workDir, Problem problem, List<TestCase> testCases)
+            throws IOException {
+        if (oopContainerExecutor == null) {
+            return null;
+        }
+        Optional<String> mainClass = OopMainClassDetector.detectMainClass(workDir.resolve("classes"));
+        List<ExecutionReport.UnitTestFailure> failures = new ArrayList<>();
+        int passed = 0;
+        int index = 0;
+        for (TestCase testCase : testCases) {
+            index++;
+            String label = "Test case #" + index + (Boolean.TRUE.equals(testCase.getIsHidden()) ? " (hidden)" : "");
+            String error;
+            if (mainClass.isEmpty()) {
+                error = "No 'public static void main(String[] args)' found";
+            } else {
+                OopContainerExecutor.SandboxResult result = oopContainerExecutor.runClass(workDir, mainClass.get(),
+                        List.of(), readText(testCase.getInputFileUri()), problem.getTimeLimitMs(), problem.getMemoryLimitMb());
+                if (!result.measured()) {
+                    log.warn("Sandbox unavailable while running {}: {}", label, result.errorMessage());
+                    return null;
+                }
+                if (result.timedOut()) {
+                    error = "Time limit exceeded";
+                } else if (result.oomKilled()) {
+                    error = "Memory limit exceeded";
+                } else if (result.exitCode() != null && result.exitCode() != 0) {
+                    error = "Runtime error (exit code " + result.exitCode() + ")";
+                } else if (!OutputComparator.matches(result.stdout(), readText(testCase.getExpectedOutputUri()))) {
+                    error = "Wrong answer";
+                } else {
+                    error = null;
+                }
+            }
+            if (error == null) {
+                passed++;
+            } else {
+                failures.add(ExecutionReport.UnitTestFailure.builder()
+                        .testClass("stdin/stdout").testMethod(label).error(error).build());
+            }
+        }
+        return ExecutionReport.UnitTestPhase.builder()
+                .score(Math.round(passed * 1000.0 / testCases.size()) / 10.0)
+                .weight(0.0)
+                .weightedScore(0.0)
+                .passedCount(passed)
+                .totalCount(testCases.size())
+                .failures(failures)
+                .build();
+    }
+
+    private String readText(String uri) throws IOException {
+        try (InputStream in = storageService.downloadFileByUri(uri)) {
+            if (in == null) {
+                throw new IOException("Missing test case file in storage: " + uri);
+            }
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
+    private void recordExecutionResults(Long submissionId, ExecutionReport report, HarnessConfig config,
+                                        OopExecutionMetrics metrics) {
         if (report != null && scoreCalculator != null) {
             if (report.getTotalScore() == null) {
                 report = scoreCalculator.aggregateAndEnrich(report, config);
@@ -299,14 +406,22 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             totalCount = report.getPhases().getUnitTest().getTotalCount();
         }
 
+        // Số đo thật: null khi không đo được (UI hiển thị "—"), không phải 0.
+        Integer runtimeMs = metrics != null ? metrics.runtimeMs() : null;
+        Integer peakMemoryKb = metrics != null ? metrics.peakMemoryKb() : null;
+        if (report != null) {
+            report.setRuntimeMs(runtimeMs);
+            report.setPeakMemoryKb(peakMemoryKb);
+        }
+
         String scoreBreakdownJson = scoreCalculator.formatScoreBreakdownJson(report);
 
         submissionService.updateSubmissionVerdict(
                 submissionId,
                 SubmissionStatus.COMPLETED,
                 verdict,
-                0,
-                0,
+                runtimeMs,
+                peakMemoryKb,
                 passedCount,
                 totalCount,
                 report != null ? report.getErrorMessage() : null
@@ -339,12 +454,14 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
     }
 
     private void recordFailureVerdict(Long submissionId, String breakdown, String errorMessage) {
+        // CE (lỗi biên dịch / lỗi trích xuất): KHÔNG có số đo thực thi nào để báo,
+        // nên ghi null cho cả hai cột — UI hiển thị "Runtime: — ms | Peak memory: —".
         submissionService.updateSubmissionVerdict(
                 submissionId,
                 SubmissionStatus.COMPLETED,
                 SubmissionVerdict.CE,
-                0,
-                0,
+                null,
+                null,
                 0,
                 0,
                 errorMessage
