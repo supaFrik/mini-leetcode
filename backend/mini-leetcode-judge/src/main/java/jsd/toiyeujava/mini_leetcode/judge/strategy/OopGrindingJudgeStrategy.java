@@ -200,6 +200,10 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
         HarnessConfig harnessConfig = buildServerHarnessConfig(submissionId, problem);
         List<TestCase> testCases = testCaseRepository == null || problem == null ? List.of()
                 : testCaseRepository.findByProblemIdOrderByOrderIndexAsc(problem.getId());
+        if (Boolean.TRUE.equals(message.isQuickRun())) {
+            // Run (chấm thử) chỉ dùng testcase công khai để không lộ kết quả testcase ẩn; Submit chạy đủ.
+            testCases = testCases.stream().filter(tc -> !Boolean.TRUE.equals(tc.getIsHidden())).toList();
+        }
         if (!harnessConfig.getOopInspection().isEnabled() && !harnessConfig.getSocketIntegration().isEnabled()
                 && testCases.isEmpty()) {
             submissionService.failSubmission(submissionId,

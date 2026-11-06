@@ -110,6 +110,20 @@ export function ProblemResult({
     );
   }
 
+  // Judge không chấm được (vd. bài chưa có cấu hình chấm, sandbox lỗi): hiện lý do thay vì gợi ý trống.
+  if (result?.status === "FAILED" && !result.verdict) {
+    return (
+      <div className="space-y-2 p-4" role="alert">
+        <p className="text-heading-md text-destructive">System Error</p>
+        {result.errorMessage ? (
+          <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded-sm border border-destructive/25 bg-destructive/5 p-3 font-mono text-code text-destructive">
+            {result.errorMessage}
+          </pre>
+        ) : null}
+      </div>
+    );
+  }
+
   if (!result?.verdict) {
     return <p className="p-4 text-body-md text-mute">{emptyHint}</p>;
   }

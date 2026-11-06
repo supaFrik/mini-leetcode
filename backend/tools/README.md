@@ -34,6 +34,14 @@ Bài chỉ có một loại thì loại đó chiếm 100%. Bài **không có** r
 
 Rule là danh sách `OopConstraintRule` (xem `mini-leetcode-judge/.../oop_grinding/model`): `targetClassName`, `expectedType` (`CLASS`, `ABSTRACT_CLASS`, `INTERFACE`, `ENUM`, `RECORD`), `expectedSuperclass`, `expectedInterfaces`, `requiredModifiers` / `forbiddenModifiers` (chữ thường), `enforceEncapsulation`, `fields`, `methods` (`name`, `returnType`, `parameterTypes`), `constructors`, `weight`. Ví dụ đầy đủ: `problems/grading/mini-bank-console.json`.
 
+Nạp `grading_config` của **mọi** bài có file `problems/grading/<slug>.json` (hiện có `shape-hierarchy`, `socket-echo-server`, `mini-bank-console`):
+
+```powershell
+python backend\tools\problems\seed_grading.py | docker exec -i mini_leetcode_mysql mysql --default-character-set=utf8mb4 -u leetcode -pleetcode_password mini_leetcode
+```
+
+Run (chấm thử) chỉ dùng testcase **công khai**; Submit dùng tất cả testcase.
+
 Ví dụ bài Mini Bank Console:
 
 ```powershell
