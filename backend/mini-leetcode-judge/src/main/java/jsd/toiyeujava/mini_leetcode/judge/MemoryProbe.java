@@ -11,7 +11,7 @@ import java.util.List;
  * {@code /sys/fs/cgroup/memory.peak}). Dòng này chỉ dành cho hệ thống, phải
  * được loại khỏi stderr mà người dùng nhìn thấy.
  */
-final class MemoryProbe {
+public final class MemoryProbe {
 
     private final Integer peakMemoryKb;
     private final String cleanStderr;
@@ -27,7 +27,7 @@ final class MemoryProbe {
      * @param stderr stderr thô của container (có thể null)
      * @return peak memory (KB) và stderr đã loại bỏ sentinel
      */
-    static MemoryProbe parse(String stderr) {
+    public static MemoryProbe parse(String stderr) {
         if (stderr == null || stderr.isEmpty()) {
             return new MemoryProbe(null, stderr == null ? "" : stderr);
         }
@@ -71,12 +71,12 @@ final class MemoryProbe {
     }
 
     /** Peak memory tính bằng KB, {@code null} nếu không đọc được sentinel. */
-    Integer peakMemoryKb() {
+    public Integer peakMemoryKb() {
         return peakMemoryKb;
     }
 
     /** stderr đã loại bỏ dòng sentinel. */
-    String cleanStderr() {
+    public String cleanStderr() {
         return cleanStderr;
     }
 }

@@ -146,6 +146,9 @@ services:
       JUDGE_LEGACY_QUEUE_KEY: ${JUDGE_LEGACY_QUEUE_KEY:-queue.submissions}
       JUDGE_CONSUMER_GROUP: ${JUDGE_CONSUMER_GROUP:-judge-group}
       JUDGE_CONSUMER_NAME: ${JUDGE_CONSUMER_NAME:-}
+      # Console live: API relay WebSocket tới judge worker (KHÔNG publish port judge ra host).
+      JUDGE_CONSOLE_WS_URL: ${JUDGE_CONSOLE_WS_URL:-ws://mini-leetcode-judge:8081/internal/console/ws}
+      JUDGE_INTERNAL_TOKEN: ${JUDGE_INTERNAL_TOKEN:-mini-leetcode-internal-token}
       # Tài khoản admin đầu tiên (AdminBootstrapRunner). Để trống để tắt.
       BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
@@ -181,6 +184,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./temp-submissions:/app/temp-submissions
+      # Workspace của console live — cần bind-mount để sandbox container
+      # (do Docker daemon trên HOST tạo) nhìn thấy được file .class đã biên dịch.
+      - ./temp-console:/app/temp-console
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: leetcode
@@ -205,6 +211,13 @@ services:
       # Chạy song song các testcase (mặc định tắt để giữ hành vi fail-fast).
       JUDGE_PARALLEL_TESTCASES: ${JUDGE_PARALLEL_TESTCASES:-false}
       JUDGE_MAX_PARALLEL_TESTCASES: ${JUDGE_MAX_PARALLEL_TESTCASES:-4}
+      # Console live: judge worker phục vụ WebSocket nội bộ /internal/console/ws.
+      # Token nội bộ PHẢI khớp với service mini-leetcode-api.
+      JUDGE_INTERNAL_TOKEN: ${JUDGE_INTERNAL_TOKEN:-mini-leetcode-internal-token}
+      CONSOLE_MAX_WALL_MS: ${CONSOLE_MAX_WALL_MS:-120000}
+      CONSOLE_IDLE_MS: ${CONSOLE_IDLE_MS:-30000}
+      CONSOLE_MAX_CONCURRENT: ${CONSOLE_MAX_CONCURRENT:-20}
+      CONSOLE_MEMORY_LIMIT_MB: ${CONSOLE_MEMORY_LIMIT_MB:-256}
       DB_URL: jdbc:mysql://mysql:3306/mini_leetcode?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DB_USERNAME: leetcode
       DB_PASSWORD: leetcode_password

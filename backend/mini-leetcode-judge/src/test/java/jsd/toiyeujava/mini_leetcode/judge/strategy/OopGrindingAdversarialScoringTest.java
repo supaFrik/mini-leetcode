@@ -177,7 +177,7 @@ public class OopGrindingAdversarialScoringTest {
         }
 
         @Test
-        @DisplayName("Gherkin 1 Strategy Pipeline: Full mock run records 60.0 WA, COMPLETED in repository")
+        @DisplayName("Security: rules.json / socket-scenarios.json / *Test.java shipped inside the submission are ignored")
         void scenario1_StrategyPipelineExecution(@TempDir Path workDir) throws Exception {
             Long submissionId = 9002L;
             SubmissionTaskMessage message = new SubmissionTaskMessage(submissionId, 201L, 1L, SubmissionLanguage.JAVA);
@@ -219,35 +219,14 @@ public class OopGrindingAdversarialScoringTest {
 
             when(submissionService.getSubmissionById(submissionId)).thenReturn(submission);
             when(submissionService.getSubmissionCode(submissionId)).thenReturn(code);
-            when(submissionRepository.findById(submissionId)).thenReturn(Optional.of(submission));
 
             strategy.executeJudge(message, problem, workDir);
 
-            // Verify verdict WA and passed 3 / total 4
-            verify(submissionService).updateSubmissionVerdict(
-                    eq(submissionId),
-                    eq(SubmissionStatus.COMPLETED),
-                    eq(SubmissionVerdict.WA),
-                    anyInt(),
-                    anyInt(),
-                    eq(3),
-                    eq(4),
-                    isNull()
-            );
-
-            ArgumentCaptor<Submission> captor = ArgumentCaptor.forClass(Submission.class);
-            verify(submissionRepository, atLeastOnce()).save(captor.capture());
-            Submission saved = captor.getValue();
-
-            assertThat(saved.getScore()).isEqualTo(60.0);
-            assertThat(saved.getExecutionPhase()).isEqualTo("COMPLETED");
-
-            JsonNode root = objectMapper.readTree(saved.getScoreBreakdown());
-            assertThat(root.get("totalScore").asDouble()).isEqualTo(60.0);
-            assertThat(root.get("verdict").asText()).isEqualTo("WA");
-            assertThat(root.get("phases").get("oopInspection").get("weightedScore").asDouble()).isEqualTo(30.0);
-            assertThat(root.get("phases").get("unitTest").get("weightedScore").asDouble()).isEqualTo(30.0);
-            assertThat(root.get("phases").get("socketIntegration").get("weightedScore").asDouble()).isEqualTo(0.0);
+            // Học viên không được tự định nghĩa cách chấm: bài không có grading_config / test_cases phía
+            // server ⇒ không chấm, không bao giờ có verdict (trước đây ServerTest.java của học viên được tính 75%).
+            verify(submissionService).failSubmission(eq(submissionId), contains("no grading configuration"));
+            verify(submissionService, never()).updateSubmissionVerdict(
+                    any(), any(), any(), any(), any(), any(), any(), any());
         }
     }
 

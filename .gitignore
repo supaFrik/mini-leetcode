@@ -113,6 +113,8 @@ coverage/
 /b*.log
 
 temp-submissions/
+# Workspace của các phiên console OOP (judge worker bind-mount ra host).
+temp-console/
 runner-tmp/
 *.tmp
 *.temp

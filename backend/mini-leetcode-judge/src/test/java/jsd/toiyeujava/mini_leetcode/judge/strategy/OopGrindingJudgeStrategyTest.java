@@ -109,8 +109,8 @@ class OopGrindingJudgeStrategyTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0),
-                eq(0),
+                isNull(),
+                isNull(),
                 eq(0),
                 eq(0),
                 contains("error: illegal start of expression")
@@ -148,8 +148,8 @@ class OopGrindingJudgeStrategyTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0),
-                eq(0),
+                isNull(),
+                isNull(),
                 eq(0),
                 eq(0),
                 contains("Zip Slip detected")
@@ -184,8 +184,8 @@ class OopGrindingJudgeStrategyTest {
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.CE),
-                eq(0),
-                eq(0),
+                isNull(),
+                isNull(),
                 eq(0),
                 eq(0),
                 contains("No Java source files (.java) found")
@@ -221,7 +221,8 @@ class OopGrindingJudgeStrategyTest {
     void executeJudge_CompilationSuccess_RunsOopDockerRunnerAndUpdatesAcVerdict(@TempDir Path workDir) throws Exception {
         Long submissionId = 7777L;
         SubmissionTaskMessage message = new SubmissionTaskMessage(submissionId, 1L, 1L, SubmissionLanguage.JAVA);
-        Problem problem = Problem.builder().id(1L).problemType(ProblemType.OOP_GRINDING).build();
+        Problem problem = Problem.builder().id(1L).problemType(ProblemType.OOP_GRINDING)
+                .gradingConfig("{\"rules\":[{\"targetClassName\":\"Shape\"}]}").build();
         Submission submission = Submission.builder().id(submissionId).build();
 
         when(submissionService.getSubmissionById(submissionId)).thenReturn(submission);
@@ -238,6 +239,7 @@ class OopGrindingJudgeStrategyTest {
                 .totalScore(100.0)
                 .verdict("AC")
                 .phases(ExecutionReport.PhaseBreakdown.builder()
+                        .oopInspection(ExecutionReport.OopInspectionPhase.builder().score(100.0).build())
                         .unitTest(ExecutionReport.UnitTestPhase.builder()
                                 .passedCount(5)
                                 .totalCount(5)
@@ -245,17 +247,18 @@ class OopGrindingJudgeStrategyTest {
                                 .build())
                         .build())
                 .build();
-        when(oopDockerRunner.runHarness(eq(submissionId), eq(workDir), any(), anyLong())).thenReturn(report);
+        when(oopDockerRunner.runInProcessHarness(eq(submissionId), eq(workDir), any())).thenReturn(report);
 
         strategy.executeJudge(message, problem, workDir);
 
-        verify(oopDockerRunner).runHarness(eq(submissionId), eq(workDir), any(), eq(30000L));
+        verify(oopDockerRunner).runInProcessHarness(eq(submissionId), eq(workDir), any());
+        verify(oopDockerRunner, never()).runHarness(any(), any(), any(), anyLong());
         verify(submissionService).updateSubmissionVerdict(
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.AC),
-                eq(0),
-                eq(0),
+                isNull(),
+                isNull(),
                 eq(5),
                 eq(5),
                 isNull()
@@ -274,7 +277,8 @@ class OopGrindingJudgeStrategyTest {
     void executeJudge_PartialFailure_RunsOopDockerRunnerAndUpdatesWaVerdict(@TempDir Path workDir) throws Exception {
         Long submissionId = 7778L;
         SubmissionTaskMessage message = new SubmissionTaskMessage(submissionId, 1L, 1L, SubmissionLanguage.JAVA);
-        Problem problem = Problem.builder().id(1L).problemType(ProblemType.OOP_GRINDING).build();
+        Problem problem = Problem.builder().id(1L).problemType(ProblemType.OOP_GRINDING)
+                .gradingConfig("{\"rules\":[{\"targetClassName\":\"Shape\"}]}").build();
         Submission submission = Submission.builder().id(submissionId).build();
 
         when(submissionService.getSubmissionById(submissionId)).thenReturn(submission);
@@ -291,6 +295,7 @@ class OopGrindingJudgeStrategyTest {
                 .totalScore(76.0)
                 .verdict("WA")
                 .phases(ExecutionReport.PhaseBreakdown.builder()
+                        .oopInspection(ExecutionReport.OopInspectionPhase.builder().score(76.0).build())
                         .unitTest(ExecutionReport.UnitTestPhase.builder()
                                 .passedCount(4)
                                 .totalCount(5)
@@ -298,17 +303,18 @@ class OopGrindingJudgeStrategyTest {
                                 .build())
                         .build())
                 .build();
-        when(oopDockerRunner.runHarness(eq(submissionId), eq(workDir), any(), anyLong())).thenReturn(report);
+        when(oopDockerRunner.runInProcessHarness(eq(submissionId), eq(workDir), any())).thenReturn(report);
 
         strategy.executeJudge(message, problem, workDir);
 
-        verify(oopDockerRunner).runHarness(eq(submissionId), eq(workDir), any(), eq(30000L));
+        verify(oopDockerRunner).runInProcessHarness(eq(submissionId), eq(workDir), any());
+        verify(oopDockerRunner, never()).runHarness(any(), any(), any(), anyLong());
         verify(submissionService).updateSubmissionVerdict(
                 eq(submissionId),
                 eq(SubmissionStatus.COMPLETED),
                 eq(SubmissionVerdict.WA),
-                eq(0),
-                eq(0),
+                isNull(),
+                isNull(),
                 eq(4),
                 eq(5),
                 isNull()

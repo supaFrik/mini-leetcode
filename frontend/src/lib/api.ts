@@ -126,3 +126,12 @@ export async function api<T>(path: string, init?: RequestInit) {
 
 export const errorMessage = (e: unknown, fallback = "An unexpected error occurred. Please try again.") =>
   e instanceof ApiError ? e.message : e instanceof TypeError ? "Unable to connect to the server. Please check your network connection." : fallback;
+
+/**
+ * Access token còn hạn (tự refresh nếu cần) — cho các kênh không đi qua `request`,
+ * như WebSocket của console, nơi token được gửi trong frame đầu tiên.
+ */
+export async function freshToken(): Promise<string | null> {
+  if (getRefreshToken() && isExpired(getToken())) await tryRefresh();
+  return getToken();
+}
