@@ -55,14 +55,25 @@ Then all tests pass.
 
 ## Implementation TODO
 
+> **Hoàn thành 2026-11-07.**
+
 ### Frontend
-- [ ] Wrap row Delete in `AlertDialog` with title + consequences; Cancel default focus
-- [ ] Hide Delete when role ≠ ADMIN (read role from session)
-- [ ] Update e2e: delete flow accepts the dialog; add cancel test
+- [x] Wrap row Delete in `AlertDialog` with title + consequences; Cancel default focus
+- [x] Hide Delete when role ≠ ADMIN (read role from session)
+- [x] Update e2e: `e2e/admin-problem-delete.spec.ts` (cancel/Esc, confirm, 409, instructor) + live script confirms the dialog
 
 ### Backend (judge)
-- [ ] Reproduce, read the score breakdown the test produces, decide test vs. strategy
-- [ ] Fix + (if strategy) regression test; run full judge suite on JDK 17 and 21
+- [x] Reproduce, read the score breakdown the test produces, decide test vs. strategy
+- [x] Fix — **the test was outdated, the strategy is right** (see below); judge suite 358/358 on JDK 17 and 21
+
+## Kết quả điều tra FR-SF-011
+
+`score_breakdown` thực tế của test: rule cấu trúc 100 (trọng số 0.5), socket 0 (trọng số 0.5, `CONNECTION_FAILURE`
+"Client process exited prematurely"). Test dựng sẵn `execution-report.json` 100/100/100 và một kịch bản socket không có
+bước nào chạy trên lớp `Service` (không phải client socket). Từ khi cấu hình chấm chuyển về server, judge không đọc file
+đó nữa mà chạy kịch bản thật ⇒ thất bại đúng ⇒ 50 điểm là đúng. Sửa test: chỉ cấu hình rule cấu trúc (bài đạt mọi phần
+được cấu hình ⇒ 100 / AC), bỏ report giả, assert trọng số thực. Trường hợp socket thất bại vẫn được test 3.2 phủ.
+Không có bài nộp thật nào bị ảnh hưởng (không đổi code chấm).
 
 ## Out of Scope
 - Soft delete / trash for problems

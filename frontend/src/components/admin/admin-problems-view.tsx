@@ -22,6 +22,17 @@ import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useUser } from "@/hooks/use-user";
 import { GradingPanel, ReferencePanel, SourceFilesEditor, TestCasesPanel } from "./problem-authoring";
 import {
   createProblem,
@@ -482,6 +493,11 @@ export function AdminProblemsView() {
   const [editing, setEditing] = useState<ProblemFull | null>(null);
   const [creating, setCreating] = useState(false);
   const [pending, setPending] = useState<number | null>(null);
+  /** Bài đang chờ xác nhận xoá — xoá cứng không hoàn tác được nên luôn hỏi lại. */
+  const [confirmDelete, setConfirmDelete] = useState<ProblemFull | null>(null);
+  const { user } = useUser();
+  // Server chỉ cho ADMIN xoá (DELETE /api/v1/problems/** hasRole ADMIN) — INSTRUCTOR không thấy nút.
+  const canDelete = user?.role === "ADMIN";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -739,17 +755,19 @@ export function AdminProblemsView() {
                     {t === "PUBLISHED" ? "Publish" : t === "ARCHIVED" ? "Archive" : t.charAt(0) + t.slice(1).toLowerCase()}
                   </Button>
                 ))}
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  disabled={pending === p.id}
-                  onClick={() => remove(p)}
-                  aria-label={`Delete ${p.title}`}
-                  title="Delete"
-                  className="text-mute hover:text-destructive"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                {canDelete && (
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    disabled={pending === p.id}
+                    onClick={() => setConfirmDelete(p)}
+                    aria-label={`Delete ${p.title}`}
+                    title="Delete"
+                    className="text-mute hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
                 <Button
                   size="icon-sm"
                   variant="ghost"
@@ -796,6 +814,32 @@ export function AdminProblemsView() {
           </div>
         )}
       </section>
+
+      <AlertDialog open={confirmDelete !== null} onOpenChange={(open) => !open && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &ldquo;{confirmDelete?.title}&rdquo;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the problem together with its test cases, grading rules and reference
+              solution. It cannot be undone. Problems that already have submissions cannot be deleted — archive them
+              instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={() => {
+                const target = confirmDelete;
+                setConfirmDelete(null);
+                if (target) void remove(target);
+              }}
+            >
+              Delete problem
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {creating && (
         <Editor
