@@ -30,6 +30,8 @@ public record UpdateProblemRequest(
         /** Chủ đề mới của bài. {@code null} = giữ nguyên, rỗng = gỡ toàn bộ. */
         List<@Size(max = 50, message = "Tag must not exceed 50 characters") String> tags,
 
+        /** Client gửi {@code type} (khớp {@code ProblemResponse.type}); {@code problemType} vẫn được nhận. */
+        @com.fasterxml.jackson.annotation.JsonAlias("type")
         ProblemType problemType,
         String starterTemplates
 ) {

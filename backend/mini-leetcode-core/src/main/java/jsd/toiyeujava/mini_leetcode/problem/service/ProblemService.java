@@ -84,6 +84,8 @@ public class ProblemService {
                 .memoryLimitMb(request.getMemoryLimitMbOrDefault())
                 .status(ProblemStatus.DRAFT)
                 .tags(TagNormalizer.normalize(request.tags()))
+                .problemType(request.problemType() != null ? request.problemType() : ProblemType.ALGORITHMIC)
+                .starterTemplates(blankToNull(request.starterTemplates()))
                 .createdBy(creator)
                 .build();
 
@@ -122,6 +124,12 @@ public class ProblemService {
         }
         if (request.tags() != null) {
             problem.setTags(TagNormalizer.normalize(request.tags()));
+        }
+        if (request.problemType() != null) {
+            problem.setProblemType(request.problemType());
+        }
+        if (request.starterTemplates() != null) {
+            problem.setStarterTemplates(blankToNull(request.starterTemplates()));
         }
 
         problem = problemRepository.save(problem);
@@ -450,5 +458,9 @@ public class ProblemService {
             slug = slug.substring(0, slug.length() - 1);
         }
         return slug.isEmpty() ? "problem" : slug;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 }
