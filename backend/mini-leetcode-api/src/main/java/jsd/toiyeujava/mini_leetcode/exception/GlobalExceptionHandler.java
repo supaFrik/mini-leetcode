@@ -161,6 +161,25 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(InvalidGradingConfigException.class)
+    public ProblemDetail handleInvalidGradingConfigException(InvalidGradingConfigException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Grading configuration is invalid");
+        problem.setTitle("Invalid Grading Configuration");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/bad-request"));
+        problem.setProperty("errors", ex.getErrors());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(JudgeUnavailableException.class)
+    public ProblemDetail handleJudgeUnavailableException(JudgeUnavailableException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        problem.setTitle("Judge Unavailable");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/judge-unavailable"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenericException(Exception ex) {
         org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class).error("Unhandled exception: ", ex);

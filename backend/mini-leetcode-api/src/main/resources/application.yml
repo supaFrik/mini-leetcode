@@ -38,6 +38,8 @@ app:
   console:
     # Console live: API relay WebSocket tới judge worker (KHÔNG publish port judge ra host).
     judge-ws-url: ${JUDGE_CONSOLE_WS_URL:ws://localhost:8081/internal/console/ws}
+    # HTTP nội bộ của judge worker (soạn bài: kiểm tra grading_config, chạy lời giải mẫu).
+    judge-http-url: ${JUDGE_HTTP_URL:http://localhost:8081}
     # Token nội bộ khớp với app.console.internal-token của mini-leetcode-judge.
     internal-token: ${JUDGE_INTERNAL_TOKEN:mini-leetcode-internal-token}
     # Hạn mức Run mỗi user: runs-per-window lần trong window-seconds giây.

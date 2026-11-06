@@ -22,6 +22,10 @@ Mỗi generator nhận thêm danh sách slug để chỉ sinh vài bài, ví d�
 
 ## Chấm bài OOP (`problem_type = OOP_GRINDING`)
 
+> **Soạn bài trên giao diện (khuyên dùng):** `/admin/problems` → mở bài → các tab **Test cases** (thêm/sửa/xoá testcase, *Fill from reference*, *Check against reference* rồi *Use reference output*), **Grading** (sửa `grading_config` dạng JSON, judge kiểm tra đúng schema và báo lỗi theo đường dẫn) và **Reference & console** (lời giải mẫu + console live để thử). Các script bên dưới vẫn dùng được để seed hàng loạt.
+>
+> API: `GET /api/v1/admin/problems/{id}/authoring`, `PUT …/grading-config`, `POST …/grading-config/validate`, `PUT …/reference-solution`, `POST …/reference-run` (`{"apply": true}` ghi output mới cho các testcase bị khác). Chỉ INSTRUCTOR/ADMIN. Lời giải mẫu chạy trong Docker sandbox của judge qua `JUDGE_HTTP_URL` (mặc định `http://mini-leetcode-judge:8081`), không chạy ở API. Bài **PUBLISHED** bị khoá rule chấm và testcase.
+
 Judge **không** đọc bất kỳ cấu hình chấm nào trong bài nộp: `harness-config.json`, `rules.json`, `socket-scenarios.json`, lớp `*Test.java` của học viên đều bị bỏ qua. Mỗi bài OOP cần cấu hình phía server:
 
 | Thành phần | Lưu ở đâu | Chấm thế nào | Trọng số |

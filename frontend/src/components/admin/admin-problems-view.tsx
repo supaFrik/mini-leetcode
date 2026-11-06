@@ -6,7 +6,6 @@ import {
   Check,
   ChevronRight,
   FileText,
-  FileCode,
   Loader2,
   Plus,
   Search,
@@ -22,15 +21,26 @@ import { Pagination } from "@/components/problems/pagination";
 import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GradingPanel, ReferencePanel, SourceFilesEditor, TestCasesPanel } from "./problem-authoring";
 import {
   createProblem,
   deleteProblem,
   fetchAdminProblems,
+  fetchAuthoring,
   saveProblem,
   transitionProblem,
   type ProblemDraft,
 } from "@/lib/services";
-import type { Difficulty, Page, ProblemFull, ProblemLifecycle, ProblemType, SubmissionFile } from "@/types/api";
+import type {
+  Difficulty,
+  Page,
+  ProblemAuthoring,
+  ProblemFull,
+  ProblemLifecycle,
+  ProblemType,
+  SubmissionFile,
+} from "@/types/api";
 
 const LIFECYCLES: { value: ProblemLifecycle; label: string }[] = [
   { value: "DRAFT", label: "Draft" },
@@ -143,6 +153,15 @@ function TagEditor({ value, onChange }: { value: string[]; onChange: (v: string[
  * Editor panel — create and edit share one form.
  * ------------------------------------------------------------------ */
 
+const DEFAULT_STARTER: SubmissionFile[] = [
+  {
+    path: "Main.java",
+    content:
+      "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner in = new Scanner(System.in);\n        // TODO\n    }\n}\n",
+  },
+];
+
+/** Starter template của bài OOP: lưu dạng chuỗi JSON [{path, content}] trong ProblemDraft. */
 function StarterTemplateEditor({
   value,
   onChange,
@@ -150,7 +169,7 @@ function StarterTemplateEditor({
   value: string | null | undefined;
   onChange: (v: string) => void;
 }) {
-  const defaultFiles = useMemo<SubmissionFile[]>(() => {
+  const files = useMemo<SubmissionFile[]>(() => {
     if (value) {
       try {
         const parsed = JSON.parse(value);
@@ -159,120 +178,16 @@ function StarterTemplateEditor({
         /* ignore parse error */
       }
     }
-    return [
-      {
-        path: "Solution.java",
-        content: "// Solution.java\npublic class Solution {\n    // Implementation here\n}\n",
-      },
-    ];
+    return DEFAULT_STARTER;
   }, [value]);
 
-  const [files, setFiles] = useState<SubmissionFile[]>(defaultFiles);
-  const [activeIdx, setActiveIdx] = useState(0);
-
-  useEffect(() => {
-    setFiles(defaultFiles);
-    setActiveIdx(0);
-  }, [defaultFiles]);
-
-  const updateFiles = (next: SubmissionFile[]) => {
-    setFiles(next);
-    onChange(JSON.stringify(next));
-  };
-
-  const handleAddFile = () => {
-    const name = window.prompt("New Java class name (e.g. Helper.java):", "NewClass.java");
-    if (!name || !name.trim()) return;
-    const cleanName = name.trim().endsWith(".java") ? name.trim() : `${name.trim()}.java`;
-    if (files.some((f) => f.path.toLowerCase() === cleanName.toLowerCase())) {
-      toast("File already exists with that name.", "error");
-      return;
-    }
-    const className = cleanName.replace(/\.java$/, "");
-    const content = `// ${cleanName}\npublic class ${className} {\n    \n}\n`;
-    const next = [...files, { path: cleanName, content }];
-    updateFiles(next);
-    setActiveIdx(next.length - 1);
-  };
-
-  const handleDeleteFile = (idx: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (files.length <= 1) {
-      toast("Cannot delete the only template file.", "error");
-      return;
-    }
-    const next = files.filter((_, i) => i !== idx);
-    updateFiles(next);
-    if (activeIdx >= idx && activeIdx > 0) {
-      setActiveIdx(activeIdx - 1);
-    }
-  };
-
-  const updateActiveContent = (content: string) => {
-    const next = [...files];
-    if (next[activeIdx]) {
-      next[activeIdx] = { ...next[activeIdx], content };
-      updateFiles(next);
-    }
-  };
-
-  const active = files[activeIdx] ?? files[0];
-
   return (
-    <div className="space-y-3 rounded-sm border border-border bg-card p-3">
-      <div className="flex items-center justify-between">
-        <label className="eyebrow block text-mute">
-          Starter Templates (.java)
-        </label>
-        <Button type="button" variant="outline" size="sm" onClick={handleAddFile} className="h-7 gap-1 text-xs">
-          <Plus className="h-3.5 w-3.5" />
-          Add Java File
-        </Button>
-      </div>
-
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-border pb-1">
-        {files.map((f, idx) => (
-          <div
-            key={f.path}
-            onClick={() => setActiveIdx(idx)}
-            className={cn(
-              "group flex cursor-pointer items-center gap-1.5 rounded px-2.5 py-1 font-mono text-xs transition-colors",
-              idx === activeIdx
-                ? "border border-border bg-background font-medium text-ink shadow-sm"
-                : "text-mute hover:bg-hairline-soft hover:text-ink"
-            )}
-          >
-            <FileCode className="h-3.5 w-3.5 text-link" />
-            <span>{f.path}</span>
-            {files.length > 1 && (
-              <button
-                type="button"
-                onClick={(e) => handleDeleteFile(idx, e)}
-                title={`Delete ${f.path}`}
-                className="ml-1 rounded p-0.5 text-mute opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {active && (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-mute">
-            <span>Editing template: <span className="font-mono text-ink">{active.path}</span></span>
-          </div>
-          <Textarea
-            value={active.content}
-            onChange={(e) => updateActiveContent(e.target.value)}
-            rows={8}
-            className="rounded-sm bg-background font-mono text-xs text-ink"
-            placeholder={`// Skeleton code for ${active.path}`}
-          />
-        </div>
-      )}
-    </div>
+    <SourceFilesEditor
+      label="Starter templates (.java)"
+      files={files}
+      onChange={(next) => onChange(JSON.stringify(next))}
+      rows={8}
+    />
   );
 }
 
@@ -288,6 +203,23 @@ function Editor({
   const [draft, setDraft] = useState<ProblemDraft>(EMPTY_DRAFT);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState("details");
+  const [authoring, setAuthoring] = useState<ProblemAuthoring | null>(null);
+  const [authoringError, setAuthoringError] = useState<string | null>(null);
+
+  // Rule chấm + lời giải mẫu chỉ staff đọc được, tải riêng khi mở một bài đã tồn tại.
+  useEffect(() => {
+    setAuthoring(null);
+    setAuthoringError(null);
+    if (!problem) return;
+    let live = true;
+    fetchAuthoring(problem.id)
+      .then((a) => live && setAuthoring(a))
+      .catch((e) => live && setAuthoringError(errorMessage(e)));
+    return () => {
+      live = false;
+    };
+  }, [problem]);
 
   useEffect(() => {
     if (!problem) {
@@ -327,7 +259,7 @@ function Editor({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-ink/20" role="dialog" aria-modal="true" aria-label="Problem editor">
-      <div className="flex h-full w-full max-w-2xl flex-col border-l border-border bg-background">
+      <div className="flex h-full w-full max-w-4xl flex-col border-l border-border bg-background">
         <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
           <div>
             <p className="eyebrow">{problem ? "Edit problem" : "New problem"}</p>
@@ -338,7 +270,27 @@ function Editor({
           </Button>
         </header>
 
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5">
+        <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
+          <TabsList className="mx-5 mt-3 self-start">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="cases" disabled={!problem}>
+              Test cases
+            </TabsTrigger>
+            <TabsTrigger value="grading" disabled={!problem}>
+              Grading
+            </TabsTrigger>
+            <TabsTrigger value="reference" disabled={!problem}>
+              Reference &amp; console
+            </TabsTrigger>
+          </TabsList>
+
+        <TabsContent value="details" className="mt-0 min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden">
+        <div className="space-y-5 px-5 py-5">
+          {!problem && (
+            <p className="text-body-sm text-mute">
+              Test cases, grading rules and the reference solution become available once the problem is created.
+            </p>
+          )}
           <div className="space-y-2">
             <label htmlFor="admin-title" className="eyebrow block text-mute">
               Title
@@ -442,7 +394,57 @@ function Editor({
             </p>
           )}
         </div>
+        </TabsContent>
 
+        {problem && (
+          <>
+            <TabsContent value="cases" forceMount className="mt-0 min-h-0 flex-1 overflow-y-auto px-5 py-5 data-[state=inactive]:hidden">
+              <TestCasesPanel
+                problemId={problem.id}
+                frozen={problem.status === "PUBLISHED"}
+                hasReference={(authoring?.referenceSolution.length ?? 0) > 0}
+              />
+            </TabsContent>
+            {(["grading", "reference"] as const).map((value) => (
+              <TabsContent
+                key={value}
+                value={value}
+                forceMount
+                className="mt-0 min-h-0 flex-1 overflow-y-auto px-5 py-5 data-[state=inactive]:hidden"
+              >
+                {authoringError ? (
+                  <p role="alert" className="rounded-sm border border-destructive/25 bg-destructive/5 px-3 py-2 text-body-md text-destructive">
+                    {authoringError}
+                  </p>
+                ) : !authoring ? (
+                  <p className="flex items-center gap-2 text-body-sm text-mute">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                  </p>
+                ) : value === "grading" ? (
+                  <>
+                    {draft.type !== "OOP_GRINDING" && (
+                      <p className="mb-4 rounded-sm border border-border bg-card px-3 py-2 text-body-sm text-mute">
+                        Grading rules only apply to <strong className="text-ink">OOP Grinding</strong> problems. Algorithmic
+                        problems are graded on test cases alone.
+                      </p>
+                    )}
+                    <GradingPanel problemId={problem.id} authoring={authoring} onSaved={setAuthoring} />
+                  </>
+                ) : (
+                  <ReferencePanel
+                    problemId={problem.id}
+                    authoring={authoring}
+                    starterTemplates={draft.starterTemplates}
+                    onSaved={setAuthoring}
+                  />
+                )}
+              </TabsContent>
+            ))}
+          </>
+        )}
+        </Tabs>
+
+        {tab === "details" && (
         <footer className="flex items-center justify-between gap-3 border-t border-border px-5 py-3">
           <p className="text-body-sm text-mute">
             {problem ? "Changes apply to metadata only." : "New problems start as Draft."}
@@ -457,6 +459,7 @@ function Editor({
             </Button>
           </div>
         </footer>
+        )}
       </div>
     </div>
   );
@@ -798,9 +801,11 @@ export function AdminProblemsView() {
         <Editor
           problem={null}
           onClose={() => setCreating(false)}
-          onSaved={() => {
+          onSaved={(created) => {
             setCreating(false);
             revealDrafts();
+            // Mở tiếp bài vừa tạo để thêm testcase / rule chấm ngay.
+            setEditing(created);
           }}
         />
       )}

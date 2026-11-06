@@ -148,6 +148,7 @@ services:
       JUDGE_CONSUMER_NAME: ${JUDGE_CONSUMER_NAME:-}
       # Console live: API relay WebSocket tới judge worker (KHÔNG publish port judge ra host).
       JUDGE_CONSOLE_WS_URL: ${JUDGE_CONSOLE_WS_URL:-ws://mini-leetcode-judge:8081/internal/console/ws}
+      JUDGE_HTTP_URL: ${JUDGE_HTTP_URL:-http://mini-leetcode-judge:8081}
       JUDGE_INTERNAL_TOKEN: ${JUDGE_INTERNAL_TOKEN:-mini-leetcode-internal-token}
       # Tài khoản admin đầu tiên (AdminBootstrapRunner). Để trống để tắt.
       BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-}

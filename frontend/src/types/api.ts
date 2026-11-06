@@ -13,6 +13,8 @@ export interface ProblemDetail {
   detail: string;
   instance?: string;
   invalid_params?: Record<string, string>;
+  /** Lỗi theo đường dẫn JSON khi grading_config không hợp lệ (400). */
+  errors?: string[];
 }
 export interface Page<T> {
   content: T[];
@@ -67,6 +69,52 @@ export interface TestCase {
   isHidden: boolean;
   orderIndex: number;
   explanation?: string;
+  /** Server chỉ trả 8 KB đầu; true ⇒ nội dung hiển thị chưa đầy đủ, không được lưu ngược lại. */
+  inputTruncated?: boolean;
+  expectedOutputTruncated?: boolean;
+}
+
+// ===== Soạn bài (INSTRUCTOR/ADMIN) =====
+export interface ProblemAuthoring {
+  problemId: number;
+  status: ProblemLifecycle;
+  problemType: ProblemType;
+  /** JSON {"rules": [...], "socketScenarios": [...]} hoặc null. */
+  gradingConfig: string | null;
+  referenceSolution: SubmissionFile[];
+  /** Bài PUBLISHED: rule chấm và testcase bị khoá. */
+  gradingFrozen: boolean;
+  timeLimitMs: number;
+  memoryLimitMb: number;
+}
+export interface GradingValidation {
+  valid: boolean;
+  errors: string[];
+  ruleCount: number;
+  socketScenarioCount: number;
+  totalRuleWeight: number;
+}
+export type ReferenceCaseStatus =
+  | "MATCH" | "DIFF" | "OK" | "TIME_LIMIT" | "MEMORY_LIMIT" | "RUNTIME_ERROR" | "OUTPUT_LIMIT";
+export interface ReferenceCaseResult {
+  testCaseId: number | null;
+  orderIndex: number | null;
+  hidden: boolean | null;
+  status: ReferenceCaseStatus;
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  runtimeMs: number | null;
+  applied: boolean;
+}
+export interface ReferenceRunResult {
+  compiled: boolean;
+  compileOutput: string | null;
+  mainClass: string | null;
+  /** Lỗi hạ tầng (sandbox không chạy được). */
+  error: string | null;
+  cases: ReferenceCaseResult[];
+  appliedCount: number;
 }
 
 // ===== Bài nộp =====

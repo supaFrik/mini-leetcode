@@ -12,6 +12,7 @@ import type { PollFetch } from "./polling";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
+  GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
 } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
@@ -167,6 +168,7 @@ export async function deleteProblem(id: number): Promise<void> {
 const normCase = (r: Raw): TestCase => ({
   id: r.id, input: r.input ?? r.inputContent ?? r.inputPreview ?? "", expectedOutput: r.expectedOutput ?? r.expectedOutputContent ?? r.outputPreview ?? "",
   isHidden: !!(r.isHidden ?? r.hidden), orderIndex: r.orderIndex ?? 0, explanation: r.explanation,
+  inputTruncated: !!r.inputTruncated, expectedOutputTruncated: !!r.expectedOutputTruncated,
 });
 export async function fetchTestCases(problemId: number): Promise<TestCase[]> {
   if (USE_MOCK) return mock.getTestCases(problemId);
@@ -180,6 +182,66 @@ export async function addTestCase(problemId: number, c: { input: string; expecte
   fd.append("outputFile", new Blob([c.expectedOutput], { type: "text/plain" }), "output.txt");
   fd.append("isHidden", String(c.isHidden));
   return normCase(await api<Raw>(`/api/v1/problems/${problemId}/test-cases`, { method: "POST", body: fd }));
+}
+
+/** Cập nhật testcase. Trường nào không truyền thì giữ nguyên (file được gửi dạng multipart). */
+export async function updateTestCase(
+  problemId: number,
+  testCaseId: number,
+  c: { input?: string; expectedOutput?: string; isHidden?: boolean },
+): Promise<TestCase> {
+  if (USE_MOCK) return mock.updateTestCase(problemId, testCaseId, c);
+  const fd = new FormData();
+  if (c.input !== undefined) fd.append("inputFile", new Blob([c.input], { type: "text/plain" }), "input.txt");
+  if (c.expectedOutput !== undefined) fd.append("outputFile", new Blob([c.expectedOutput], { type: "text/plain" }), "output.txt");
+  if (c.isHidden !== undefined) fd.append("isHidden", String(c.isHidden));
+  return normCase(await api<Raw>(`/api/v1/problems/${problemId}/test-cases/${testCaseId}`, { method: "PUT", body: fd }));
+}
+export async function deleteTestCase(problemId: number, testCaseId: number): Promise<void> {
+  if (USE_MOCK) return mock.deleteTestCase(problemId, testCaseId);
+  await api<Raw>(`/api/v1/problems/${problemId}/test-cases/${testCaseId}`, { method: "DELETE" });
+}
+
+// ---------- Soạn bài: grading_config, lời giải mẫu, sinh output (INSTRUCTOR/ADMIN) ----------
+const authoringBase = (id: number) => `/api/v1/admin/problems/${id}`;
+const normAuthoring = (r: Raw): ProblemAuthoring => ({
+  problemId: r.problemId, status: r.status, problemType: r.problemType ?? "ALGORITHMIC",
+  gradingConfig: r.gradingConfig ?? null, referenceSolution: r.referenceSolution ?? [],
+  gradingFrozen: !!r.gradingFrozen, timeLimitMs: r.timeLimitMs ?? 1000, memoryLimitMb: r.memoryLimitMb ?? 256,
+});
+export async function fetchAuthoring(problemId: number): Promise<ProblemAuthoring> {
+  if (USE_MOCK) return mock.getAuthoring(problemId);
+  return normAuthoring(await api<Raw>(`${authoringBase(problemId)}/authoring`));
+}
+export async function validateGradingConfig(problemId: number, gradingConfig: string): Promise<GradingValidation> {
+  if (USE_MOCK) return mock.validateGradingConfig(gradingConfig);
+  return api<GradingValidation>(`${authoringBase(problemId)}/grading-config/validate`, {
+    method: "POST", body: JSON.stringify({ gradingConfig }),
+  });
+}
+/** Lưu grading_config (rỗng ⇒ xoá). Lỗi 400 mang `errors` trong ApiError.body. */
+export async function saveGradingConfig(problemId: number, gradingConfig: string | null): Promise<ProblemAuthoring> {
+  if (USE_MOCK) return mock.saveGradingConfig(problemId, gradingConfig);
+  return normAuthoring(await api<Raw>(`${authoringBase(problemId)}/grading-config`, {
+    method: "PUT", body: JSON.stringify({ gradingConfig }),
+  }));
+}
+export async function saveReferenceSolution(problemId: number, files: SubmissionFile[]): Promise<ProblemAuthoring> {
+  if (USE_MOCK) return mock.saveReferenceSolution(problemId, files);
+  return normAuthoring(await api<Raw>(`${authoringBase(problemId)}/reference-solution`, {
+    method: "PUT", body: JSON.stringify({ files }),
+  }));
+}
+/**
+ * Chạy lời giải mẫu đã lưu trong sandbox của judge.
+ * `inputs`: stdin tuỳ ý (soạn testcase mới). Không có `inputs`: chạy trên testcase của bài, `apply` ghi output mới.
+ */
+export async function runReference(
+  problemId: number,
+  body: { inputs?: string[]; testCaseIds?: number[]; apply?: boolean },
+): Promise<ReferenceRunResult> {
+  if (USE_MOCK) return mock.runReference(problemId, body);
+  return api<ReferenceRunResult>(`${authoringBase(problemId)}/reference-run`, { method: "POST", body: JSON.stringify(body) });
 }
 
 // ---------- Submissions ----------
