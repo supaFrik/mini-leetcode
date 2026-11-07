@@ -117,28 +117,45 @@ Then the contest disappears; and an INSTRUCTOR does not see the delete button.
 ## Implementation TODO
 
 ### Backend
-- [ ] Migration V9: `contests.registration_mode VARCHAR(20) NOT NULL DEFAULT 'OPEN'`, `contests.version BIGINT NOT NULL DEFAULT 0`
-- [ ] DTOs `CreateContestRequest`, `UpdateContestRequest`, `ContestProblemInput(label, problemId, orderIndex)`, `BulkParticipantsRequest/Result`
-- [ ] `ContestAdminService`: create, update (status-aware locking), set problems, delete, add/remove participants
-- [ ] `ContestAdminController` at `/api/v1/admin/contests/**`
-- [ ] Hook into `ProblemService.transition` to block leaving PUBLISHED while used by a non-completed contest
-- [ ] Enforce `INVITE_ONLY` in `ContestService.register`
-- [ ] Batch-load users by username/email for bulk add
+- [x] Migration V9: `contests.registration_mode VARCHAR(20) NOT NULL DEFAULT 'OPEN'`, `contests.version BIGINT NOT NULL DEFAULT 0`
+- [x] DTOs `CreateContestRequest`, `UpdateContestRequest`, `ContestProblemInput(label, problemId, orderIndex)`, `BulkParticipantsRequest/Result`
+- [x] `ContestAdminService`: create, update (status-aware locking), set problems, delete, add/remove participants
+- [x] `ContestAdminController` at `/api/v1/admin/contests/**`
+- [x] Hook into `ProblemService.transition` to block leaving PUBLISHED while used by a non-completed contest
+- [x] Enforce `INVITE_ONLY` in `ContestService.register`
+- [x] Batch-load users by username/email for bulk add
 
 ### Frontend
-- [ ] `/admin/contests` list page (filters, counts) + nav entry in admin area
-- [ ] Contest editor drawer: Details / Problems (picker of PUBLISHED problems, labels, drag reorder) / Participants (paste list, results table, remove)
-- [ ] Disable fields per status with an explanatory notice (same pattern as Published lock in problem editor)
-- [ ] Local-time datetime inputs with zone label
-- [ ] Delete with confirmation dialog (ADMIN only)
+- [x] `/admin/contests` list page (filters, counts) + nav entry in admin area
+- [x] Contest editor drawer: Details / Problems (picker of PUBLISHED problems, labels, drag reorder) / Participants (paste list, results table, remove)
+- [x] Disable fields per status with an explanatory notice (same pattern as Published lock in problem editor)
+- [x] Local-time datetime inputs with zone label
+- [x] Delete with confirmation dialog (ADMIN only)
 
 ### Testing
-- [ ] Unit: status-based locking matrix, label validation, invite-only
-- [ ] Integration: CRUD + permission matrix (USER/INSTRUCTOR/ADMIN/anonymous), optimistic lock conflict
-- [ ] E2E: create → add problems → invite → student registers/blocked
+- [x] Unit: status-based locking matrix, label validation, invite-only
+- [x] Integration: CRUD + permission matrix (USER/INSTRUCTOR/ADMIN/anonymous), optimistic lock conflict
+- [x] E2E: create → add problems → invite → student registers/blocked
 
 ## Out of Scope
 - Starting/stopping a contest manually, pausing
 - Per-participant extra time
 - Contest cloning, templates
 - Notifications/emails to participants
+
+## Ghi chú triển khai
+
+- **Trạng thái tính theo giờ.** Trước đây không có gì chuyển cột `status` sang `RUNNING` (seed ghi thẳng).
+  `Contest.resolveStatus()` giờ: cột `COMPLETED` → COMPLETED; quá `endTime` → COMPLETED; cột `SCHEDULED` mà đã tới
+  `startTime` → RUNNING. Kỳ thi tạo trên admin vì vậy tự bắt đầu/kết thúc đúng giờ, không cần job.
+- **API:** `GET/POST /api/v1/admin/contests`, `GET/PUT/DELETE /api/v1/admin/contests/{id}`,
+  `GET/POST /api/v1/admin/contests/{id}/participants`, `DELETE /api/v1/admin/contests/{id}/participants/{userId}`.
+  `PUT` nhận cả form; `problems: null` = giữ nguyên; `version` lệch → 409. Mọi lần lưu đều tăng `version`
+  (`OPTIMISTIC_FORCE_INCREMENT`), kể cả khi chỉ đổi danh sách bài.
+- **So sánh giờ theo phút** khi xét "đã sửa giờ bắt đầu" (ô nhập chỉ tới phút); UI gửi lại nguyên văn giờ bắt đầu khi đang thi.
+- **FR-CT-013:** giờ bắt đầu luôn ở tương lai khi tạo/sửa lúc SCHEDULED, nên lần "lưu sau giờ bắt đầu" duy nhất là gia hạn
+  khi đang thi — bị từ chối nếu kỳ thi không có bài. Trình soạn nhắc "cần ít nhất một bài trước giờ bắt đầu".
+- **Bài trong kỳ thi chưa kết thúc** cũng không xoá cứng được (ngoài việc không rời PUBLISHED).
+- **Sắp xếp bài** bằng nút lên/xuống (bàn phím dùng được) thay cho kéo-thả.
+- **Thí sinh LOCKED** = trạng thái `DISQUALIFIED` hiện có; mở khoá vẫn ở báo cáo giám sát `/exam/{id}`.
+- Trang admin không có bản mock (`NEXT_PUBLIC_USE_MOCK`); e2e chặn request bằng `page.route`.

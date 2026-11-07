@@ -65,7 +65,7 @@ function consoleRun(token, problemId, files, stdin) {
   });
 }
 
-let admin, student, studentId, pid;
+let admin, student, studentId, pid, contestId;
 try {
   section = "Auth";
   const login = await call("POST", "/api/v1/auth/login", { json: ADMIN });
@@ -239,10 +239,60 @@ try {
     const aUn = await call("POST", `/api/v1/contests/${cid}/participants/987654321/unlock`, { token: admin });
     check("admin unlock unknown participant -> 404", aUn.status === 404, aUn.status);
   } else check("has a contest to test", false, "no contests");
+
+  section = "Contest admin";
+  {
+  const sList = await call("GET", "/api/v1/admin/contests", { token: student });
+  check("student cannot list admin contests (403)", sList.status === 403, sList.status);
+  const pubList = await call("GET", "/api/v1/problems?status=PUBLISHED&size=1", { token: admin });
+  const pubId = pubList.data?.content?.[0]?.id;
+  check("found a published problem", !!pubId, pubList.status);
+  const start = new Date(Date.now() + 24 * 3600_000);
+  const mk = await call("POST", "/api/v1/admin/contests", { token: admin, json: {
+    title: `ZZ Live Contest ${ts}`, startTime: start.toISOString(), endTime: new Date(start.getTime() + 2 * 3600_000).toISOString(),
+    scoringPolicy: "ACM_ICPC", maxViolationsAllowed: 3, registrationMode: "INVITE_ONLY", problems: [{ problemId: pubId }] } });
+  contestId = mk.data?.id;
+  check("create invite-only contest", mk.status === 201 && mk.data.status === "SCHEDULED" && mk.data.problems?.[0]?.label === "A",
+    `${mk.status} ${JSON.stringify(mk.data)}`);
+  const bad = await call("POST", "/api/v1/admin/contests", { token: admin, json: {
+    title: "bad", startTime: start.toISOString(), endTime: start.toISOString(), problems: [] } });
+  check("end <= start rejected (400)", bad.status === 400, bad.status);
+  const studentName = `smoke_stu_${ts}`;
+  const add = await call("POST", `/api/v1/admin/contests/${contestId}/participants`, { token: admin,
+    json: { entries: `${studentName}, khongtontai_${ts}` } });
+  check("bulk add: added + not found", add.status === 200 && add.data.lines?.[0]?.outcome === "ADDED"
+    && add.data.lines?.[1]?.outcome === "NOT_FOUND", `${add.status} ${JSON.stringify(add.data)}`);
+  const reg2 = await call("POST", "/api/v1/auth/register", { json: { username: `smoke_out_${ts}`, email: `smoke_out_${ts}@example.com`, password: "Password123!" } });
+  const outsider = reg2.data?.accessToken;
+  const denied = await call("POST", `/api/v1/contests/${contestId}/register`, { token: outsider });
+  check("outsider register -> 403 invite-only", denied.status === 403 && denied.data?.detail === "This contest is invite-only",
+    `${denied.status} ${JSON.stringify(denied.data)}`);
+  const invited = await call("POST", `/api/v1/contests/${contestId}/register`, { token: student });
+  check("invited student register -> 200", invited.status === 200, invited.status);
+  const archive = await call("POST", `/api/v1/problems/${pubId}/transitions`, { token: admin, json: { status: "ARCHIVED" } });
+  check("archive problem used by contest -> 409", archive.status === 409 && String(archive.data?.detail).includes("ZZ Live Contest"),
+    `${archive.status} ${JSON.stringify(archive.data)}`);
+  const detail = await call("GET", `/api/v1/admin/contests/${contestId}`, { token: admin });
+  const edit = { ...detail.data, title: `ZZ Live Contest ${ts} v2`, problems: null };
+  const ok = await call("PUT", `/api/v1/admin/contests/${contestId}`, { token: admin, json: edit });
+  check("edit scheduled contest", ok.status === 200 && ok.data.version > detail.data.version, ok.status);
+  const stale = await call("PUT", `/api/v1/admin/contests/${contestId}`, { token: admin, json: edit });
+  check("stale version -> 409", stale.status === 409, stale.status);
+  const parts = await call("GET", `/api/v1/admin/contests/${contestId}/participants`, { token: admin });
+  check("participants list", parts.status === 200 && parts.data.length === 1, parts.status);
+  const rm = await call("DELETE", `/api/v1/admin/contests/${contestId}/participants/${parts.data?.[0]?.userId}`, { token: admin });
+  check("remove participant without submissions", rm.status === 204, rm.status);
+  }
 } catch (e) {
   check("script error", false, e.stack);
 } finally {
   section = "Cleanup";
+  if (contestId) {
+    const del = await call("DELETE", `/api/v1/admin/contests/${contestId}`, { token: admin });
+    check("admin deletes throwaway contest", del.status === 204, `${del.status} ${JSON.stringify(del.data)}`);
+    const gone = await call("GET", `/api/v1/admin/contests/${contestId}`, { token: admin });
+    check("deleted contest -> 404", gone.status === 404, gone.status);
+  }
   if (pid) {
     const del = await call("DELETE", `/api/v1/problems/${pid}`, { token: admin });
     check("delete throwaway problem", del.status === 204 || del.status === 200, `${del.status} ${JSON.stringify(del.data)}`);

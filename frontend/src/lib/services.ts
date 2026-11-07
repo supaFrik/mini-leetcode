@@ -13,6 +13,7 @@ import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
+  AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
 } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
@@ -372,4 +373,38 @@ export async function loadDraft(cid: number, pid: number, lang: Language): Promi
 export async function saveDraft(cid: number, pid: number, lang: Language, value: string): Promise<void> {
   if (USE_MOCK) return mock.saveDraft(cid, pid, lang, value);
   await api(`/api/v1/contests/${cid}/problems/${pid}/draft`, { method: "PUT", body: JSON.stringify({ language: lang, code: value }) });
+}
+
+// ---------- Admin: kỳ thi (/api/v1/admin/contests, INSTRUCTOR + ADMIN; xoá chỉ ADMIN) ----------
+// Không có bản mock: trang này luôn nói chuyện với API thật (e2e chặn request bằng page.route).
+export async function fetchAdminContests(q: { status?: string; search?: string } = {}): Promise<AdminContestSummary[]> {
+  const qs = new URLSearchParams();
+  if (q.status) qs.set("status", q.status);
+  if (q.search) qs.set("search", q.search);
+  const s = qs.toString();
+  return api<AdminContestSummary[]>(`/api/v1/admin/contests${s ? `?${s}` : ""}`);
+}
+export async function fetchAdminContest(id: number): Promise<AdminContestDetail> {
+  return api<AdminContestDetail>(`/api/v1/admin/contests/${id}`);
+}
+export async function createContest(body: ContestUpsert): Promise<AdminContestDetail> {
+  return api<AdminContestDetail>("/api/v1/admin/contests", { method: "POST", body: JSON.stringify(body) });
+}
+export async function updateContest(id: number, body: ContestUpsert): Promise<AdminContestDetail> {
+  return api<AdminContestDetail>(`/api/v1/admin/contests/${id}`, { method: "PUT", body: JSON.stringify(body) });
+}
+export async function deleteContest(id: number): Promise<void> {
+  await api(`/api/v1/admin/contests/${id}`, { method: "DELETE" });
+}
+export async function fetchContestParticipants(id: number): Promise<AdminParticipant[]> {
+  return api<AdminParticipant[]>(`/api/v1/admin/contests/${id}/participants`);
+}
+export async function addContestParticipants(id: number, entries: string): Promise<BulkParticipantsResult> {
+  return api<BulkParticipantsResult>(`/api/v1/admin/contests/${id}/participants`, {
+    method: "POST",
+    body: JSON.stringify({ entries }),
+  });
+}
+export async function removeContestParticipant(id: number, userId: number): Promise<void> {
+  await api(`/api/v1/admin/contests/${id}/participants/${userId}`, { method: "DELETE" });
 }

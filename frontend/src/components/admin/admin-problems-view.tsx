@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useUser } from "@/hooks/use-user";
+import { AdminNav } from "./admin-nav";
 import { GradingPanel, ReferencePanel, SourceFilesEditor, TestCasesPanel } from "./problem-authoring";
 import {
   createProblem,
@@ -562,6 +563,7 @@ export function AdminProblemsView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+      <AdminNav />
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="eyebrow">Admin</p>

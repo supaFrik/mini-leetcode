@@ -208,3 +208,70 @@ export interface ProctorReportRow {
   userId: number; username: string; status: ParticipantStatus; violationCount: number; lastEventAt?: string;
 }
 export interface PlagiarismRow { id: number; problemId: number; problemTitle: string; userA: string; userB: string; similarity: number }
+
+// ---------- Admin: quản lý kỳ thi (/api/v1/admin/contests) ----------
+export type RegistrationMode = "OPEN" | "INVITE_ONLY";
+export type ScoringPolicy = "ACM_ICPC" | "PARTIAL_IOI";
+
+export interface AdminContestSummary {
+  id: number;
+  title: string;
+  slug: string;
+  status: ContestStatus;
+  startTime: string;
+  endTime: string;
+  registrationMode: RegistrationMode;
+  problemCount: number;
+  participantCount: number;
+}
+export interface AdminContestProblem {
+  problemId: number;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  problemStatus?: ProblemLifecycle;
+  label: string;
+  orderIndex: number;
+}
+export interface AdminContestDetail {
+  id: number;
+  title: string;
+  slug: string;
+  status: ContestStatus;
+  startTime: string;
+  endTime: string;
+  scoringPolicy: ScoringPolicy;
+  maxViolationsAllowed: number;
+  registrationMode: RegistrationMode;
+  createdBy: string | null;
+  version: number;
+  hasSubmissions: boolean;
+  problems: AdminContestProblem[];
+}
+/** Body tạo/sửa kỳ thi. Mốc thời gian là ISO UTC (`toISOString()`). */
+export interface ContestUpsert {
+  title: string;
+  startTime: string;
+  endTime: string;
+  scoringPolicy: ScoringPolicy;
+  maxViolationsAllowed: number;
+  registrationMode: RegistrationMode;
+  problems: { problemId: number; label: string; orderIndex: number }[];
+  version?: number;
+}
+export interface AdminParticipant {
+  userId: number;
+  username: string;
+  email: string;
+  status: ParticipantStatus;
+  violationCount: number;
+  solved: number;
+  penaltyMinutes: number;
+  rank: number | null;
+  hasSubmissions: boolean;
+}
+export type BulkOutcome = "ADDED" | "ALREADY_REGISTERED" | "NOT_FOUND" | "BLOCKED";
+export interface BulkParticipantsResult {
+  lines: { input: string; outcome: BulkOutcome; username: string | null }[];
+  added: number;
+}
