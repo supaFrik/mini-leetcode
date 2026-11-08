@@ -1,0 +1,45 @@
+{
+  "_comment": "Project Mini Bank Console 5 stage + plan mẫu 'OOP với Java'. Sinh seed / testcase: python backend/tools/problems/mini_bank_project.py --help",
+  "reference": "oop-starters/mini-bank-console",
+  "plan": {
+    "slug": "oop-voi-java",
+    "title": "OOP với Java",
+    "description": "Từ lớp và đóng gói tới kế thừa, đa hình, exception: hai bài luyện ngắn rồi xây một ngân hàng mini chạy trên console qua 5 stage.",
+    "items": [
+      {"kind": "PROBLEM", "title": "Luyện: lớp & đóng gói", "problems": ["bank-account-class"]},
+      {"kind": "PROBLEM", "title": "Luyện: kế thừa & đa hình", "problems": ["shape-area-hierarchy"]},
+      {"kind": "PROJECT", "title": "Project: Mini Bank Console",
+       "description": "Ngân hàng mini đọc lệnh bằng Scanner. Mỗi stage thêm tính năng; code của stage trước vẫn phải chạy đúng.",
+       "problems": ["mini-bank-stage-1", "mini-bank-stage-2", "mini-bank-stage-3", "mini-bank-stage-4", "mini-bank-stage-5"]}
+    ]
+  },
+  "stages": [
+    {"slug": "mini-bank-stage-1", "title": "Mini Bank 1/5 — Tài khoản & đóng gói", "difficulty": "EASY",
+     "tags": ["OOP", "Encapsulation", "Scanner"]},
+    {"slug": "mini-bank-stage-2", "title": "Mini Bank 2/5 — Kế thừa & đa hình", "difficulty": "EASY",
+     "tags": ["OOP", "Inheritance", "Polymorphism"]},
+    {"slug": "mini-bank-stage-3", "title": "Mini Bank 3/5 — Exception & chuyển khoản", "difficulty": "MEDIUM",
+     "tags": ["OOP", "Exceptions"]},
+    {"slug": "mini-bank-stage-4", "title": "Mini Bank 4/5 — Lớp Bank & mở tài khoản", "difficulty": "MEDIUM",
+     "tags": ["OOP", "Encapsulation", "Collections"]},
+    {"slug": "mini-bank-stage-5", "title": "Mini Bank 5/5 — Hoàn thiện CLI", "difficulty": "MEDIUM",
+     "tags": ["OOP", "Scanner"]}
+  ],
+  "_cases_comment": "Mỗi case thuộc stage nhỏ nhất có đủ lệnh nó dùng. Stage N chấm mọi case có stage <= N. Case đầu tiên của mỗi stage là ví dụ công khai. Không dùng 'EXIT <mã khác 0>' (judge coi exit code != 0 là lỗi runtime).",
+  "cases": [
+    {"stage": 1, "name": "two-accounts", "stdin": "2\nAn\nS\n100000\nBinh\nC\n0\nDEPOSIT 2 50000\nBALANCE 1\nLIST\nEXIT\n"},
+    {"stage": 1, "name": "eof-summary", "stdin": "1\nChi\nS\n0\nDEPOSIT 1 1000\nDEPOSIT 1 2500\nBALANCE 1\n"},
+    {"stage": 1, "name": "no-accounts", "stdin": "0\nLIST\nEXIT\n"},
+    {"stage": 2, "name": "savings-minimum", "stdin": "1\nChi\nS\n80000\nWITHDRAW 1 30001\nWITHDRAW 1 30000\nWITHDRAW 1 1\nLIST\nEXIT\n"},
+    {"stage": 2, "name": "interest-rounding", "stdin": "1\nAn\nS\n123457\nMONTH\nMONTH\nMONTH\nBALANCE 1\nDEPOSIT 1 999\nMONTH\nLIST\nEXIT\n"},
+    {"stage": 2, "name": "overdraft-limit", "stdin": "1\nBinh\nC\n0\nWITHDRAW 1 500000\nWITHDRAW 1 1\nDEPOSIT 1 1\nWITHDRAW 1 1\nMONTH\nBALANCE 1\nEXIT\n"},
+    {"stage": 2, "name": "month-then-eof", "stdin": "1\nGiang\nC\n250000\nDEPOSIT 1 50000\nMONTH\n"},
+    {"stage": 3, "name": "transfer", "stdin": "2\nDung\nS\n60000\nEm\nC\n0\nTRANSFER 1 2 10000\nTRANSFER 2 1 400000\nLIST\nEXIT\n"},
+    {"stage": 3, "name": "failed-transfer-is-atomic", "stdin": "2\nDung\nS\n60000\nEm\nC\n0\nTRANSFER 1 2 20000\nTRANSFER 1 9 1\nTRANSFER 9 1 1\nLIST\nEXIT\n"},
+    {"stage": 3, "name": "bad-input-keeps-running", "stdin": "1\nHa\nC\n1000\nDEPOSIT 1 -5\nDEPOSIT 7 10\nFOO\nWITHDRAW 1\nBALANCE x\nBALANCE 1\nEXIT\n"},
+    {"stage": 4, "name": "open-accounts", "stdin": "0\nOPEN S 70000 Le Thi Hong Nhung\nOPEN C 5000 Pham Quang\nLIST\nTRANSFER 1 2 15000\nLIST\nEXIT\n"},
+    {"stage": 4, "name": "open-rejects-bad-type", "stdin": "1\nKim\nX\n10\nOPEN X 1 Nobody\nOPEN C 0 Lan\nBALANCE 1\nLIST\nEXIT\n"},
+    {"stage": 5, "name": "help-and-report", "stdin": "1\nMinh\nC\n10\nHELP\nREPORT 3\nREPORT 0\nEXIT\n"},
+    {"stage": 5, "name": "polymorphic-month", "stdin": "3\nH1\nS\n200000\nH2\nC\n0\nH3\nS\n50000\nMONTH\nTRANSFER 1 2 100000\nMONTH\nLIST\nREPORT 2\nEXIT\n"}
+  ]
+}

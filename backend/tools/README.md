@@ -47,3 +47,29 @@ python backend\tools\problems\oop_console_cases.py
 # 3. Nạp testcase (tài khoản INSTRUCTOR/ADMIN)
 .\backend\tools\seed-two-sum-testcases.ps1 -Slug mini-bank-console -Username <user> -Password <password>
 ```
+
+## Lộ trình mẫu "OOP với Java" + project Mini Bank 5 stage
+
+Nguồn: `problems/projects/mini-bank/` (`project.json` = plan, stage, testcase; `grading.json` = rule theo `fromStage`; `stages/stage-N.md` = đề; `starters/stage-N/` = file khung). Lời giải tham chiếu dùng chung cho 5 stage là `problems/oop-starters/mini-bank-console/`. Stage N chấm **mọi** testcase và rule của stage 1..N (đặc tả: `specs/study-plan.spec.md`).
+
+```powershell
+# 0. Cần API đã chạy một lần (Flyway V8). Nên nạp seed-problems.sql trước: plan dùng 2 bài luyện bank-account-class, shape-area-hierarchy.
+python backend\tools\problems\mini_bank_project.py check     # biên dịch bộ khung từng stage
+
+# 1. 5 đề stage + plan oop-voi-java
+python backend\tools\problems\mini_bank_project.py sql
+Get-Content backend\tools\seed-mini-bank-project.sql -Raw | docker exec -i mini_leetcode_mysql mysql --default-character-set=utf8mb4 -u leetcode -pleetcode_password mini_leetcode
+
+# 2. Testcase cộng dồn: output kỳ vọng sinh trong đúng image sandbox (cần Docker)
+python backend\tools\problems\mini_bank_project.py cases
+
+# 3. Nạp testcase từng stage (tài khoản INSTRUCTOR/ADMIN)
+1..5 | ForEach-Object { .\backend\tools\seed-two-sum-testcases.ps1 -Slug "mini-bank-stage-$_" -Username <user> -Password <password> }
+
+# 4. Hai bài luyện lẻ (nếu chưa nạp)
+python backend\tools\problems\oop.py bank-account-class shape-area-hierarchy
+.\backend\tools\seed-two-sum-testcases.ps1 -Slug bank-account-class -Username <user> -Password <password>
+.\backend\tools\seed-two-sum-testcases.ps1 -Slug shape-area-hierarchy -Username <user> -Password <password>
+```
+
+`cases --local` chạy lời giải bằng `java` trên máy (không cần Docker) để thử nhanh; **đừng nạp kết quả đó lên server** vì mã hoá ký tự có thể khác image của judge. Sửa case / rule xong: chạy lại bước 1–3. Test `MiniBankProjectContentTest` (module judge) kiểm tra rule của mọi stage chấp nhận lời giải tham chiếu.

@@ -248,9 +248,11 @@ ide-plugin/                         Gradle (tách khỏi Maven backend), Intelli
 - [x] CRUD plan cho INSTRUCTOR / ADMIN (`POST`, `PUT /{slug}`, `POST /{slug}/transitions`, `DELETE /{slug}`); ẩn đề project khỏi `GET /problems` (AC-010)
 - Test: `StudyPlanIntegrationTest` (8 test), `MySubmissionsFilterIntegrationTest` (bổ sung AC-009)
 
-### Slice 2 — Nội dung mẫu
-- [ ] Tách Mini Bank thành 5 đề OOP (đề, starter, `grading_config`, testcase cộng dồn) trong `backend/tools/problems`
-- [ ] Seed 1 plan "OOP với Java" gồm project Mini Bank + 2 bài lẻ
+### Slice 2 — Nội dung mẫu ✅ (nhánh `feature/study-plan-slice-1`)
+- [x] Tách Mini Bank thành 5 đề OOP trong `backend/tools/problems/projects/mini-bank` (đề, starter theo stage, rule `fromStage`, 14 testcase gán stage). Một lời giải tham chiếu cho cả 5 stage vì output mọi lệnh giữ nguyên qua các stage
+- [x] `mini_bank_project.py check | sql | cases [--local]`: seed 5 đề + plan "OOP với Java" (2 bài lẻ `bank-account-class`, `shape-area-hierarchy` + project), testcase cộng dồn
+- [x] `MiniBankProjectContentTest` (judge): rule mọi stage chấp nhận lời giải; rule stage 2 bắt được `Account` không abstract
+- [ ] Chạy thật trên MySQL + Docker (chưa có môi trường lúc viết): `sql`, `cases`, nạp testcase, nộp lời giải tham chiếu ⇒ `AC` cả 5 stage
 
 ### Slice 3 — Plugin khung (song song slice 1, dùng API giả)
 - [ ] `ide-plugin/` từ plugin template, JDK 21, `sinceBuild 253`
