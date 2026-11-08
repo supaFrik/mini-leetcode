@@ -273,6 +273,12 @@ public class ProblemService {
 
             if (!staff) {
                 predicates.add(cb.equal(root.get("status"), ProblemStatus.PUBLISHED));
+                // Đề thuộc một project trong lộ trình chỉ vào qua plan (specs/study-plan.spec.md, Q15).
+                var projectProblems = query.subquery(Long.class);
+                var item = projectProblems.from(jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem.class);
+                projectProblems.select(item.<jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem, Long>join("problemIds"))
+                        .where(cb.equal(item.get("kind"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanItemKind.PROJECT));
+                predicates.add(cb.not(root.get("id").in(projectProblems)));
             }
             if (difficulty != null) {
                 predicates.add(cb.equal(root.get("difficulty"), difficulty));

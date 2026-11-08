@@ -26,6 +26,27 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /** Plugin IDE dùng {@code code} để phân biệt lỗi nghiệp vụ (xem specs/study-plan.spec.md, Error Handling). */
+    @ExceptionHandler(jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException.class)
+    public ProblemDetail handlePatForbidden(jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problem.setTitle("Forbidden");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/forbidden"));
+        problem.setProperty("code", jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException.CODE);
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(StageLockedException.class)
+    public ProblemDetail handleStageLocked(StageLockedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Stage Locked");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/conflict"));
+        problem.setProperty("code", StageLockedException.CODE);
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail handleAccessDeniedException(AccessDeniedException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied: insufficient permissions");

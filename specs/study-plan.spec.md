@@ -239,13 +239,14 @@ ide-plugin/                         Gradle (tách khỏi Maven backend), Intelli
 
 ## Implementation TODO
 
-### Slice 1 — Backend nền
-- [ ] Flyway `V8__study_plans_and_pats.sql` (4 bảng)
-- [ ] Sửa `findAttemptedProblemIdsByUserId` lọc `quickRun = false` + test (AC-009)
-- [ ] PAT: entity, service tạo / thu hồi / tra hash, `/api/v1/me/tokens`, nhánh `mlc_pat_` trong `JwtAuthenticationFilter`, allowlist
-- [ ] Khoá stage + chặn PAT kỳ thi trong `createSubmission` + test cả 4 đường nộp (AC-003, AC-007)
-- [ ] `StudyPlanService` + `GET /study-plans`, `GET /study-plans/{slug}` (tiến độ suy ra)
-- [ ] CRUD plan cho INSTRUCTOR / ADMIN; ẩn đề project khỏi `GET /problems` (AC-010)
+### Slice 1 — Backend nền ✅ (nhánh `feature/study-plan-slice-1`)
+- [x] Flyway `V8__study_plans_and_personal_access_tokens.sql` (4 bảng; `stage_no` 0-based, API trả `stageNo` từ 1)
+- [x] Sửa `findAttemptedProblemIdsByUserId` lọc `quickRun = false` + test (AC-009)
+- [x] PAT: entity, `PersonalAccessTokenService`, `/api/v1/me/tokens`, nhánh `mlc_pat_` trong `JwtAuthenticationFilter`, allowlist
+- [x] Khoá stage + chặn PAT kỳ thi trong `createSubmission` + test cả 4 đường nộp (AC-003, AC-007). INSTRUCTOR / ADMIN và bài nộp kỳ thi không bị khoá
+- [x] `StudyPlanService` + `GET /study-plans`, `GET /study-plans/{slug}` (tiến độ suy ra)
+- [x] CRUD plan cho INSTRUCTOR / ADMIN (`POST`, `PUT /{slug}`, `POST /{slug}/transitions`, `DELETE /{slug}`); ẩn đề project khỏi `GET /problems` (AC-010)
+- Test: `StudyPlanIntegrationTest` (8 test), `MySubmissionsFilterIntegrationTest` (bổ sung AC-009)
 
 ### Slice 2 — Nội dung mẫu
 - [ ] Tách Mini Bank thành 5 đề OOP (đề, starter, `grading_config`, testcase cộng dồn) trong `backend/tools/problems`

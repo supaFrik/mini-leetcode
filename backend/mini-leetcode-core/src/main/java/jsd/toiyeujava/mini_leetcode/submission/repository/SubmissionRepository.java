@@ -65,7 +65,10 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     List<Long> findSolvedProblemIdsByUserId(@Param("userId") Long userId,
                                              @Param("verdict") SubmissionVerdict verdict);
 
-    /** Id các bài mà user đã từng nộp (bất kể kết quả) → tiến độ IN_PROGRESS. */
-    @Query("select distinct s.problem.id from Submission s where s.user.id = :userId")
+    /** User đã có bài nộp chính thức (không phải Run) được AC cho đề này chưa — dùng để mở khoá stage. */
+    boolean existsByUser_IdAndProblem_IdAndVerdictAndQuickRunFalse(Long userId, Long problemId, SubmissionVerdict verdict);
+
+    /** Id các bài mà user đã từng nộp chính thức (bất kể kết quả; không tính Run) → tiến độ IN_PROGRESS. */
+    @Query("select distinct s.problem.id from Submission s where s.user.id = :userId and s.quickRun = false")
     List<Long> findAttemptedProblemIdsByUserId(@Param("userId") Long userId);
 }

@@ -18,8 +18,15 @@ public class UserPrincipal implements UserDetails {
     private final Role role;
     private final jsd.toiyeujava.mini_leetcode.entity.UserStatus status;
     private final Collection<? extends GrantedAuthority> authorities;
+    /** true khi request xác thực bằng Personal Access Token (plugin IDE) thay vì JWT của web. */
+    private final boolean viaPat;
 
     public UserPrincipal(User user) {
+        this(user, false);
+    }
+
+    public UserPrincipal(User user, boolean viaPat) {
+        this.viaPat = viaPat;
         this.id = user.getId();
         this.username = user.getUsername();
         this.email = user.getEmail();
@@ -39,6 +46,10 @@ public class UserPrincipal implements UserDetails {
 
     public Role getRole() {
         return role;
+    }
+
+    public boolean isViaPat() {
+        return viaPat;
     }
 
     public jsd.toiyeujava.mini_leetcode.entity.UserStatus getStatus() {

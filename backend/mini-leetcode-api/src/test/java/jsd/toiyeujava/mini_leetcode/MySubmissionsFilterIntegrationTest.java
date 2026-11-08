@@ -108,6 +108,9 @@ class MySubmissionsFilterIntegrationTest {
         assertThat(submissionRepository.findById(runId).orElseThrow().isQuickRun()).isTrue();
         assertThat(submissionRepository.findSolvedProblemIdsByUserId(alice.getId(), SubmissionVerdict.AC))
                 .containsExactly(problem.getId());
+        // Chỉ bấm Run thì bài vẫn NEVER, không thành IN_PROGRESS.
+        assertThat(submissionRepository.findAttemptedProblemIdsByUserId(alice.getId()))
+                .containsExactly(problem.getId());
         assertThat(submissionRepository.findByContestId(contestId)).isEmpty();
         assertThat(submissionRepository.findWithUserByContestIdIn(List.of(contestId))).isEmpty();
     }
