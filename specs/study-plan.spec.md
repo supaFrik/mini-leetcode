@@ -1,175 +1,178 @@
-# Feature: Study Plan (Lộ trình học)
+# Feature: Study Plan — Project-based Learning & Code/Check trên IDE
 
-> **Trạng thái:** DRAFT — chờ phỏng vấn chốt quyết định. **Chưa code.**
-> Sau khi có câu trả lời cho mục [Câu hỏi phỏng vấn](#câu-hỏi-phỏng-vấn), bảng "Quyết định" sẽ được chốt,
-> FR/AC được sửa theo, và mới thêm mục *Implementation TODO*.
+> **Trạng thái:** DRAFT v2 — đã chốt một phần sau phỏng vấn vòng 1, còn [câu hỏi vòng 2](#câu-hỏi-phỏng-vấn-vòng-2). **Chưa code.**
+> Hướng sản phẩm: học theo **dự án nhiều chặng (project → stages)** như Hyperskill; học viên **tải project về,
+> code trên IDE của mình và bấm Check** để server chấm.
 
 ## Overview
 
-**Study Plan** là một danh sách bài tập được sắp xếp có chủ đích (theo chủ đề / theo ngày) để học viên
-đi từ dễ đến khó thay vì tự chọn bài lẻ trong `/problems`. Học viên tham gia một plan, làm từng bài,
-và thấy tiến độ của mình trên plan đó.
+**Study Plan** là lộ trình do giảng viên soạn. Mỗi plan gồm các **project** thực tế (vd. "Mini Bank Console",
+"TCP Chat Room"). Mỗi project chia thành nhiều **stage** nối tiếp nhau: stage sau mở rộng tiếp code của stage trước,
+nên khi xong project học viên có một chương trình hoàn chỉnh. Có thể chèn thêm **bài luyện lẻ** (thuật toán / OOP)
+giữa các project để luyện kỹ năng cần cho stage tiếp theo.
 
-Giá trị nghiệp vụ:
-- **Học viên:** biết "hôm nay làm bài gì tiếp", có mục tiêu rõ ràng và cảm giác hoàn thành.
-- **Giảng viên:** đóng gói ngân hàng đề thành lộ trình (vd. "DSA cơ bản", "OOP & Socket Java"), giao cho lớp và theo dõi.
+Học viên có thể làm mỗi stage theo hai cách:
+1. **Trên IDE (cách chính):** tải project skeleton → mở bằng IntelliJ / VS Code / Eclipse → code → bấm **Check** (run configuration dựng sẵn) hoặc gõ `mlc check` → kết quả từ server hiện ngay trong terminal của IDE.
+2. **Trên web:** workspace nhiều file hiện có (dùng khi không cài được JDK).
 
-## Hiện trạng có thể tái sử dụng (đã kiểm chứng trong code)
+## Tham khảo
 
-| Thành phần có sẵn | Vị trí | Dùng cho Study Plan |
+| Nguồn | Học được gì | Áp dụng |
 |---|---|---|
-| Đề có `difficulty`, `tags`, `problem_type` (`ALGORITHMIC` / `OOP_GRINDING`), `status` | `problems`, `problem_tags` (V1, V3, V4) | Chọn bài vào plan, nhóm theo chủ đề |
-| Tiến độ từng bài `UserProgress` = `DONE` / `IN_PROGRESS` / `NEVER` | `ProblemService.resolveProgress`, `SubmissionRepository.findSolved…/findAttempted…` | Tính % hoàn thành plan — không cần lưu lại kết quả |
-| Phân biệt Run và Submit (`is_quick_run`) | `submissions` (V6) | Run không được tính là "đã làm" |
-| Vai trò `USER` / `INSTRUCTOR` / `ADMIN` | `users.role` | Ai được tạo / sửa plan |
-| Vòng đời `DRAFT → REVIEWING → PUBLISHED → ARCHIVED` | `ProblemStatus` + `POST /problems/{id}/transitions` | Có thể áp dụng lại cho plan |
-| 20 đề mẫu (12 thuật toán, 8 OOP/Socket) | `backend/tools/problems/problems.json` | Seed 1–2 plan mẫu |
-| Migration tiếp theo | Flyway `V8__…` | Bảng plan mới |
+| [Hyperskill — Study plan](https://hyperskill.org/study-plan) | Plan = kiến thức (topics) + **project** áp dụng. Tiến độ tính theo *learned topics* / *applied topics*. Xong project ⇒ chứng nhận | Plan gồm project + bài luyện lẻ; hiển thị 2 chỉ số tiến độ |
+| [Hyperskill Academy plugin cho JetBrains IDE](https://blog.jetbrains.com/education/2025/12/09/hyperskill-gets-its-own-plugin-inside-jetbrains-ides/), [hướng dẫn cài IntelliJ](https://support.hyperskill.org/hc/en-us/articles/360038633072-How-to-install-and-run-IntelliJ-IDEA-for-learning-Java-or-Kotlin) | Đăng nhập trong IDE, nhận task, nút **Check** gửi lời giải, pass ⇒ mở stage tiếp theo | Trải nghiệm "Check ngay trong IDE"; plugin riêng để dành cho v2 |
+| [hs-test (Hyperskill)](https://github.com/hyperskill/hs-test) — [Writing tests](https://github.com/hyperskill/hs-test/wiki) | Chấm chương trình console theo từng stage: `StageTest` + `TestedProgram` (bơm stdin, đọc stdout) + `CheckResult.correct()/wrong(msg)`, chạy trên JUnit | Định dạng test cho stage OOP console; thông báo lỗi dễ hiểu kiểu `wrong("Sau lệnh BALANCE 1 cần in …")` |
+| [JetBrains Academy — Educator guide](https://plugins.jetbrains.com/plugin/10081-jetbrains-academy/docs/educator-start-guide.html), [course template](https://github.com/jetbrains-academy/python-course-template) | Khoá học khai báo bằng file (`course-info.yaml`, `task-info.yaml`, `task.md` + `tests/`); *framework lesson* = các task dùng chung code; file có thể khoá `editable: false` | Manifest `.mlc/project.yaml` trong skeleton; test public chỉ đọc |
+| [CodeCrafters — How challenges work](https://docs.codecrafters.io/challenges/how-challenges-work.md), [CLI usage](https://docs.codecrafters.io/cli/usage) | Project chia stage theo lối TDD; `codecrafters test` chạy nhanh, `--previous` chạy lại các stage trước; `submit` chấm trên server rồi mở stage sau; kết quả đẩy realtime qua WebSocket | Lệnh `mlc check` / `mlc submit`; **chấm cộng dồn** các stage trước; stream log |
+| [Exercism CLI](https://github.com/exercism/cli) | Một file binary duy nhất, `download` / `submit`, xác thực bằng **API token**; mỗi ngôn ngữ một test-runner Docker | CLI không cần cài thêm gì; dùng **Personal Access Token** |
+| [GitHub Classroom — Autograding](https://docs.github.com/en/education/manage-coursework-with-github-classroom/teach-with-github-classroom/use-autograding), [Assignment overview](https://docs.github.com/en/education/manage-coursework-with-github-classroom/teach-with-github-classroom/monitor-students-progress-with-the-assignment-overview-page) | Classroom → roster → assignment (+ deadline); autograde mỗi lần push; bảng học viên × điểm, xuất CSV. Cảnh báo: sửa test giữa khoá học ảnh hưởng tới repo của học viên đang làm | Mô hình **Lớp** (giai đoạn 2), dashboard và xuất CSV; quản lý phiên bản stage |
 
-**Chưa có:** khái niệm lớp học / nhóm, thông báo (email / push), lịch / deadline cho bài luyện tập, trang hồ sơ cá nhân.
+## Hiện trạng tái sử dụng (đã kiểm chứng trong code)
 
-**Phát hiện cần lưu ý:**
-1. `findAttemptedProblemIdsByUserId` **không lọc** `quickRun = false` ⇒ chỉ bấm Run cũng làm bài thành `IN_PROGRESS`.
-2. `findSolvedProblemIdsByUserId` **không lọc** `contest_id` ⇒ bài AC trong kỳ thi cũng tính `DONE` ở chế độ luyện tập.
-3. Bài OOP có điểm thành phần (`score`); hiện "DONE" chỉ dựa vào verdict `AC`.
+| Có sẵn | Vị trí | Dùng cho |
+|---|---|---|
+| Starter ZIP: `GET /api/v1/problems/{idOrSlug}/starter-template` | `ProblemController` | Nền cho tải project skeleton |
+| Nộp ZIP / nhiều file: `POST /api/v1/problems/{id}/submit-multipart`, `/run-multipart` | `SubmissionController` | `mlc submit` / `mlc check` gửi thẳng vào đây, không cần đường chấm mới |
+| Chấm OOP: rule cấu trúc + stdin/stdout + socket, `score_breakdown` JSON; cấu hình chấm chỉ ở server | `OopGrindingJudgeStrategy`, `problems.grading_config` | Chấm từng stage, trả lỗi chi tiết về CLI |
+| Console live qua WebSocket | `ConsoleWebSocketHandler` | (tuỳ chọn) stream log chấm về CLI |
+| `UserProgress` DONE / IN_PROGRESS / NEVER | `ProblemService.resolveProgress` | Tiến độ bài lẻ và stage |
+| Starter OOP mẫu `mini-bank-console` (6 lớp) | `backend/tools/problems/oop-starters/` | Tách thành project mẫu 5 stage |
+| JWT access token **30 phút**, refresh 7 ngày | `application.yml` | ⚠ Không hợp cho CLI ⇒ cần Personal Access Token |
 
-## Đề xuất mặc định (dùng nếu bạn trả lời "theo đề xuất")
+## Quyết định đã chốt
 
-Một MVP gọn, khớp hạ tầng hiện có:
-- Giảng viên / Admin tạo plan; học viên chỉ tham gia (không tự tạo).
-- Plan = nhiều **section** (theo chủ đề hoặc "Ngày 1, Ngày 2…"), mỗi section là danh sách bài có thứ tự.
-- Học viên làm tự do, không khoá bài sau; plan chỉ gợi ý "bài tiếp theo".
-- "Hoàn thành một bài" = có bài nộp chính thức `AC` (không tính Run); tính cả bài đã AC trước khi tham gia.
-- Tiến độ tính trực tiếp từ `submissions`, chỉ lưu bản ghi tham gia (`enrollment`).
-- Không có deadline, lớp học, thông báo ở MVP.
+| # | Quyết định | Chọn |
+|---|---|---|
+| A1 | Mục đích | Tự học theo lộ trình, kiểu **project-based** như Hyperskill |
+| A2 | Ai tạo plan | **ADMIN / INSTRUCTOR**; học viên chỉ tham gia |
+| A5 | Cách làm bài | **Setup code và check ngay trên IDE** (web workspace vẫn dùng được) |
 
-## Functional Requirements (nháp — sẽ chỉnh sau phỏng vấn)
+## Mô hình nghiệp vụ (đề xuất)
 
-### FR-SP-001: Danh sách plan
-When người dùng mở trang Study Plans, the system shall hiển thị các plan `PUBLISHED` kèm tiêu đề, mô tả ngắn, số bài, độ khó, và % hoàn thành của chính người dùng (nếu đã tham gia).
+```
+StudyPlan (DRAFT → PUBLISHED → ARCHIVED, do INSTRUCTOR/ADMIN tạo)
+ └─ PlanItem (có thứ tự) ──┬─ Project ── Stage 1..N   (mỗi Stage trỏ tới 1 Problem OOP_GRINDING / ALGORITHMIC)
+                           └─ Problem lẻ (bài luyện)
+Enrollment (user × plan, started_at)        ← tiến độ tính trực tiếp từ submissions
+StageProgress = suy ra từ submission AC của Problem gắn với stage
+```
 
-### FR-SP-002: Chi tiết plan
-When người dùng mở một plan, the system shall hiển thị các section theo thứ tự, mỗi bài kèm độ khó, loại đề và trạng thái `DONE` / `IN_PROGRESS` / `NEVER` của người dùng.
+- **Stage = một `Problem`** có sẵn đề Markdown, testcase, `grading_config` và starter ⇒ dùng lại 100% judge. Bảng mới chỉ lưu *thứ tự*: `projects`, `project_stages(project_id, stage_no, problem_id)`, `study_plans`, `study_plan_items`, `study_plan_enrollments`.
+- **Code mang sang stage sau:** học viên làm tiếp trong cùng thư mục project trên máy. Khi sang stage mới, CLI chỉ tải thêm *đề + test public* của stage đó, **không ghi đè code** của học viên.
+- **Chấm cộng dồn:** stage N chấm cả test của stage 1..N, để tính năng cũ không bị hỏng khi thêm tính năng mới (giống `--previous` của CodeCrafters).
+- **Mở khoá tuần tự trong project:** phải pass stage N-1 mới làm được stage N. Các item ở cấp plan thì làm tự do.
 
-### FR-SP-003: Tham gia plan
-When học viên đã đăng nhập bấm "Bắt đầu", the system shall tạo bản ghi tham gia (thời điểm bắt đầu) và đưa plan vào mục "Plan của tôi".
+## Thiết kế "Setup code & Check trên IDE"
 
-### FR-SP-004: Tính tiến độ
-While học viên đang tham gia một plan, the system shall tính tiến độ = số bài `DONE` / tổng số bài trong plan, theo quy tắc hoàn thành đã chốt (Q-C1…Q-C3).
+### So sánh phương án
 
-### FR-SP-005: Bài tiếp theo
-While học viên đang tham gia một plan, the system shall chỉ ra bài đầu tiên chưa `DONE` theo thứ tự plan và cho phép mở thẳng workspace của bài đó.
+| Phương án | UX | Công sức | Chạy trên IDE nào | Đánh giá |
+|---|---|---|---|---|
+| **P1. CLI `mlc` + run config dựng sẵn trong skeleton** | Bấm ▶ "Check" trong IDE hoặc gõ `mlc check` | Thấp–vừa (CLI Java, dùng lại API) | Mọi IDE và terminal | **Đề xuất cho MVP** |
+| P2. Plugin IntelliJ (như Hyperskill Academy) | Tốt nhất: cây stage, đề bài, nút Check trong IDE | Cao (Kotlin, IntelliJ Platform SDK, phát hành Marketplace) | Chỉ JetBrains | Để dành v2, dùng lại API của P1 |
+| P3. Extension VS Code | Tốt | Vừa–cao (TypeScript) | Chỉ VS Code | v2 nếu nhiều học viên dùng VS Code |
+| P4. Git push để chấm (như CodeCrafters) | Quen thuộc với dev | Cao (cần git server, hook) | Mọi IDE | Không hợp quy mô đồ án |
 
-### FR-SP-006: Ngữ cảnh plan trong workspace
-While học viên mở một bài từ plan, the system shall hiển thị tên plan, vị trí bài (vd. "3/20") và nút sang bài tiếp theo.
+### P1 — Luồng chi tiết
 
-### FR-SP-007: Tạo & sửa plan
-Where người dùng có vai trò `INSTRUCTOR` hoặc `ADMIN`, the system shall cho phép tạo plan, thêm / xoá / sắp xếp section và bài (chỉ chọn bài `PUBLISHED`).
+```
+Web: Study Plan › Mini Bank Console › "Mở trên IDE"
+  └─ hiện lệnh:  mlc start mini-bank-console          (hoặc tải ZIP skeleton)
 
-### FR-SP-008: Vòng đời plan
-The system shall quản lý plan qua các trạng thái `DRAFT` → `PUBLISHED` → `ARCHIVED`; chỉ plan `PUBLISHED` hiển thị với học viên; plan `ARCHIVED` vẫn hiển thị với người đã tham gia.
+mini-bank-console/                  ← skeleton tải về
+├─ pom.xml                          (Java 17, JUnit 5; mở là chạy trên IntelliJ / VS Code / Eclipse)
+├─ src/main/java/...                (code của học viên — CLI không bao giờ ghi đè)
+├─ src/test/java/stage1..N/         (test public từng stage, chỉ đọc)
+├─ stages/stage-1.md ...            (đề từng stage, offline)
+├─ .mlc/project.yaml                (planSlug, projectSlug, stage hiện tại, problemId từng stage, server URL)
+├─ .run/Check.run.xml               (IntelliJ: nút ▶ "Check" = mlc check)
+├─ .vscode/tasks.json               (VS Code: task "Check")
+└─ mlc / mlc.cmd                    (wrapper gọi mlc.jar — chỉ cần JDK 17 đã có, không cài thêm)
+```
 
-### FR-SP-009: Bài bị gỡ khỏi ngân hàng đề
-If một bài trong plan bị chuyển sang `ARCHIVED`, then the system shall loại bài đó khỏi tổng số bài khi tính tiến độ (chờ chốt Q-E2).
+| Lệnh | Việc làm | API dùng |
+|---|---|---|
+| `mlc login` | Dán **Personal Access Token** tạo trên web (Hồ sơ › Token), lưu tại `~/.mlc/credentials` | Mới: `POST /api/v1/me/tokens` (web) |
+| `mlc start <project>` | Tải skeleton + stage đang mở | Mở rộng `starter-template` hoặc mới `GET /projects/{slug}/skeleton` |
+| `mlc test` | Chạy **test public trên máy** (`mvn -q test -Dgroups=stage1..N`), offline, không tính điểm | — |
+| `mlc check` | Zip `src/` ⇒ nộp chính thức ⇒ chờ kết quả ⇒ in verdict, điểm, rule OOP sai, testcase sai đầu tiên. Pass ⇒ gợi ý `mlc next` | `POST /problems/{id}/submit-multipart` + `GET /submissions/{id}` |
+| `mlc next` | Tải đề + test public của stage sau, cập nhật `project.yaml` | Mới: `GET /projects/{slug}/stages/{n}` |
+| `mlc status` | Tiến độ plan / project | Mới: `GET /study-plans/{slug}/progress` |
+
+**Ranh giới tin cậy:** test chạy trên máy chỉ để học viên tự kiểm tra. **Chỉ verdict từ server mới được tính.** Test ẩn, `grading_config` và rule OOP vẫn nằm trên server, như quy tắc hiện tại.
+
+## Lớp / nhóm — có cần không?
+
+**Kết luận đề xuất:** MVP **chưa cần** bảng lớp, nhưng thiết kế sẵn để thêm ở giai đoạn 2 mà không phải sửa bảng plan.
+
+| Câu hỏi | Nếu "Có" ⇒ cần Lớp |
+|---|---|
+| Giảng viên cần giao plan cho **đúng một nhóm** học viên, người ngoài không thấy? | Có |
+| Cần **hạn nộp** theo từng đợt / lớp? | Có |
+| Giảng viên cần bảng **học viên × stage** của riêng lớp mình, xuất CSV để chấm điểm? | Có |
+| Plan công khai, ai cũng tự học, giảng viên chỉ cần xem tổng quan? | Không |
+
+- **MVP (không lớp):** plan công khai; giảng viên xem danh sách người tham gia và tiến độ của plan mình tạo.
+- **Giai đoạn 2 — "Lớp gọn" (học từ GitHub Classroom):** `classes(name, instructor_id, join_code)`, `class_members`, `class_plan_assignments(class_id, plan_id, due_at NULL)`. Học viên vào lớp bằng mã; plan gán cho lớp thì chỉ thành viên thấy; dashboard học viên × stage + CSV. Các bảng plan / project / stage không đổi.
+- Kỳ thi (`contests`) vẫn giữ riêng, không gộp vào lớp.
+
+## Functional Requirements (nháp)
+
+- **FR-SP-001** When học viên mở `/study-plans`, the system shall liệt kê plan `PUBLISHED` với số project, số bài lẻ, ước lượng giờ học, và % tiến độ của học viên nếu đã tham gia.
+- **FR-SP-002** When học viên mở một plan, the system shall hiển thị các item theo thứ tự; với project thì hiện các stage kèm trạng thái `LOCKED` / `NEVER` / `IN_PROGRESS` / `DONE`.
+- **FR-SP-003** When học viên bấm "Bắt đầu", the system shall tạo enrollment và mở khoá stage 1 của mọi project trong plan.
+- **FR-SP-004** While stage N-1 chưa `DONE`, the system shall từ chối nộp chính thức cho stage N (`409 STAGE_LOCKED`), cả trên web lẫn CLI.
+- **FR-SP-005** When một bài nộp chính thức cho stage N đạt `AC`, the system shall đánh dấu stage N `DONE` và mở khoá stage N+1.
+- **FR-SP-006** When chấm stage N, the system shall chạy cả testcase và rule của stage 1..N (chấm cộng dồn).
+- **FR-SP-007** Where người dùng có vai trò `INSTRUCTOR` / `ADMIN`, the system shall cho phép tạo / sửa plan, project, gắn `Problem` `PUBLISHED` làm stage và sắp thứ tự.
+- **FR-IDE-001** When học viên tạo token trên web, the system shall hiện token **một lần duy nhất**, chỉ lưu bản băm, cho đặt hạn dùng và thu hồi.
+- **FR-IDE-002** When CLI gọi API với header `Authorization: Bearer mlc_pat_…`, the system shall xác thực như người dùng đó, nhưng **chỉ** cho phép các endpoint đọc plan / project / stage, tải skeleton, nộp bài và xem kết quả.
+- **FR-IDE-003** When học viên tải skeleton, the system shall trả ZIP có cấu trúc Maven, test public của các stage đã mở, `.mlc/project.yaml`, run configuration cho IntelliJ / VS Code, và wrapper `mlc`.
+- **FR-IDE-004** When `mlc check` nhận kết quả, the system shall in verdict, điểm từng phần (OOP / testcase / socket), rule và testcase sai đầu tiên kèm thông báo dễ hiểu.
+- **FR-IDE-005** While đang trong kỳ thi, the system shall không chấp nhận token CLI cho nộp bài thi (kỳ thi chỉ làm trên web có giám sát).
 
 ## Acceptance Criteria (nháp)
 
-### AC-001: Tham gia và thấy tiến độ ban đầu
-- **Given** học viên đã AC bài `two-sum` trước đây, plan "DSA cơ bản" có 10 bài gồm `two-sum`
-- **When** học viên bấm "Bắt đầu"
-- **Then** plan hiển thị tiến độ `1/10 (10%)` và "Bài tiếp theo" là bài chưa AC đầu tiên
+- **AC-001 Check từ IDE:** Given học viên đã `mlc login`, đang ở stage 2 của Mini Bank · When bấm ▶ Check trong IntelliJ · Then trong ≤ 15 giây terminal hiện `Stage 2: PASSED (100/100)` và gợi ý `mlc next`; trên web stage 2 thành `DONE`.
+- **AC-002 Khoá stage:** Given stage 2 chưa `DONE` · When chạy `mlc check` ở stage 3 (sửa tay `project.yaml`) · Then nhận `STAGE_LOCKED`, không tạo submission.
+- **AC-003 Không ghi đè code:** Given học viên đã sửa `Bank.java` · When `mlc next` · Then `Bank.java` giữ nguyên; chỉ thêm `stages/stage-3.md` và `src/test/java/stage3/`.
+- **AC-004 Chấm cộng dồn:** Given ở stage 3 học viên làm hỏng lệnh `DEPOSIT` của stage 1 · When `mlc check` · Then kết quả `WA`, báo lỗi thuộc test stage 1.
+- **AC-005 Token bị thu hồi:** Given token đã bị thu hồi trên web · When `mlc check` · Then `401`, CLI hướng dẫn chạy lại `mlc login`.
+- **AC-006 Instructor tạo project:** Given INSTRUCTOR có 5 bài OOP `PUBLISHED` · When tạo project và gắn 5 bài làm stage 1–5 · Then project xuất hiện trong plan, học viên mới chỉ thấy stage 1 mở.
 
-### AC-002: Run không tính là đã làm
-- **Given** học viên đang tham gia plan, bài `valid-parentheses` ở trạng thái `NEVER`
-- **When** học viên chỉ bấm Run (không Submit)
-- **Then** bài vẫn ở `NEVER` và tiến độ plan không đổi
+## Project mẫu đề xuất: Mini Bank Console (5 stage)
 
-### AC-003: Submit AC cập nhật tiến độ
-- **Given** học viên đang ở bài 3/10 của plan
-- **When** học viên Submit và nhận `AC`
-- **Then** bài chuyển `DONE`, tiến độ tăng 1, nút "Bài tiếp theo" trỏ tới bài chưa `DONE` kế tiếp
+| Stage | Nội dung | Kỹ năng OOP |
+|---|---|---|
+| 1 | `Account` + `Main` đọc 1 tài khoản, `DEPOSIT`, `BALANCE` | Lớp, đóng gói, `Scanner` |
+| 2 | `abstract Account`, `SavingsAccount`, `CheckingAccount`, `WITHDRAW` theo hạn mức | Kế thừa, đa hình, trừu tượng |
+| 3 | `InsufficientFundsException`, lỗi in ra stderr và chạy tiếp | Exception checked |
+| 4 | `Bank`: nhiều tài khoản, `OPEN`, `TRANSFER`, `LIST` | Collection, phân tách trách nhiệm |
+| 5 | `MONTH`, `REPORT`, `EXIT <mã>` | Template method, hoàn thiện CLI |
 
-### AC-004: Học viên không sửa được plan
-- **Given** người dùng có vai trò `USER`
-- **When** gọi API tạo hoặc sửa plan
-- **Then** hệ thống trả `403`
-
-### AC-005: Plan nháp bị ẩn
-- **Given** một plan đang `DRAFT`
-- **When** học viên mở danh sách plan hoặc truy cập trực tiếp URL của plan
-- **Then** plan không xuất hiện và URL trả `404`
-
-## Out of Scope (đề xuất, chờ xác nhận)
-- Plan sinh tự động theo điểm yếu (gợi ý cá nhân hoá) — để v2.
-- Thông báo email / push nhắc học.
-- Nội dung lý thuyết dạng bài giảng / video.
-- Chấm điểm, xếp hạng, chống gian lận trong plan (plan thuộc chế độ Luyện tập).
+## Out of Scope (đề xuất)
+- Plugin IntelliJ / extension VS Code (v2, dùng lại API của CLI).
+- Lớp / nhóm và hạn nộp (giai đoạn 2, xem phần trên).
+- Gợi ý cá nhân hoá, bài kiểm tra đầu vào (diagnostic) như Hyperskill.
+- Bài lý thuyết có quiz; chứng nhận PDF.
 
 ---
 
-## Câu hỏi phỏng vấn
+## Câu hỏi phỏng vấn vòng 2
 
-Trả lời theo mã câu (vd. `A1: b`, `B2: theo đề xuất`). Mỗi câu có **(Đề xuất)** để bạn chỉ cần xác nhận nếu đồng ý.
-Các câu đánh dấu ⭐ quyết định phạm vi — cần trả lời trước.
+Trả lời theo mã. ⭐ = cần trước khi chốt.
 
-### A. Mục tiêu & người dùng
-- ⭐ **A1. Mục đích chính của study plan là gì?**
-  a) Học viên tự học theo lộ trình có sẵn **(Đề xuất)** · b) Giảng viên giao bài cho lớp, có hạn nộp và theo dõi · c) Cả hai
-- ⭐ **A2. Ai tạo plan?**
-  a) Chỉ Instructor / Admin **(Đề xuất)** · b) Học viên cũng tự tạo plan riêng · c) Hệ thống tự sinh theo chủ đề / điểm yếu
-- ⭐ **A3. Có cần khái niệm "lớp học / nhóm" không?** (hiện chưa có — sẽ thêm bảng, màn hình quản lý thành viên)
-  a) Không, plan công khai cho mọi học viên **(Đề xuất)** · b) Có, plan gán cho lớp · c) Không cần lớp, nhưng plan riêng tư vào bằng mã mời
-- **A4. Kết quả bạn mong muốn nhất là gì?** (vd. demo đồ án, dùng thật cho một lớp, tăng tỉ lệ học viên quay lại…) và **hạn chót** là khi nào?
-
-### B. Cấu trúc plan
-- ⭐ **B1. Plan được tổ chức thế nào?**
-  a) Danh sách phẳng · b) Theo section chủ đề (Array → Hash Map → Graph…) **(Đề xuất)** · c) Theo ngày (Ngày 1…Ngày N, mỗi ngày vài bài)
-- **B2. Có trộn bài thuật toán và bài OOP/Socket trong cùng plan?**
-  a) Có **(Đề xuất)** · b) Không, mỗi plan một loại
-- **B3. Thứ tự làm bài?**
-  a) Tự do, chỉ gợi ý "bài tiếp theo" **(Đề xuất)** · b) Khoá bài sau đến khi AC bài trước · c) Khoá theo section
-- **B4. Ngoài bài tập, plan có nội dung khác không?** (ghi chú Markdown đầu section, link tài liệu, gợi ý / lời giải)
-  a) Chỉ mô tả ngắn cho plan và section **(Đề xuất)** · b) Có bài đọc lý thuyết riêng · c) Có lời giải mở khoá sau khi AC
-- **B5. Một bài có được nằm trong nhiều plan không?** a) Có **(Đề xuất)** · b) Không
-
-### C. Quy tắc hoàn thành & tiến độ
-- ⭐ **C1. Thế nào là "đã hoàn thành" một bài?**
-  a) Có bài nộp chính thức `AC` **(Đề xuất)** · b) Bài OOP: `score` ≥ ngưỡng (vd. 80%) · c) Chỉ cần đã nộp
-- **C2. Bài đã AC trước khi tham gia plan có được tính?**
-  a) Có **(Đề xuất)** · b) Không, chỉ tính bài nộp sau thời điểm bắt đầu plan
-- **C3. Bài AC trong kỳ thi có tính vào tiến độ plan / trang luyện tập không?** (hiện code đang tính)
-  a) Có, giữ như hiện tại · b) Không, chỉ tính bài nộp ngoài kỳ thi
-- **C4. Chỉ bấm Run có được tính `IN_PROGRESS` không?** (hiện code đang tính — có thể là lỗi)
-  a) Không, sửa luôn trong feature này **(Đề xuất)** · b) Giữ như hiện tại
-- **C5. Học viên có được "làm lại từ đầu" (reset tiến độ plan) không?** a) Không **(Đề xuất)** · b) Có
-
-### D. Thời gian, động lực
-- **D1. Có lịch / hạn hoàn thành không?**
-  a) Không **(Đề xuất)** · b) Gợi ý nhịp độ (vd. "2 bài/ngày") nhưng không bắt buộc · c) Hạn chót cứng do giảng viên đặt
-- **D2. Có streak (chuỗi ngày học liên tiếp), huy hiệu hoàn thành, chứng nhận không?**
-  a) Không ở MVP **(Đề xuất)** · b) Chỉ huy hiệu khi xong plan · c) Streak + huy hiệu
-- **D3. Có cần nhắc nhở (email / thông báo trong app)?** a) Không **(Đề xuất)** · b) Thông báo trong app · c) Email
-
-### E. Quản trị plan
-- **E1. Vòng đời plan có cần bước duyệt như đề bài không?**
-  a) `DRAFT → PUBLISHED → ARCHIVED`, không cần duyệt **(Đề xuất)** · b) Có bước `REVIEWING` do Admin duyệt
-- **E2. Sửa plan khi đã có người học (thêm/bớt bài) thì xử lý sao?**
-  a) Cho sửa, tiến độ tính lại theo danh sách mới **(Đề xuất)** · b) Khoá sửa sau khi có người tham gia · c) Tạo phiên bản mới
-- **E3. Giảng viên có cần xem tiến độ của từng học viên trong plan không?**
-  a) Không ở MVP · b) Bảng tổng hợp: học viên × bài, % hoàn thành **(Đề xuất nếu A1 = b/c)** · c) Có thêm xuất CSV
-- **E4. Ai được sửa plan?** a) Người tạo + Admin **(Đề xuất)** · b) Mọi Instructor
-
-### F. Giao diện
-- **F1. Study Plan nằm ở đâu?**
-  a) Trang mới `/study-plans` + mục trên header **(Đề xuất)** · b) Tab trong trang `/problems` · c) Thành trang chủ (hiện `/` chuyển về `/problems`)
-- **F2. Trong workspace có hiện thanh ngữ cảnh plan ("DSA cơ bản · 3/20 · Bài tiếp theo →") không?** a) Có **(Đề xuất)** · b) Không
-- **F3. Trang `/problems` có cần lọc "bài thuộc plan X" không?** a) Không **(Đề xuất)** · b) Có
-- **F4. Bạn có mẫu giao diện tham khảo không?** (ảnh chụp, link sản phẩm thích)
-
-### G. Phạm vi & nội dung khởi đầu
-- **G1. Seed plan mẫu nào?**
-  a) "DSA cơ bản" (12 bài thuật toán) + "OOP & Socket Java" (8 bài OOP) **(Đề xuất)** · b) Bạn tự định nghĩa
-- **G2. Những gì chắc chắn KHÔNG làm ở đợt này?** (xác nhận mục Out of Scope ở trên, bổ sung nếu cần)
-- **G3. Ưu tiên cắt lát (slice) khi thiếu thời gian?**
-  a) Backend + trang xem plan cho học viên trước, màn hình tạo plan sau (seed bằng SQL) **(Đề xuất)** · b) Làm đủ cả màn hình giảng viên ngay
-- **G4. Yêu cầu kiểm thử?** a) Unit + integration backend, E2E Playwright cho luồng tham gia → làm bài → tiến độ tăng **(Đề xuất)** · b) Chỉ backend
+- ⭐ **Q1. Đơn vị học trong plan:** a) Project nhiều stage + bài luyện lẻ xen giữa **(Đề xuất)** · b) Chỉ project · c) Thêm cả bài lý thuyết Markdown (topic) như Hyperskill
+- ⭐ **Q2. Cách làm trên IDE cho MVP:** a) CLI `mlc` + run config dựng sẵn **(Đề xuất)** · b) Làm luôn plugin IntelliJ · c) Chỉ tải ZIP về, nộp ZIP trên web (không CLI)
+- ⭐ **Q3. Xác thực CLI:** a) Personal Access Token tạo trên web **(Đề xuất)** · b) Đăng nhập trong trình duyệt rồi CLI tự nhận token (device flow — đẹp hơn, tốn công hơn) · c) Gõ username/password trong CLI, dùng refresh token 7 ngày
+- ⭐ **Q4. Lớp / nhóm:** a) MVP không có, thiết kế sẵn để thêm sau **(Đề xuất)** · b) Cần ngay ở MVP (mã tham gia lớp, gán plan cho lớp, dashboard) · c) Cần cả hạn nộp theo lớp
+- **Q5. Mở khoá stage:** a) Tuần tự, phải pass stage trước **(Đề xuất)** · b) Tự do
+- **Q6. Chấm cộng dồn các stage trước:** a) Có **(Đề xuất)** · b) Chỉ chấm stage hiện tại
+- **Q7. Thế nào là pass một stage OOP:** a) Verdict `AC` (đủ 100%) **(Đề xuất)** · b) Điểm ≥ ngưỡng do giảng viên đặt (vd. 80)
+- **Q8. Ngôn ngữ / build tool cho project:** a) Java 17 + Maven **(Đề xuất)** · b) Thêm Gradle · c) Cả Python
+- **Q9. Test public trên máy:** a) Testcase stdin/stdout mẫu + vài JUnit đơn giản; rule OOP chỉ chấm trên server **(Đề xuất)** · b) Cho cả rule OOP chạy trên máy (lộ cấu hình chấm)
+- **Q10. Stage có làm được trên web không?** a) Có, cả web lẫn IDE **(Đề xuất)** · b) Chỉ IDE
+- **Q11. Sửa stage khi đã có học viên làm** (cảnh báo từ GitHub Classroom): a) Cho sửa đề / test; người đã `DONE` giữ nguyên `DONE` **(Đề xuất)** · b) Khoá sửa, phải tạo project phiên bản mới
+- **Q12. Hoàn thành project được gì?** a) Huy hiệu trên hồ sơ **(Đề xuất)** · b) Không có gì · c) Chứng nhận
+- **Q13. Project mẫu đầu tiên:** a) Mini Bank Console 5 stage như trên **(Đề xuất)** · b) TCP Chat Room · c) Bạn đề xuất
+- **Q14. Hạn chót / mục tiêu demo** của feature này là khi nào? (để chia slice: CLI + 1 project trước, màn hình soạn plan sau)
