@@ -1,6 +1,6 @@
 # Feature: Study Plan — Project-based Learning & Plugin IntelliJ
 
-> **Trạng thái:** DRAFT v3 — đã chốt Q1–Q4 (vòng 2), còn [câu hỏi vòng 3](#câu-hỏi-phỏng-vấn-vòng-3). **Chưa code.**
+> **Trạng thái:** CHỐT v4 — đã chốt mọi quyết định sản phẩm / kỹ thuật; chỉ còn [Q14 (lịch & người làm)](#câu-hỏi-còn-mở) để lên kế hoạch. **Chưa code.**
 > Hướng sản phẩm: học theo **project nhiều stage** như Hyperskill; học viên mở project **ngay trong IntelliJ
 > bằng plugin Mini LeetCode**, đọc đề, code và bấm **Check** để server chấm.
 
@@ -25,6 +25,22 @@ Học viên làm bài theo hai cách:
 | Q2 | Tích hợp IDE ở MVP | **Plugin IntelliJ** (không làm CLI riêng) |
 | Q3 | Xác thực IDE | **Personal Access Token** tạo trên web, plugin lưu trong Password Safe của IDE |
 | Q4 | Lớp / nhóm | **Chưa làm ở MVP**; thiết kế sẵn để thêm ở giai đoạn 2 |
+| P1 | IDE hỗ trợ | **IntelliJ IDEA Community + Ultimate từ 2025.3** (`sinceBuild = 253`) |
+| P2 | Ngôn ngữ viết plugin | **Java 17** |
+| P3 | Phát hành plugin | **File ZIP**, cài qua *Settings › Plugins › ⚙ › Install Plugin from Disk*; ZIP tải từ trang web của hệ thống |
+| P4 | Nút Check | Nộp thẳng lên server; nút **Run tests** riêng để chạy test trên máy *(mặc định theo đề xuất)* |
+| P5 | Bài luyện lẻ trong plugin | Có, coi như project 1 stage *(mặc định)* |
+| P6 | Lịch sử bài nộp trong plugin | Không; có link mở trang web *(mặc định)* |
+| Q5 | Mở khoá stage | **Tuần tự**: phải pass stage N-1 mới nộp được stage N *(mặc định)* |
+| Q6 | Chấm stage N | **Cộng dồn** testcase + rule của stage 1..N *(mặc định)* |
+| Q7 | Pass stage | Verdict `AC` *(mặc định)* |
+| Q8 | Project của học viên | **Java 17 + Maven** *(mặc định)* |
+| Q9 | Test public trên máy | Testcase mẫu + JUnit đơn giản; rule OOP chỉ chấm trên server *(mặc định)* |
+| Q11 | Sửa stage khi đã có người học | Cho sửa; người đã `DONE` giữ `DONE` *(mặc định)* |
+| Q12 | Hoàn thành project | Huy hiệu trên hồ sơ *(mặc định)* |
+| Q13 | Project mẫu đầu tiên | **Mini Bank Console 5 stage** *(mặc định)* |
+
+> Các dòng *(mặc định)* được áp dụng theo phương án đề xuất vì chưa có câu trả lời riêng — đổi được trước khi bắt đầu slice tương ứng.
 
 ## Tham khảo
 
@@ -65,7 +81,7 @@ PersonalAccessToken (user, name, hash, expires_at, last_used_at, revoked)
 
 - **Stage = một `Problem`** (đề, testcase, `grading_config`, starter có sẵn) ⇒ dùng lại judge 100%. Bảng mới (Flyway `V8`): `study_plans`, `study_plan_items`, `projects`, `project_stages(project_id, stage_no, problem_id)`, `study_plan_enrollments`, `personal_access_tokens`.
 - **Code mang sang stage sau:** học viên làm tiếp trong cùng project IntelliJ. Plugin chỉ thêm đề + test public của stage mới, **không ghi đè code** của học viên.
-- **Chấm cộng dồn và mở khoá tuần tự trong project** (đề xuất, chờ chốt Q5 / Q6).
+- **Chấm cộng dồn và mở khoá tuần tự trong project** (Q5, Q6). Các item ở cấp plan (project, bài lẻ) làm theo thứ tự tuỳ ý.
 - **Giai đoạn 2 — Lớp:** `classes(name, instructor_id, join_code)`, `class_members`, `class_plan_assignments(class_id, plan_id, due_at NULL)`. Bảng plan không phải sửa.
 
 ## Thiết kế plugin IntelliJ
@@ -74,9 +90,9 @@ PersonalAccessToken (user, name, hash, expires_at, last_used_at, revoked)
 
 ```
 ide-plugin/                         ← module mới, build bằng Gradle (tách khỏi Maven backend)
-├─ build.gradle.kts                 IntelliJ Platform Gradle Plugin 2.x
-├─ src/main/resources/META-INF/plugin.xml
-└─ src/main/{java|kotlin}/…/
+├─ build.gradle.kts                 IntelliJ Platform Gradle Plugin 2.x, Java 17, intellijIdeaCommunity("2025.3"), sinceBuild = "253"
+├─ src/main/resources/META-INF/plugin.xml   (depends: com.intellij.modules.platform, com.intellij.java, org.jetbrains.idea.maven, com.intellij.modules.jcef)
+└─ src/main/java/…/
    ├─ api/          MlcApiClient (HTTP + JSON, header Authorization: Bearer mlc_pat_…)
    ├─ auth/         Settings page + PasswordSafe
    ├─ toolwindow/   Cây Plan › Project › Stage, panel đề, panel kết quả
@@ -109,7 +125,7 @@ ide-plugin/                         ← module mới, build bằng Gradle (tách
 | `GET /api/v1/projects/{slug}/skeleton` | ZIP project Maven: `pom.xml`, `src/main` (starter stage 1), test public các stage đã mở, `stages/*.md`, `.mlc/project.yaml` |
 | `GET /api/v1/projects/{slug}/stages/{n}/files` | Đề + test public của stage N (chỉ khi đã mở khoá) |
 | Kiểm tra khoá stage trong `submit-multipart` | Trả `409 STAGE_LOCKED` cho cả web lẫn plugin |
-| Phân phối plugin: `GET /plugins/updatePlugins.xml` + file ZIP | Kho plugin riêng để IDE tự cập nhật (tuỳ Q-P3) |
+| Trang web "Cài plugin": link tải `mini-leetcode-plugin-<version>.zip` + hướng dẫn cài từ disk | Phân phối plugin (P3) |
 
 **Ranh giới tin cậy:** test chạy trên máy chỉ để tự kiểm tra; **chỉ verdict từ server mới được tính**. Test ẩn và `grading_config` không bao giờ gửi xuống plugin. Token PAT chỉ được gọi các endpoint ở bảng trên và nộp bài luyện tập; **không dùng được cho kỳ thi** (kỳ thi chỉ làm trên web có giám sát).
 
@@ -161,31 +177,15 @@ ide-plugin/                         ← module mới, build bằng Gradle (tách
 
 ## Out of Scope
 - CLI, extension VS Code (VS Code dùng web workspace).
-- Phát hành trên JetBrains Marketplace (MVP cài từ ZIP hoặc kho riêng).
+- Phát hành trên JetBrains Marketplace và kho plugin riêng có tự cập nhật (MVP chỉ cài từ ZIP).
+- IDE JetBrains khác IntelliJ IDEA (PyCharm, WebStorm…) và IntelliJ cũ hơn 2025.3.
 - Lớp / nhóm, hạn nộp (giai đoạn 2).
 - Gợi ý cá nhân hoá, bài kiểm tra đầu vào, bài lý thuyết có quiz, chứng nhận PDF.
 
 ---
 
-## Câu hỏi phỏng vấn vòng 3
+## Câu hỏi còn mở
 
-⭐ = cần trước khi chốt. Mỗi câu có **(Đề xuất)**.
+Mọi quyết định sản phẩm và kỹ thuật đã chốt (xem bảng *Quyết định đã chốt*). Chỉ còn một câu để lên lịch:
 
-### Plugin
-- ⭐ **P1. IDE và phiên bản tối thiểu:** a) IntelliJ IDEA (Community + Ultimate) từ **2025.3** trở lên **(Đề xuất** — JCEF ổn định, đủ mới) · b) Từ 2024.3 (máy lab cũ hơn) · c) Mọi IDE JetBrains (PyCharm…)
-- ⭐ **P2. Ngôn ngữ viết plugin:** a) **Java** — cả nhóm quen, SDK hỗ trợ đầy đủ **(Đề xuất)** · b) Kotlin — chuẩn của JetBrains, nhiều ví dụ hơn
-- ⭐ **P3. Phát hành plugin:** a) Cài từ file ZIP (Settings › Plugins › Install from disk) **(Đề xuất cho MVP)** · b) Kho plugin riêng do backend phục vụ, IDE tự cập nhật · c) JetBrains Marketplace
-- **P4. Nút Check có chạy test trên máy trước khi nộp không?** a) Không — Check nộp thẳng lên server, có nút "Run tests" riêng **(Đề xuất)** · b) Có, test trên máy fail thì không nộp
-- **P5. Bài luyện lẻ có mở được trong plugin không?** a) Có, coi như project 1 stage **(Đề xuất)** · b) Chỉ project
-- **P6. Có cần xem lịch sử bài nộp / code cũ trong plugin không?** a) Không, bấm link mở trang web **(Đề xuất)** · b) Có
-
-### Quy tắc học (còn lại từ vòng 2)
-- **Q5. Mở khoá stage:** a) Tuần tự, phải pass stage trước **(Đề xuất)** · b) Tự do
-- **Q6. Chấm cộng dồn các stage trước:** a) Có **(Đề xuất)** · b) Chỉ stage hiện tại
-- **Q7. Pass stage OOP:** a) Verdict `AC` **(Đề xuất)** · b) Điểm ≥ ngưỡng giảng viên đặt
-- **Q8. Ngôn ngữ / build cho project học viên:** a) Java 17 + Maven **(Đề xuất)** · b) Thêm Gradle · c) Cả Python
-- **Q9. Test public trên máy:** a) Testcase mẫu + JUnit đơn giản; rule OOP chỉ chấm trên server **(Đề xuất)** · b) Cho cả rule OOP chạy trên máy
-- **Q11. Sửa stage khi đã có người học:** a) Cho sửa; người đã `DONE` giữ `DONE` **(Đề xuất)** · b) Khoá, phải tạo phiên bản mới
-- **Q12. Hoàn thành project được gì?** a) Huy hiệu trên hồ sơ **(Đề xuất)** · b) Không · c) Chứng nhận
-- **Q13. Project mẫu đầu tiên:** a) Mini Bank Console 5 stage **(Đề xuất)** · b) TCP Chat Room · c) Khác
-- **Q14. Hạn chót / mốc demo** là khi nào? Ai trong nhóm làm plugin? (plugin là phần rủi ro nhất: SDK mới, cần thời gian học)
+- **Q14. Hạn chót / mốc demo và người phụ trách:** ai làm plugin (slice 3–5), backend (slice 1–2), web (slice 6)? Plugin là phần rủi ro nhất (IntelliJ Platform SDK mới với nhóm), nên bắt đầu slice 3 song song với slice 1, dùng API giả (mock) cho tới khi backend xong.
