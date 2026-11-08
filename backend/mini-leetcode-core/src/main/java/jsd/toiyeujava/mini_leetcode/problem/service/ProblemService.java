@@ -277,7 +277,8 @@ public class ProblemService {
                 var projectProblems = query.subquery(Long.class);
                 var item = projectProblems.from(jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem.class);
                 projectProblems.select(item.<jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem, Long>join("problemIds"))
-                        .where(cb.equal(item.get("kind"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanItemKind.PROJECT));
+                        .where(cb.equal(item.get("kind"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanItemKind.PROJECT),
+                                cb.equal(item.get("plan").get("status"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus.PUBLISHED));
                 predicates.add(cb.not(root.get("id").in(projectProblems)));
             }
             if (difficulty != null) {

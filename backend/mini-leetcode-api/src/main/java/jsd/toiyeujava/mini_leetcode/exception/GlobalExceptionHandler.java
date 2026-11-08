@@ -26,25 +26,28 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    /** Plugin IDE dùng {@code code} để phân biệt lỗi nghiệp vụ (xem specs/study-plan.spec.md, Error Handling). */
-    @ExceptionHandler(jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException.class)
-    public ProblemDetail handlePatForbidden(jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
-        problem.setTitle("Forbidden");
-        problem.setType(URI.create("https://api.mini-leetcode.com/errors/forbidden"));
-        problem.setProperty("code", jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException.CODE);
+    /**
+     * Lỗi có {@code code} đọc được bằng máy cho plugin IDE (specs/study-plan.spec.md, Error Handling).
+     * Dùng chung cho handler bên dưới và cho {@code JwtAuthenticationFilter} (lỗi xảy ra trước controller).
+     */
+    public static ProblemDetail coded(HttpStatus status, String title, String type, String detail, String code) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setTitle(title);
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/" + type));
+        problem.setProperty("code", code);
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
 
+    @ExceptionHandler(jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException.class)
+    public ProblemDetail handlePatForbidden(jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException ex) {
+        return coded(HttpStatus.FORBIDDEN, "Forbidden", "forbidden", ex.getMessage(),
+                jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException.CODE);
+    }
+
     @ExceptionHandler(StageLockedException.class)
     public ProblemDetail handleStageLocked(StageLockedException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-        problem.setTitle("Stage Locked");
-        problem.setType(URI.create("https://api.mini-leetcode.com/errors/conflict"));
-        problem.setProperty("code", StageLockedException.CODE);
-        problem.setProperty("timestamp", Instant.now());
-        return problem;
+        return coded(HttpStatus.CONFLICT, "Stage Locked", "conflict", ex.getMessage(), StageLockedException.CODE);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

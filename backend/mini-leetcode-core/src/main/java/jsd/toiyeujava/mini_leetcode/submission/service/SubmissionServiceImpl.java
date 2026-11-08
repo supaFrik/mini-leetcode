@@ -13,6 +13,7 @@ import java.util.List;
 import jsd.toiyeujava.mini_leetcode.contest.entity.Contest;
 import jsd.toiyeujava.mini_leetcode.contest.entity.ContestParticipant;
 import jsd.toiyeujava.mini_leetcode.contest.repository.ContestParticipantRepository;
+import jsd.toiyeujava.mini_leetcode.contest.repository.ContestProblemRepository;
 import jsd.toiyeujava.mini_leetcode.contest.repository.ContestRepository;
 import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
 import jsd.toiyeujava.mini_leetcode.entity.ParticipantStatus;
@@ -56,6 +57,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final ContestParticipantRepository contestParticipantRepository;
     private final SubmissionArchiveService submissionArchiveService;
     private StudyPlanRepository studyPlanRepository;
+    private ContestProblemRepository contestProblemRepository;
 
     @Autowired
     public SubmissionServiceImpl(
@@ -87,10 +89,15 @@ public class SubmissionServiceImpl implements SubmissionService {
         this(submissionRepository, problemRepository, userRepository, storageService, contestRepository, contestParticipantRepository, null);
     }
 
-    /** Tuỳ chọn: thiếu (unit test dựng tay) thì bỏ qua khoá stage. */
-    @Autowired(required = false)
-    public void setStudyPlanRepository(StudyPlanRepository studyPlanRepository) {
+    /**
+     * Bắt buộc trong Spring context (thiếu bean ⇒ khởi động lỗi, không âm thầm tắt khoá stage).
+     * Unit test dựng tay bằng constructor không gọi setter thì khoá stage bị bỏ qua.
+     */
+    @Autowired
+    public void setStageLockRepositories(StudyPlanRepository studyPlanRepository,
+                                         ContestProblemRepository contestProblemRepository) {
         this.studyPlanRepository = studyPlanRepository;
+        this.contestProblemRepository = contestProblemRepository;
     }
 
     @Override
@@ -226,10 +233,15 @@ public class SubmissionServiceImpl implements SubmissionService {
     /**
      * Khoá stage tuần tự (specs/study-plan.spec.md, FR-SP-003): đề là stage N > 1 của một mục lộ trình
      * thì stage N-1 phải đã AC. Mọi đường nộp (JSON, multipart, /submit, /run) đều đi qua đây.
-     * Không áp dụng cho bài nộp trong kỳ thi và cho INSTRUCTOR / ADMIN (cần thử đề của chính mình).
+     * Chỉ tính plan PUBLISHED. Không áp dụng cho INSTRUCTOR / ADMIN (cần thử đề của chính mình) và cho bài nộp
+     * kỳ thi khi đề thật sự thuộc kỳ thi đó — gắn contestId của kỳ thi khác không lách được khoá.
      */
     private void assertStageUnlocked(Problem problem, User user, SubmitCodeRequest request) {
-        if (studyPlanRepository == null || request.contestId() != null || user.getRole() != Role.USER) {
+        if (studyPlanRepository == null || user.getRole() != Role.USER) {
+            return;
+        }
+        if (request.contestId() != null && contestProblemRepository != null
+                && contestProblemRepository.findByContestIdAndProblemId(request.contestId(), problem.getId()).isPresent()) {
             return;
         }
         List<Object[]> position = studyPlanRepository.findStagePosition(problem.getId());

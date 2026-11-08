@@ -20,12 +20,18 @@ public interface StudyPlanRepository extends JpaRepository<StudyPlan, Long> {
     List<StudyPlan> findAllByOrderByCreatedAtDesc();
 
     /**
-     * Vị trí của đề trong các mục lộ trình: {@code [itemId, stageNo]} (stage_no 0-based).
-     * Có tối đa một dòng vì {@code UNIQUE(problem_id)}.
+     * Vị trí của đề trong một lộ trình đang PUBLISHED: {@code [itemId, stageNo]} (stage_no 0-based).
+     * Có tối đa một dòng vì {@code UNIQUE(problem_id)}. Plan DRAFT / ARCHIVED không khoá gì.
      */
-    @Query(value = "select item_id, stage_no from study_plan_item_stages where problem_id = :problemId",
+    @Query(value = "select s.item_id, s.stage_no from study_plan_item_stages s "
+            + "join study_plan_items i on i.id = s.item_id join study_plans p on p.id = i.plan_id "
+            + "where s.problem_id = :problemId and p.status = 'PUBLISHED'",
             nativeQuery = true)
     List<Object[]> findStagePosition(@Param("problemId") Long problemId);
+
+    /** Các đề trong {@code ids} đã thuộc một mục lộ trình nào đó (mọi trạng thái plan). */
+    @Query(value = "select problem_id from study_plan_item_stages where problem_id in (:ids)", nativeQuery = true)
+    List<Number> findProblemIdsAlreadyInPlans(@Param("ids") List<Long> ids);
 
     @Query(value = "select problem_id from study_plan_item_stages where item_id = :itemId and stage_no = :stageNo",
             nativeQuery = true)

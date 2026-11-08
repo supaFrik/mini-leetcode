@@ -81,7 +81,7 @@ public class StudyPlanService {
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         StudyPlan plan = StudyPlan.builder().slug(request.slug()).createdBy(author).build();
-        apply(plan, request);
+        apply(plan, request, Set.of());
         planRepository.save(plan);
         return get(plan.getSlug(), userId, true);
     }
@@ -93,10 +93,15 @@ public class StudyPlanService {
         if (!plan.getSlug().equals(request.slug()) && planRepository.existsBySlug(request.slug())) {
             throw new DuplicateResourceException("Study plan slug already exists: " + request.slug());
         }
+        if (plan.getStatus() == StudyPlanStatus.PUBLISHED && request.items().isEmpty()) {
+            throw new StateConflictException("A published study plan must keep at least one item");
+        }
+        Set<Long> current = plan.getItems().stream()
+                .flatMap(i -> i.getProblemIds().stream()).collect(Collectors.toSet());
         plan.setSlug(request.slug());
         plan.getItems().clear();
         planRepository.flush(); // xoá stage cũ trước để UNIQUE(problem_id) không chặn chính các đề này
-        apply(plan, request);
+        apply(plan, request, current);
         planRepository.save(plan);
         return get(plan.getSlug(), userId, true);
     }
@@ -118,7 +123,11 @@ public class StudyPlanService {
 
     // ------------------------------------------------------------------
 
-    private void apply(StudyPlan plan, UpsertPlanRequest request) {
+    /**
+     * @param alreadyInPlan đề vốn có trong plan này: được giữ lại dù đang ARCHIVED (bảo trì stage, spec Q11);
+     *                      chỉ đề mới thêm mới bắt buộc PUBLISHED.
+     */
+    private void apply(StudyPlan plan, UpsertPlanRequest request, Set<Long> alreadyInPlan) {
         plan.setTitle(request.title());
         plan.setDescription(request.description());
 
@@ -133,12 +142,14 @@ public class StudyPlanService {
             if (p == null) {
                 throw new ResourceNotFoundException("Problem not found with id: " + id);
             }
-            if (p.getStatus() != ProblemStatus.PUBLISHED) {
+            if (p.getStatus() != ProblemStatus.PUBLISHED && !alreadyInPlan.contains(id)) {
                 throw new StateConflictException("Only PUBLISHED problems can be added to a study plan: " + p.getSlug());
             }
-            if (!planRepository.findStagePosition(id).isEmpty()) {
-                throw new StateConflictException("Problem already belongs to another study plan item: " + p.getSlug());
-            }
+        }
+        List<Number> taken = allIds.isEmpty() ? List.of() : planRepository.findProblemIdsAlreadyInPlans(allIds);
+        if (!taken.isEmpty()) {
+            throw new StateConflictException("Problem already belongs to another study plan item: "
+                    + problems.get(taken.get(0).longValue()).getSlug());
         }
 
         int position = 0;

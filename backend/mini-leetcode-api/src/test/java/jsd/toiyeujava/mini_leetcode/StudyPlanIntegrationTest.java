@@ -120,6 +120,40 @@ class StudyPlanIntegrationTest {
     }
 
     @Test
+    @DisplayName("Review fix: a contestId for a contest that does not contain the problem does not bypass the lock")
+    void contestIdDoesNotBypassLock() throws Exception {
+        expectLocked(mockMvc.perform(post("/api/v1/problems/" + stage2.getId() + "/submit")
+                .header("Authorization", studentJwt).contentType(MediaType.APPLICATION_JSON)
+                .content(codeBody(stage2.getId(), 999L))));
+    }
+
+    @Test
+    @DisplayName("Review fix: draft / archived plans neither lock stages nor hide problems")
+    void unpublishedPlanDoesNotLock() throws Exception {
+        transition("sp-oop", "ARCHIVED").andExpect(status().isOk());
+        submitJson(stage2, studentJwt).andExpect(status().isAccepted());
+        mockMvc.perform(get("/api/v1/problems?size=100").header("Authorization", studentJwt))
+                .andExpect(jsonPath("$.content[*].slug", hasItem("sp-bank-2")));
+    }
+
+    @Test
+    @DisplayName("Review fix: a published plan cannot be emptied; an archived stage can stay while editing")
+    void updateRules() throws Exception {
+        mockMvc.perform(put("/api/v1/study-plans/sp-oop").header("Authorization", instructorJwt)
+                        .contentType(MediaType.APPLICATION_JSON).content(planBody("sp-oop", List.of())))
+                .andExpect(status().isConflict());
+
+        stage1.setStatus(ProblemStatus.ARCHIVED); // đang bảo trì
+        problemRepository.save(stage1);
+        mockMvc.perform(put("/api/v1/study-plans/sp-oop").header("Authorization", instructorJwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(planBody("sp-oop", List.of(item("PROJECT", "Mini Bank v2", stage1.getId(), stage2.getId())))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].title").value("Mini Bank v2"))
+                .andExpect(jsonPath("$.items[0].stages[0].published").value(false));
+    }
+
+    @Test
     @DisplayName("Instructors can submit any stage of their plan to try it")
     void instructorBypassesLock() throws Exception {
         submitJson(stage2, instructorJwt).andExpect(status().isAccepted());
@@ -215,6 +249,7 @@ class StudyPlanIntegrationTest {
         expectPatForbidden(mockMvc.perform(post("/api/v1/me/tokens").header("Authorization", pat)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"x\"}")));
         expectPatForbidden(mockMvc.perform(get("/api/v1/problems").header("Authorization", pat)));
+        expectPatForbidden(mockMvc.perform(get("/api/v1/submissions/my").header("Authorization", pat)));
         expectPatForbidden(mockMvc.perform(post("/api/v1/problems/" + single.getId() + "/submit").header("Authorization", pat)
                 .contentType(MediaType.APPLICATION_JSON).content(codeBody(single.getId(), 999L))));
 
@@ -222,6 +257,10 @@ class StudyPlanIntegrationTest {
                 .andExpect(status().isNoContent());
         mockMvc.perform(get("/api/v1/study-plans/sp-oop").header("Authorization", pat))
                 .andExpect(status().isUnauthorized());
+        // Kể cả endpoint công khai: token thu hồi phải báo 401 để plugin yêu cầu token mới.
+        mockMvc.perform(get("/api/v1/problems/sp-bank-1").header("Authorization", pat))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("PAT_INVALID"));
     }
 
     @Test

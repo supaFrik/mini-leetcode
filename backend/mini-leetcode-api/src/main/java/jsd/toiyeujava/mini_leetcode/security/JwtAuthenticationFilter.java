@@ -5,6 +5,7 @@ import jsd.toiyeujava.mini_leetcode.auth.security.JwtTokenProvider;
 import jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException;
 import jsd.toiyeujava.mini_leetcode.auth.security.UserPrincipal;
 import jsd.toiyeujava.mini_leetcode.auth.service.PersonalAccessTokenService;
+import jsd.toiyeujava.mini_leetcode.exception.GlobalExceptionHandler;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,7 +26,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.net.URI;
-import java.time.Instant;
 import java.util.List;
 
 @Component
@@ -40,11 +40,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             new String[]{"GET", "/api/v1/study-plans/*"},
             new String[]{"GET", "/api/v1/problems/*"},
             new String[]{"GET", "/api/v1/problems/*/starter-template"},
-            new String[]{"GET", "/api/v1/problems/*/starter"},
             new String[]{"POST", "/api/v1/problems/*/submit"},
             new String[]{"POST", "/api/v1/problems/*/submit-multipart"},
             new String[]{"POST", "/api/v1/submissions"},
-            new String[]{"GET", "/api/v1/submissions/*"}
+            new String[]{"GET", "/api/v1/submissions/{id:[0-9]+}"} // không khớp /submissions/my
     );
     private static final AntPathMatcher PATHS = new AntPathMatcher();
 
@@ -69,15 +68,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
 
         if (PersonalAccessTokenService.looksLikePat(token)) {
-            // Token sai / hết hạn ⇒ request đi tiếp như ẩn danh ⇒ endpoint cần đăng nhập trả 401.
-            var user = patService.authenticate(token);
-            if (user.isPresent()) {
-                if (!isAllowedForPat(request)) {
-                    writePatForbidden(request, response);
-                    return;
-                }
-                authenticate(new UserPrincipal(user.get(), true), request);
+            java.util.Optional<jsd.toiyeujava.mini_leetcode.auth.entity.User> user;
+            try {
+                user = patService.authenticate(token);
+            } catch (Exception e) {
+                // Giống nhánh JWT: lỗi hạ tầng không làm vỡ filter chain; request đi tiếp như ẩn danh.
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
             }
+            if (user.isEmpty()) {
+                // Sai / hết hạn / thu hồi ⇒ luôn 401, kể cả endpoint công khai, để plugin biết phải tạo token mới.
+                write(response, request, GlobalExceptionHandler.coded(HttpStatus.UNAUTHORIZED, "Authentication Failed",
+                        "unauthorized", "Personal access token is invalid, expired or revoked", "PAT_INVALID"));
+                return;
+            }
+            if (!isAllowedForPat(request)) {
+                write(response, request, GlobalExceptionHandler.coded(HttpStatus.FORBIDDEN, "Forbidden", "forbidden",
+                        "This action is only available on the web, not with a personal access token",
+                        PatForbiddenException.CODE));
+                return;
+            }
+            authenticate(new UserPrincipal(user.get(), true), request);
         } else if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
             try {
                 String username = jwtTokenProvider.getUsernameFromToken(token);
@@ -105,15 +117,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 .anyMatch(rule -> rule[0].equals(request.getMethod()) && PATHS.match(rule[1], path));
     }
 
-    private void writePatForbidden(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN,
-                "This action is only available on the web, not with a personal access token");
-        problem.setTitle("Forbidden");
-        problem.setType(URI.create("https://api.mini-leetcode.com/errors/forbidden"));
+    private void write(HttpServletResponse response, HttpServletRequest request, ProblemDetail problem) throws IOException {
         problem.setInstance(URI.create(request.getRequestURI()));
-        problem.setProperty("code", PatForbiddenException.CODE);
-        problem.setProperty("timestamp", Instant.now());
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setStatus(problem.getStatus());
         response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
         objectMapper.writeValue(response.getOutputStream(), problem);
     }
