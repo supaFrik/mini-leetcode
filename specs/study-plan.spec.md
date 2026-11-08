@@ -1,159 +1,231 @@
 # Feature: Study Plan — Project-based Learning & Plugin IntelliJ
 
-> **Trạng thái:** CHỐT v4 — đã chốt mọi quyết định sản phẩm / kỹ thuật; chỉ còn [Q14 (lịch & người làm)](#câu-hỏi-còn-mở) để lên kế hoạch. **Chưa code.**
-> Hướng sản phẩm: học theo **project nhiều stage** như Hyperskill; học viên mở project **ngay trong IntelliJ
-> bằng plugin Mini LeetCode**, đọc đề, code và bấm **Check** để server chấm.
+> **Trạng thái:** CHỐT v5 (sau tự review) — mọi quyết định sản phẩm / kỹ thuật đã chốt; chỉ còn [Q14 (lịch & người làm)](#câu-hỏi-còn-mở). **Chưa code.**
+> Xem [Kết quả tự review v4 → v5](#kết-quả-tự-review-v4--v5) cho các thay đổi so với bản trước.
 
 ## Overview
 
 **Study Plan** là lộ trình do INSTRUCTOR / ADMIN soạn, gồm các **project** thực tế (vd. "Mini Bank Console")
-xen kẽ **bài luyện lẻ** (thuật toán / OOP). Mỗi project chia thành nhiều **stage** nối tiếp: stage sau mở rộng
-code của stage trước, xong project là có một chương trình hoàn chỉnh.
+xen kẽ **bài luyện lẻ**. Mỗi project chia thành nhiều **stage** nối tiếp: stage sau mở rộng code của stage trước,
+xong project là có một chương trình hoàn chỉnh.
 
 Học viên làm bài theo hai cách:
-1. **Plugin IntelliJ (cách chính):** tool window "Mini LeetCode" hiện cây plan → project → stage. Bấm mở stage thì plugin tạo / mở project Maven, hiện đề bên cạnh editor, bấm **Check** ⇒ kết quả server hiện ngay trong IDE ⇒ **Next stage**.
-2. **Web workspace** (đã có): dùng khi không có IntelliJ (VS Code, máy phòng lab…).
+1. **Plugin IntelliJ (cách chính):** tool window "Mini LeetCode" hiện cây plan → item → stage. Mở stage ⇒ plugin tạo / mở project Maven và mở đề `stages/stage-N.md` trong editor ⇒ code ⇒ **Check** ⇒ kết quả server hiện trong IDE ⇒ **Next stage**.
+2. **Web workspace** (đã có): khi không có IntelliJ.
+
+**Giá trị:** học viên luôn biết "làm gì tiếp", code trên IDE thật như đi làm; giảng viên đóng gói ngân hàng đề thành lộ trình có thứ tự.
 
 ## Quyết định đã chốt
 
 | # | Quyết định | Chọn |
 |---|---|---|
-| A1 | Mục đích | Tự học theo lộ trình, kiểu **project-based** như Hyperskill |
-| A2 | Ai tạo plan | **ADMIN / INSTRUCTOR**; học viên chỉ tham gia |
-| A5 | Cách làm bài | Setup code và check **ngay trong IDE**; web workspace vẫn dùng được |
-| Q1 | Đơn vị học | **Project nhiều stage + bài luyện lẻ xen giữa** |
-| Q2 | Tích hợp IDE ở MVP | **Plugin IntelliJ** (không làm CLI riêng) |
-| Q3 | Xác thực IDE | **Personal Access Token** tạo trên web, plugin lưu trong Password Safe của IDE |
-| Q4 | Lớp / nhóm | **Chưa làm ở MVP**; thiết kế sẵn để thêm ở giai đoạn 2 |
+| A1 | Mục đích | Tự học, **project-based** như Hyperskill |
+| A2 | Ai tạo plan | **ADMIN / INSTRUCTOR**; học viên chỉ học |
+| A5 | Cách làm bài | Code và check **ngay trong IDE**; web workspace vẫn dùng được |
+| Q1 | Đơn vị học | **Project nhiều stage + bài luyện lẻ** (bài lẻ = item 1 stage) |
+| Q2 | Tích hợp IDE ở MVP | **Plugin IntelliJ** (không làm CLI) |
+| Q3 | Xác thực IDE | **Personal Access Token (PAT)** tạo trên web, lưu trong Password Safe của IDE |
+| Q4 | Lớp / nhóm | **Chưa làm ở MVP**; thêm ở giai đoạn 2 không phải sửa bảng plan |
 | P1 | IDE hỗ trợ | **IntelliJ IDEA Community + Ultimate từ 2025.3** (`sinceBuild = 253`) |
-| P2 | Ngôn ngữ viết plugin | **Java 17** |
-| P3 | Phát hành plugin | **File ZIP**, cài qua *Settings › Plugins › ⚙ › Install Plugin from Disk*; ZIP tải từ trang web của hệ thống |
-| P4 | Nút Check | Nộp thẳng lên server; nút **Run tests** riêng để chạy test trên máy *(mặc định theo đề xuất)* |
-| P5 | Bài luyện lẻ trong plugin | Có, coi như project 1 stage *(mặc định)* |
-| P6 | Lịch sử bài nộp trong plugin | Không; có link mở trang web *(mặc định)* |
-| Q5 | Mở khoá stage | **Tuần tự**: phải pass stage N-1 mới nộp được stage N *(mặc định)* |
-| Q6 | Chấm stage N | **Cộng dồn** testcase + rule của stage 1..N *(mặc định)* |
-| Q7 | Pass stage | Verdict `AC` *(mặc định)* |
-| Q8 | Project của học viên | **Java 17 + Maven** *(mặc định)* |
-| Q9 | Test public trên máy | Testcase mẫu + JUnit đơn giản; rule OOP chỉ chấm trên server *(mặc định)* |
-| Q11 | Sửa stage khi đã có người học | Cho sửa; người đã `DONE` giữ `DONE` *(mặc định)* |
-| Q12 | Hoàn thành project | Huy hiệu trên hồ sơ *(mặc định)* |
-| Q13 | Project mẫu đầu tiên | **Mini Bank Console 5 stage** *(mặc định)* |
+| P2 | Ngôn ngữ plugin | **Java** — biên dịch bằng **JDK 21** (bắt buộc với IntelliJ Platform ≥ 2024.2). Backend giữ Java 17 |
+| P3 | Phát hành | **File ZIP**, cài qua *Settings › Plugins › ⚙ › Install Plugin from Disk*; ZIP tải từ trang web |
+| P4 | Nút Check | Nộp thẳng lên server; **không** có chạy test trên máy ở MVP (dùng Run `main` sẵn có của IntelliJ) |
+| P5 | Bài lẻ trong plugin | Có, như item 1 stage |
+| P6 | Lịch sử bài nộp | Không làm trong plugin; link mở trang web |
+| Q5 | Mở khoá stage | **Tuần tự trong một item**; các item trong plan làm tuỳ ý |
+| Q6 | Chống làm hỏng stage cũ | **Quy ước soạn đề:** testcase của stage N bao gồm testcase của stage 1..N-1 còn đúng (công cụ seed tự sao chép). Judge **không** đổi |
+| Q7 | Pass stage | Verdict `AC` |
+| Q8 | Project học viên | Java 17 + Maven |
+| Q11 | Sửa stage đã phát hành | **Theo luật hiện có:** testcase đề `PUBLISHED` bị khoá ⇒ muốn sửa phải `PUBLISHED → ARCHIVED → DRAFT → … → PUBLISHED`; lần AC cũ vẫn tính |
+| Q12 | Hoàn thành item / plan | Hiện nhãn **"Hoàn thành"** trên trang plan và tool window (không làm huy hiệu: chưa có trang hồ sơ) |
+| Q13 | Project mẫu | Mini Bank Console, 5 stage |
+| Q15 | Đề thuộc project trong `/problems` | **Ẩn** khỏi danh mục `/problems` của học viên (chỉ vào qua plan); bài lẻ vẫn hiện bình thường |
 
-> Các dòng *(mặc định)* được áp dụng theo phương án đề xuất vì chưa có câu trả lời riêng — đổi được trước khi bắt đầu slice tương ứng.
+## Kết quả tự review v4 → v5
+
+Review theo 5 góc: `/feature-forge` (đủ mục spec), `/architecture-designer` (ADR, failure mode), `/java-architect` (đối chiếu code Spring), `/code-review` (subagent soát diff), `/ponytail` (cắt phần thừa).
+
+| # | Vấn đề ở v4 | Nguồn | Sửa ở v5 |
+|---|---|---|---|
+| R1 | Khoá stage chỉ đặt ở `submit-multipart`; nộp qua `POST /submissions` (JSON hoặc multipart) hoặc `/problems/{id}/submit` sẽ lách được | code-review, java-architect | Kiểm tra trong `SubmissionServiceImpl.createSubmission` — **mọi đường nộp đều đi qua hàm này** |
+| R2 | Plugin ghi "Java 17" nhưng IntelliJ Platform từ 2024.2 bắt buộc Java 21 | java-architect ([Build number ranges](https://plugins.jetbrains.com/docs/intellij/build-number-ranges.html)) | Plugin build bằng JDK 21 |
+| R3 | "Chấm cộng dồn stage 1..N" mâu thuẫn với "Stage = Problem, dùng lại judge 100%": judge chỉ chấm testcase của chính đề đó | code-review | Thành **quy ước soạn đề** (sao chép testcase cũ còn đúng); không gộp tự động vì output console có thể đổi hợp lệ giữa các stage |
+| R4 | Q11 "cho sửa stage khi có người học" trái luật đóng băng testcase của `ProblemLifecycle` | code-review | Theo luật hiện có (xem Q11) |
+| R5 | Allowlist PAT thiếu `GET /submissions/{id}` và tải starter ⇒ nút Check không bao giờ có kết quả | code-review | Liệt kê allowlist đầy đủ (mục *Bảo mật PAT*) |
+| R6 | Thiếu NFR, bảng xử lý lỗi, checklist triển khai, ADR, sơ đồ, failure mode | feature-forge, architecture-designer | Bổ sung bên dưới |
+| R7 | 4 endpoint mới cho plugin (`/auth/me`, `/projects/{slug}/skeleton`, `/stages/{n}/files`, enroll) | ponytail | Bỏ: plugin dùng `GET /problems/{slug}` + `starter-template` sẵn có; `pom.xml` mẫu đóng trong plugin; kiểm tra token bằng `GET /study-plans` |
+| R8 | JCEF render Markdown, run configuration Maven, quy tắc file `.new`, bảng `enrollments`, bảng `projects` riêng, huy hiệu | ponytail | Bỏ: mở `stages/stage-N.md` bằng Markdown preview có sẵn của IntelliJ; chỉ tạo file chưa tồn tại; tiến độ suy ra từ submissions; 3 bảng thay vì 5 |
+| R9 | Đề của stage 3 xuất hiện trong `/problems`, học viên mở thẳng | java-architect | Q15: ẩn đề thuộc project khỏi danh mục |
+| R10 | Lỗi Quick Run tính `IN_PROGRESS` được nhắc nhưng không có AC | code-review | Thêm AC-009 |
+| R11 | README: IOI, quyền INSTRUCTOR mở khoá / tạo kỳ thi, ADMIN duyệt / quản lý tài khoản, "chốt kết quả", trọng số OOP cố định — không khớp code | code-review | Đã sửa README cùng commit |
 
 ## Tham khảo
 
-| Nguồn | Học được gì | Áp dụng |
-|---|---|---|
-| [Hyperskill — Study plan](https://hyperskill.org/study-plan) | Plan = kiến thức + **project** áp dụng; tiến độ *learned / applied topics*; xong project ⇒ chứng nhận | Plan gồm project + bài lẻ; 2 chỉ số tiến độ |
-| [Hyperskill Academy plugin](https://blog.jetbrains.com/education/2025/12/09/hyperskill-gets-its-own-plugin-inside-jetbrains-ides/), [hướng dẫn IntelliJ](https://support.hyperskill.org/hc/en-us/articles/360038633072-How-to-install-and-run-IntelliJ-IDEA-for-learning-Java-or-Kotlin) | Đăng nhập trong Settings › Tools; Project View hiện syllabus; nút **Check**; pass ⇒ sang stage sau | Mẫu UX chính cho plugin |
-| [hs-test](https://github.com/hyperskill/hs-test) ([wiki](https://github.com/hyperskill/hs-test/wiki)) | Test stage console: `StageTest`, `TestedProgram` (bơm stdin / đọc stdout), `CheckResult.wrong(msg)` | Thông báo lỗi dễ hiểu cho từng stage |
-| [JetBrains Academy — Educator guide](https://plugins.jetbrains.com/plugin/10081-jetbrains-academy/docs/educator-start-guide.html), [course template](https://github.com/jetbrains-academy/python-course-template) | Khoá học khai báo bằng file (`course-info.yaml`, `task-info.yaml`, `task.md`, `tests/`); *framework lesson* = các task dùng chung code; file `editable: false` | Manifest `.mlc/project.yaml`; test public chỉ đọc |
-| [CodeCrafters](https://docs.codecrafters.io/challenges/how-challenges-work.md) ([CLI](https://docs.codecrafters.io/cli/usage)) | Stage kiểu TDD; chạy lại test các stage trước; server chấm rồi mới mở stage sau | Chấm cộng dồn; server có quyền quyết định |
-| [Exercism CLI](https://github.com/exercism/cli) | Xác thực bằng API token; mỗi ngôn ngữ một test-runner Docker | Personal Access Token |
-| [GitHub Classroom](https://docs.github.com/en/education/manage-coursework-with-github-classroom/teach-with-github-classroom/use-autograding) ([overview](https://docs.github.com/en/education/manage-coursework-with-github-classroom/teach-with-github-classroom/monitor-students-progress-with-the-assignment-overview-page)) | Classroom → roster → assignment + deadline; bảng học viên × điểm, xuất CSV; sửa test giữa khoá thì ảnh hưởng người đang làm | Lớp ở giai đoạn 2; quản lý phiên bản stage |
-| IntelliJ Platform SDK: [Gradle Plugin 2.x](https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html), [Tool windows](https://plugins.jetbrains.com/docs/intellij/tool-windows.html), [Credentials (PasswordSafe)](https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html), [JCEF](https://plugins.jetbrains.com/docs/intellij/embedded-browser-jcef.html), [Custom plugin repository](https://plugins.jetbrains.com/docs/intellij/custom-plugin-repository.html), [Build number ranges](https://plugins.jetbrains.com/docs/intellij/build-number-ranges.html) | Cách build plugin, đăng ký tool window, lưu token an toàn, render Markdown, tự phát hành có auto-update | Kiến trúc plugin bên dưới. Lưu ý: dependency `com.intellij.modules.jcef` chỉ chắc chắn dùng được từ 2025.3.1 ([thread](https://platform.jetbrains.com/t/2026-2-is-coming-time-to-check-your-plugin-compatibility/4618)) |
-
-## Hiện trạng tái sử dụng (đã kiểm chứng trong code)
-
-| Có sẵn | Vị trí | Dùng cho |
-|---|---|---|
-| Starter ZIP `GET /api/v1/problems/{idOrSlug}/starter-template` | `ProblemController` | Nền cho tải skeleton project / stage |
-| Nộp ZIP / nhiều file `POST /api/v1/problems/{id}/submit-multipart`, `/run-multipart` | `SubmissionController` | Nút Check gửi vào đây, không cần đường chấm mới |
-| `GET /api/v1/submissions/{id}` (verdict, score, `score_breakdown`) | `SubmissionController` | Plugin poll và hiển thị kết quả |
-| Chấm OOP: rule + stdin/stdout + socket; cấu hình chấm chỉ ở server | `OopGrindingJudgeStrategy`, `problems.grading_config` | Chấm từng stage |
-| `UserProgress` DONE / IN_PROGRESS / NEVER | `ProblemService.resolveProgress` | Tiến độ bài lẻ và stage |
-| Starter `mini-bank-console` (6 lớp) | `backend/tools/problems/oop-starters/` | Project mẫu 5 stage |
-| JWT access token **30 phút** | `application.yml` | ⚠ Không hợp cho plugin ⇒ Personal Access Token |
-
-**Lỗi nhỏ phát hiện khi khảo sát** (sửa luôn trong feature này): `findAttemptedProblemIdsByUserId` đang tính cả Quick Run vào `IN_PROGRESS`.
-
-## Mô hình nghiệp vụ
-
-```
-StudyPlan (DRAFT → PUBLISHED → ARCHIVED; INSTRUCTOR/ADMIN tạo)
- └─ PlanItem (có thứ tự) ──┬─ Project ── Stage 1..N   (mỗi Stage trỏ tới 1 Problem)
-                           └─ Problem lẻ (bài luyện)
-Enrollment (user × plan, started_at)          ← tiến độ suy ra từ submissions, không lưu trùng
-PersonalAccessToken (user, name, hash, expires_at, last_used_at, revoked)
-```
-
-- **Stage = một `Problem`** (đề, testcase, `grading_config`, starter có sẵn) ⇒ dùng lại judge 100%. Bảng mới (Flyway `V8`): `study_plans`, `study_plan_items`, `projects`, `project_stages(project_id, stage_no, problem_id)`, `study_plan_enrollments`, `personal_access_tokens`.
-- **Code mang sang stage sau:** học viên làm tiếp trong cùng project IntelliJ. Plugin chỉ thêm đề + test public của stage mới, **không ghi đè code** của học viên.
-- **Chấm cộng dồn và mở khoá tuần tự trong project** (Q5, Q6). Các item ở cấp plan (project, bài lẻ) làm theo thứ tự tuỳ ý.
-- **Giai đoạn 2 — Lớp:** `classes(name, instructor_id, join_code)`, `class_members`, `class_plan_assignments(class_id, plan_id, due_at NULL)`. Bảng plan không phải sửa.
-
-## Thiết kế plugin IntelliJ
-
-### Cấu trúc monorepo
-
-```
-ide-plugin/                         ← module mới, build bằng Gradle (tách khỏi Maven backend)
-├─ build.gradle.kts                 IntelliJ Platform Gradle Plugin 2.x, Java 17, intellijIdeaCommunity("2025.3"), sinceBuild = "253"
-├─ src/main/resources/META-INF/plugin.xml   (depends: com.intellij.modules.platform, com.intellij.java, org.jetbrains.idea.maven, com.intellij.modules.jcef)
-└─ src/main/java/…/
-   ├─ api/          MlcApiClient (HTTP + JSON, header Authorization: Bearer mlc_pat_…)
-   ├─ auth/         Settings page + PasswordSafe
-   ├─ toolwindow/   Cây Plan › Project › Stage, panel đề, panel kết quả
-   ├─ project/      Tạo / mở project từ skeleton, ghép file stage mới
-   ├─ check/        CheckAction (Task.Backgroundable: zip → submit → poll → hiển thị)
-   └─ model/        DTO dùng chung contract OpenAPI của backend
-```
-
-### Chức năng MVP của plugin
-
-| # | Chức năng | Chi tiết |
-|---|---|---|
-| PL-1 | Đăng nhập | *Settings › Tools › Mini LeetCode*: Server URL + Personal Access Token ⇒ "Test connection" (`GET /api/v1/auth/me`). Token lưu bằng `PasswordSafe`, không ghi ra file |
-| PL-2 | Tool window "Mini LeetCode" | Cây Plan › Project › Stage và bài lẻ, icon trạng thái `LOCKED` / `NEVER` / `IN_PROGRESS` / `DONE`, nút Refresh, nút "Bắt đầu plan" |
-| PL-3 | Mở project / stage | Chọn thư mục ⇒ tải skeleton ZIP ⇒ giải nén ⇒ mở như Maven project (JDK 17). Đã mở rồi thì chỉ focus |
-| PL-4 | Xem đề | Panel đề Markdown ngay trong tool window (JCEF; nếu IDE không có JCEF thì fallback sang HTML Swing) |
-| PL-5 | Chạy test trên máy | Nút "Run tests" ⇒ run configuration Maven `test` của các stage đã mở; không tính điểm |
-| PL-6 | **Check** | Nút trên toolbar + phím tắt: zip `src/main/**` ⇒ `submit-multipart` ⇒ poll `GET /submissions/{id}` có backoff ⇒ panel kết quả (verdict, điểm OOP / testcase / socket, rule sai, testcase sai đầu tiên) + thông báo balloon |
-| PL-7 | Next stage | Pass ⇒ nút "Next stage" ⇒ tải `stages/stage-N.md` + `src/test/java/stageN/`; trùng tên file thì **giữ file của học viên**, file mới lưu kèm hậu tố `.new` và báo cho học viên |
-| PL-8 | Bài luyện lẻ | Mở như project 1 stage, cùng luồng Check |
-| PL-9 | Lỗi & mạng | `401` ⇒ mở Settings; `409 STAGE_LOCKED`; server sập ⇒ thông báo, không mất code |
-
-### Backend cần thêm cho plugin
-
-| Endpoint | Mục đích |
+| Nguồn | Áp dụng |
 |---|---|
-| `POST/GET/DELETE /api/v1/me/tokens` | Tạo (hiện token một lần), liệt kê, thu hồi Personal Access Token (màn hình trên web) |
-| `GET /api/v1/auth/me` | Plugin kiểm tra token |
-| `GET /api/v1/study-plans`, `/{slug}`, `/{slug}/progress`, `POST /{slug}/enroll` | Cây plan + tiến độ |
-| `GET /api/v1/projects/{slug}/skeleton` | ZIP project Maven: `pom.xml`, `src/main` (starter stage 1), test public các stage đã mở, `stages/*.md`, `.mlc/project.yaml` |
-| `GET /api/v1/projects/{slug}/stages/{n}/files` | Đề + test public của stage N (chỉ khi đã mở khoá) |
-| Kiểm tra khoá stage trong `submit-multipart` | Trả `409 STAGE_LOCKED` cho cả web lẫn plugin |
-| Trang web "Cài plugin": link tải `mini-leetcode-plugin-<version>.zip` + hướng dẫn cài từ disk | Phân phối plugin (P3) |
+| [Hyperskill — Study plan](https://hyperskill.org/study-plan) | Plan = kiến thức + project áp dụng |
+| [Hyperskill Academy plugin](https://blog.jetbrains.com/education/2025/12/09/hyperskill-gets-its-own-plugin-inside-jetbrains-ides/) | UX: đăng nhập trong Settings, cây syllabus, nút Check, sang stage sau |
+| [hs-test](https://github.com/hyperskill/hs-test) | Thông báo lỗi dễ hiểu cho từng stage |
+| [JetBrains Academy — Educator guide](https://plugins.jetbrains.com/plugin/10081-jetbrains-academy/docs/educator-start-guide.html) | Manifest khai báo bằng file (`.mlc/project.yaml`) |
+| [CodeCrafters](https://docs.codecrafters.io/challenges/how-challenges-work.md) | Stage kiểu TDD; server quyết định pass |
+| [Exercism CLI](https://github.com/exercism/cli) | Xác thực bằng API token |
+| [GitHub Classroom](https://docs.github.com/en/education/manage-coursework-with-github-classroom/teach-with-github-classroom/use-autograding) | Mô hình lớp cho giai đoạn 2; cảnh báo sửa test giữa khoá |
+| IntelliJ SDK: [Gradle Plugin 2.x](https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html), [Tool windows](https://plugins.jetbrains.com/docs/intellij/tool-windows.html), [PasswordSafe](https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html), [Build number ranges](https://plugins.jetbrains.com/docs/intellij/build-number-ranges.html) | Kiến trúc plugin |
 
-**Ranh giới tin cậy:** test chạy trên máy chỉ để tự kiểm tra; **chỉ verdict từ server mới được tính**. Test ẩn và `grading_config` không bao giờ gửi xuống plugin. Token PAT chỉ được gọi các endpoint ở bảng trên và nộp bài luyện tập; **không dùng được cho kỳ thi** (kỳ thi chỉ làm trên web có giám sát).
+## Kiến trúc
 
-## Functional Requirements (nháp)
+```mermaid
+graph LR
+    subgraph IDE["IntelliJ IDEA 2025.3+"]
+      PL["Plugin Mini LeetCode<br/>(tool window, Check, Next stage)"]
+      PS[("Password Safe<br/>PAT")]
+      PL --- PS
+    end
+    WEB["Web Next.js"] -->|JWT| API
+    PL -->|"Bearer mlc_pat_…"| API["mini-leetcode-api<br/>JwtAuthenticationFilter + PAT"]
+    API --> SVC["SubmissionServiceImpl.createSubmission<br/>(khoá stage, chặn PAT cho kỳ thi)"]
+    API --> SP["StudyPlanService<br/>(tiến độ suy ra từ submissions)"]
+    SVC --> Q["Redis Streams"] --> J["mini-leetcode-judge<br/>(không đổi)"]
+    SVC --> DB[("MySQL")]
+    SP --> DB
+    J --> DB
+```
 
-- **FR-SP-001** When học viên mở `/study-plans` (web) hoặc tool window (plugin), the system shall liệt kê plan `PUBLISHED` kèm số project, số bài lẻ và % tiến độ của học viên.
-- **FR-SP-002** When học viên mở một plan, the system shall hiển thị item theo thứ tự; project kèm các stage và trạng thái `LOCKED` / `NEVER` / `IN_PROGRESS` / `DONE`.
-- **FR-SP-003** When học viên bấm "Bắt đầu", the system shall tạo enrollment và mở khoá stage 1 của mọi project trong plan.
-- **FR-SP-004** While stage N-1 chưa `DONE`, the system shall từ chối nộp chính thức stage N với `409 STAGE_LOCKED`.
-- **FR-SP-005** When bài nộp chính thức của stage N đạt `AC`, the system shall đánh dấu stage N `DONE` và mở khoá stage N+1.
-- **FR-SP-006** When chấm stage N, the system shall chạy testcase và rule của stage 1..N.
-- **FR-SP-007** Where người dùng là `INSTRUCTOR` / `ADMIN`, the system shall cho tạo / sửa plan, project, gắn `Problem` `PUBLISHED` làm stage và sắp thứ tự.
-- **FR-PAT-001** When học viên tạo token, the system shall hiện token một lần, chỉ lưu bản băm, cho đặt hạn dùng và thu hồi.
-- **FR-PAT-002** If request dùng PAT gọi endpoint ngoài danh sách cho phép hoặc nộp bài kỳ thi, then the system shall trả `403`.
-- **FR-PL-001** When học viên bấm Check, the plugin shall nộp mã nguồn `src/main/**` của project hiện tại cho đúng stage trong `.mlc/project.yaml` và hiển thị kết quả trong ≤ 2 giây sau khi server chấm xong.
-- **FR-PL-002** When tải file stage mới, the plugin shall không ghi đè file đã có của học viên.
-- **FR-PL-003** The plugin shall lưu token bằng Password Safe của IDE, không ghi token vào thư mục project.
+### Mô hình dữ liệu (Flyway `V8`)
 
-## Acceptance Criteria (nháp)
+```
+study_plans               (id, slug UNIQUE, title, description, status DRAFT|PUBLISHED|ARCHIVED, created_by, timestamps)
+study_plan_items          (id, plan_id FK, position, kind PROJECT|PROBLEM, title, description)   UNIQUE(plan_id, position)
+study_plan_item_stages    (item_id FK, stage_no, problem_id FK)  PK(item_id, stage_no), UNIQUE(problem_id)
+personal_access_tokens    (id, user_id FK, name, token_hash CHAR(64) UNIQUE, expires_at, last_used_at, revoked, created_at)
+```
 
-- **AC-001 Check trong IntelliJ:** Given đã đăng nhập plugin, đang ở stage 2 Mini Bank · When bấm Check · Then panel kết quả hiện `Stage 2: PASSED (100/100)` và nút "Next stage"; trên web stage 2 thành `DONE`.
-- **AC-002 Lỗi hiển thị rõ:** Given `SavingsAccount` không kế thừa `Account` · When Check · Then kết quả chỉ ra rule *"SavingsAccount phải kế thừa Account"*, kèm điểm OOP / testcase.
-- **AC-003 Khoá stage:** Given stage 2 chưa `DONE` · When nộp stage 3 (sửa tay `project.yaml`) · Then `409 STAGE_LOCKED`, không tạo submission.
-- **AC-004 Không ghi đè code:** Given học viên đã sửa `Bank.java` · When Next stage · Then `Bank.java` giữ nguyên; chỉ thêm đề + test stage mới.
-- **AC-005 Chấm cộng dồn:** Given ở stage 3 học viên làm hỏng `DEPOSIT` của stage 1 · When Check · Then `WA`, lỗi được ghi là thuộc stage 1.
-- **AC-006 Token bị thu hồi:** Given token bị thu hồi trên web · When Check · Then thông báo "Token hết hiệu lực", mở Settings.
-- **AC-007 PAT không vào được kỳ thi:** Given token hợp lệ · When gọi nộp bài có `contestId` · Then `403`.
-- **AC-008 Web vẫn làm được:** Given học viên không có IntelliJ · When mở stage trên web · Then làm và nộp như bài OOP hiện tại, tiến độ đồng bộ với plugin.
+- **Stage = một `Problem`** ⇒ đề, testcase, `grading_config`, starter, judge dùng lại nguyên vẹn. Bài lẻ = item `PROBLEM` có đúng 1 stage.
+- `UNIQUE(problem_id)` trên `study_plan_item_stages`: một đề chỉ thuộc một item ⇒ khoá stage và ẩn khỏi `/problems` có nghĩa rõ ràng. Muốn dùng lại đề ở plan khác thì sao chép đề *(giai đoạn sau nếu cần)*.
+- **Không lưu tiến độ:** trạng thái stage = `DONE` nếu có submission chính thức `AC` (không Quick Run), `IN_PROGRESS` nếu có submission chính thức, `LOCKED` nếu stage trước chưa `DONE`, ngược lại `NEVER`. Dùng lại `findSolvedProblemIdsByUserId` / `findAttemptedProblemIdsByUserId` (2 truy vấn cho cả plan, không N+1).
+- **Giai đoạn 2 — Lớp:** thêm `classes`, `class_members`, `class_plan_assignments(class_id, plan_id, due_at NULL)`; không sửa 3 bảng plan.
+
+### Backend thay đổi
+
+| Thay đổi | Ghi chú |
+|---|---|
+| `GET /api/v1/study-plans` | Plan `PUBLISHED` + % tiến độ của người gọi |
+| `GET /api/v1/study-plans/{slug}` | Items → stages (problemId, slug, title, difficulty, trạng thái) |
+| `POST/PUT/DELETE /api/v1/study-plans…`, `POST /{slug}/transitions` | `@PreAuthorize("hasAnyRole('INSTRUCTOR','ADMIN')")`; chỉ gắn đề `PUBLISHED`; người tạo hoặc ADMIN mới được sửa |
+| `POST/GET/DELETE /api/v1/me/tokens` | Quản lý PAT — **chỉ JWT**, PAT không gọi được |
+| `JwtAuthenticationFilter` | Bearer bắt đầu bằng `mlc_pat_` ⇒ tra `SHA-256(token)`; `UserPrincipal` thêm cờ `viaPat`; cập nhật `last_used_at` tối đa 1 lần / phút |
+| `SubmissionServiceImpl.createSubmission` | (1) đề thuộc stage N > 1 mà stage N-1 chưa `DONE` ⇒ `409 STAGE_LOCKED` (áp dụng cả Run lẫn Submit); (2) `viaPat && contestId != null` ⇒ `403 PAT_FORBIDDEN` |
+| `ProblemService.getProblems` (người dùng không phải staff) | `NOT EXISTS` đề thuộc item `PROJECT` |
+| `SubmissionRepository.findAttemptedProblemIdsByUserId` | Thêm `and s.quickRun = false` (sửa lỗi tồn tại) |
+
+### Bảo mật PAT
+
+- Token = `mlc_pat_` + 32 byte ngẫu nhiên (`SecureRandom`, base64url). Chỉ hiện **một lần**; DB lưu `SHA-256` (token đủ entropy, không cần bcrypt, tra cứu theo hash). Hạn mặc định 90 ngày; thu hồi được; tối đa 5 token còn hiệu lực mỗi người.
+- **Allowlist khi xác thực bằng PAT** (ngoài danh sách ⇒ `403 PAT_FORBIDDEN`):
+  - `GET /api/v1/study-plans`, `GET /api/v1/study-plans/{slug}`
+  - `GET /api/v1/problems/{idOrSlug}`, `GET /api/v1/problems/{idOrSlug}/starter-template`
+  - `POST /api/v1/problems/{id}/submit`, `/submit-multipart`, `POST /api/v1/submissions`
+  - `GET /api/v1/submissions/{id}` (đã kiểm tra chủ sở hữu)
+- PAT không bao giờ được ghi log; plugin lưu bằng `PasswordSafe`, không ghi vào thư mục project.
+
+### Plugin IntelliJ
+
+```
+ide-plugin/                         Gradle (tách khỏi Maven backend), IntelliJ Platform Gradle Plugin 2.x, JDK 21
+├─ build.gradle.kts                 intellijIdeaCommunity("2025.3"), sinceBuild = "253", không đặt untilBuild
+├─ src/main/resources/
+│  ├─ META-INF/plugin.xml           depends: com.intellij.modules.platform
+│  └─ templates/pom.xml             pom Java 17 dùng cho mọi project
+└─ src/main/java/…/
+   ├─ ApiClient.java                java.net.http.HttpClient + Gson (đã đóng sẵn trong IntelliJ Platform, không thêm dependency)
+   ├─ SettingsConfigurable.java     Server URL + PAT (PasswordSafe)
+   ├─ PlanToolWindowFactory.java    cây Plan › Item › Stage, nút Refresh
+   ├─ OpenStageAction.java          tạo / mở project, tải starter, ghi stages/stage-N.md
+   └─ CheckAction.java              Task.Backgroundable: zip src/main → submit → poll → hiển thị
+```
+
+| # | Chức năng | Cách làm tối giản |
+|---|---|---|
+| PL-1 | Đăng nhập | Settings › Tools › Mini LeetCode: URL + PAT; "Test connection" = `GET /study-plans` |
+| PL-2 | Tool window | `Tree` Swing: plan › item › stage + icon `LOCKED/NEVER/IN_PROGRESS/DONE` |
+| PL-3 | Mở item | Chọn thư mục ⇒ ghi `pom.xml` mẫu + `.mlc/project.yaml` + giải nén starter stage 1 (`starter-template`) ⇒ `ProjectUtil.openOrImport` |
+| PL-4 | Xem đề | Ghi `description` của `GET /problems/{slug}` thành `stages/stage-N.md` ⇒ mở bằng editor (Markdown preview có sẵn) |
+| PL-5 | **Check** | Zip `src/main/**` ⇒ `POST /problems/{id}/submit-multipart` ⇒ poll `GET /submissions/{id}` (1s, tối đa 60s) ⇒ balloon + panel: verdict, điểm OOP/testcase/socket, lỗi đầu tiên |
+| PL-6 | Next stage | Khi `DONE`: tải starter stage N+1, **chỉ tạo file chưa tồn tại**, ghi `stage-(N+1).md`, cập nhật `project.yaml` |
+
+## Functional Requirements (EARS)
+
+- **FR-SP-001** When người dùng mở danh sách plan (web hoặc plugin), the system shall trả các plan `PUBLISHED` kèm số item, số stage và % stage `DONE` của người gọi.
+- **FR-SP-002** When người dùng mở một plan, the system shall trả item theo `position` và stage theo `stage_no`, mỗi stage kèm trạng thái `LOCKED` / `NEVER` / `IN_PROGRESS` / `DONE`.
+- **FR-SP-003** If người dùng nộp (Run hoặc Submit) đề là stage N > 1 của một item mà stage N-1 chưa `DONE`, then the system shall trả `409 STAGE_LOCKED` và không tạo submission.
+- **FR-SP-004** The system shall tính trạng thái stage chỉ từ submission có `is_quick_run = false`.
+- **FR-SP-005** While người dùng không phải INSTRUCTOR / ADMIN, the system shall không trả đề thuộc item `PROJECT` trong `GET /problems`.
+- **FR-SP-006** Where người dùng là INSTRUCTOR / ADMIN, the system shall cho tạo / sửa plan, item, stage; chỉ gắn đề `PUBLISHED`; chỉ người tạo hoặc ADMIN sửa được plan.
+- **FR-SP-007** If plan không ở `PUBLISHED` và người gọi không phải staff, then the system shall trả `404`.
+- **FR-PAT-001** When người dùng tạo PAT, the system shall trả token đúng một lần và chỉ lưu `SHA-256` của token.
+- **FR-PAT-002** If request xác thực bằng PAT gọi endpoint ngoài allowlist, then the system shall trả `403 PAT_FORBIDDEN`.
+- **FR-PAT-003** If request xác thực bằng PAT nộp bài có `contestId`, then the system shall trả `403 PAT_FORBIDDEN`.
+- **FR-PAT-004** If PAT hết hạn hoặc đã thu hồi, then the system shall trả `401`.
+- **FR-PL-001** When học viên bấm Check, the plugin shall nộp `src/main/**` cho đúng stage ghi trong `.mlc/project.yaml` và hiển thị kết quả trong ≤ 2 giây sau khi server chấm xong.
+- **FR-PL-002** When chuyển sang stage mới, the plugin shall không ghi đè bất kỳ file nào đã tồn tại.
+- **FR-PL-003** The plugin shall lưu PAT bằng `PasswordSafe` và không ghi PAT vào thư mục project.
+
+## Non-Functional Requirements
+
+| Loại | Yêu cầu |
+|---|---|
+| Hiệu năng | `GET /study-plans/{slug}` ≤ 300 ms p95 với plan 50 stage (2 truy vấn tiến độ, không N+1). Plugin poll 1 s, dừng sau 60 s |
+| Bảo mật | PAT như mục *Bảo mật PAT*; mọi kiểm tra quyền ở server; test ẩn và `grading_config` không bao giờ trả về plugin |
+| Tương thích | IntelliJ IDEA 2025.3+ (Community/Ultimate); không đặt `untilBuild`, kiểm thử trên 2025.3 và bản mới nhất trước mỗi lần phát hành ZIP |
+| Tin cậy | Plugin không bao giờ xoá / ghi đè code học viên; mất mạng thì code vẫn ở máy |
+| Khả năng bảo trì | Judge không đổi; logic khoá stage nằm ở một chỗ (`createSubmission`) |
+
+## Acceptance Criteria
+
+- **AC-001 Check trong IntelliJ:** Given đã đăng nhập plugin, đang ở stage 2 Mini Bank · When bấm Check · Then panel hiện `AC 100/100` và nút "Next stage"; trên web stage 2 là `DONE`.
+- **AC-002 Lỗi rõ ràng:** Given `SavingsAccount` không kế thừa `Account` · When Check · Then panel hiện rule sai *"SavingsAccount phải kế thừa Account"* kèm điểm từng phần.
+- **AC-003 Khoá stage trên mọi đường nộp:** Given stage 2 chưa `DONE` · When nộp đề stage 3 qua `POST /problems/{id}/submit`, `/submit-multipart`, `POST /submissions` (JSON) và `/run` · Then cả 4 trả `409 STAGE_LOCKED`, không tạo submission.
+- **AC-004 Không ghi đè code:** Given học viên đã sửa `Bank.java` · When Next stage có starter chứa `Bank.java` · Then `Bank.java` giữ nguyên, chỉ thêm file mới và `stage-3.md`.
+- **AC-005 Quy ước cộng dồn:** Given testcase stage 3 gồm testcase stage 1 (seed sao chép) · When học viên làm hỏng `DEPOSIT` rồi Check stage 3 · Then `WA`.
+- **AC-006 PAT poll được kết quả:** Given PAT hợp lệ · When gọi `GET /submissions/{id}` của chính mình · Then `200`; của người khác ⇒ `403`.
+- **AC-007 PAT bị chặn ngoài allowlist:** Given PAT hợp lệ · When gọi `POST /api/v1/me/tokens` hoặc nộp bài có `contestId` · Then `403 PAT_FORBIDDEN`.
+- **AC-008 Token thu hồi:** Given PAT đã thu hồi · When Check · Then `401`, plugin mở Settings với thông báo "Token hết hiệu lực".
+- **AC-009 Run không tính tiến độ:** Given stage 1 đang `NEVER` · When học viên chỉ bấm Run trên web · Then stage vẫn `NEVER`.
+- **AC-010 Ẩn đề project:** Given đề `mini-bank-stage-3` thuộc item PROJECT · When USER gọi `GET /problems` · Then không có đề đó; INSTRUCTOR vẫn thấy.
+- **AC-011 Web vẫn làm được:** Given không có IntelliJ · When mở stage trên web và Submit `AC` · Then plugin Refresh thấy stage `DONE`.
+
+## Error Handling
+
+| Tình huống | Server | Plugin / Web hiển thị |
+|---|---|---|
+| PAT sai / hết hạn / thu hồi | `401` | Mở Settings: "Token hết hiệu lực, tạo token mới trên web" |
+| PAT gọi endpoint không cho phép / kỳ thi | `403 PAT_FORBIDDEN` | "Thao tác này chỉ làm được trên web" |
+| Stage chưa mở | `409 STAGE_LOCKED` | "Hoàn thành stage N-1 trước" + nút mở stage N-1 |
+| Plan / đề không công khai | `404` | Refresh cây, bỏ mục đó |
+| Đề stage đang `ARCHIVED` (bảo trì) | `404` khi tải / nộp | "Stage đang được cập nhật, thử lại sau" |
+| ZIP > 20 MB / file không hợp lệ | `413` / `400` (đã có) | Hiện thông báo của server |
+| Chấm quá 60 s (PENDING / JUDGING) | — | "Đang chấm, xem kết quả trên web" + link |
+| Mất mạng / server sập | — | Balloon lỗi + nút thử lại; code giữ nguyên |
+| IDE cũ hơn 2025.3 | — | IDE từ chối cài (do `sinceBuild`) |
+
+## Kiến trúc: quyết định chính (ADR rút gọn)
+
+**ADR-SP-1 — Tích hợp IDE bằng plugin IntelliJ.** *Bối cảnh:* cần code & check trong IDE. *Phương án:* CLI (mọi IDE, ít UX), plugin IntelliJ (UX tốt nhất, chỉ JetBrains), extension VS Code, git push. *Quyết định:* plugin IntelliJ (người dùng chọn). *Hệ quả:* + trải nghiệm như Hyperskill; − học SDK mới, chỉ IntelliJ, phải kiểm thử mỗi bản IDE; VS Code dùng web.
+
+**ADR-SP-2 — Personal Access Token.** *Phương án:* PAT, OAuth device flow, username/password + refresh 7 ngày. *Quyết định:* PAT với allowlist. *Hệ quả:* + đơn giản, thu hồi được, phạm vi hẹp; − người dùng phải tạo token thủ công trên web.
+
+**ADR-SP-3 — Stage là `Problem`, judge không đổi.** *Phương án:* (a) stage là đề riêng, testcase cộng dồn theo quy ước soạn; (b) judge tự gộp testcase các stage trước; (c) kiểu đề `PROJECT_STAGE` mới. *Quyết định:* (a). *Hệ quả:* + không chạm judge, tái dùng toàn bộ chấm OOP; − người soạn phải giữ testcase cũ (công cụ seed lo), sửa stage cũ không tự lan sang stage sau.
+
+**ADR-SP-4 — Tiến độ suy ra, không lưu.** *Phương án:* bảng `stage_progress` cập nhật khi chấm xong; suy ra từ `submissions`. *Quyết định:* suy ra. *Hệ quả:* + không có dữ liệu lệch, không đụng judge; − mỗi lần xem plan chạy 2 truy vấn (đủ nhanh ở quy mô lớp học; thêm cache khi đo thấy chậm).
+
+## Rủi ro
+
+| Rủi ro | Giảm thiểu |
+|---|---|
+| Nhóm chưa biết IntelliJ Platform SDK | Bắt đầu từ [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template); làm plugin song song backend với API giả |
+| API IntelliJ đổi giữa các bản | Chỉ dùng API ổn định (`ToolWindowFactory`, `AnAction`, `PasswordSafe`, `ProjectUtil`); Plugin Verifier trước khi phát ZIP |
+| Output console đổi giữa các stage làm testcase cũ sai | Quy ước: chỉ sao chép testcase cũ **còn đúng**; người soạn chạy lời giải mẫu stage N trên toàn bộ testcase trước khi phát hành |
+| Stage đang bảo trì (`ARCHIVED`) chặn học viên phía sau | Sửa nhanh rồi phát hành lại; lần AC cũ vẫn tính |
 
 ## Project mẫu: Mini Bank Console (5 stage)
 
@@ -165,27 +237,43 @@ ide-plugin/                         ← module mới, build bằng Gradle (tách
 | 4 | `Bank`: nhiều tài khoản, `OPEN`, `TRANSFER`, `LIST` | Collection, phân tách trách nhiệm |
 | 5 | `MONTH`, `REPORT`, `EXIT <mã>` | Template method, hoàn thiện |
 
-## Slice đề xuất (thứ tự làm)
+## Implementation TODO
 
-1. **Backend nền:** Flyway V8, PAT, API plan / project / stage, khoá stage, sửa lỗi Quick Run.
-2. **Nội dung mẫu:** tách Mini Bank thành 5 `Problem` + project + 1 plan seed.
-3. **Plugin khung:** Gradle, Settings + PasswordSafe, tool window với cây plan.
-4. **Plugin mở project + đề** (PL-3, PL-4).
-5. **Plugin Check + kết quả + Next stage** (PL-5…PL-7) ⇒ *mốc demo được*.
-6. **Web:** trang `/study-plans`, trang tạo token, màn hình INSTRUCTOR soạn plan.
-7. **Test:** unit / integration backend, test plugin (`BasePlatformTestCase`), E2E web.
+### Slice 1 — Backend nền
+- [ ] Flyway `V8__study_plans_and_pats.sql` (4 bảng)
+- [ ] Sửa `findAttemptedProblemIdsByUserId` lọc `quickRun = false` + test (AC-009)
+- [ ] PAT: entity, service tạo / thu hồi / tra hash, `/api/v1/me/tokens`, nhánh `mlc_pat_` trong `JwtAuthenticationFilter`, allowlist
+- [ ] Khoá stage + chặn PAT kỳ thi trong `createSubmission` + test cả 4 đường nộp (AC-003, AC-007)
+- [ ] `StudyPlanService` + `GET /study-plans`, `GET /study-plans/{slug}` (tiến độ suy ra)
+- [ ] CRUD plan cho INSTRUCTOR / ADMIN; ẩn đề project khỏi `GET /problems` (AC-010)
+
+### Slice 2 — Nội dung mẫu
+- [ ] Tách Mini Bank thành 5 đề OOP (đề, starter, `grading_config`, testcase cộng dồn) trong `backend/tools/problems`
+- [ ] Seed 1 plan "OOP với Java" gồm project Mini Bank + 2 bài lẻ
+
+### Slice 3 — Plugin khung (song song slice 1, dùng API giả)
+- [ ] `ide-plugin/` từ plugin template, JDK 21, `sinceBuild 253`
+- [ ] Settings + PasswordSafe (PL-1); tool window + cây plan (PL-2)
+
+### Slice 4 — Plugin mở project + đề (PL-3, PL-4)
+### Slice 5 — Plugin Check + Next stage (PL-5, PL-6) ⇒ **mốc demo**
+### Slice 6 — Web
+- [ ] Trang `/study-plans` + chi tiết plan; trang quản lý token; trang tải plugin ZIP + hướng dẫn
+- [ ] Màn hình INSTRUCTOR soạn plan (trước đó soạn qua API / Swagger + seed)
+
+### Slice 7 — Kiểm thử
+- [ ] Integration test backend cho mọi AC phía server
+- [ ] Test plugin bằng `BasePlatformTestCase` cho ghép file (AC-004) và xử lý lỗi
+- [ ] E2E Playwright: web plan → nộp → tiến độ
 
 ## Out of Scope
-- CLI, extension VS Code (VS Code dùng web workspace).
-- Phát hành trên JetBrains Marketplace và kho plugin riêng có tự cập nhật (MVP chỉ cài từ ZIP).
-- IDE JetBrains khác IntelliJ IDEA (PyCharm, WebStorm…) và IntelliJ cũ hơn 2025.3.
-- Lớp / nhóm, hạn nộp (giai đoạn 2).
-- Gợi ý cá nhân hoá, bài kiểm tra đầu vào, bài lý thuyết có quiz, chứng nhận PDF.
+- CLI, extension VS Code, JetBrains Marketplace, kho plugin tự cập nhật, IDE JetBrains khác.
+- Chạy test trên máy trong plugin (dùng Run `main`); xem lịch sử bài nộp trong plugin.
+- Lớp / nhóm, hạn nộp (giai đoạn 2); huy hiệu, chứng nhận; gợi ý cá nhân hoá; bài lý thuyết / quiz.
+- Dùng một đề cho nhiều plan.
 
 ---
 
 ## Câu hỏi còn mở
 
-Mọi quyết định sản phẩm và kỹ thuật đã chốt (xem bảng *Quyết định đã chốt*). Chỉ còn một câu để lên lịch:
-
-- **Q14. Hạn chót / mốc demo và người phụ trách:** ai làm plugin (slice 3–5), backend (slice 1–2), web (slice 6)? Plugin là phần rủi ro nhất (IntelliJ Platform SDK mới với nhóm), nên bắt đầu slice 3 song song với slice 1, dùng API giả (mock) cho tới khi backend xong.
+- **Q14. Hạn chót / mốc demo và người phụ trách:** ai làm plugin (slice 3–5), backend (slice 1–2), web (slice 6)? Plugin rủi ro nhất ⇒ nên bắt đầu slice 3 song song slice 1.

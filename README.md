@@ -23,15 +23,17 @@ Hệ thống phục vụ hai chế độ song song:
 | Vai trò | Quyền chính |
 |---|---|
 | **USER** (Học viên / Thí sinh) | Xem bài đã phát hành, chạy thử (Run) với testcase công khai, nộp bài (Submit), xem lịch sử bài nộp, đăng ký & tham gia kỳ thi |
-| **INSTRUCTOR** (Giảng viên / Người ra đề) | Tạo & sửa đề, tải testcase (công khai / ẩn), cấu hình chấm OOP, tạo kỳ thi, xem báo cáo giám sát & đạo văn, mở khoá thí sinh |
-| **ADMIN** | Duyệt phát hành đề, quản lý tài khoản & phân quyền |
+| **INSTRUCTOR** (Giảng viên / Người ra đề) | Tạo & sửa đề, tải testcase (công khai / ẩn), cấu hình chấm OOP, chuyển trạng thái đề (kể cả phát hành), xem báo cáo giám sát & đạo văn của kỳ thi |
+| **ADMIN** | Mọi quyền của Instructor, thêm: xoá đề, mở khoá thí sinh bị khoá trong kỳ thi |
+
+> Chưa có API quản lý tài khoản / phân quyền: nâng một tài khoản lên ADMIN bằng `backend/tools/promote-admin.ps1`; kỳ thi hiện được tạo bằng dữ liệu seed (`backend/tools/seed-contests.sql`).
 
 ---
 
 ## 2. Chức năng chính
 
 ### 2.1 Ngân hàng đề bài
-- Vòng đời đề: `DRAFT` → `REVIEWING` → `PUBLISHED` → `ARCHIVED` (chỉ đề `PUBLISHED` xuất hiện với học viên).
+- Vòng đời đề: `DRAFT` ⇄ `REVIEWING` → `PUBLISHED` → `ARCHIVED` → `DRAFT`. Chỉ đề `PUBLISHED` xuất hiện với học viên; muốn phát hành phải có ít nhất một testcase công khai; testcase của đề `PUBLISHED` bị khoá (muốn sửa phải đưa đề về `DRAFT`).
 - Thuộc tính: tiêu đề, slug, đề Markdown, độ khó (`EASY` / `MEDIUM` / `HARD`), chủ đề (tags), giới hạn thời gian & bộ nhớ.
 - Hai loại đề (`ProblemType`):
   - **`ALGORITHMIC`** — chấm theo testcase stdin/stdout.
@@ -55,17 +57,15 @@ Hệ thống phục vụ hai chế độ song song:
   | Testcase stdin/stdout | Chạy `main` trong sandbox, so output | 40% | 60% |
   | Kịch bản Socket | Kiểm thử client/server TCP trên loopback | 30% | — |
 
-  Cấu hình chấm chỉ nằm phía server; mọi file cấu hình/test do học viên nộp kèm đều bị bỏ qua.
-- **Kỳ thi:**
-  - **ACM/ICPC** (mặc định): xếp hạng theo số bài AC, rồi tổng thời gian phạt `Σ (T_AC + 20 × số lần sai trước AC)`.
-  - **IOI (Partial)**: điểm theo nhóm testcase, lấy lần nộp cao nhất.
+  Đây là trọng số mặc định khi đề có đủ thành phần; đề thiếu thành phần nào thì trọng số tự chia lại cho các thành phần còn lại (vd. chỉ có rule + socket ⇒ 50/50). Cấu hình chấm chỉ nằm phía server; mọi file cấu hình/test do học viên nộp kèm đều bị bỏ qua.
+- **Kỳ thi:** xếp hạng theo **ACM/ICPC** — số bài AC, rồi tổng thời gian phạt `Σ (T_AC + 20 × số lần sai trước AC)`. Quy chế IOI (điểm theo nhóm testcase) có trong [tài liệu nghiệp vụ](docs/BUSINESS_REQUIREMENTS.md) nhưng chưa được triển khai.
 
 ### 2.4 Kỳ thi & giám sát liêm chính
 - Kỳ thi có giờ bắt đầu/kết thúc theo server, danh sách đề gán nhãn A, B, C…, thí sinh đăng ký trước.
 - Theo dõi rời tab / mất focus / paste; **server là nơi quyết định** số lần vi phạm, có thời gian ân hạn 1.5 giây.
 - Vi phạm lần 1–2: cảnh báo toàn màn hình; đạt ngưỡng (mặc định 3): khoá editor, tự thu bài, gắn cờ.
 - Tự lưu bản nháp & cảnh báo khi mất mạng để không mất bài.
-- Giảng viên xem báo cáo giám sát, danh sách nghi đạo văn, mở khoá thí sinh và chốt kết quả kỳ thi.
+- Thí sinh chốt bài (hoặc được tự chốt khi hết giờ); Giảng viên xem báo cáo giám sát và danh sách nghi đạo văn; Admin mở khoá thí sinh bị khoá.
 
 ### 2.5 Theo dõi tiến độ cá nhân
 - Lịch sử bài nộp, xem lại code đã nộp, thống kê số bài nộp theo từng verdict.
