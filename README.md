@@ -1,104 +1,147 @@
-# Mini LeetCode Platform — Monorepo
+# Mini LeetCode Platform
 
 [![Java 17](https://img.shields.io/badge/Java-17%20LTS-orange.svg)](https://openjdk.org/projects/jdk/17/)
 [![Spring Boot 3.3.4](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Maven](https://img.shields.io/badge/Maven-Multi--Module-blue.svg)](https://maven.apache.org/)
+[![Next.js 14](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
-[![Tests Passing](https://img.shields.io/badge/Tests-79%2F79%20Passed-success.svg)]()
 
-> Nền tảng thi đấu và rèn luyện thuật toán trực tuyến (Online Judge) với cơ chế Sandbox cô lập an toàn, giám sát thi cử liêm chính (Server-Side Proctoring), hàng đợi bài nộp bất đồng bộ và bộ lưu trữ testcase dung lượng lớn.
+> Nền tảng luyện tập và thi lập trình trực tuyến (Online Judge): học viên giải bài thuật toán và bài OOP/Socket Java, được chấm tự động trong sandbox Docker cô lập; giảng viên ra đề, tổ chức kỳ thi có giám sát liêm chính và bảng xếp hạng.
 
 ---
 
-## 1. Cấu trúc Dự án (Monorepo Directory Layout)
+## 1. Bài toán nghiệp vụ
+
+Hệ thống phục vụ hai chế độ song song:
+
+| Chế độ | Mục tiêu | Đặc điểm |
+|---|---|---|
+| **Luyện tập (Practice)** | Rèn tư duy thuật toán & OOP, phản hồi nhanh | Không giới hạn số lần nộp, không phạt hành vi, theo dõi tiến độ từng bài |
+| **Thi / Kiểm tra (Exam / Contest)** | Đánh giá năng lực có kiểm soát | Tính giờ theo server, giám sát rời tab, khoá bài khi vi phạm quá ngưỡng, bảng xếp hạng |
+
+### Vai trò người dùng
+
+| Vai trò | Quyền chính |
+|---|---|
+| **USER** (Học viên / Thí sinh) | Xem bài đã phát hành, chạy thử (Run) với testcase công khai, nộp bài (Submit), xem lịch sử bài nộp, đăng ký & tham gia kỳ thi |
+| **INSTRUCTOR** (Giảng viên / Người ra đề) | Tạo & sửa đề, tải testcase (công khai / ẩn), cấu hình chấm OOP, tạo kỳ thi, xem báo cáo giám sát & đạo văn, mở khoá thí sinh |
+| **ADMIN** | Duyệt phát hành đề, quản lý tài khoản & phân quyền |
+
+---
+
+## 2. Chức năng chính
+
+### 2.1 Ngân hàng đề bài
+- Vòng đời đề: `DRAFT` → `REVIEWING` → `PUBLISHED` → `ARCHIVED` (chỉ đề `PUBLISHED` xuất hiện với học viên).
+- Thuộc tính: tiêu đề, slug, đề Markdown, độ khó (`EASY` / `MEDIUM` / `HARD`), chủ đề (tags), giới hạn thời gian & bộ nhớ.
+- Hai loại đề (`ProblemType`):
+  - **`ALGORITHMIC`** — chấm theo testcase stdin/stdout.
+  - **`OOP_GRINDING`** — bài OOP / Socket Java nhiều file, có starter template tải về dạng ZIP.
+- Danh mục bài lọc được theo độ khó, chủ đề, từ khoá, loại đề và **tiến độ cá nhân** (`DONE` / `IN_PROGRESS` / `NEVER`).
+
+### 2.2 Làm bài & nộp bài
+- Workspace chia đôi: đề bài bên trái, Monaco Editor bên phải; ngôn ngữ Java 17 và Python 3.
+- **Run** (chạy thử, không tính là bài nộp) và **Submit** (nộp chính thức).
+- Bài OOP nộp được qua editor nhiều file, file ZIP hoặc nhiều file `.java`.
+- **Console trực tiếp**: chạy chương trình trong sandbox, xem output theo thời gian thực và nhập stdin như terminal của IDE.
+- Kết quả (verdict): `AC`, `WA`, `TLE`, `MLE`, `CE`, `RE`, `SV` (vi phạm sandbox), `FLAGGED_CHEATING`; kèm runtime, bộ nhớ, số testcase đạt.
+
+### 2.3 Quy chế chấm điểm
+- **Bài thuật toán:** đúng 100% testcase ẩn ⇒ `AC`; dừng ở testcase lỗi đầu tiên (fail-fast).
+- **Bài OOP (điểm thành phần):**
+
+  | Thành phần | Cách chấm | Trọng số (có socket) | Trọng số (không socket) |
+  |---|---|:---:|:---:|
+  | Cấu trúc OOP | Kiểm tra lớp/interface/kế thừa/đóng gói/chữ ký hàm theo rule giảng viên định nghĩa | 30% | 40% |
+  | Testcase stdin/stdout | Chạy `main` trong sandbox, so output | 40% | 60% |
+  | Kịch bản Socket | Kiểm thử client/server TCP trên loopback | 30% | — |
+
+  Cấu hình chấm chỉ nằm phía server; mọi file cấu hình/test do học viên nộp kèm đều bị bỏ qua.
+- **Kỳ thi:**
+  - **ACM/ICPC** (mặc định): xếp hạng theo số bài AC, rồi tổng thời gian phạt `Σ (T_AC + 20 × số lần sai trước AC)`.
+  - **IOI (Partial)**: điểm theo nhóm testcase, lấy lần nộp cao nhất.
+
+### 2.4 Kỳ thi & giám sát liêm chính
+- Kỳ thi có giờ bắt đầu/kết thúc theo server, danh sách đề gán nhãn A, B, C…, thí sinh đăng ký trước.
+- Theo dõi rời tab / mất focus / paste; **server là nơi quyết định** số lần vi phạm, có thời gian ân hạn 1.5 giây.
+- Vi phạm lần 1–2: cảnh báo toàn màn hình; đạt ngưỡng (mặc định 3): khoá editor, tự thu bài, gắn cờ.
+- Tự lưu bản nháp & cảnh báo khi mất mạng để không mất bài.
+- Giảng viên xem báo cáo giám sát, danh sách nghi đạo văn, mở khoá thí sinh và chốt kết quả kỳ thi.
+
+### 2.5 Theo dõi tiến độ cá nhân
+- Lịch sử bài nộp, xem lại code đã nộp, thống kê số bài nộp theo từng verdict.
+
+---
+
+## 3. Công nghệ
+
+- **Backend:** Java 17, Spring Boot 3.3.4, Spring Security (JWT), Spring Data JPA, Flyway, OpenAPI/Swagger.
+- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Monaco Editor.
+- **Hạ tầng:** MySQL 8.0, Redis 7 (hàng đợi bài nộp), MinIO (lưu testcase & mã nguồn nộp).
+- **Chấm bài:** Docker container dùng một lần, không mạng, giới hạn RAM/CPU/số tiến trình.
+
+### Cấu trúc thư mục
 
 ```
 Mini Leetcode/
-├── backend/                        # Java 17 LTS Maven Multi-Module
-│   ├── pom.xml                     # Parent POM quản lý phiên bản tập trung
-│   ├── mini-leetcode-common/       # Java Enums thuần, Base Exceptions, API Response DTOs
-│   ├── mini-leetcode-core/         # JPA Entities, Repositories, Domain Services, Flyway, MinIO S3
-│   ├── mini-leetcode-api/          # REST Controllers, Spring Security JWT, OpenAPI 3.1 Swagger
-│   └── mini-leetcode-judge/        # Sandbox Worker, Redis Queue Consumer, Docker Runner
-├── frontend/                       # Client Tier (Next.js 14 / React + Monaco Editor)
-│   ├── README.md                   # Hướng dẫn tích hợp & Contract API cho Frontend Engineer
-│   └── .env.example                # Cấu hình biến môi trường kết nối API
-├── docs/                           # Hồ sơ Tài liệu Nghiệp vụ & Kiến trúc Kỹ thuật
-│   ├── Mini_LeetCode_Technical_and_Business_Specs.docx  # Tài liệu chuẩn dạng Word (.docx)
-│   ├── TECHNICAL_AND_BUSINESS_DOCUMENTATION.md          # Đặc tả chi tiết toàn diện (.md)
-│   ├── TECHNICAL_SPECIFICATION.md                       # Đặc tả kiến trúc hệ thống
-│   ├── BUSINESS_REQUIREMENTS.md                         # Nghiệp vụ bài toán & Rule thi cử
-│   ├── ADR-001_MODULAR_MONOLITH_ARCHITECTURE.md
-│   ├── ADR-002_MAVEN_MULTI_MODULE_MONOLITH.md
-│   ├── ADR-003_PACKAGE_BY_FEATURE_STRUCTURE.md
-│   ├── ADR-004_PRAGMATIC_SANDBOX_DESIGN.md
-│   └── team-pipeline/              # Đội ngũ Team Agent Pipeline
-├── docker-compose.yml              # MySQL 8.0, Redis 7, MinIO (elestio/minio) + Bucket Provisioner
-└── .gitignore                      # Cấu hình bỏ qua tệp tin toàn diện Monorepo
+├── backend/
+│   ├── mini-leetcode-common/   # Enum, exception, DTO dùng chung
+│   ├── mini-leetcode-core/     # Entity, repository, service nghiệp vụ, Flyway migration
+│   ├── mini-leetcode-api/      # REST API, bảo mật JWT, Swagger
+│   ├── mini-leetcode-judge/    # Worker chấm bài (thuật toán & OOP) chạy sandbox Docker
+│   └── tools/                  # Đề bài mẫu, sinh testcase, cấu hình chấm OOP (dev)
+├── frontend/                   # Ứng dụng web Next.js
+├── docs/                       # Tài liệu nghiệp vụ & đặc tả
+├── specs/                      # Đặc tả tính năng
+└── docker-compose.yml          # MySQL, Redis, MinIO, API, Judge, Frontend
 ```
 
 ---
 
-## 2. Công nghệ Cốt lõi (Tech Stack)
+## 4. Chạy cục bộ
 
-- **Backend:** Java 17 LTS, Spring Boot 3.3.4, Spring Security 6, Spring Data JPA, Hibernate, Flyway.
-- **Database:** MySQL 8.0 (InnoDB, `utf8mb4_unicode_ci`).
-- **Cache & Queue:** Redis 7 (Alpine) — Hàng đợi bài nộp bất đồng bộ & bộ đệm kết quả.
-- **Object Storage:** MinIO S3-compatible Object Storage — Lưu trữ file input/output testcase lớn.
-- **Sandbox Execution:** Docker CLI Ephemeral Containers (`--network none`, `--memory 256m`, `--pids-limit 64`, Read-Only mounts). Hỗ trợ nộp bài bằng **Java 17 LTS** và **Python 3**.
-- **Documentation & Testing:** OpenAPI 3.1 / Swagger UI, JUnit 5, Mockito, Testcontainers, H2 in-memory.
-
----
-
-## 3. Kiến trúc Sandbox 3 Roles (Pragmatic Online Judge)
-
-Hệ thống phân định ranh giới bảo mật tuyệt đối thành 3 Role chuyên trách (xem chi tiết tại [ADR-004](file:///docs/ADR-004_PRAGMATIC_SANDBOX_DESIGN.md)):
-1. **Role 1 - Web API Gateway (`mini-leetcode-api`):** Nhận code nộp, kiểm tra payload, lưu bản ghi `PENDING`, đẩy message vào Redis Queue (`RPUSH queue.submissions`). **Tuyệt đối không mount `/var/run/docker.sock`**.
-2. **Role 2 - Judge Worker (`mini-leetcode-judge`):** Lắng nghe queue (`BLPOP`), tải file testcase về thư mục tạm `temp-submissions/{id}/`, điều phối vòng đời của Sandbox Runner qua Docker CLI, đo lường metrics và tính toán Verdict.
-3. **Role 3 - Ephemeral Sandbox Runner:** Container dùng 1 lần, cách ly mạng 100% (`--network none`), giới hạn RAM 256MB, CPU 1 core, chống Fork Bomb (`--pids-limit 64`), mount thư mục testcase Read-Only. Áp dụng chính sách **Fail-Fast** (dừng ngay ở testcase lỗi đầu tiên để tiết kiệm tài nguyên).
-
----
-
-## 4. Hướng dẫn Khởi chạy Cục bộ (Quick Start)
-
-### Bước 1: Khởi động Hạ tầng Docker (MySQL, Redis, MinIO)
-Từ thư mục gốc dự án:
+### Cách 1 — Toàn bộ bằng Docker Compose
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
-Container `minio_provisioner` sẽ tự động tạo sẵn 2 bucket: `testcases` và `submissions`.
+| Dịch vụ | Địa chỉ |
+|---|---|
+| Frontend | http://localhost:3100 (đổi bằng `FRONTEND_PORT`) |
+| API / Swagger UI | http://localhost:8080/swagger-ui.html |
+| MinIO Console | http://localhost:9001 (`minioadmin` / `minioadminpassword`) |
 
-### Bước 2: Biên dịch & Kiểm thử Backend
-```bash
+MySQL map ra cổng `3306` (đổi bằng `MYSQL_HOST_PORT`). Bucket `testcases` và `submissions` được tạo tự động.
+
+### Cách 2 — Chạy từng phần khi phát triển
+```powershell
+# Hạ tầng
+docker compose up -d mysql redis minio minio_provisioner
+
+# Backend
 cd backend
-
-# Chạy toàn bộ 79 bài kiểm thử tích hợp & đơn vị
-.\mvnw clean test
-
-# Đóng gói file JAR thực thi cho Web API
+.\mvnw clean test                      # chạy test
 .\mvnw clean package -DskipTests
-```
-
-### Bước 3: Khởi chạy Ứng dụng Web API
-```bash
 java -jar mini-leetcode-api/target/mini-leetcode-api-0.0.1-SNAPSHOT.jar
+
+# Frontend
+cd frontend
+copy .env.example .env.local           # NEXT_PUBLIC_USE_MOCK=false để gọi backend thật
+npm install
+npm run dev
 ```
 
----
-
-## 5. Tài liệu API & Giám sát
-
-- **Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-- **OpenAPI 3.1 JSON Spec:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
-- **Health Check Probe:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
-- **MinIO Console:** [http://localhost:9001](http://localhost:9001) (`minioadmin` / `minioadminpassword`)
+### Nạp đề bài mẫu
+Xem [backend/tools/README.md](backend/tools/README.md): sinh seed SQL cho 20 đề mẫu (thuật toán, OOP, Socket), sinh testcase và nạp qua API.
 
 ---
 
-## 6. Hồ sơ Tài liệu Kỹ thuật Chi tiết
-- [Tài liệu Nghiệp vụ & Kiến trúc Toàn diện (Markdown)](file:///docs/TECHNICAL_AND_BUSINESS_DOCUMENTATION.md)
-- [Tài liệu Word hoàn chỉnh (.docx)](file:///docs/Mini_LeetCode_Technical_and_Business_Specs.docx)
-- [ADR-001: Modular Monolith Architecture](file:///docs/ADR-001_MODULAR_MONOLITH_ARCHITECTURE.md)
-- [ADR-002: Maven Multi-Module Monolith](file:///docs/ADR-002_MAVEN_MULTI_MODULE_MONOLITH.md)
-- [ADR-003: Package-by-Feature Structure](file:///docs/ADR-003_PACKAGE_BY_FEATURE_STRUCTURE.md)
-- [ADR-004: Pragmatic Sandbox Design](file:///docs/ADR-004_PRAGMATIC_SANDBOX_DESIGN.md)
+## 5. Tài liệu nghiệp vụ
+
+| Tài liệu | Nội dung |
+|---|---|
+| [docs/BUSINESS_REQUIREMENTS.md](docs/BUSINESS_REQUIREMENTS.md) | Vai trò, vòng đời đề, quy trình kỳ thi, quy chế chấm điểm & xếp hạng, quy chế giám sát, tiêu chí nghiệm thu |
+| [docs/TECHNICAL_AND_BUSINESS_DOCUMENTATION.md](docs/TECHNICAL_AND_BUSINESS_DOCUMENTATION.md) | Đặc tả tổng hợp nghiệp vụ & hệ thống |
+| [docs/EXAM_ANTI_CHEAT_SPECIFICATION.md](docs/EXAM_ANTI_CHEAT_SPECIFICATION.md) | Phân định chế độ Thi / Luyện tập và quy tắc chống gian lận |
+| [docs/HYBRID_SUBMISSION_SPECIFICATION.md](docs/HYBRID_SUBMISSION_SPECIFICATION.md) | Nộp bài OOP đa hình thức (editor, ZIP, nhiều file) & starter template |
+| [specs/live-terminal-console.spec.md](specs/live-terminal-console.spec.md) | Console tương tác stdin/stdout khi chạy thử |
+| [specs/oop-console-runtime-metrics.spec.md](specs/oop-console-runtime-metrics.spec.md) | Runtime & bộ nhớ thực cho bài OOP |
+| [backend/tools/README.md](backend/tools/README.md) | Cách ra đề, nạp testcase và cấu hình chấm bài OOP |
