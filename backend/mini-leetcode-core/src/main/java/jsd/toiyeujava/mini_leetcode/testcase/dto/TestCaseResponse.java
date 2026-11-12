@@ -14,7 +14,8 @@ public record TestCaseResponse(
         Long fileSizeBytes,
         LocalDateTime createdAt,
         String input,
-        String expectedOutput
+        String expectedOutput,
+        String label
 ) {
     public static TestCaseResponse fromEntity(TestCase tc) {
         return fromEntity(tc, null, null);
@@ -31,7 +32,8 @@ public record TestCaseResponse(
                 tc.getFileSizeBytes(),
                 tc.getCreatedAt(),
                 input,
-                expectedOutput
+                expectedOutput,
+                tc.getLabel()
         );
     }
 }

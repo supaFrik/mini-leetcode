@@ -2,7 +2,7 @@ import java.util.Scanner;
 
 /**
  * Mini Bank — Stage 1. Đề: stages/stage-1.md.
- * Judge so sánh stdout từng ký tự (bỏ khoảng trắng cuối dòng); lỗi in ra System.err không bị so.
+ * Judge so stdout từng dòng (bỏ qua khoảng trắng thừa và dòng trống, nội dung phải đúng); lỗi in ra System.err không bị so.
  */
 public class Main {
     public static void main(String[] args) {

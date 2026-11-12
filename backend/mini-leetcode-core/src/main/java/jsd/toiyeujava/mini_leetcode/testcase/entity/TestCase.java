@@ -42,6 +42,10 @@ public class TestCase {
     @Builder.Default
     private Long fileSizeBytes = 0L;
 
+    /** Nhãn hiện trong thông báo lỗi của judge (vd. "stage 1 · two-accounts"); null = không nhãn. */
+    @Column(length = 100)
+    private String label;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

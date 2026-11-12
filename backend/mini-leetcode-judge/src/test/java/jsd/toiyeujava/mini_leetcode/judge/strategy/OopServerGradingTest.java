@@ -146,7 +146,13 @@ class OopServerGradingTest {
                 eq(SubmissionVerdict.WA), any(), any(), eq(1), eq(2), any());
         JsonNode failures = objectMapper.readTree(saved.getScoreBreakdown()).get("phases").get("unitTest").get("failures");
         assertThat(failures.get(0).get("testMethod").asText()).isEqualTo("Test case #2 (hidden)");
-        assertThat(failures.get(0).get("error").asText()).isEqualTo("Wrong answer");
+        // Thông báo cụ thể: testcase ẩn chỉ nêu số dòng lệch, không lộ dữ liệu (TestFeedback).
+        assertThat(failures.get(0).get("error").asText())
+                .startsWith("Wrong answer on test case #2 (hidden)")
+                .contains("differs from the expected output at line 1");
+        verify(submissionService).updateSubmissionVerdict(eq(SUBMISSION_ID), eq(SubmissionStatus.COMPLETED),
+                eq(SubmissionVerdict.WA), any(), any(), eq(1), eq(2),
+                org.mockito.ArgumentMatchers.startsWith("Wrong answer on test case #2 (hidden)"));
     }
 
     @Test

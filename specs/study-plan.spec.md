@@ -281,6 +281,13 @@ ide-plugin/                         Gradle (tách khỏi Maven backend), Intelli
 - [x] E2E Playwright: trang plan, token, soạn plan; toàn bộ suite 135/135 qua trên bản build production (8 test Run cũ viết lại theo console live)
 - [ ] Chạy thật đầu-cuối (Docker + seed Mini Bank + plugin): nộp lời giải tham chiếu ⇒ AC cả 5 stage
 
+### Slice 8 — So output linh hoạt + phản hồi cụ thể ✅ (học từ Hyperskill)
+- [x] `grading_config.output` = `{"mode": "exact" | "normalized", "ignoreCase": bool}` (`OutputPolicy`; mặc định `exact` = hành vi cũ). Áp dụng cho strategy thuật toán và OOP. Mini Bank dùng `normalized`
+- [x] WA trả dòng lệch đầu tiên: testcase công khai có kỳ vọng / thực tế, testcase ẩn chỉ có số dòng + nhãn (không lộ dữ liệu). TLE / MLE / RE ghi testcase nào. OOP gộp rule hỏng + testcase hỏng đầu tiên vào `errorMessage` (`TestFeedback`)
+- [x] Nhãn testcase: Flyway `V11__add_label_to_test_cases.sql`, tham số `label` ở POST / PUT testcase (sửa riêng nhãn được cả khi bài đã PUBLISHED); `seed-two-sum-testcases.ps1` đặt nhãn `stage N: tên`
+- [x] Test: `OutputFeedbackTest`, `AlgorithmicJudgeStrategyTest`, `OopServerGradingTest`, `ProblemAndTestCaseIntegrationTest`
+- [ ] Khi merge nhánh admin-console-authoring: thêm `"output"` vào `ROOT_KEYS` của `GradingConfigValidator`
+
 ## Out of Scope
 - CLI, extension VS Code, JetBrains Marketplace, kho plugin tự cập nhật, IDE JetBrains khác.
 - Chạy test trên máy trong plugin (dùng Run `main`); xem lịch sử bài nộp trong plugin.

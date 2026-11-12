@@ -1,5 +1,6 @@
 {
-  "_comment": "Rule OOP theo stage: stage N dùng mọi rule có fromStage <= N (cộng dồn). Trường fromStage bị bỏ khi ghi vào problems.grading_config.",
+  "_comment": "Rule OOP theo stage: stage N dùng mọi rule có fromStage <= N (cộng dồn). Trường fromStage bị bỏ khi ghi vào problems.grading_config. 'output' áp dụng cho mọi stage: normalized = bỏ khoảng trắng / dòng trống thừa, không bắt căn cột đúng từng dấu cách.",
+  "output": {"mode": "normalized", "ignoreCase": false},
   "rules": [
     {
       "fromStage": 1,

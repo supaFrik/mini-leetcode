@@ -26,7 +26,7 @@ Trong project này bạn xây dần một **ngân hàng mini chạy trên consol
 
    - Hết input (không còn dòng nào, Ctrl+D): in **một dòng trống** rồi `Kết thúc input. Tổng tài sản: <tổng>` (định dạng `%,d`).
 
-Lỗi (số tiền không hợp lệ, sai id…) in ra **`System.err`** và chương trình chạy tiếp. Judge **chỉ so stdout**, từng ký tự (bỏ khoảng trắng cuối dòng).
+Lỗi (số tiền không hợp lệ, sai id…) in ra **`System.err`** và chương trình chạy tiếp. Judge **chỉ so stdout**, từng dòng: bỏ qua khoảng trắng thừa (căn cột không cần khớp từng dấu cách) và dòng trống, nhưng chữ, số và dấu câu phải đúng. Sai ở testcase công khai, kết quả Check chỉ ra dòng lệch đầu tiên; sai ở testcase ẩn thì cho biết testcase đó thuộc stage nào.
 
 ### Ví dụ
 

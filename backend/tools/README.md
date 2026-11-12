@@ -27,12 +27,32 @@ Judge **không** đọc bất kỳ cấu hình chấm nào trong bài nộp: `ha
 | Thành phần | Lưu ở đâu | Chấm thế nào | Trọng số |
 |-----------|-----------|--------------|---------|
 | Rule cấu trúc OOP | `problems.grading_config` → `"rules"` | Reflection trên `.class` đã biên dịch (không chạy code học viên) | 40% |
-| Testcase stdin/stdout | bảng `test_cases` (MinIO), nạp qua API như bài thuật toán | Chạy `main` trong Docker sandbox, so stdout (bỏ khoảng trắng cuối dòng) | 60% |
+| Testcase stdin/stdout | bảng `test_cases` (MinIO), nạp qua API như bài thuật toán | Chạy `main` trong Docker sandbox, so stdout theo `grading_config.output` (mặc định: bỏ khoảng trắng cuối dòng) | 60% |
 | Kịch bản socket (tuỳ chọn) | `problems.grading_config` → `"socketScenarios"` | `SocketIntegrationHarness` | 30% (khi có: 30/40/30) |
 
 Bài chỉ có một loại thì loại đó chiếm 100%. Bài **không có** rule, socket lẫn testcase ⇒ bài nộp bị đánh lỗi "no grading configuration", không bao giờ AC.
 
 Rule là danh sách `OopConstraintRule` (xem `mini-leetcode-judge/.../oop_grinding/model`): `targetClassName`, `expectedType` (`CLASS`, `ABSTRACT_CLASS`, `INTERFACE`, `ENUM`, `RECORD`), `expectedSuperclass`, `expectedInterfaces`, `requiredModifiers` / `forbiddenModifiers` (chữ thường), `enforceEncapsulation`, `fields`, `methods` (`name`, `returnType`, `parameterTypes`), `constructors`, `weight`. Ví dụ đầy đủ: `problems/grading/mini-bank-console.json`.
+
+### Cách so stdout và thông báo lỗi (`grading_config.output`, nhãn testcase)
+
+Áp dụng cho cả bài thuật toán lẫn bài OOP. Không có key `output` ⇒ `exact` (hành vi cũ).
+
+```json
+{ "output": { "mode": "normalized", "ignoreCase": false }, "rules": [ ... ] }
+```
+
+| `mode` | So thế nào |
+|--------|-----------|
+| `exact` (mặc định) | Từng dòng, bỏ khoảng trắng cuối dòng và dòng trống ở cuối |
+| `normalized` | Bỏ khoảng trắng đầu/cuối dòng, gộp khoảng trắng liên tiếp thành một, bỏ mọi dòng trống. Hợp với output căn cột bằng `printf` |
+
+`ignoreCase: true` thì so không phân biệt hoa thường. Khi sai (WA), thông báo trả về cho học viên:
+
+- Testcase **công khai**: dòng lệch đầu tiên, gồm số dòng, dòng kỳ vọng và dòng thực tế (cắt ở 200 ký tự).
+- Testcase **ẩn**: chỉ số dòng và nhãn testcase, ví dụ `Wrong answer on test case #3 (hidden · stage 1: two-accounts)`. Không lộ dữ liệu.
+
+Nhãn testcase (cột `test_cases.label`, tối đa 100 ký tự) được gửi qua tham số `label` của `POST/PUT /api/problems/{id}/testcases`. Chỉ sửa nhãn thì được cả khi bài đã PUBLISHED. `seed-two-sum-testcases.ps1` tự đặt nhãn theo tên file: `03-s1-two-accounts-hidden.in` ⇒ `stage 1: two-accounts`; tên khác thì bỏ số thứ tự ở đầu (`02-large.in` ⇒ `large`).
 
 Ví dụ bài Mini Bank Console:
 

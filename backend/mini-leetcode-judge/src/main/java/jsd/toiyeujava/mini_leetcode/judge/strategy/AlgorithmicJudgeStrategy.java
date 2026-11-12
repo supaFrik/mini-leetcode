@@ -102,17 +102,29 @@ public class AlgorithmicJudgeStrategy implements JudgeStrategy {
                                       List<TestCase> testCases)
             throws IOException, InterruptedException {
         int memoryLimitMb = problem.getMemoryLimitMb() != null ? problem.getMemoryLimitMb() : DEFAULT_MEMORY_LIMIT_MB;
+        OutputPolicy policy = OutputPolicy.fromGradingConfig(problem.getGradingConfig());
         if (judgeProperties.isParallelTestcases()) {
-            return runTestCasesInParallel(workDir, runtime, problem, testCases, memoryLimitMb);
+            return runTestCasesInParallel(workDir, runtime, problem, testCases, memoryLimitMb, policy);
         }
-        return runTestCasesSequentially(workDir, runtime, problem, testCases, memoryLimitMb);
+        return runTestCasesSequentially(workDir, runtime, problem, testCases, memoryLimitMb, policy);
+    }
+
+    /** Thông báo lỗi cụ thể cho testcase lỗi (TestFeedback): dòng lệch với WA, tiêu đề + stderr với RE. */
+    private String feedback(SubmissionVerdict verdict, int index, TestCase testCase, ExecutionResult result,
+                            String expected, OutputPolicy policy) {
+        if (verdict == SubmissionVerdict.WA) {
+            return truncate(TestFeedback.wrongAnswer(index, testCase, result.stdout(), expected, policy));
+        }
+        // Cắt cả thông báo (tiêu đề + stderr) để không vượt MAX_ERROR_MESSAGE_CHARS; giữ đầu và đuôi stack trace.
+        return truncateHeadTail(TestFeedback.failure(verdict, index, testCase,
+                verdict == SubmissionVerdict.RE ? result.stderr() : null));
     }
 
     /**
      * Chạy tuần tự, dừng ngay tại testcase lỗi đầu tiên (fail-fast).
      */
     private JudgeOutcome runTestCasesSequentially(Path workDir, LanguageRuntime runtime, Problem problem,
-                                                  List<TestCase> testCases, int memoryLimitMb)
+                                                  List<TestCase> testCases, int memoryLimitMb, OutputPolicy policy)
             throws IOException, InterruptedException {
         SubmissionVerdict finalVerdict = SubmissionVerdict.AC;
         int passed = 0;
@@ -120,23 +132,22 @@ public class AlgorithmicJudgeStrategy implements JudgeStrategy {
         int maxMemoryKb = 0;
         String errorMessage = null;
 
-        for (TestCase testCase : testCases) {
+        for (int i = 0; i < testCases.size(); i++) {
+            TestCase testCase = testCases.get(i);
             ExecutionResult result = dockerExecutor.execute(
                     workDir, runtime,
                     readText(testCase.getInputFileUri()),
                     problem.getTimeLimitMs(),
                     memoryLimitMb);
-            SubmissionVerdict verdict = VerdictMapper.map(
-                    result, readText(testCase.getExpectedOutputUri()), memoryLimitMb * 1024);
+            String expected = readText(testCase.getExpectedOutputUri());
+            SubmissionVerdict verdict = VerdictMapper.map(result, expected, memoryLimitMb * 1024, policy);
 
             maxTimeMs = Math.max(maxTimeMs, result.runtimeMs());
             maxMemoryKb = Math.max(maxMemoryKb, result.peakMemoryKb());
 
             if (verdict != SubmissionVerdict.AC) {
                 finalVerdict = verdict;
-                if (verdict == SubmissionVerdict.RE) {
-                    errorMessage = truncateHeadTail(result.stderr());
-                }
+                errorMessage = feedback(verdict, i + 1, testCase, result, expected, policy);
                 break;
             }
             passed++;
@@ -148,7 +159,7 @@ public class AlgorithmicJudgeStrategy implements JudgeStrategy {
      * Chạy song song các testcase (tùy chọn, mặc định tắt).
      */
     private JudgeOutcome runTestCasesInParallel(Path workDir, LanguageRuntime runtime, Problem problem,
-                                                List<TestCase> testCases, int memoryLimitMb)
+                                                List<TestCase> testCases, int memoryLimitMb, OutputPolicy policy)
             throws IOException, InterruptedException {
         int parallelism = Math.max(1, Math.min(judgeProperties.getMaxParallelTestcases(), testCases.size()));
         ExecutorService pool = Executors.newFixedThreadPool(parallelism, r -> {
@@ -159,8 +170,10 @@ public class AlgorithmicJudgeStrategy implements JudgeStrategy {
 
         List<Future<CaseOutcome>> futures = new ArrayList<>(testCases.size());
         try {
-            for (TestCase testCase : testCases) {
-                futures.add(pool.submit(() -> evaluateCase(workDir, runtime, problem, testCase, memoryLimitMb)));
+            for (int i = 0; i < testCases.size(); i++) {
+                TestCase testCase = testCases.get(i);
+                int index = i + 1;
+                futures.add(pool.submit(() -> evaluateCase(workDir, runtime, problem, testCase, index, memoryLimitMb, policy)));
             }
 
             List<CaseOutcome> outcomes = new ArrayList<>(futures.size());
@@ -170,7 +183,7 @@ public class AlgorithmicJudgeStrategy implements JudgeStrategy {
                 } catch (ExecutionException e) {
                     Throwable cause = e.getCause() == null ? e : e.getCause();
                     log.error("Testcase evaluation failed in parallel mode", cause);
-                    outcomes.add(new CaseOutcome(SubmissionVerdict.SV, 0, 0, cause.getMessage()));
+                    outcomes.add(new CaseOutcome(SubmissionVerdict.SV, 0, 0, cause.getMessage(), cause.getMessage()));
                 }
             }
             return aggregate(outcomes);
@@ -180,23 +193,25 @@ public class AlgorithmicJudgeStrategy implements JudgeStrategy {
     }
 
     private CaseOutcome evaluateCase(Path workDir, LanguageRuntime runtime, Problem problem,
-                                     TestCase testCase, int memoryLimitMb) {
+                                     TestCase testCase, int index, int memoryLimitMb, OutputPolicy policy) {
         try {
             ExecutionResult result = dockerExecutor.execute(
                     workDir, runtime,
                     readText(testCase.getInputFileUri()),
                     problem.getTimeLimitMs(),
                     memoryLimitMb);
-            SubmissionVerdict verdict = VerdictMapper.map(
-                    result, readText(testCase.getExpectedOutputUri()), memoryLimitMb * 1024);
-            return new CaseOutcome(verdict, result.runtimeMs(), result.peakMemoryKb(), result.stderr());
+            String expected = readText(testCase.getExpectedOutputUri());
+            SubmissionVerdict verdict = VerdictMapper.map(result, expected, memoryLimitMb * 1024, policy);
+            String message = verdict == SubmissionVerdict.AC ? null
+                    : feedback(verdict, index, testCase, result, expected, policy);
+            return new CaseOutcome(verdict, result.runtimeMs(), result.peakMemoryKb(), result.stderr(), message);
         } catch (IOException e) {
-            return new CaseOutcome(SubmissionVerdict.RE, 0, 0, e.getMessage());
+            return new CaseOutcome(SubmissionVerdict.RE, 0, 0, e.getMessage(), e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return new CaseOutcome(SubmissionVerdict.SV, 0, 0, "Judging was interrupted");
+            return new CaseOutcome(SubmissionVerdict.SV, 0, 0, "Judging was interrupted", "Judging was interrupted");
         } catch (Exception e) {
-            return new CaseOutcome(SubmissionVerdict.RE, 0, 0, e.getMessage());
+            return new CaseOutcome(SubmissionVerdict.RE, 0, 0, e.getMessage(), e.getMessage());
         }
     }
 
@@ -218,8 +233,12 @@ public class AlgorithmicJudgeStrategy implements JudgeStrategy {
                     < VERDICT_PRIORITY.getOrDefault(finalVerdict, Integer.MAX_VALUE)) {
                 finalVerdict = outcome.verdict();
             }
-            if (finalVerdict == SubmissionVerdict.RE && errorMessage == null) {
-                errorMessage = truncateHeadTail(outcome.stderr());
+        }
+        // Thông báo của testcase đầu tiên (theo thứ tự) có verdict cuối cùng.
+        for (CaseOutcome outcome : outcomes) {
+            if (outcome.verdict() == finalVerdict && finalVerdict != SubmissionVerdict.AC) {
+                errorMessage = outcome.message();
+                break;
             }
         }
         return new JudgeOutcome(finalVerdict, passed, maxTimeMs, maxMemoryKb, errorMessage);
@@ -254,6 +273,6 @@ public class AlgorithmicJudgeStrategy implements JudgeStrategy {
     private record JudgeOutcome(SubmissionVerdict verdict, int passed, int maxTimeMs, int maxMemoryKb, String errorMessage) {
     }
 
-    private record CaseOutcome(SubmissionVerdict verdict, int runtimeMs, int peakMemoryKb, String stderr) {
+    private record CaseOutcome(SubmissionVerdict verdict, int runtimeMs, int peakMemoryKb, String stderr, String message) {
     }
 }

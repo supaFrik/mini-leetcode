@@ -128,7 +128,8 @@ class JudgeServiceTest {
                 .execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt());
         verify(submissionService).updateSubmissionVerdict(
                 eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.WA),
-                eq(200), eq(0), eq(1), eq(3), isNull());
+                eq(200), eq(0), eq(1), eq(3),
+                eq("Wrong answer on test case #2 (hidden)\nYour output differs from the expected output at line 1."));
     }
 
     @Test
@@ -235,7 +236,7 @@ class JudgeServiceTest {
 
         verify(submissionService).updateSubmissionVerdict(
                 eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.RE),
-                eq(50), eq(0), eq(0), eq(1), eq(stderr));
+                eq(50), eq(0), eq(0), eq(1), eq("Runtime error on test case #1 (hidden)\n" + stderr));
     }
 
     @Test
@@ -261,7 +262,7 @@ class JudgeServiceTest {
         String recordedError = captor.getValue();
         assertThat(recordedError).isNotNull();
         assertThat(recordedError.length()).isLessThanOrEqualTo(2000);
-        assertThat(recordedError).startsWith(head);
+        assertThat(recordedError).startsWith("Runtime error on test case #1 (hidden)\n" + head);
         assertThat(recordedError).endsWith(tail);
         assertThat(recordedError).contains("\n...\n");
     }
@@ -345,7 +346,7 @@ class JudgeServiceTest {
                 .execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt());
         verify(submissionService).updateSubmissionVerdict(
                 eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.TLE),
-                eq(200), eq(0), eq(0), eq(2), isNull());
+                eq(200), eq(0), eq(0), eq(2), eq("Time limit exceeded on test case #2 (hidden)"));
     }
 
     @Test

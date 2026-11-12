@@ -276,6 +276,25 @@ public class TestCaseService {
         }
     }
 
+    /**
+     * Đặt nhãn hiển thị trong thông báo lỗi của judge (vd. "stage 1 · two-accounts"); rỗng ⇒ bỏ nhãn.
+     * Nhãn không phải dữ liệu chấm nên đổi được cả khi bài đang PUBLISHED (testcase bị khoá).
+     */
+    @Transactional
+    public TestCaseResponse setLabel(Long problemId, Long testCaseId, String label) {
+        TestCase testCase = testCaseRepository.findById(testCaseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Test case not found with id: " + testCaseId));
+        if (!testCase.getProblem().getId().equals(problemId)) {
+            throw new IllegalArgumentException("Test case does not belong to problem: " + problemId);
+        }
+        String trimmed = label == null ? null : label.trim();
+        if (trimmed != null && trimmed.length() > 100) {
+            throw new IllegalArgumentException("Test case label must be at most 100 characters");
+        }
+        testCase.setLabel(trimmed == null || trimmed.isEmpty() ? null : trimmed);
+        return TestCaseResponse.fromEntity(testCaseRepository.save(testCase));
+    }
+
     @Transactional
     public void deleteTestCase(Long problemId, Long testCaseId) {
         TestCase testCase = testCaseRepository.findById(testCaseId)

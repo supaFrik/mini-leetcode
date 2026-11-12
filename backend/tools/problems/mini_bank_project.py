@@ -27,6 +27,9 @@ TOOLS = HERE.parent
 IMAGE = "eclipse-temurin:17-jdk"
 
 
+OUTPUT_POLICY = json.loads((PROJECT / "grading.json").read_text(encoding="utf-8")).get("output")
+
+
 def load():
     meta = json.loads((PROJECT / "project.json").read_text(encoding="utf-8"))
     rules = json.loads((PROJECT / "grading.json").read_text(encoding="utf-8"))["rules"]
@@ -94,7 +97,10 @@ def cmd_sql():
     for n, stage in enumerate(meta["stages"], start=1):
         description = (PROJECT / "stages" / f"stage-{n}.md").read_text(encoding="utf-8").removesuffix("\n")
         starters = json.dumps(starter_files(n), ensure_ascii=False)
-        grading = json.dumps({"rules": stage_rules(rules, n)}, ensure_ascii=False)
+        config = {"rules": stage_rules(rules, n)}
+        if OUTPUT_POLICY:
+            config["output"] = OUTPUT_POLICY  # cách so stdout (OutputPolicy ở judge)
+        grading = json.dumps(config, ensure_ascii=False)
         out += [
             "INSERT INTO problems (title, slug, description, difficulty, time_limit_ms, memory_limit_mb, status,"
             " created_by, problem_type, starter_templates, grading_config, created_at, updated_at) VALUES ("

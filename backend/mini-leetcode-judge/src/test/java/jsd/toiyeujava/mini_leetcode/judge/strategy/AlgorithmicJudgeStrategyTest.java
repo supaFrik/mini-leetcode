@@ -115,6 +115,33 @@ class AlgorithmicJudgeStrategyTest {
     }
 
     @Test
+    @DisplayName("Wrong answer on a public case reports the first differing line; normalized mode ignores layout")
+    void executeJudge_WrongAnswer_ReportsLineAndHonoursOutputPolicy(@TempDir Path workDir) throws Exception {
+        TestCase first = TestCase.builder().inputFileUri("in1").expectedOutputUri("out1").isHidden(false).label("spacing").build();
+        TestCase second = TestCase.builder().inputFileUri("in2").expectedOutputUri("out2").isHidden(false).label("totals").build();
+        when(testCaseRepository.findByProblemIdOrderByOrderIndexAsc(10L)).thenReturn(List.of(first, second));
+        when(submissionService.getSubmissionCode(1L)).thenReturn("print(42)");
+        stubFile("in1", "1");
+        stubFile("out1", "Total:   42");
+        stubFile("in2", "2");
+        stubFile("out2", "Total: 84");
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), eq("1"), eq(1000L), eq(256)))
+                .thenReturn(new ExecutionResult(0, false, false, "  Total: 42\n\n", 80, 1024));
+        when(dockerExecutor.execute(any(Path.class), eq(LanguageRuntime.PYTHON), eq("2"), eq(1000L), eq(256)))
+                .thenReturn(new ExecutionResult(0, false, false, "Total: 85\n", 80, 1024));
+        Problem problem = problem();
+        problem.setGradingConfig("{\"output\": {\"mode\": \"normalized\"}}");
+
+        strategy.executeJudge(message(SubmissionLanguage.PYTHON), problem, workDir);
+
+        // Case 1 chỉ khác khoảng trắng ⇒ qua ở chế độ normalized; case 2 sai nội dung ⇒ WA kèm dòng lệch.
+        verify(submissionService).updateSubmissionVerdict(
+                eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.WA), eq(80), eq(1024), eq(1), eq(2),
+                eq("Wrong answer on test case #2 (totals) — compared ignoring extra spaces and blank lines\n"
+                        + "Line 1: expected \"Total: 84\"\n        but got  \"Total: 85\""));
+    }
+
+    @Test
     @DisplayName("Executes test cases and updates verdict to AC when all match")
     void executeJudge_AllTestCasesPass_UpdatesVerdictToAC(@TempDir Path workDir) throws Exception {
         when(testCaseRepository.findByProblemIdOrderByOrderIndexAsc(10L))
