@@ -453,8 +453,18 @@ public class Slice4Milestone2SecurityStressTest {
         }
 
         @Test
-        @DisplayName("Multi-file archive with 500 small entries extracts safely without resource starvation")
+        @DisplayName("Archive with 500 entries (over MAX_ENTRIES) is rejected; 200 entries extract fine")
         void testMultiFileArchiveManyEntries(@TempDir Path sandboxDir) throws IOException {
+            ByteArrayOutputStream ok = new ByteArrayOutputStream();
+            try (ZipOutputStream zos = new ZipOutputStream(ok, StandardCharsets.UTF_8)) {
+                for (int i = 0; i < ArchiveExtractor.MAX_ENTRIES; i++) {
+                    zos.putNextEntry(new ZipEntry("ok/file_" + i + ".txt"));
+                    zos.write(("Content " + i).getBytes(StandardCharsets.UTF_8));
+                    zos.closeEntry();
+                }
+            }
+            assertEquals(ArchiveExtractor.MAX_ENTRIES, extractor.extract(ok.toByteArray(), sandboxDir).extractedFiles());
+
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try (ZipOutputStream zos = new ZipOutputStream(baos, StandardCharsets.UTF_8)) {
                 for (int i = 0; i < 500; i++) {
@@ -465,9 +475,7 @@ public class Slice4Milestone2SecurityStressTest {
                 }
             }
 
-            ArchiveExtractor.ExtractionResult result = extractor.extract(baos.toByteArray(), sandboxDir);
-            assertEquals(500, result.extractedFiles());
-            assertEquals(500, result.writtenPaths().size());
+            assertThrows(java.util.zip.ZipException.class, () -> extractor.extract(baos.toByteArray(), sandboxDir));
         }
     }
 

@@ -312,6 +312,39 @@ class WorkspaceServiceTest {
         }
 
         @Test
+        @DisplayName("Review fix: backend starter ZIP has bare Main.java at the root -> it lands in src/main/java, README stays at root")
+        void testRootJavaFilesRoutedToMavenSources() throws Exception {
+            Path projectDir = tempDir.resolve("routing-project");
+            apiClient.setStarterTemplate("mini-bank-stage-1", createZipBytes(Map.of(
+                    "README.md", "# Starter", "Main.java", "public class Main {}")));
+            apiClient.setProblem("mini-bank-stage-1", new ProblemDto(1L, "Stage 1", "mini-bank-stage-1", "# Stage 1"));
+
+            workspaceService.initializeProject(new WorkspaceInitRequest(projectDir, "plan", "1", 1, "mini-bank-stage-1"));
+
+            assertTrue(Files.isRegularFile(projectDir.resolve("src/main/java/Main.java")));
+            assertFalse(Files.exists(projectDir.resolve("Main.java")));
+            assertTrue(Files.isRegularFile(projectDir.resolve("README.md")));
+        }
+
+        @Test
+        @DisplayName("Review fix: a failed starter download leaves the existing manifest on the previous stage")
+        void testFailedFetchDoesNotMoveManifest() throws Exception {
+            Path projectDir = tempDir.resolve("progress-project");
+            apiClient.setStarterTemplate("s1", createZipBytes(Map.of("Main.java", "public class Main {}")));
+            apiClient.setProblem("s1", new ProblemDto(1L, "S1", "s1", "# S1"));
+            workspaceService.initializeProject(new WorkspaceInitRequest(projectDir, "plan", "1", 1, "s1"));
+
+            apiClient.setSimulateAuthError(true);
+            assertThrows(WorkspaceException.class, () ->
+                    workspaceService.initializeProject(new WorkspaceInitRequest(projectDir, "plan", "1", 2, "s2")));
+
+            ProjectManifest manifest = ProjectManifest.readFrom(projectDir.resolve(ProjectManifest.RELATIVE_PATH));
+            assertEquals(1, manifest.currentStage());
+            assertEquals("s1", manifest.problemSlug());
+            assertFalse(Files.exists(projectDir.resolve("stages/stage-2.md")));
+        }
+
+        @Test
         @DisplayName("Validation rejects null or invalid request fields")
         void testRequestValidation() {
             assertThrows(NullPointerException.class, () ->

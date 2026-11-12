@@ -631,7 +631,7 @@ class StudyPlanTreeModelTest {
         assertTrue(treeModel.isErrorState(), "TreeModel must enter error state on HTTP 401");
         String errorMsg = treeModel.getErrorMessage();
         assertNotNull(errorMsg);
-        assertTrue(errorMsg.contains("Authentication failed") || errorMsg.contains("expired"));
+        assertTrue(errorMsg.contains("Token hết hiệu lực"), "401 must use the spec message: " + errorMsg);
 
         // 4. Test Asynchronous refresh dispatch via performRefresh() with CountDownLatch
         server.enqueue(new MockResponse()

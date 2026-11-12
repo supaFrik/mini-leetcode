@@ -25,6 +25,7 @@ public class MiniLeetCodeConfigurable implements SearchableConfigurable {
     private MiniLeetCodeSettingsComponent mySettingsComponent;
     private final Supplier<MiniLeetCodeSettingsState> settingsStateSupplier;
     private final Supplier<MiniLeetCodePasswordSafe> passwordSafeSupplier;
+    private String cachedSavedPassword;
 
     /**
      * Default constructor invoked by IntelliJ Platform extension point.
@@ -87,13 +88,9 @@ public class MiniLeetCodeConfigurable implements SearchableConfigurable {
         String currentUrl = mySettingsComponent.getServerUrl();
         boolean urlModified = !Objects.equals(currentUrl, savedUrl);
 
-        MiniLeetCodePasswordSafe passwordSafe = passwordSafeSupplier.get();
-        String savedPassword = (passwordSafe != null) ? passwordSafe.getPassword() : null;
-        if (savedPassword == null) {
-            savedPassword = "";
-        }
+        // isModified() được gọi liên tục trên EDT: so với bản cache, không đọc credential store mỗi lần.
         String currentPassword = mySettingsComponent.getPassword();
-        boolean passwordModified = !Objects.equals(currentPassword, savedPassword);
+        boolean passwordModified = !Objects.equals(currentPassword, savedPassword());
 
         return urlModified || passwordModified;
     }
@@ -123,6 +120,17 @@ public class MiniLeetCodeConfigurable implements SearchableConfigurable {
                 passwordSafe.setPassword(password);
             }
         }
+        cachedSavedPassword = password.isBlank() ? "" : password;
+    }
+
+    /** Token đã lưu, đọc từ PasswordSafe tối đa một lần cho mỗi lần mở Settings. */
+    private String savedPassword() {
+        if (cachedSavedPassword == null) {
+            MiniLeetCodePasswordSafe passwordSafe = passwordSafeSupplier.get();
+            String saved = (passwordSafe != null) ? passwordSafe.getPassword() : null;
+            cachedSavedPassword = saved != null ? saved : "";
+        }
+        return cachedSavedPassword;
     }
 
     @Override
@@ -137,9 +145,8 @@ public class MiniLeetCodeConfigurable implements SearchableConfigurable {
                 : MiniLeetCodeSettingsComponent.DEFAULT_SERVER_URL;
         mySettingsComponent.setServerUrl(savedUrl);
 
-        MiniLeetCodePasswordSafe passwordSafe = passwordSafeSupplier.get();
-        String savedPassword = (passwordSafe != null) ? passwordSafe.getPassword() : null;
-        mySettingsComponent.setPassword(savedPassword != null ? savedPassword : "");
+        cachedSavedPassword = null; // đọc lại một lần khi mở / reset dialog
+        mySettingsComponent.setPassword(savedPassword());
 
         mySettingsComponent.clearStatus();
     }

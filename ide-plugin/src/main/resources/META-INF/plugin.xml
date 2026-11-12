@@ -84,18 +84,5 @@
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>
             <add-to-group group-id="MainToolBar" anchor="last"/>
-        </action>
-
-        <!-- Milestone 3: Local Sanity Run Action (R4, Feature 15) -->
-        <action
-            id="MiniLeetCode.SanityRun"
-            class="jsd.toiyeujava.minileetcode.plugin.actions.SanityRunAction"
-            text="Run Local Sanity Check"
-            description="Execute main() with sample input for sanity checking before submission"
-            icon="AllIcons.Actions.Execute">
-            <add-to-group group-id="EditorPopupMenu" anchor="before" relative-to-action="MiniLeetCode.CheckAction"/>
-            <add-to-group group-id="EditorTabPopupMenu" anchor="before" relative-to-action="MiniLeetCode.CheckAction"/>
-            <add-to-group group-id="MainToolBar" anchor="before" relative-to-action="MiniLeetCode.CheckAction"/>
-        </action>
-    </actions>
+        </action>    </actions>
 </idea-plugin>

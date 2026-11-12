@@ -159,7 +159,9 @@ public class MiniLeetCodeSettingsComponent {
      * or a daemon background thread when running in headless unit test mode.
      */
     public void performTestConnection() {
+        // Đọc ô nhập trên EDT; task nền chỉ nhận giá trị (Swing không an toàn đa luồng).
         String url = getServerUrl();
+        String pat = getPassword();
         if (url.isBlank()) {
             showErrorStatus("Server URL must not be blank.");
             return;
@@ -172,11 +174,11 @@ public class MiniLeetCodeSettingsComponent {
                 public void run(@NotNull ProgressIndicator indicator) {
                     indicator.setIndeterminate(true);
                     indicator.setText("Connecting to " + url + "...");
-                    performTestConnectionSync();
+                    performTestConnectionSync(url, pat);
                 }
             });
         } else {
-            Thread bgThread = new Thread(this::performTestConnectionSync, "MiniLeetCode-TestConnection");
+            Thread bgThread = new Thread(() -> performTestConnectionSync(url, pat), "MiniLeetCode-TestConnection");
             bgThread.setDaemon(true);
             bgThread.start();
         }
@@ -188,9 +190,11 @@ public class MiniLeetCodeSettingsComponent {
      * Can be invoked directly in headless unit tests for deterministic assertions.
      */
     public void performTestConnectionSync() {
-        String url = getServerUrl();
-        String pat = getPassword();
+        performTestConnectionSync(getServerUrl(), getPassword());
+    }
 
+    /** Bản dùng trong task nền: chỉ nhận giá trị đã đọc trên EDT, không chạm vào Swing component. */
+    public void performTestConnectionSync(String url, String pat) {
         if (url.isBlank()) {
             showErrorStatus("Server URL must not be blank.");
             return;

@@ -3,8 +3,6 @@ package jsd.toiyeujava.minileetcode.plugin.actions;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.project.Project;
 import jsd.toiyeujava.minileetcode.plugin.model.*;
-import jsd.toiyeujava.minileetcode.plugin.runner.SanityRunResult;
-import jsd.toiyeujava.minileetcode.plugin.runner.SanityRunner;
 import jsd.toiyeujava.minileetcode.plugin.ui.ItemTreeNode;
 import jsd.toiyeujava.minileetcode.plugin.ui.PlanTreeNode;
 import jsd.toiyeujava.minileetcode.plugin.ui.StageTreeNode;
@@ -35,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Empirical Adversarial Test Suite for Action Lifecycle, Concurrency, and Fault Injection.
  * <p>
  * Stresses:
- * 1. Concurrency & Reentrancy across 20 threads (CheckAction, SanityRunAction, CheckHandlerRegistry volatile swapping).
+ * 1. Concurrency & Reentrancy across 20 threads (CheckAction, CheckHandlerRegistry volatile swapping).
  * 2. Edge Cases & Fault Injection (corrupted YAML syntax/missing keys/non-numeric stage, deeply nested paths,
  *    deleted src/main/java and pom.xml, rapid directory chooser cancellations, and locked stage guards).
  */
@@ -185,56 +183,6 @@ public class ActionConcurrencyStressTest {
         }
 
         @Test
-        @DisplayName("Stress: 20 concurrent threads running SanityRunAction on the same project root")
-        void testConcurrentSanityRunExecution20Threads() throws Exception {
-            createValidProjectLayout(projectDir, 1, "mini-bank-stage-1");
-
-            int threadCount = 20;
-            ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-            CountDownLatch readyLatch = new CountDownLatch(threadCount);
-            CountDownLatch startLatch = new CountDownLatch(1);
-            List<Future<SanityRunResult>> futures = new ArrayList<>();
-
-            SanityRunner.SubprocessExecutor mockExec = (w, c, m, s, t) ->
-                    new SanityRunResult(0, "ALL_PASSED_STRESS", "", false);
-            SanityRunner runner = new SanityRunner(Duration.ofSeconds(5), mockExec);
-            SanityRunAction sanityRunAction = new SanityRunAction(runner, notificationPresenter);
-
-            for (int i = 0; i < threadCount; i++) {
-                futures.add(executor.submit(() -> {
-                    readyLatch.countDown();
-                    startLatch.await();
-                    return sanityRunAction.executeSanityRunSync(null, projectDir);
-                }));
-            }
-
-            readyLatch.await(5, TimeUnit.SECONDS);
-            startLatch.countDown();
-
-            List<SanityRunResult> results = new ArrayList<>();
-            for (Future<SanityRunResult> future : futures) {
-                results.add(future.get(10, TimeUnit.SECONDS));
-            }
-            executor.shutdown();
-            assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
-
-            assertEquals(threadCount, results.size());
-            for (SanityRunResult r : results) {
-                assertTrue(r.isSuccess());
-                assertEquals(0, r.exitCode());
-                assertEquals("ALL_PASSED_STRESS", r.stdout());
-                assertFalse(r.timedOut());
-            }
-
-            assertEquals(threadCount, notificationPresenter.notifications.size());
-            for (RecordingNotificationPresenter.NotificationRecord nr : notificationPresenter.notifications) {
-                assertEquals(NotificationType.INFORMATION, nr.type());
-                assertEquals("Sanity Run Passed", nr.title());
-                assertTrue(nr.content().contains("ALL_PASSED_STRESS"));
-            }
-        }
-
-        @Test
         @DisplayName("Stress: Dynamic swapping of CheckHandlerRegistry.setHandler() under concurrent reader execution")
         void testCheckHandlerRegistryDynamicSwappingUnderConcurrentExecution() throws Exception {
             createValidProjectLayout(projectDir, 1, "mini-bank-stage-1");
@@ -374,11 +322,6 @@ public class ActionConcurrencyStressTest {
             assertEquals(1, notificationPresenter.notifications.size());
             assertEquals(NotificationType.ERROR, notificationPresenter.notifications.get(0).type());
 
-            // SanityRunAction also gracefully handles corrupted manifest
-            SanityRunAction sanityAction = new SanityRunAction(new SanityRunner(), notificationPresenter);
-            SanityRunResult sanityResult = sanityAction.executeSanityRunSync(null, projectDir);
-            assertFalse(sanityResult.isSuccess());
-            assertEquals(1, sanityResult.exitCode());
         }
 
         @Test
@@ -489,7 +432,7 @@ public class ActionConcurrencyStressTest {
         }
 
         @Test
-        @DisplayName("Fault: Deleted src/main/java after manifest creation produces WARNING in CheckAction and error in SanityRun")
+        @DisplayName("Fault: Deleted src/main/java after manifest creation produces WARNING in CheckAction")
         void testDeletedSrcMainJavaAfterProjectCreation() throws IOException {
             createValidProjectLayout(projectDir, 1, "mini-bank-stage-1");
 
@@ -508,14 +451,6 @@ public class ActionConcurrencyStressTest {
             assertEquals(1, notificationPresenter.notifications.size());
             assertEquals(NotificationType.WARNING, notificationPresenter.notifications.get(0).type());
 
-            // SanityRunAction: Fails cleanly with exitCode 1 and "Source directory not found"
-            SanityRunAction sanityRunAction = new SanityRunAction(new SanityRunner(), notificationPresenter);
-            SanityRunResult sanityResult = sanityRunAction.executeSanityRunSync(null, projectDir);
-
-            assertFalse(sanityResult.isSuccess());
-            assertEquals(1, sanityResult.exitCode());
-            assertTrue(sanityResult.stderr().contains("Source directory not found")
-                    || sanityResult.stdout().contains("Source directory not found"));
         }
 
         @Test

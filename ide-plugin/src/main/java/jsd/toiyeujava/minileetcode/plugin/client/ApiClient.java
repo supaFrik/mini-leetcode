@@ -281,7 +281,8 @@ public class ApiClient {
     private static HttpClient createDefaultHttpClient(Duration connectTimeout) {
         return HttpClient.newBuilder()
                 .connectTimeout(connectTimeout != null ? connectTimeout : DEFAULT_TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NORMAL)
+                // Backend không redirect; không theo redirect để header Authorization (PAT) không bị gửi sang host khác.
+                .followRedirects(HttpClient.Redirect.NEVER)
                 .build();
     }
 }

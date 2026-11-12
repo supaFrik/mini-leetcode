@@ -158,6 +158,13 @@ public class OpenStageAction extends DumbAwareAction {
                     NotificationType.WARNING);
             return;
         }
+        // Guard: stage đang bảo trì (đề không PUBLISHED) — không tải được starter / đề (spec Error Handling)
+        if (!targetStage.isPublished()) {
+            notificationPresenter.showNotification(project, "Mini LeetCode",
+                    "Stage " + targetStage.getStageNo() + " đang được cập nhật, thử lại sau.",
+                    NotificationType.WARNING);
+            return;
+        }
 
         // Prompt user for destination directory
         Path defaultDir = project != null && project.getBasePath() != null
@@ -259,13 +266,15 @@ public class OpenStageAction extends DumbAwareAction {
                     return child;
                 }
             }
+            // Stage hiện tại = stage đầu tiên chưa DONE và chưa LOCKED (không quay lại stage đã xong)
             for (StageTreeNode child : itemNode.getStageNodes()) {
-                if (child.isNever() || !child.isLocked()) {
+                if (!child.isDone() && !child.isLocked()) {
                     return child;
                 }
             }
+            // Đã xong cả project: mở stage cuối để xem lại
             if (!itemNode.getStageNodes().isEmpty()) {
-                return itemNode.getStageNodes().get(0);
+                return itemNode.getStageNodes().get(itemNode.getStageNodes().size() - 1);
             }
         }
         return null;
@@ -295,17 +304,37 @@ public class OpenStageAction extends DumbAwareAction {
     }
 
     private void handleError(@Nullable Project project, @NotNull Throwable t) {
+        // WorkspaceService bọc lỗi API trong WorkspaceException: tìm nguyên nhân gốc để báo đúng thông điệp spec.
+        AuthenticationException auth = findCause(t, AuthenticationException.class);
+        MiniLeetCodeApiException api = findCause(t, MiniLeetCodeApiException.class);
+        if (auth != null) {
+            notificationPresenter.showNotification(project, "Mini LeetCode",
+                    "Token hết hiệu lực, tạo token mới trên web rồi dán vào Settings › Tools › Mini LeetCode.",
+                    NotificationType.ERROR);
+            ErrorMessages.openSettings(project);
+            return;
+        }
         String message;
-        if (t instanceof AuthenticationException ae) {
-            message = "Authentication failed: " + ae.getMessage();
-        } else if (t instanceof MiniLeetCodeApiException apiEx) {
-            message = "API error (" + apiEx.getStatusCode() + "): " + apiEx.getMessage();
+        if (api != null && api.getStatusCode() == 403) {
+            message = "Thao tác này chỉ làm được trên web.";
+        } else if (api != null && api.getStatusCode() == 404) {
+            message = "Stage đang được cập nhật hoặc đã bị gỡ, bấm Refresh rồi thử lại.";
         } else if (t instanceof WorkspaceException we) {
             message = we.getMessage();
         } else {
             message = "Failed to open stage: " + (t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName());
         }
         notificationPresenter.showNotification(project, "Mini LeetCode", message, NotificationType.ERROR);
+    }
+
+    @Nullable
+    static <T extends Throwable> T findCause(@Nullable Throwable t, @NotNull Class<T> type) {
+        for (Throwable c = t; c != null; c = (c.getCause() == c ? null : c.getCause())) {
+            if (type.isInstance(c)) {
+                return type.cast(c);
+            }
+        }
+        return null;
     }
 
     @Nullable

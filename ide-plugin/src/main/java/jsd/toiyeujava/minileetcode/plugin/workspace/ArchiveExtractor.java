@@ -25,6 +25,10 @@ import java.util.zip.ZipInputStream;
  */
 public class ArchiveExtractor {
 
+    /** Chống zip bomb; cùng mức với giới hạn bài nộp phía backend (100 entry, 20 MB). */
+    public static final int MAX_ENTRIES = 200;
+    public static final long MAX_TOTAL_BYTES = 20L * 1024 * 1024;
+
     /**
      * Immutable outcome of an extraction operation.
      *
@@ -113,6 +117,8 @@ public class ArchiveExtractor {
 
         int extractedFiles = 0;
         int skippedFiles = 0;
+        int entryCount = 0;
+        long totalBytes = 0;
         List<Path> writtenPaths = new ArrayList<>();
         InputStream markable = zipStream.markSupported() ? zipStream : new java.io.BufferedInputStream(zipStream);
         markable.mark(4);
@@ -144,7 +150,17 @@ public class ArchiveExtractor {
                     }
                 }
 
-                Path target = normalizedTargetDir.resolve(normalizedName).normalize();
+                if (++entryCount > MAX_ENTRIES) {
+                    throw new java.util.zip.ZipException("Archive has more than " + MAX_ENTRIES + " entries");
+                }
+
+                Path target;
+                try {
+                    target = normalizedTargetDir.resolve(normalizedName).normalize();
+                } catch (java.nio.file.InvalidPathException e) {
+                    // vd. "aux.java" hoặc tên có ':' trên Windows
+                    throw new IOException("Archive entry has an invalid file name on this OS: " + rawName, e);
+                }
 
                 // Strict Zip Slip boundary verification
                 if (!target.startsWith(normalizedTargetDir)) {
@@ -179,7 +195,15 @@ public class ArchiveExtractor {
 
                 // Write file contents safely using CREATE_NEW
                 try (OutputStream out = Files.newOutputStream(target, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
-                    zis.transferTo(out);
+                    byte[] buffer = new byte[8192];
+                    int read;
+                    while ((read = zis.read(buffer)) != -1) {
+                        totalBytes += read;
+                        if (totalBytes > MAX_TOTAL_BYTES) {
+                            throw new java.util.zip.ZipException("Archive expands beyond " + MAX_TOTAL_BYTES + " bytes");
+                        }
+                        out.write(buffer, 0, read);
+                    }
                 }
 
                 extractedFiles++;

@@ -188,18 +188,16 @@ public class RefreshPlansAction extends DumbAwareAction {
                     if (detail != null) {
                         details.add(detail);
                     }
+                } catch (AuthenticationException authEx) {
+                    throw authEx; // token hết hạn giữa chừng: báo lỗi xác thực, không hiện plan rỗng
+                } catch (MiniLeetCodeApiException apiEx) {
+                    if (apiEx.getStatusCode() == 404) {
+                        continue; // plan vừa bị gỡ / chuyển về DRAFT giữa hai lần gọi: bỏ khỏi cây
+                    }
+                    details.add(fallbackDetail(summary));
                 } catch (Exception detailEx) {
-                    // Fall back to minimal PlanDetail synthesized from PlanSummary
-                    details.add(new PlanDetail(
-                            summary.id(),
-                            summary.slug(),
-                            summary.title(),
-                            summary.description(),
-                            summary.status(),
-                            summary.stageCount(),
-                            summary.doneStages(),
-                            List.of()
-                    ));
+                    // Lỗi mạng tạm thời: giữ plan với thông tin tóm tắt
+                    details.add(fallbackDetail(summary));
                 }
             }
 
@@ -210,10 +208,8 @@ public class RefreshPlansAction extends DumbAwareAction {
             });
 
         } catch (AuthenticationException e) {
-            String msg = (e.getMessage() != null && !e.getMessage().isBlank())
-                    ? e.getMessage()
-                    : "Personal access token is invalid or expired (HTTP 401).";
-            reportError(project, "Authentication failed: " + msg);
+            reportError(project, "Token hết hiệu lực, tạo token mới trên web rồi dán vào Settings › Tools › Mini LeetCode.");
+            openSettings(project);
         } catch (MiniLeetCodeApiException e) {
             String msg = (e.getMessage() != null && !e.getMessage().isBlank())
                     ? e.getMessage()
@@ -226,6 +222,19 @@ public class RefreshPlansAction extends DumbAwareAction {
             if (inFlightRefreshes.get() <= 0) {
                 isRefreshing.set(false);
             }
+        }
+    }
+
+    private static PlanDetail fallbackDetail(PlanSummary summary) {
+        return new PlanDetail(summary.id(), summary.slug(), summary.title(), summary.description(), summary.status(),
+                summary.stageCount(), summary.doneStages(), List.of());
+    }
+
+    private static void openSettings(@Nullable Project project) {
+        Application app = ApplicationManager.getApplication();
+        if (app != null && !app.isHeadlessEnvironment()) {
+            app.invokeLater(() -> com.intellij.openapi.options.ShowSettingsUtil.getInstance()
+                    .showSettingsDialog(project, jsd.toiyeujava.minileetcode.plugin.settings.MiniLeetCodeConfigurable.class));
         }
     }
 

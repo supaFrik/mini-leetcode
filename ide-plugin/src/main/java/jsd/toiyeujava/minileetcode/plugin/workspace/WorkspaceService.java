@@ -102,17 +102,22 @@ public class WorkspaceService {
             throw new WorkspaceException("Failed to create target directory: " + targetDir, e);
         }
 
-        // 2. Generate pom.xml if not present
+        // 2. Mọi lời gọi mạng chạy TRƯỚC khi ghi bất cứ file nào: lỗi 401/404/mạng không để lại
+        //    workspace dở dang hay manifest trỏ sai stage.
+        byte[] starterZip = fetchStarterTemplate(request);
+        ProblemDto problem = fetchProblem(request);
+
+        // 3. Generate pom.xml if not present
         ensurePomXml(targetDir, request);
 
-        // 3. Write .mlc/project.yaml
+        // 4. Extract starter template; file .java ở gốc ZIP được đưa vào src/main/java (pom dùng layout Maven chuẩn)
+        ArchiveExtractor.ExtractionResult extractionResult = extractStarterTemplate(targetDir, request, starterZip);
+
+        // 5. Write stages/stage-N.md (PL-4)
+        Path stageMarkdownPath = writeStageMarkdown(targetDir, request, problem);
+
+        // 6. Write .mlc/project.yaml cuối cùng: chỉ chuyển stage khi mọi bước trên đã xong
         Path manifestPath = writeManifest(targetDir, request);
-
-        // 4. Download and extract starter template archive
-        ArchiveExtractor.ExtractionResult extractionResult = extractStarterTemplate(targetDir, request);
-
-        // 5. Fetch problem statement and write stages/stage-N.md (PL-4)
-        Path stageMarkdownPath = writeStageMarkdown(targetDir, request);
 
         // 6. Invoke ProjectOpener (PL-3)
         try {
@@ -195,10 +200,9 @@ public class WorkspaceService {
         return manifestPath;
     }
 
-    private ArchiveExtractor.ExtractionResult extractStarterTemplate(Path targetDir, WorkspaceInitRequest request) {
-        byte[] zipBytes;
+    private byte[] fetchStarterTemplate(WorkspaceInitRequest request) {
         try {
-            zipBytes = apiClient.getStarterTemplate(request.problemSlug());
+            return apiClient.getStarterTemplate(request.problemSlug());
         } catch (AuthenticationException ae) {
             throw new WorkspaceException("Authentication failed while fetching starter template (PAT invalid/expired): " + ae.getMessage(), ae);
         } catch (MiniLeetCodeApiException apiEx) {
@@ -206,13 +210,27 @@ public class WorkspaceService {
         } catch (Exception e) {
             throw new WorkspaceException("Network/client error while fetching starter template for '" + request.problemSlug() + "': " + e.getMessage(), e);
         }
+    }
 
+    private ProblemDto fetchProblem(WorkspaceInitRequest request) {
+        try {
+            return apiClient.getProblem(request.problemSlug());
+        } catch (AuthenticationException ae) {
+            throw new WorkspaceException("Authentication failed while fetching problem description (PAT invalid/expired): " + ae.getMessage(), ae);
+        } catch (MiniLeetCodeApiException apiEx) {
+            throw new WorkspaceException("API error while fetching problem description for '" + request.problemSlug() + "': " + apiEx.getMessage(), apiEx);
+        } catch (Exception e) {
+            throw new WorkspaceException("Network/client error while fetching problem description for '" + request.problemSlug() + "': " + e.getMessage(), e);
+        }
+    }
+
+    private ArchiveExtractor.ExtractionResult extractStarterTemplate(Path targetDir, WorkspaceInitRequest request, byte[] zipBytes) {
         if (zipBytes == null || zipBytes.length == 0) {
             return new ArchiveExtractor.ExtractionResult(0, 0, java.util.List.of());
         }
 
         try {
-            return archiveExtractor.extract(zipBytes, targetDir);
+            return archiveExtractor.extractRoutingJava(zipBytes, targetDir);
         } catch (SecurityException se) {
             throw new WorkspaceException("Archive security violation (Zip Slip detected) in starter template for problem '"
                     + request.problemSlug() + "': " + se.getMessage(), se);
@@ -221,7 +239,7 @@ public class WorkspaceService {
         }
     }
 
-    private Path writeStageMarkdown(Path targetDir, WorkspaceInitRequest request) {
+    private Path writeStageMarkdown(Path targetDir, WorkspaceInitRequest request, ProblemDto problem) {
         Path stagesDir = targetDir.resolve(STAGES_DIR_NAME);
         try {
             Files.createDirectories(stagesDir);
@@ -230,17 +248,6 @@ public class WorkspaceService {
         }
 
         Path stageMarkdownPath = stagesDir.resolve("stage-" + request.stageNumber() + ".md");
-
-        ProblemDto problem;
-        try {
-            problem = apiClient.getProblem(request.problemSlug());
-        } catch (AuthenticationException ae) {
-            throw new WorkspaceException("Authentication failed while fetching problem description (PAT invalid/expired): " + ae.getMessage(), ae);
-        } catch (MiniLeetCodeApiException apiEx) {
-            throw new WorkspaceException("API error while fetching problem description for '" + request.problemSlug() + "': " + apiEx.getMessage(), apiEx);
-        } catch (Exception e) {
-            throw new WorkspaceException("Network/client error while fetching problem description for '" + request.problemSlug() + "': " + e.getMessage(), e);
-        }
 
         String markdownContent;
         if (problem != null && problem.description() != null && !problem.description().isBlank()) {
