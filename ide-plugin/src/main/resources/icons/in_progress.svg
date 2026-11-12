@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <!-- In Progress: Blue semi-filled progress indicator -->
+  <!-- Left half solid fill -->
+  <path d="M8 2A6 6 0 0 0 8 14Z" fill="#3592C4"/>
+  <!-- Right half stroke boundary -->
+  <path d="M8 2A6 6 0 0 1 8 14" stroke="#3592C4" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
