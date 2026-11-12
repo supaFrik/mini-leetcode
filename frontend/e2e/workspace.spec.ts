@@ -56,12 +56,39 @@ test.describe("Problem Solving Workspace E2E Suite", () => {
     }
   });
 
-  test("executes code Run action and verifies testcase output display", async ({ page }) => {
+  // Từ khi có console live (specs/live-terminal-console.spec.md), Run với Java chạy main trong tab Console
+  // qua WebSocket; ngôn ngữ console chưa hỗ trợ (Python) vẫn chạy thử testcase công khai qua HTTP /run.
+  test("Java Run starts the program in the Console tab over WebSocket", async ({ page }) => {
+    const frames: Array<Record<string, unknown>> = [];
+    await page.routeWebSocket(/\/api\/v1\/console\/ws/, (ws) => {
+      ws.onMessage((raw) => {
+        const frame = JSON.parse(String(raw));
+        frames.push(frame);
+        if (frame.type === "start") {
+          ws.send(JSON.stringify({ type: "stdout", data: "hello from main\n" }));
+          ws.send(JSON.stringify({ type: "exit", code: 0, elapsedMs: 900, reason: null }));
+          ws.close();
+        }
+      });
+    });
     await page.goto("/problems/two-sum", { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: "Run", exact: true }).click();
 
-    // Locate and click the Run button
-    const runBtn = page.getByRole("button", { name: "Run" });
-    await expect(runBtn).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Console" })).toHaveAttribute("data-state", "active");
+    const log = page.getByRole("log", { name: "Console output" });
+    await expect(log).toContainText("hello from main");
+    await expect(log).toContainText("Process finished with exit code 0");
+    expect(frames.find((f) => f.type === "start")).toMatchObject({ language: "JAVA" });
+  });
+
+  test("Python Run executes public testcases over HTTP and shows the result", async ({ page }) => {
+    await page.goto("/problems/two-sum", { waitUntil: "domcontentloaded" });
+    const langTrigger = page.getByRole("combobox", { name: /Language/i }).or(page.getByLabel("Language"));
+    await langTrigger.click();
+    await page.getByRole("option", { name: /Python/i }).click();
+    await expect(page.getByText("solution.py")).toBeVisible();
+
+    const runBtn = page.getByRole("button", { name: "Run", exact: true });
     await expect(runBtn).toBeEnabled();
     await Promise.all([
       page.waitForResponse((r) => r.url().includes("/run")),

@@ -272,12 +272,14 @@ ide-plugin/                         Gradle (tách khỏi Maven backend), Intelli
 - [x] `/study-plans` (thẻ plan + tiến độ) và `/study-plans/[slug]` (mục, stage: link tới workspace, LOCKED / bảo trì không mở được); mục "Study Plans" trên header
 - [x] `/ide`: tải plugin ZIP (`npm run plugin:copy`), hướng dẫn cài, tạo token (hiện một lần + Copy), danh sách + thu hồi; menu tài khoản › IntelliJ plugin
 - [x] Mock (`USE_MOCK`) + e2e `study-plans.spec.ts` (5 test)
-- [ ] Màn hình INSTRUCTOR soạn plan (hiện soạn qua API / Swagger + seed)
+- [x] `/admin/study-plans`: danh sách mọi plan (trạng thái, tác giả; plan của người khác chỉ đọc, ADMIN sửa tất cả), trình soạn: tiêu đề + slug tự sinh, mục Project / Practice, tìm đề PUBLISHED, sắp thứ tự bằng ↑ ↓, lưu, Publish / Draft / Archive, xoá. Backend trả thêm `createdById`, `createdByUsername`
+- [x] e2e `admin-study-plans.spec.ts` (4 test). Khi nhánh admin-console-authoring merge: thêm "Study plans" vào `AdminNav`
 
-### Slice 7 — Kiểm thử
-- [ ] Integration test backend cho mọi AC phía server
-- [ ] Test plugin bằng `BasePlatformTestCase` cho ghép file (AC-004) và xử lý lỗi
-- [ ] E2E Playwright: web plan → nộp → tiến độ
+### Slice 7 — Kiểm thử (gần xong)
+- [x] Integration test backend cho AC phía server (`StudyPlanIntegrationTest`, 12 test)
+- [x] Test plugin: ghép file không ghi đè (AC-004), Check / Next stage, xử lý lỗi — JUnit + MockWebServer (381 test), chưa dùng `BasePlatformTestCase`
+- [x] E2E Playwright: trang plan, token, soạn plan; toàn bộ suite 135/135 qua trên bản build production (8 test Run cũ viết lại theo console live)
+- [ ] Chạy thật đầu-cuối (Docker + seed Mini Bank + plugin): nộp lời giải tham chiếu ⇒ AC cả 5 stage
 
 ## Out of Scope
 - CLI, extension VS Code, JetBrains Marketplace, kho plugin tự cập nhật, IDE JetBrains khác.

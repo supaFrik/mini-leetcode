@@ -42,7 +42,7 @@ async function serveAuthoring(page: Page, initial: Plan[] = []) {
     if (method !== "GET") writes.push({ method, path, body });
 
     if (path === "/api/v1/study-plans" && method === "GET") {
-      return ok([...plans.values()].map(({ items, ...s }) => ({ ...s, itemCount: items.length })));
+      return ok(Array.from(plans.values()).map(({ items, ...s }) => ({ ...s, itemCount: items.length })));
     }
     if (path === "/api/v1/study-plans" && method === "POST") {
       const plan = toDetail(body.slug, body);
