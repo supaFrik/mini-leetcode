@@ -268,9 +268,11 @@ ide-plugin/                         Gradle (tách khỏi Maven backend), Intelli
 - [x] `NextStageAction`: đọc manifest ⇒ plan ⇒ stage kế tiếp ⇒ tải vào cùng thư mục (không ghi đè file) ⇒ mở đề
 - [x] Test: `SubmitCheckAndNextStageTest` (MockWebServer); toàn bộ plugin 381 test qua
 - [ ] Chạy thật end-to-end (cần Docker + seed Mini Bank): Check lời giải tham chiếu ⇒ AC cả 5 stage
-### Slice 6 — Web
-- [ ] Trang `/study-plans` + chi tiết plan; trang quản lý token; trang tải plugin ZIP + hướng dẫn
-- [ ] Màn hình INSTRUCTOR soạn plan (trước đó soạn qua API / Swagger + seed)
+### Slice 6 — Web (học viên ✅)
+- [x] `/study-plans` (thẻ plan + tiến độ) và `/study-plans/[slug]` (mục, stage: link tới workspace, LOCKED / bảo trì không mở được); mục "Study Plans" trên header
+- [x] `/ide`: tải plugin ZIP (`npm run plugin:copy`), hướng dẫn cài, tạo token (hiện một lần + Copy), danh sách + thu hồi; menu tài khoản › IntelliJ plugin
+- [x] Mock (`USE_MOCK`) + e2e `study-plans.spec.ts` (5 test)
+- [ ] Màn hình INSTRUCTOR soạn plan (hiện soạn qua API / Swagger + seed)
 
 ### Slice 7 — Kiểm thử
 - [ ] Integration test backend cho mọi AC phía server

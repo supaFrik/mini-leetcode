@@ -12,6 +12,7 @@ import type { PollFetch } from "./polling";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
+  AccessToken, CreatedAccessToken, StudyPlanDetail, StudyPlanSummary,
 } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
@@ -311,3 +312,31 @@ export async function saveDraft(cid: number, pid: number, lang: Language, value:
   if (USE_MOCK) return mock.saveDraft(cid, pid, lang, value);
   await api(`/api/v1/contests/${cid}/problems/${pid}/draft`, { method: "PUT", body: JSON.stringify({ language: lang, code: value }) });
 }
+
+// ---------- Study plans (specs/study-plan.spec.md) ----------
+// Backend trả thẳng JSON (không bọc ApiResponse); `api()` xử lý được cả hai dạng.
+export async function fetchStudyPlans(): Promise<StudyPlanSummary[]> {
+  if (USE_MOCK) return mock.listStudyPlans();
+  return (await api<StudyPlanSummary[]>("/api/v1/study-plans")) ?? [];
+}
+export async function fetchStudyPlan(slug: string): Promise<StudyPlanDetail> {
+  if (USE_MOCK) return mock.getStudyPlan(slug);
+  return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}`);
+}
+
+// ---------- Personal access tokens (plugin IntelliJ) ----------
+export async function fetchAccessTokens(): Promise<AccessToken[]> {
+  if (USE_MOCK) return mock.listTokens();
+  return (await api<AccessToken[]>("/api/v1/me/tokens")) ?? [];
+}
+export async function createAccessToken(name: string, expiresInDays: number): Promise<CreatedAccessToken> {
+  if (USE_MOCK) return mock.createToken(name, expiresInDays);
+  return api<CreatedAccessToken>("/api/v1/me/tokens", { method: "POST", body: JSON.stringify({ name, expiresInDays }) });
+}
+export async function revokeAccessToken(id: number): Promise<void> {
+  if (USE_MOCK) return mock.revokeToken(id);
+  await api(`/api/v1/me/tokens/${id}`, { method: "DELETE" });
+}
+
+/** File ZIP của plugin; `npm run plugin:copy` chép bản build vào public/downloads. */
+export const PLUGIN_DOWNLOAD_URL = process.env.NEXT_PUBLIC_PLUGIN_DOWNLOAD_URL || "/downloads/mini-leetcode-intellij.zip";

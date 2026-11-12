@@ -160,3 +160,33 @@ export interface ProctorReportRow {
   userId: number; username: string; status: ParticipantStatus; violationCount: number; lastEventAt?: string;
 }
 export interface PlagiarismRow { id: number; problemId: number; problemTitle: string; userA: string; userB: string; similarity: number }
+
+// ===== Study Plan (specs/study-plan.spec.md) =====
+/** Trạng thái một stage với người đang xem — server suy ra từ submissions. */
+export type StageStatus = "LOCKED" | "NEVER" | "IN_PROGRESS" | "DONE";
+export type StudyPlanStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type StudyPlanItemKind = "PROJECT" | "PROBLEM";
+export interface StudyPlanSummary {
+  id: number; slug: string; title: string; description?: string | null; status: StudyPlanStatus;
+  itemCount: number; stageCount: number; doneStages: number;
+}
+/** `published = false`: đề đang bảo trì, không mở được dù vẫn giữ trạng thái học. */
+export interface StudyPlanStage {
+  stageNo: number; problemId: number; slug: string | null; title: string | null; difficulty: Difficulty | null;
+  problemType: ProblemType | null; published: boolean; status: StageStatus;
+}
+export interface StudyPlanItem {
+  id: number; position: number; kind: StudyPlanItemKind; title: string; description?: string | null;
+  done: boolean; stages: StudyPlanStage[];
+}
+export interface StudyPlanDetail {
+  id: number; slug: string; title: string; description?: string | null; status: StudyPlanStatus;
+  stageCount: number; doneStages: number; items: StudyPlanItem[];
+}
+
+// ===== Personal Access Token cho plugin IntelliJ =====
+export interface AccessToken {
+  id: number; name: string; createdAt: string; expiresAt: string; lastUsedAt?: string | null; revoked: boolean;
+}
+/** `token` chỉ có đúng một lần, ngay khi tạo. */
+export interface CreatedAccessToken { token: string; info: AccessToken }

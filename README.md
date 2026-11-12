@@ -138,7 +138,7 @@ npm run test:e2e
 ### Step 6 — Sample content and the IntelliJ plugin (optional)
 
 - Sample problems, testcases and the *OOP với Java* study plan: see [backend/tools/README.md](backend/tools/README.md).
-- Build the plugin with `cd ide-plugin && ./gradlew buildPlugin`, then install `ide-plugin/build/distributions/*.zip` via *Settings › Plugins › ⚙ › Install Plugin from Disk* (IntelliJ IDEA 2025.3 or newer).
+- Build the plugin with `cd ide-plugin && ./gradlew buildPlugin`, then `cd frontend && npm run plugin:copy` so the **IntelliJ plugin** page (`/ide`) serves the ZIP. That page walks students through installing it (*Settings › Plugins › ⚙ › Install Plugin from Disk*, IntelliJ IDEA 2025.3 or newer) and creating a personal access token.
 
 ---
 

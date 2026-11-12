@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, History, List, LogOut, Trophy, type LucideIcon } from "lucide-react";
+import { Bell, History, List, LogOut, Plug, Route, Trophy, type LucideIcon } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { clearTokens } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -57,6 +57,7 @@ export function SiteHeader() {
 
   const entries: NavEntry[] = [
     { label: "Problems", icon: List, href: "/problems", active: pathname.startsWith("/problems"), disabledReason: lockReason },
+    { label: "Study Plans", icon: Route, href: "/study-plans", active: pathname.startsWith("/study-plans"), disabledReason: lockReason },
     { label: "Contest", icon: Trophy, href: "/exam", active: pathname.startsWith("/exam") },
     { label: "Submissions", icon: History, href: "/submissions", active: pathname.startsWith("/submissions") },
   ];
@@ -102,6 +103,10 @@ export function SiteHeader() {
                     <div className={s.menuRole}>{user.role ?? "USER"}</div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => router.push("/ide")}>
+                    <Plug className="mr-2 h-4 w-4" aria-hidden="true" />
+                    IntelliJ plugin
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={signOut}>
                     <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
                     Sign out

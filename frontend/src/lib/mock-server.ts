@@ -16,6 +16,7 @@ import { TEMPLATES } from "./templates";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ContestProblem, Draft, Language, LeaderboardCell, LeaderboardRow, Page,
   ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
+  AccessToken, CreatedAccessToken, StudyPlanDetail, StudyPlanStage, StudyPlanSummary,
 } from "@/types/api";
 
 const sleep = (ms = 150) => new Promise<void>((r) => setTimeout(r, ms));
@@ -479,4 +480,53 @@ export async function plagiarism(contestId: number): Promise<PlagiarismRow[]> {
     { id: 1, problemId: 1, problemTitle: "Two Sum", userA: "alice", userB: "bob", similarity: 0.93 },
     { id: 2, problemId: 2, problemTitle: "Valid Parentheses", userA: "charlie", userB: "david", similarity: 0.84 },
   ];
+}
+
+// ---------- Study plans (giống seed "OOP với Java" ở backend/tools/problems/projects/mini-bank) ----------
+const bankStage = (n: number, title: string, status: StudyPlanStage["status"]): StudyPlanStage => ({
+  stageNo: n, problemId: 100 + n, slug: `mini-bank-stage-${n}`, title: `Mini Bank ${n}/5 — ${title}`,
+  difficulty: n <= 2 ? "EASY" : "MEDIUM", problemType: "OOP_GRINDING", published: true, status,
+});
+const MOCK_PLAN: StudyPlanDetail = {
+  id: 1, slug: "oop-voi-java", title: "OOP với Java", status: "PUBLISHED", stageCount: 7, doneStages: 2,
+  description: "Từ lớp và đóng gói tới kế thừa, đa hình, exception: hai bài luyện ngắn rồi xây một ngân hàng mini chạy trên console qua 5 stage.",
+  items: [
+    { id: 1, position: 0, kind: "PROBLEM", title: "Luyện: lớp & đóng gói", done: true, stages: [
+      { stageNo: 1, problemId: 13, slug: "bank-account-class", title: "Bank Account Class", difficulty: "EASY", problemType: "ALGORITHMIC", published: true, status: "DONE" }] },
+    { id: 2, position: 1, kind: "PROBLEM", title: "Luyện: kế thừa & đa hình", done: false, stages: [
+      { stageNo: 1, problemId: 14, slug: "shape-area-hierarchy", title: "Shape Area Hierarchy", difficulty: "EASY", problemType: "ALGORITHMIC", published: true, status: "IN_PROGRESS" }] },
+    { id: 3, position: 2, kind: "PROJECT", title: "Project: Mini Bank Console", done: false,
+      description: "Ngân hàng mini đọc lệnh bằng Scanner. Mỗi stage thêm tính năng; code của stage trước vẫn phải chạy đúng.",
+      stages: [bankStage(1, "Tài khoản & đóng gói", "DONE"), bankStage(2, "Kế thừa & đa hình", "NEVER"),
+        bankStage(3, "Exception & chuyển khoản", "LOCKED"), bankStage(4, "Lớp Bank & mở tài khoản", "LOCKED"),
+        bankStage(5, "Hoàn thiện CLI", "LOCKED")] },
+  ],
+};
+export async function listStudyPlans(): Promise<StudyPlanSummary[]> {
+  await sleep(); ensureOnline();
+  const { items, ...rest } = MOCK_PLAN;
+  return [{ ...rest, itemCount: items.length }];
+}
+export async function getStudyPlan(slug: string): Promise<StudyPlanDetail> {
+  await sleep(); ensureOnline();
+  if (slug !== MOCK_PLAN.slug) throw notFound(`Study plan not found: ${slug}`);
+  return MOCK_PLAN;
+}
+
+// ---------- Personal access tokens ----------
+const TOKENS_KEY = "mock:tokens";
+export async function listTokens(): Promise<AccessToken[]> { await sleep(); ensureOnline(); return store.get<AccessToken[]>(TOKENS_KEY, []); }
+export async function createToken(name: string, expiresInDays: number): Promise<CreatedAccessToken> {
+  await sleep(); ensureOnline();
+  const all = store.get<AccessToken[]>(TOKENS_KEY, []);
+  if (all.filter((t) => !t.revoked).length >= 5) throw new ApiError(409, { title: "Resource Conflict", status: 409, detail: "At most 5 active tokens per user; revoke one first" });
+  const now = new Date();
+  const info: AccessToken = { id: Date.now(), name, createdAt: now.toISOString(), revoked: false, lastUsedAt: null,
+    expiresAt: new Date(now.getTime() + expiresInDays * 86400000).toISOString() };
+  store.set(TOKENS_KEY, [info, ...all]);
+  return { token: `mlc_pat_mock${Math.random().toString(36).slice(2, 14)}`, info };
+}
+export async function revokeToken(id: number): Promise<void> {
+  await sleep(); ensureOnline();
+  store.set(TOKENS_KEY, store.get<AccessToken[]>(TOKENS_KEY, []).map((t) => (t.id === id ? { ...t, revoked: true } : t)));
 }
