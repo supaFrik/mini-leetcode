@@ -254,12 +254,20 @@ ide-plugin/                         Gradle (tách khỏi Maven backend), Intelli
 - [x] `MiniBankProjectContentTest` (judge): rule mọi stage chấp nhận lời giải; rule stage 2 bắt được `Account` không abstract
 - [ ] Chạy thật trên MySQL + Docker (chưa có môi trường lúc viết): `sql`, `cases`, nạp testcase, nộp lời giải tham chiếu ⇒ `AC` cả 5 stage
 
-### Slice 3 — Plugin khung (song song slice 1, dùng API giả)
-- [ ] `ide-plugin/` từ plugin template, JDK 21, `sinceBuild 253`
-- [ ] Settings + PasswordSafe (PL-1); tool window + cây plan (PL-2)
+### Slice 3 — Plugin khung ✅ (nhánh `feature/study-plan-slice-3`)
+- [x] `ide-plugin/`: Gradle 9.7.1, IntelliJ Platform Gradle Plugin 2.19.0, IntelliJ IDEA 2025.3.6.2, JDK 21, `sinceBuild 253`
+- [x] Settings + PasswordSafe (PL-1, token đọc một lần mỗi lần mở dialog); tool window + cây plan + Refresh (PL-2)
 
-### Slice 4 — Plugin mở project + đề (PL-3, PL-4)
-### Slice 5 — Plugin Check + Next stage (PL-5, PL-6) ⇒ **mốc demo**
+### Slice 4 — Plugin mở project + đề ✅ (PL-3, PL-4)
+- [x] Mở stage / item: tải starter (file `.java` vào `src/main/java`), `pom.xml` mẫu, `stages/stage-N.md`; mọi lời gọi mạng chạy trước, manifest ghi sau cùng
+- [x] Chặn stage LOCKED / đang bảo trì; 401 ⇒ mở Settings; ZIP tối đa 200 entry / 20 MB; không theo redirect
+- [x] Bỏ "chạy test trên máy" (SanityRun) theo P4
+
+### Slice 5 — Plugin Check + Next stage ✅ (PL-5, PL-6) ⇒ **mốc demo**
+- [x] `SubmitCheckHandler`: kiểm tra file ⇒ ZIP `src/main/java/**.java` ⇒ `POST /problems/{id}/submit-multipart` ⇒ poll `GET /submissions/{id}` (1 s, tối đa 60 s) ⇒ verdict, điểm, testcase, lỗi đầu tiên; map 401 / 403 / 404 / 409 `STAGE_LOCKED`
+- [x] `NextStageAction`: đọc manifest ⇒ plan ⇒ stage kế tiếp ⇒ tải vào cùng thư mục (không ghi đè file) ⇒ mở đề
+- [x] Test: `SubmitCheckAndNextStageTest` (MockWebServer); toàn bộ plugin 381 test qua
+- [ ] Chạy thật end-to-end (cần Docker + seed Mini Bank): Check lời giải tham chiếu ⇒ AC cả 5 stage
 ### Slice 6 — Web
 - [ ] Trang `/study-plans` + chi tiết plan; trang quản lý token; trang tải plugin ZIP + hướng dẫn
 - [ ] Màn hình INSTRUCTOR soạn plan (trước đó soạn qua API / Swagger + seed)

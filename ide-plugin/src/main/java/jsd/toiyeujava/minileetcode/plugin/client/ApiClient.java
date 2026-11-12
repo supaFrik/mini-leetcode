@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 import jsd.toiyeujava.minileetcode.plugin.model.PlanDetail;
 import jsd.toiyeujava.minileetcode.plugin.model.PlanSummary;
 import jsd.toiyeujava.minileetcode.plugin.model.ProblemDto;
+import jsd.toiyeujava.minileetcode.plugin.model.SubmissionDto;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -176,6 +177,60 @@ public class ApiClient {
 
         handleErrorResponse(response);
         return null; // Unreachable, handleErrorResponse always throws
+    }
+
+    /**
+     * Nộp chính thức một stage (POST /api/v1/problems/{id}/submit-multipart, field {@code file} = ZIP,
+     * {@code language} = JAVA). Backend trả 201 với {@code ApiResponse{data: SubmissionResponse}}.
+     */
+    public SubmissionDto submitStage(long problemId, byte[] zipBytes) {
+        if (zipBytes == null || zipBytes.length == 0) {
+            throw new IllegalArgumentException("zipBytes must not be empty");
+        }
+        String boundary = "----MiniLeetCodeBoundary" + java.util.UUID.randomUUID().toString().replace("-", "");
+        java.io.ByteArrayOutputStream body = new java.io.ByteArrayOutputStream();
+        byte[] crlf = "\r\n".getBytes(StandardCharsets.UTF_8);
+        body.writeBytes(("--" + boundary + "\r\nContent-Disposition: form-data; name=\"language\"\r\n\r\nJAVA\r\n")
+                .getBytes(StandardCharsets.UTF_8));
+        body.writeBytes(("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"submission.zip\"\r\n"
+                + "Content-Type: application/zip\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+        body.writeBytes(zipBytes);
+        body.writeBytes(crlf);
+        body.writeBytes(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+
+        URI uri = URI.create(baseUrl + "/api/v1/problems/" + problemId + "/submit-multipart");
+        HttpRequest request = createRequestBuilder(uri)
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()))
+                .build();
+        HttpResponse<String> response = send(request);
+        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            return unwrapData(response.body(), SubmissionDto.class);
+        }
+        handleErrorResponse(response);
+        return null; // Unreachable
+    }
+
+    /** Kết quả bài nộp (GET /api/v1/submissions/{id}); backend bọc trong {@code ApiResponse{data: ...}}. */
+    public SubmissionDto getSubmission(long submissionId) {
+        URI uri = URI.create(baseUrl + "/api/v1/submissions/" + submissionId);
+        HttpResponse<String> response = send(createRequestBuilder(uri).GET().build());
+        if (response.statusCode() == 200) {
+            return unwrapData(response.body(), SubmissionDto.class);
+        }
+        handleErrorResponse(response);
+        return null; // Unreachable
+    }
+
+    private <T> T unwrapData(String body, Class<T> type) {
+        if (body == null || body.isBlank()) {
+            throw new MiniLeetCodeApiException("Empty response body from server");
+        }
+        com.google.gson.JsonElement root = com.google.gson.JsonParser.parseString(body);
+        if (root.isJsonObject() && root.getAsJsonObject().has("data")) {
+            root = root.getAsJsonObject().get("data");
+        }
+        return gson.fromJson(root, type);
     }
 
     private HttpRequest.Builder createRequestBuilder(URI uri) {

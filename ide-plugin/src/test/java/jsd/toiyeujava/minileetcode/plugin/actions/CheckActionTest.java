@@ -215,7 +215,7 @@ class CheckActionTest {
             assertSame(dummy, CheckHandlerRegistry.getHandler());
 
             CheckHandlerRegistry.reset();
-            assertInstanceOf(DefaultCheckHandler.class, CheckHandlerRegistry.getHandler());
+            assertInstanceOf(SubmitCheckHandler.class, CheckHandlerRegistry.getHandler()); // slice 5: Check nộp lên server
         }
     }
 

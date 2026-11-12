@@ -11,7 +11,8 @@ import java.util.Objects;
  */
 public final class CheckHandlerRegistry {
 
-    private static volatile CheckHandler handler = new DefaultCheckHandler();
+    /** Mặc định: nộp lên server (PL-5). DefaultCheckHandler chỉ còn là bước kiểm tra file trước khi nộp. */
+    private static volatile CheckHandler handler = new SubmitCheckHandler();
 
     private CheckHandlerRegistry() {
     }
@@ -26,6 +27,6 @@ public final class CheckHandlerRegistry {
     }
 
     public static void reset() {
-        handler = new DefaultCheckHandler();
+        handler = new SubmitCheckHandler();
     }
 }

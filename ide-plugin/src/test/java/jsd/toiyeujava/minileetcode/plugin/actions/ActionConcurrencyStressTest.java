@@ -272,7 +272,7 @@ public class ActionConcurrencyStressTest {
 
             // Clean reset
             CheckHandlerRegistry.reset();
-            assertInstanceOf(DefaultCheckHandler.class, CheckHandlerRegistry.getHandler());
+            assertInstanceOf(SubmitCheckHandler.class, CheckHandlerRegistry.getHandler());
         }
 
         @Test

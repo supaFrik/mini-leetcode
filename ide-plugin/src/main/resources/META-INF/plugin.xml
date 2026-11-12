@@ -79,10 +79,20 @@
             id="MiniLeetCode.CheckAction"
             class="jsd.toiyeujava.minileetcode.plugin.actions.CheckAction"
             text="Check Stage"
-            description="Validate Mini LeetCode stage status and project files"
+            description="Submit src/main/java to the Mini LeetCode server and show the verdict"
             icon="AllIcons.Actions.Commit">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>
-            <add-to-group group-id="MainToolBar" anchor="last"/>
+            <add-to-group group-id="MainToolBar" anchor="last"/>        </action>
+
+        <!-- PL-6: Next stage into the same project folder (never overwrites student files) -->
+        <action
+            id="MiniLeetCode.NextStage"
+            class="jsd.toiyeujava.minileetcode.plugin.actions.NextStageAction"
+            text="Next Stage"
+            description="Download the next stage statement and new starter files into this project"
+            icon="AllIcons.Actions.Forward">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="MiniLeetCode.CheckAction"/>
+            <add-to-group group-id="MainToolBar" anchor="after" relative-to-action="MiniLeetCode.CheckAction"/>
         </action>    </actions>
 </idea-plugin>
