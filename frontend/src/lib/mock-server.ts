@@ -16,7 +16,7 @@ import { TEMPLATES } from "./templates";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ContestProblem, Draft, Language, LeaderboardCell, LeaderboardRow, Page,
   ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
-  AccessToken, CreatedAccessToken, StudyPlanDetail, StudyPlanStage, StudyPlanSummary,
+  AccessToken, CreatedAccessToken, StudyPlanDetail, StudyPlanDraft, StudyPlanStage, StudyPlanSummary,
 } from "@/types/api";
 
 const sleep = (ms = 150) => new Promise<void>((r) => setTimeout(r, ms));
@@ -502,15 +502,49 @@ const MOCK_PLAN: StudyPlanDetail = {
         bankStage(5, "Hoàn thiện CLI", "LOCKED")] },
   ],
 };
+MOCK_PLAN.createdById = 2;
+MOCK_PLAN.createdByUsername = "instructor";
+/** Plan trong bộ nhớ (mất khi tải lại trang) — đủ để thử màn hình soạn plan ở chế độ mock. */
+const mockPlans: StudyPlanDetail[] = [MOCK_PLAN];
+const findPlan = (slug: string) => {
+  const plan = mockPlans.find((p) => p.slug === slug);
+  if (!plan) throw notFound(`Study plan not found: ${slug}`);
+  return plan;
+};
 export async function listStudyPlans(): Promise<StudyPlanSummary[]> {
   await sleep(); ensureOnline();
-  const { items, ...rest } = MOCK_PLAN;
-  return [{ ...rest, itemCount: items.length }];
+  return mockPlans.map(({ items, ...rest }) => ({ ...rest, itemCount: items.length }));
 }
 export async function getStudyPlan(slug: string): Promise<StudyPlanDetail> {
   await sleep(); ensureOnline();
-  if (slug !== MOCK_PLAN.slug) throw notFound(`Study plan not found: ${slug}`);
-  return MOCK_PLAN;
+  return findPlan(slug);
+}
+export async function saveStudyPlan(slug: string | null, draft: StudyPlanDraft): Promise<StudyPlanDetail> {
+  await sleep(); ensureOnline();
+  const me = decodeUser(getToken());
+  const old = slug ? findPlan(slug) : null;
+  const plan: StudyPlanDetail = {
+    id: old?.id ?? Date.now(), slug: draft.slug, title: draft.title, description: draft.description ?? null,
+    status: old?.status ?? "DRAFT", createdById: old?.createdById ?? me?.id, createdByUsername: old?.createdByUsername ?? me?.username,
+    stageCount: draft.items.reduce((n, i) => n + i.problemIds.length, 0), doneStages: 0,
+    items: draft.items.map((it, position) => ({
+      id: position + 1, position, kind: it.kind, title: it.title, description: it.description ?? null, done: false,
+      stages: it.problemIds.map((problemId, k) => ({ stageNo: k + 1, problemId, slug: `problem-${problemId}`, title: `Problem #${problemId}`,
+        difficulty: "EASY", problemType: "ALGORITHMIC", published: true, status: k === 0 ? "NEVER" : "LOCKED" })),
+    })),
+  };
+  if (old) mockPlans.splice(mockPlans.indexOf(old), 1, plan); else mockPlans.push(plan);
+  return plan;
+}
+export async function transitionStudyPlan(slug: string, status: StudyPlanDetail["status"]): Promise<StudyPlanDetail> {
+  await sleep(); ensureOnline();
+  const plan = findPlan(slug);
+  plan.status = status;
+  return plan;
+}
+export async function deleteStudyPlan(slug: string): Promise<void> {
+  await sleep(); ensureOnline();
+  mockPlans.splice(mockPlans.indexOf(findPlan(slug)), 1);
 }
 
 // ---------- Personal access tokens ----------

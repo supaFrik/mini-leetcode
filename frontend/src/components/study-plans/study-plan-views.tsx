@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, CircleDot, Circle, Lock, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLoad } from "@/hooks/use-load";
+import { useUser } from "@/hooks/use-user";
 import { fetchStudyPlan, fetchStudyPlans } from "@/lib/services";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
 import theme from "@/components/layout/plex-theme.module.css";
@@ -37,11 +38,14 @@ function LoadError({ message, onRetry, what }: { message: string; onRetry: () =>
 export function StudyPlanList() {
   const [attempt, setAttempt] = useState(0);
   const load = useLoad(fetchStudyPlans, [attempt]);
+  const { user } = useUser();
+  const isStaff = user?.role === "ADMIN" || user?.role === "INSTRUCTOR";
 
   return (
     <div className={cn(theme.theme, p.page)}>
       <div className={p.main}>
         <h1 className={s.title}>Study plans</h1>
+        {isStaff && <Link href="/admin/study-plans" className={s.back}>Manage study plans →</Link>}
         <p className={s.lead}>
           Learning paths built from multi-stage projects and short practice problems. Each project stage extends the code you
           wrote in the previous one — finish a stage to unlock the next.

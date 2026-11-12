@@ -548,7 +548,9 @@ export function AdminProblemsView() {
           <p className="eyebrow">Admin</p>
           <h1 className="mt-1 text-heading-lg text-ink">Problems</h1>
           <p className="mt-1 text-body-md text-mute">
-            Create, edit and move problems through their lifecycle.
+            Create, edit and move problems through their lifecycle.{" "}
+            {/* Khi nhánh admin-console-authoring merge: chuyển link này vào AdminNav. */}
+            <a href="/admin/study-plans" className="text-link underline-offset-4 hover:underline">Study plans</a>
           </p>
         </div>
         <Button onClick={() => setCreating(true)}>

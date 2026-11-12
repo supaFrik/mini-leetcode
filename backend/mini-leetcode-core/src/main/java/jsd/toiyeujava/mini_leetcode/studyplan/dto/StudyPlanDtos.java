@@ -21,11 +21,12 @@ public final class StudyPlanDtos {
     }
 
     /** Một dòng trong danh sách plan; {@code doneStages} tính theo người gọi. */
+    /** {@code createdById / createdByUsername}: màn hình soạn plan chỉ bật nút sửa cho tác giả (ADMIN sửa mọi plan). */
     public record PlanSummary(Long id, String slug, String title, String description, StudyPlanStatus status,
-                              int itemCount, int stageCount, int doneStages) {}
+                              int itemCount, int stageCount, int doneStages, Long createdById, String createdByUsername) {}
 
     public record PlanDetail(Long id, String slug, String title, String description, StudyPlanStatus status,
-                             int stageCount, int doneStages, List<Item> items) {}
+                             int stageCount, int doneStages, List<Item> items, Long createdById, String createdByUsername) {}
 
     public record Item(Long id, int position, StudyPlanItemKind kind, String title, String description,
                        boolean done, List<Stage> stages) {}

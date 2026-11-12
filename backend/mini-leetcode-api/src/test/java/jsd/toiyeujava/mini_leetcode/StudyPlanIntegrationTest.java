@@ -177,6 +177,15 @@ class StudyPlanIntegrationTest {
     }
 
     @Test
+    @DisplayName("Plans expose their author so the authoring UI can decide who may edit")
+    void plansExposeAuthor() throws Exception {
+        mockMvc.perform(get("/api/v1/study-plans").header("Authorization", studentJwt))
+                .andExpect(jsonPath("$[0].createdByUsername").value("sp_teacher"))
+                .andExpect(jsonPath("$[0].createdById").value(instructor.getId()));
+        plan(studentJwt).andExpect(jsonPath("$.createdByUsername").value("sp_teacher"));
+    }
+
+    @Test
     @DisplayName("A draft plan is invisible to students (404) but visible to staff")
     void draftPlanHidden() throws Exception {
         transition("sp-oop", "DRAFT").andExpect(status().isOk());

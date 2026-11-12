@@ -169,6 +169,7 @@ export type StudyPlanItemKind = "PROJECT" | "PROBLEM";
 export interface StudyPlanSummary {
   id: number; slug: string; title: string; description?: string | null; status: StudyPlanStatus;
   itemCount: number; stageCount: number; doneStages: number;
+  createdById?: number; createdByUsername?: string;
 }
 /** `published = false`: đề đang bảo trì, không mở được dù vẫn giữ trạng thái học. */
 export interface StudyPlanStage {
@@ -182,6 +183,12 @@ export interface StudyPlanItem {
 export interface StudyPlanDetail {
   id: number; slug: string; title: string; description?: string | null; status: StudyPlanStatus;
   stageCount: number; doneStages: number; items: StudyPlanItem[];
+  createdById?: number; createdByUsername?: string;
+}
+/** Body của POST / PUT /api/v1/study-plans (thay toàn bộ nội dung plan). */
+export interface StudyPlanDraft {
+  slug: string; title: string; description?: string;
+  items: { kind: StudyPlanItemKind; title: string; description?: string; problemIds: number[] }[];
 }
 
 // ===== Personal Access Token cho plugin IntelliJ =====

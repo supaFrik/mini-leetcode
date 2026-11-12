@@ -12,7 +12,7 @@ import type { PollFetch } from "./polling";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
-  AccessToken, CreatedAccessToken, StudyPlanDetail, StudyPlanSummary,
+  AccessToken, CreatedAccessToken, StudyPlanDetail, StudyPlanDraft, StudyPlanStatus, StudyPlanSummary,
 } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
@@ -322,6 +322,24 @@ export async function fetchStudyPlans(): Promise<StudyPlanSummary[]> {
 export async function fetchStudyPlan(slug: string): Promise<StudyPlanDetail> {
   if (USE_MOCK) return mock.getStudyPlan(slug);
   return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}`);
+}
+
+// Soạn plan (INSTRUCTOR / ADMIN). Server kiểm tra quyền tác giả, đề PUBLISHED, đề không thuộc plan khác.
+export async function createStudyPlan(draft: StudyPlanDraft): Promise<StudyPlanDetail> {
+  if (USE_MOCK) return mock.saveStudyPlan(null, draft);
+  return api<StudyPlanDetail>("/api/v1/study-plans", { method: "POST", body: JSON.stringify(draft) });
+}
+export async function updateStudyPlan(slug: string, draft: StudyPlanDraft): Promise<StudyPlanDetail> {
+  if (USE_MOCK) return mock.saveStudyPlan(slug, draft);
+  return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}`, { method: "PUT", body: JSON.stringify(draft) });
+}
+export async function transitionStudyPlan(slug: string, status: StudyPlanStatus): Promise<StudyPlanDetail> {
+  if (USE_MOCK) return mock.transitionStudyPlan(slug, status);
+  return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}/transitions`, { method: "POST", body: JSON.stringify({ status }) });
+}
+export async function deleteStudyPlan(slug: string): Promise<void> {
+  if (USE_MOCK) return mock.deleteStudyPlan(slug);
+  await api(`/api/v1/study-plans/${encodeURIComponent(slug)}`, { method: "DELETE" });
 }
 
 // ---------- Personal access tokens (plugin IntelliJ) ----------

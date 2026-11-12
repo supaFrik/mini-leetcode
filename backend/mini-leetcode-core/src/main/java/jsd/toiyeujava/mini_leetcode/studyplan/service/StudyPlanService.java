@@ -60,7 +60,7 @@ public class StudyPlanService {
         return plans.stream().map(p -> {
             PlanDetail d = toDetail(p, progress, Map.of());
             return new PlanSummary(p.getId(), p.getSlug(), p.getTitle(), p.getDescription(), p.getStatus(),
-                    p.getItems().size(), d.stageCount(), d.doneStages());
+                    p.getItems().size(), d.stageCount(), d.doneStages(), d.createdById(), d.createdByUsername());
         }).toList();
     }
 
@@ -224,6 +224,7 @@ public class StudyPlanService {
                     item.getDescription(), !stages.isEmpty() && itemDone == stages.size(), stages));
         }
         return new PlanDetail(plan.getId(), plan.getSlug(), plan.getTitle(), plan.getDescription(),
-                plan.getStatus(), stageCount, done, items);
+                plan.getStatus(), stageCount, done, items,
+                plan.getCreatedBy().getId(), plan.getCreatedBy().getUsername());
     }
 }
