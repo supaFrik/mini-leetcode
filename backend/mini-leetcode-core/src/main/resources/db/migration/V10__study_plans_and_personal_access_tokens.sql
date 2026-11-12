@@ -1,5 +1,5 @@
 -- ============================================================
--- V8: Study Plan (lộ trình học theo project nhiều stage) + Personal Access Token cho plugin IDE
+-- V10 (V8, V9 thuộc nhánh admin-console-authoring, merge trước): Study Plan (lộ trình học theo project nhiều stage) + Personal Access Token cho plugin IDE
 -- Đặc tả: specs/study-plan.spec.md
 -- ============================================================
 

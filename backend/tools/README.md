@@ -53,7 +53,7 @@ python backend\tools\problems\oop_console_cases.py
 Nguồn: `problems/projects/mini-bank/` (`project.json` = plan, stage, testcase; `grading.json` = rule theo `fromStage`; `stages/stage-N.md` = đề; `starters/stage-N/` = file khung). Lời giải tham chiếu dùng chung cho 5 stage là `problems/oop-starters/mini-bank-console/`. Stage N chấm **mọi** testcase và rule của stage 1..N (đặc tả: `specs/study-plan.spec.md`).
 
 ```powershell
-# 0. Cần API đã chạy một lần (Flyway V8). Nên nạp seed-problems.sql trước: plan dùng 2 bài luyện bank-account-class, shape-area-hierarchy.
+# 0. Cần API đã chạy một lần (Flyway V10). Nên nạp seed-problems.sql trước: plan dùng 2 bài luyện bank-account-class, shape-area-hierarchy.
 python backend\tools\problems\mini_bank_project.py check     # biên dịch bộ khung từng stage
 
 # 1. 5 đề stage + plan oop-voi-java

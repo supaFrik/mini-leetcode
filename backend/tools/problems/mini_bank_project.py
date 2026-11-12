@@ -82,7 +82,7 @@ def cmd_sql():
     meta, rules = load()
     out = [
         "-- seed-mini-bank-project.sql — sinh bởi backend/tools/problems/mini_bank_project.py (DEV). Chạy lại được.",
-        "-- Cần: API đã chạy một lần (Flyway V8). Nên nạp seed-problems.sql trước để có 2 bài luyện lẻ của plan.",
+        "-- Cần: API đã chạy một lần (Flyway V10). Nên nạp seed-problems.sql trước để có 2 bài luyện lẻ của plan.",
         "SET NAMES utf8mb4;",
         "INSERT INTO users (username, email, password_hash, role, status)",
         "VALUES ('seed_author', 'seed_author@dev.local', '!seed-account-cannot-login', 'INSTRUCTOR', 'BLOCKED')",

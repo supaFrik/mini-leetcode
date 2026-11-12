@@ -91,7 +91,7 @@ graph LR
     J --> DB
 ```
 
-### Mô hình dữ liệu (Flyway `V8`)
+### Mô hình dữ liệu (Flyway `V10` — V8, V9 thuộc nhánh admin, merge trước)
 
 ```
 study_plans               (id, slug UNIQUE, title, description, status DRAFT|PUBLISHED|ARCHIVED, created_by, timestamps)
@@ -240,7 +240,7 @@ ide-plugin/                         Gradle (tách khỏi Maven backend), Intelli
 ## Implementation TODO
 
 ### Slice 1 — Backend nền ✅ (nhánh `feature/study-plan-slice-1`)
-- [x] Flyway `V8__study_plans_and_personal_access_tokens.sql` (4 bảng; `stage_no` 0-based, API trả `stageNo` từ 1)
+- [x] Flyway `V10__study_plans_and_personal_access_tokens.sql` (4 bảng; `stage_no` 0-based, API trả `stageNo` từ 1)
 - [x] Sửa `findAttemptedProblemIdsByUserId` lọc `quickRun = false` + test (AC-009)
 - [x] PAT: entity, `PersonalAccessTokenService`, `/api/v1/me/tokens`, nhánh `mlc_pat_` trong `JwtAuthenticationFilter`, allowlist
 - [x] Khoá stage + chặn PAT kỳ thi trong `createSubmission` + test cả 4 đường nộp (AC-003, AC-007). INSTRUCTOR / ADMIN và bài nộp kỳ thi không bị khoá
