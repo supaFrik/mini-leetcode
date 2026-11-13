@@ -14,9 +14,9 @@ import { useLoad } from "@/hooks/use-load";
 import { useUser } from "@/hooks/use-user";
 import { AdminNav } from "./admin-nav";
 import {
-  createStudyPlan, deleteStudyPlan, fetchAdminProblems, fetchStudyPlan, fetchStudyPlans, transitionStudyPlan, updateStudyPlan,
+  createStudyPlan, deleteStudyPlan, fetchAdminProblems, fetchStudyPlan, fetchStudyPlans, fetchTopics, transitionStudyPlan, updateStudyPlan,
 } from "@/lib/services";
-import type { Difficulty, ProblemFull, StudyPlanDetail, StudyPlanItemKind, StudyPlanStatus } from "@/types/api";
+import type { Difficulty, ProblemFull, StudyPlanDetail, StudyPlanItemKind, StudyPlanStatus, TopicSummary } from "@/types/api";
 
 /** Khớp ràng buộc slug của backend (UpsertPlanRequest). */
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -103,7 +103,8 @@ export function AdminStudyPlansView() {
 // /admin/study-plans/new  và  /admin/study-plans/[slug]
 // =====================================================================================
 
-interface StageRef { problemId: number; slug: string | null; title: string | null; difficulty: Difficulty | null }
+interface TopicChip { id: number; slug: string; title: string; status?: StudyPlanStatus }
+interface StageRef { problemId: number; slug: string | null; title: string | null; difficulty: Difficulty | null; topics: TopicChip[] }
 interface ItemState { key: number; kind: StudyPlanItemKind; title: string; description: string; stages: StageRef[] }
 let nextKey = 1;
 const emptyItem = (kind: StudyPlanItemKind): ItemState => ({ key: nextKey++, kind, title: "", description: "", stages: [] });
@@ -117,7 +118,7 @@ function move<T>(list: T[], from: number, to: number): T[] {
 }
 
 /** Tìm đề PUBLISHED theo tên / slug để gắn làm stage. */
-function ProblemPicker({ exclude, onPick, disabled }: { exclude: Set<number>; onPick: (p: ProblemFull) => void; disabled?: boolean }) {
+export function ProblemPicker({ exclude, onPick, disabled }: { exclude: Set<number>; onPick: (p: ProblemFull) => void; disabled?: boolean }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<ProblemFull[]>([]);
   const [busy, setBusy] = useState(false);
@@ -167,6 +168,58 @@ function ProblemPicker({ exclude, onPick, disabled }: { exclude: Set<number>; on
   );
 }
 
+/** Chủ đề học gắn vào một stage (specs/topics.spec.md): sắp thứ tự, gỡ, tìm để thêm. */
+function StageTopics({ topics, label, onChange, disabled }: {
+  topics: TopicChip[]; label: string; onChange: (topics: TopicChip[]) => void; disabled?: boolean;
+}) {
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<TopicSummary[]>([]);
+  useEffect(() => {
+    if (!q.trim()) { setResults([]); return; }
+    let off = false;
+    const t = setTimeout(() => { fetchTopics(q.trim()).then((r) => !off && setResults(r)).catch(() => !off && setResults([])); }, 250);
+    return () => { off = true; clearTimeout(t); };
+  }, [q]);
+  const visible = results.filter((r) => !topics.some((x) => x.id === r.id)).slice(0, 6);
+  return (
+    <div className="ml-16 space-y-1">
+      {topics.length > 0 && (
+        <ol className="space-y-1" aria-label={`${label} topics`}>
+          {topics.map((tp, k) => (
+            <li key={tp.id} className="flex items-center gap-1 text-body-sm">
+              <span className="font-mono text-mute">Topic</span>
+              <span className="min-w-0 flex-1 truncate text-ink">{tp.title}</span>
+              {tp.status && tp.status !== "PUBLISHED" && <Badge variant="outline">{tp.status}</Badge>}
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={`Move topic ${tp.title} up`} disabled={k === 0}
+                onClick={() => onChange(move(topics, k, k - 1))}><ArrowUp className="h-3.5 w-3.5" /></Button>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={`Move topic ${tp.title} down`} disabled={k === topics.length - 1}
+                onClick={() => onChange(move(topics, k, k + 1))}><ArrowDown className="h-3.5 w-3.5" /></Button>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove topic ${tp.title}`}
+                onClick={() => onChange(topics.filter((x) => x.id !== tp.id))}><X className="h-3.5 w-3.5" /></Button>
+            </li>
+          ))}
+        </ol>
+      )}
+      <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Add a topic (theory + practice) to this stage"
+        aria-label={`Search topics for ${label}`} className="h-8 text-body-sm" disabled={disabled} />
+      {q.trim() && (
+        <ul className="rounded-sm border border-border bg-card" aria-label={`Topic results for ${label}`}>
+          {visible.length === 0 && <li className="px-3 py-1.5 text-body-sm text-mute">No topic matches.</li>}
+          {visible.map((r) => (
+            <li key={r.id}>
+              <button type="button" className="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left text-body-sm hover:bg-hairline-soft"
+                onClick={() => { onChange([...topics, { id: r.id, slug: r.slug, title: r.title, status: r.status }]); setQ(""); }}>
+                <span>{r.title} <span className="font-mono text-mute">{r.slug}</span></span>
+                <span className="text-mute">{r.stepCount} steps{r.status !== "PUBLISHED" ? ` · ${r.status}` : ""}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function StudyPlanEditor({ slug }: { slug?: string }) {
   const router = useRouter();
   const canEditFn = useCanEdit();
@@ -191,7 +244,8 @@ export function StudyPlanEditor({ slug }: { slug?: string }) {
         setDescription(plan.description ?? "");
         setItems(plan.items.map((it) => ({
           key: nextKey++, kind: it.kind, title: it.title, description: it.description ?? "",
-          stages: it.stages.map((st) => ({ problemId: st.problemId, slug: st.slug, title: st.title, difficulty: st.difficulty })),
+          stages: it.stages.map((st) => ({ problemId: st.problemId, slug: st.slug, title: st.title, difficulty: st.difficulty,
+            topics: (st.topics ?? []).map((tp) => ({ id: tp.id, slug: tp.slug, title: tp.title })) })),
         })));
       })
       .catch((e) => setLoadError(errorMessage(e)));
@@ -224,7 +278,8 @@ export function StudyPlanEditor({ slug }: { slug?: string }) {
       const draft = {
         slug: planSlug, title: title.trim(), description: description.trim() || undefined,
         items: items.map((it) => ({ kind: it.kind, title: it.title.trim(), description: it.description.trim() || undefined,
-          problemIds: it.stages.map((s) => s.problemId) })),
+          problemIds: it.stages.map((s) => s.problemId),
+          stageTopics: it.kind === "PROJECT" ? it.stages.map((s) => s.topics.map((tp) => tp.id)) : undefined })),
       };
       const saved = slug ? await updateStudyPlan(slug, draft) : await createStudyPlan(draft);
       setLoaded(saved);
@@ -326,7 +381,8 @@ export function StudyPlanEditor({ slug }: { slug?: string }) {
               <ol className="divide-y divide-border rounded-sm border border-border" aria-label={`Item ${i + 1} stages`}>
                 {it.stages.length === 0 && <li className="px-3 py-2 text-body-sm text-mute">No problem yet.</li>}
                 {it.stages.map((st, k) => (
-                  <li key={st.problemId} className="flex items-center gap-2 px-3 py-2">
+                  <li key={st.problemId} className="space-y-2 px-3 py-2">
+                  <div className="flex items-center gap-2">
                     <span className="w-16 font-mono text-body-sm text-mute">{it.kind === "PROJECT" ? `Stage ${k + 1}` : "Problem"}</span>
                     <span className="min-w-0 flex-1 truncate text-ink">
                       {st.title ?? `#${st.problemId}`} <span className="font-mono text-body-sm text-mute">{st.slug}</span>
@@ -338,12 +394,17 @@ export function StudyPlanEditor({ slug }: { slug?: string }) {
                       onClick={() => patchItem(it.key, { stages: move(it.stages, k, k + 1) })}><ArrowDown className="h-4 w-4" /></Button>
                     <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove ${st.title ?? st.problemId}`}
                       onClick={() => patchItem(it.key, { stages: it.stages.filter((x) => x.problemId !== st.problemId) })}><X className="h-4 w-4" /></Button>
+                  </div>
+                  {it.kind === "PROJECT" && (
+                    <StageTopics topics={st.topics} label={`Item ${i + 1} stage ${k + 1}`} disabled={!canEdit}
+                      onChange={(topics) => patchItem(it.key, { stages: it.stages.map((x) => (x.problemId === st.problemId ? { ...x, topics } : x)) })} />
+                  )}
                   </li>
                 ))}
               </ol>
               {(it.kind === "PROJECT" || it.stages.length === 0) && (
                 <ProblemPicker exclude={used} disabled={!canEdit}
-                  onPick={(p) => patchItem(it.key, { stages: [...it.stages, { problemId: p.id, slug: p.slug, title: p.title, difficulty: p.difficulty }] })} />
+                  onPick={(p) => patchItem(it.key, { stages: [...it.stages, { problemId: p.id, slug: p.slug, title: p.title, difficulty: p.difficulty, topics: [] }] })} />
               )}
             </section>
           ))}

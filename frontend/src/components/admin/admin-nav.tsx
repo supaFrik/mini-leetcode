@@ -7,6 +7,7 @@ const SECTIONS = [
   { href: "/admin/problems", label: "Problems" },
   { href: "/admin/contests", label: "Contests" },
   { href: "/admin/study-plans", label: "Study plans" },
+  { href: "/admin/topics", label: "Topics" },
 ];
 
 /** Chuyển giữa các trang quản trị. */
