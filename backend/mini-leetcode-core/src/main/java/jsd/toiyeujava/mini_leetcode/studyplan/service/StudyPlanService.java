@@ -13,6 +13,11 @@ import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.exception.StateConflictException;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
+import jsd.toiyeujava.mini_leetcode.problem.service.ProblemService;
+import jsd.toiyeujava.mini_leetcode.testcase.repository.TestCaseRepository;
+import jsd.toiyeujava.mini_leetcode.topic.entity.TopicStep;
+import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
+import jsd.toiyeujava.mini_leetcode.entity.TopicStepType;
 import jsd.toiyeujava.mini_leetcode.studyplan.dto.StudyPlanDtos.*;
 import jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlan;
 import jsd.toiyeujava.mini_leetcode.studyplan.entity.StageTopic;
@@ -27,7 +32,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,16 +57,21 @@ public class StudyPlanService {
     private final UserRepository userRepository;
     private final TopicRepository topicRepository;
     private final TopicService topicService;
+    private final ProblemService problemService;
+    private final TestCaseRepository testCaseRepository;
 
     public StudyPlanService(StudyPlanRepository planRepository, ProblemRepository problemRepository,
                             SubmissionRepository submissionRepository, UserRepository userRepository,
-                            TopicRepository topicRepository, TopicService topicService) {
+                            TopicRepository topicRepository, TopicService topicService,
+                            ProblemService problemService, TestCaseRepository testCaseRepository) {
         this.planRepository = planRepository;
         this.problemRepository = problemRepository;
         this.submissionRepository = submissionRepository;
         this.userRepository = userRepository;
         this.topicRepository = topicRepository;
         this.topicService = topicService;
+        this.problemService = problemService;
+        this.testCaseRepository = testCaseRepository;
     }
 
     /** Học viên chỉ thấy plan PUBLISHED; giảng viên / admin thấy mọi plan. */
@@ -68,7 +82,7 @@ public class StudyPlanService {
         Progress progress = progressOf(userId, staff);
         // ponytail: duyệt items/stages lazy theo từng plan (N+1 theo số plan) — đủ nhanh với vài chục plan.
         return plans.stream().map(p -> {
-            PlanDetail d = toDetail(p, progress, Map.of(), Map.of());
+            PlanDetail d = toDetail(p, progress, Map.of(), Map.of(), null);
             return new PlanSummary(p.getId(), p.getSlug(), p.getTitle(), p.getDescription(), p.getStatus(),
                     p.getItems().size(), d.stageCount(), d.doneStages(), d.createdById(), d.createdByUsername());
         }).toList();
@@ -82,7 +96,8 @@ public class StudyPlanService {
                 .collect(Collectors.toMap(Problem::getId, Function.identity()));
         List<Long> topicIds = plan.getItems().stream()
                 .flatMap(i -> i.getStageTopics().stream()).map(StageTopic::getTopicId).toList();
-        return toDetail(plan, progressOf(userId, staff), problems, topicService.refs(topicIds, userId, staff));
+        return toDetail(plan, progressOf(userId, staff), problems, topicService.refs(topicIds, userId, staff),
+                staff ? learnersOf(ids) : null);
     }
 
     @Transactional
@@ -93,7 +108,7 @@ public class StudyPlanService {
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         StudyPlan plan = StudyPlan.builder().slug(request.slug()).createdBy(author).build();
-        apply(plan, request, Set.of());
+        apply(plan, request);
         planRepository.save(plan);
         return get(plan.getSlug(), userId, true);
     }
@@ -105,15 +120,18 @@ public class StudyPlanService {
         if (!plan.getSlug().equals(request.slug()) && planRepository.existsBySlug(request.slug())) {
             throw new DuplicateResourceException("Study plan slug already exists: " + request.slug());
         }
-        if (plan.getStatus() == StudyPlanStatus.PUBLISHED && request.items().isEmpty()) {
-            throw new StateConflictException("A published study plan must keep at least one item");
+        if (request.expectedUpdatedAt() != null && plan.getUpdatedAt() != null
+                && !sameSecond(request.expectedUpdatedAt(), plan.getUpdatedAt())) {
+            throw new StateConflictException("This study plan was changed in another tab or by another user. Reload to continue.");
         }
-        Set<Long> current = plan.getItems().stream()
-                .flatMap(i -> i.getProblemIds().stream()).collect(Collectors.toSet());
+        if (plan.getStatus() == StudyPlanStatus.PUBLISHED) {
+            requireCompleteItems(request);
+        }
         plan.setSlug(request.slug());
         plan.getItems().clear();
         planRepository.flush(); // xoá stage cũ trước để UNIQUE(problem_id) không chặn chính các đề này
-        apply(plan, request, current);
+        apply(plan, request);
+        plan.setUpdatedAt(LocalDateTime.now()); // đổi mục không làm plan "dirty" ⇒ tự đánh dấu cho khoá lạc quan
         planRepository.save(plan);
         return get(plan.getSlug(), userId, true);
     }
@@ -124,6 +142,11 @@ public class StudyPlanService {
         if (target == StudyPlanStatus.PUBLISHED && plan.getItems().isEmpty()) {
             throw new StateConflictException("A study plan needs at least one item before it can be published");
         }
+        if (target == StudyPlanStatus.PUBLISHED) {
+            plan.getItems().stream().filter(i -> i.getProblemIds().isEmpty()).findFirst().ifPresent(i -> {
+                throw new StateConflictException("Item \"" + i.getTitle() + "\" needs at least one problem before publishing");
+            });
+        }
         plan.setStatus(target);
         return get(plan.getSlug(), userId, true);
     }
@@ -133,13 +156,159 @@ public class StudyPlanService {
         planRepository.delete(findOwned(slug, userId, role));
     }
 
+    // ------------------------------------------------------------------ publish (specs/course-builder.spec.md)
+
+    /** Checklist trước khi publish: lỗi chặn publish, cảnh báo thì không. Không đổi dữ liệu. */
+    @Transactional(readOnly = true)
+    public PublishCheck publishCheck(String slug, Long userId, Role role) {
+        return check(findOwned(slug, userId, role), userId, role);
+    }
+
+    /**
+     * Publish plan cùng mọi đề / chủ đề chưa PUBLISHED bên trong, trong một transaction: lỗi ở bất kỳ bước nào
+     * thì không thực thể nào đổi trạng thái.
+     */
+    @Transactional
+    public PlanDetail publish(String slug, Long userId, Role role) {
+        StudyPlan plan = findOwned(slug, userId, role);
+        PublishCheck check = check(plan, userId, role);
+        if (!check.ok()) {
+            throw new StateConflictException("Cannot publish: " + check.errors().get(0).message());
+        }
+        Map<Long, Problem> problems = problemRepository.findAllById(check.problemsToPublish()).stream()
+                .collect(Collectors.toMap(Problem::getId, Function.identity()));
+        for (Long id : check.problemsToPublish()) {
+            List<ProblemStatus> path = switch (problems.get(id).getStatus()) {
+                case ARCHIVED -> List.of(ProblemStatus.DRAFT, ProblemStatus.REVIEWING, ProblemStatus.PUBLISHED);
+                case DRAFT -> List.of(ProblemStatus.REVIEWING, ProblemStatus.PUBLISHED);
+                case REVIEWING -> List.of(ProblemStatus.PUBLISHED);
+                case PUBLISHED -> List.<ProblemStatus>of();
+            };
+            for (ProblemStatus target : path) {
+                problemService.transitionStatus(id, target);
+            }
+        }
+        for (Long topicId : check.topicsToPublish()) {
+            Topic topic = topicRepository.findById(topicId).orElseThrow();
+            topicService.transition(topic.getSlug(), StudyPlanStatus.PUBLISHED, userId, role);
+        }
+        plan.setStatus(StudyPlanStatus.PUBLISHED);
+        return get(plan.getSlug(), userId, true);
+    }
+
+    private PublishCheck check(StudyPlan plan, Long userId, Role role) {
+        List<PublishIssue> errors = new ArrayList<>();
+        List<PublishIssue> warnings = new ArrayList<>();
+        if (plan.getItems().isEmpty()) {
+            errors.add(new PublishIssue("plan", null, null, null, "Add at least one project or practice problem"));
+        }
+        List<Long> problemIds = plan.getItems().stream().flatMap(i -> i.getProblemIds().stream()).toList();
+        Map<Long, Problem> problems = problemRepository.findAllById(problemIds).stream()
+                .collect(Collectors.toMap(Problem::getId, Function.identity()));
+        Set<Long> problemsToPublish = new LinkedHashSet<>();
+        for (int index = 0; index < plan.getItems().size(); index++) {
+            StudyPlanItem item = plan.getItems().get(index);
+            boolean project = item.getKind() == StudyPlanItemKind.PROJECT;
+            if (item.getProblemIds().isEmpty()) {
+                errors.add(new PublishIssue("item", index, null, null,
+                        "\"" + item.getTitle() + "\" has no " + (project ? "stage" : "problem")));
+            }
+            for (int stage = 0; stage < item.getProblemIds().size(); stage++) {
+                Problem p = problems.get(item.getProblemIds().get(stage));
+                String where = project ? item.getTitle() + " · stage " + (stage + 1) : item.getTitle();
+                if (p.getStatus() != ProblemStatus.PUBLISHED) {
+                    problemsToPublish.add(p.getId());
+                }
+                if (p.getDescription() == null || p.getDescription().isBlank()) {
+                    errors.add(new PublishIssue("stage", index, p.getId(), null, where + ": the statement is empty"));
+                }
+                if (testCaseRepository.countByProblemIdAndIsHiddenFalse(p.getId()) == 0) {
+                    errors.add(new PublishIssue("stage", index, p.getId(), null, where + ": add at least one public test case"));
+                }
+                String reference = p.getReferenceSolution();
+                if (p.getProblemType() == ProblemType.OOP_GRINDING
+                        && (reference == null || reference.isBlank() || reference.trim().equals("[]"))) {
+                    warnings.add(new PublishIssue("stage", index, p.getId(), null,
+                            where + ": no reference solution, expected outputs are not verified"));
+                }
+            }
+        }
+
+        Set<Long> topicIds = plan.getItems().stream().flatMap(i -> i.getStageTopics().stream())
+                .map(StageTopic::getTopicId).collect(Collectors.toCollection(LinkedHashSet::new));
+        List<Topic> topics = topicIds.isEmpty() ? List.of() : topicRepository.findAllById(topicIds);
+        Set<Long> topicsToPublish = new LinkedHashSet<>();
+        for (Topic topic : topics) {
+            if (topic.getStatus() == StudyPlanStatus.PUBLISHED) {
+                continue;
+            }
+            if (role != Role.ADMIN && !topic.getCreatedBy().getId().equals(userId)) {
+                errors.add(new PublishIssue("topic", null, null, topic.getId(), "Topic \"" + topic.getTitle()
+                        + "\" is a draft by " + topic.getCreatedBy().getUsername() + "; only its author can publish it"));
+                continue;
+            }
+            if (topic.getSteps().isEmpty()) {
+                errors.add(new PublishIssue("topic", null, null, topic.getId(), "Topic \"" + topic.getTitle() + "\" has no steps"));
+            }
+            topicsToPublish.add(topic.getId());
+        }
+        // Step CODE trỏ tới đề phải PUBLISHED, hoặc sẽ được publish cùng plan.
+        for (Topic topic : topics) {
+            for (TopicStep step : topic.getSteps()) {
+                if (step.getType() != TopicStepType.CODE || step.getProblemId() == null
+                        || problemsToPublish.contains(step.getProblemId())) {
+                    continue;
+                }
+                Problem p = problems.containsKey(step.getProblemId()) ? problems.get(step.getProblemId())
+                        : problemRepository.findById(step.getProblemId()).orElse(null);
+                if (p != null && p.getStatus() != ProblemStatus.PUBLISHED) {
+                    errors.add(new PublishIssue("topic", null, null, topic.getId(), "Topic \"" + topic.getTitle()
+                            + "\": code step \"" + step.getTitle() + "\" uses unpublished problem " + p.getSlug()));
+                }
+            }
+        }
+        return new PublishCheck(errors.isEmpty(), errors, warnings,new ArrayList<>(problemsToPublish), new ArrayList<>(topicsToPublish));
+    }
+
+    private static void requireCompleteItems(UpsertPlanRequest request) {
+        if (request.items().isEmpty()) {
+            throw new StateConflictException("A published study plan must keep at least one item");
+        }
+        request.items().stream().filter(i -> i.problemIds().isEmpty()).findFirst().ifPresent(i -> {
+            throw new StateConflictException("Item \"" + i.title() + "\" of a published study plan needs at least one problem");
+        });
+    }
+
+    private static boolean sameSecond(LocalDateTime a, LocalDateTime b) {
+        return a.truncatedTo(ChronoUnit.SECONDS).equals(b.truncatedTo(ChronoUnit.SECONDS));
+    }
+
+    /** Số học viên (USER) của plan và số người đang làm dở (đã nộp, chưa AC) từng stage. */
+    private record Learners(int total, Map<Long, Integer> onStage) {}
+
+    private Learners learnersOf(List<Long> problemIds) {
+        if (problemIds.isEmpty()) {
+            return new Learners(0, Map.of());
+        }
+        Set<Long> users = new HashSet<>();
+        Map<Long, Integer> onStage = new HashMap<>();
+        for (Object[] row : submissionRepository.findLearnerProgress(problemIds, SubmissionVerdict.AC)) {
+            long problemId = ((Number) row[0]).longValue();
+            users.add(((Number) row[1]).longValue());
+            if (((Number) row[2]).intValue() == 0) {
+                onStage.merge(problemId, 1, Integer::sum);
+            }
+        }
+        return new Learners(users.size(), onStage);
+    }
+
     // ------------------------------------------------------------------
 
     /**
-     * @param alreadyInPlan đề vốn có trong plan này: được giữ lại dù đang ARCHIVED (bảo trì stage, spec Q11);
-     *                      chỉ đề mới thêm mới bắt buộc PUBLISHED.
+     * Đề ở mọi trạng thái đều gắn được (Course Builder soạn đề ngay trong plan). Đề chưa PUBLISHED trong plan đang
+     * PUBLISHED là stage "đang cập nhật": học viên không nộp được (SubmissionServiceImpl) cho tới khi publish.
      */
-    private void apply(StudyPlan plan, UpsertPlanRequest request, Set<Long> alreadyInPlan) {
+    private void apply(StudyPlan plan, UpsertPlanRequest request) {
         plan.setTitle(request.title());
         plan.setDescription(request.description());
 
@@ -153,9 +322,6 @@ public class StudyPlanService {
             Problem p = problems.get(id);
             if (p == null) {
                 throw new ResourceNotFoundException("Problem not found with id: " + id);
-            }
-            if (p.getStatus() != ProblemStatus.PUBLISHED && !alreadyInPlan.contains(id)) {
-                throw new StateConflictException("Only PUBLISHED problems can be added to a study plan: " + p.getSlug());
             }
         }
         List<Number> taken = allIds.isEmpty() ? List.of() : planRepository.findProblemIdsAlreadyInPlans(allIds);
@@ -175,7 +341,7 @@ public class StudyPlanService {
 
         int position = 0;
         for (ItemRequest itemRequest : request.items()) {
-            if (itemRequest.kind() == StudyPlanItemKind.PROBLEM && itemRequest.problemIds().size() != 1) {
+            if (itemRequest.kind() == StudyPlanItemKind.PROBLEM && itemRequest.problemIds().size() > 1) {
                 throw new IllegalArgumentException("A PROBLEM item must contain exactly one problem");
             }
             List<StageTopic> stageTopics = new ArrayList<>();
@@ -238,7 +404,7 @@ public class StudyPlanService {
      * được thấy (chủ đề DRAFT bị ẩn với học viên vì không có trong map).
      */
     private PlanDetail toDetail(StudyPlan plan, Progress progress, Map<Long, Problem> problems,
-                                Map<Long, TopicRef> topics) {
+                                Map<Long, TopicRef> topics, Learners learners) {
         List<Item> items = new ArrayList<>();
         int stageCount = 0;
         int done = 0;
@@ -264,7 +430,9 @@ public class StudyPlanService {
                 stages.add(new Stage(i + 1, problemId,
                         p == null ? null : p.getSlug(), p == null ? null : p.getTitle(),
                         p == null ? null : p.getDifficulty(), p == null ? null : p.getProblemType(),
-                        p != null && p.getStatus() == ProblemStatus.PUBLISHED, status, stageTopics));
+                        p != null && p.getStatus() == ProblemStatus.PUBLISHED, status, stageTopics,
+                        p == null || !progress.staff() ? null : p.getStatus(),
+                        learners == null ? null : learners.onStage().getOrDefault(problemId, 0)));
             }
             long itemDone = stages.stream().filter(s -> s.status() == StageStatus.DONE).count();
             stageCount += stages.size();
@@ -274,6 +442,7 @@ public class StudyPlanService {
         }
         return new PlanDetail(plan.getId(), plan.getSlug(), plan.getTitle(), plan.getDescription(),
                 plan.getStatus(), stageCount, done, items,
-                plan.getCreatedBy().getId(), plan.getCreatedBy().getUsername());
+                plan.getCreatedBy().getId(), plan.getCreatedBy().getUsername(),
+                plan.getUpdatedAt(), learners == null ? null : learners.total());
     }
 }

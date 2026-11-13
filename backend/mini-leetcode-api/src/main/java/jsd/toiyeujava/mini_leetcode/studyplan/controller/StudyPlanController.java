@@ -7,6 +7,7 @@ import jsd.toiyeujava.mini_leetcode.auth.security.UserPrincipal;
 import jsd.toiyeujava.mini_leetcode.entity.Role;
 import jsd.toiyeujava.mini_leetcode.studyplan.dto.StudyPlanDtos.PlanDetail;
 import jsd.toiyeujava.mini_leetcode.studyplan.dto.StudyPlanDtos.PlanSummary;
+import jsd.toiyeujava.mini_leetcode.studyplan.dto.StudyPlanDtos.PublishCheck;
 import jsd.toiyeujava.mini_leetcode.studyplan.dto.StudyPlanDtos.TransitionRequest;
 import jsd.toiyeujava.mini_leetcode.studyplan.dto.StudyPlanDtos.UpsertPlanRequest;
 import jsd.toiyeujava.mini_leetcode.studyplan.service.StudyPlanService;
@@ -64,6 +65,20 @@ public class StudyPlanController {
     public PlanDetail transition(@PathVariable String slug, @Valid @RequestBody TransitionRequest request,
                                  @AuthenticationPrincipal UserPrincipal user) {
         return studyPlanService.transition(slug, request.status(), user.getId(), user.getRole());
+    }
+
+    @GetMapping("/{slug}/publish-check")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @Operation(summary = "Checklist before publishing the plan with its draft problems and topics")
+    public PublishCheck publishCheck(@PathVariable String slug, @AuthenticationPrincipal UserPrincipal user) {
+        return studyPlanService.publishCheck(slug, user.getId(), user.getRole());
+    }
+
+    @PostMapping("/{slug}/publish")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @Operation(summary = "Publish the plan and every unpublished problem / topic in it, in one transaction")
+    public PlanDetail publish(@PathVariable String slug, @AuthenticationPrincipal UserPrincipal user) {
+        return studyPlanService.publish(slug, user.getId(), user.getRole());
     }
 
     @DeleteMapping("/{slug}")

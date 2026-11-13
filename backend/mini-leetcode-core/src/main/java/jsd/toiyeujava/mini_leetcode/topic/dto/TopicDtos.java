@@ -25,7 +25,7 @@ public final class TopicDtos {
 
     /** Chủ đề gắn vào một stage, kèm tiến độ của người xem. */
     public record TopicRef(Long id, String slug, String title, String summary, int estMinutes,
-                           TopicProgressStatus progress, int stepCount, int doneSteps) {}
+                           TopicProgressStatus progress, int stepCount, int doneSteps, StudyPlanStatus status) {}
 
     /** {@code content} đã bỏ đáp án và xáo trộn (MATCHING, ORDERING). */
     public record LearnerStep(Long id, int position, TopicStepType type, String title, JsonNode content,

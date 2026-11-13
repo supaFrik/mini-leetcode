@@ -200,7 +200,7 @@ class StudyPlanIntegrationTest {
     // ---------------------------------------------------------------- authoring
 
     @Test
-    @DisplayName("Authoring rules: role, ownership, published problems only, one plan per problem, no empty publish")
+    @DisplayName("Authoring rules: role, ownership, draft problems allowed, one plan per problem, no empty publish")
     void authoringRules() throws Exception {
         Problem draft = problem("sp-draft", ProblemStatus.DRAFT);
         Problem free = problem("sp-free", ProblemStatus.PUBLISHED);
@@ -208,7 +208,8 @@ class StudyPlanIntegrationTest {
         mockMvc.perform(post("/api/v1/study-plans").header("Authorization", studentJwt)
                         .contentType(MediaType.APPLICATION_JSON).content(planBody("sp-x", List.of(item("PROBLEM", "x", free.getId())))))
                 .andExpect(status().isForbidden());
-        createPlan("sp-x", List.of(item("PROBLEM", "x", draft.getId()))).andExpect(status().isConflict());
+        // Course Builder: đề DRAFT gắn được vào plan (publish cùng plan sau).
+        createPlan("sp-with-draft", List.of(item("PROBLEM", "x", draft.getId()))).andExpect(status().isCreated());
         createPlan("sp-x", List.of(item("PROBLEM", "x", stage1.getId()))).andExpect(status().isConflict());
         Problem free2 = problem("sp-free-2", ProblemStatus.PUBLISHED);
         createPlan("sp-x", List.of(item("PROBLEM", "x", free.getId(), free2.getId()))).andExpect(status().isBadRequest());

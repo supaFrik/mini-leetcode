@@ -136,7 +136,7 @@ public class TopicService {
         for (Topic t : topics) {
             int done = (int) t.getSteps().stream().filter(learner::passed).count();
             refs.put(t.getId(), new TopicRef(t.getId(), t.getSlug(), t.getTitle(), t.getSummary(), t.getEstMinutes(),
-                    learner.status(t, done), t.getSteps().size(), done));
+                    learner.status(t, done), t.getSteps().size(), done, t.getStatus()));
         }
         return refs;
     }

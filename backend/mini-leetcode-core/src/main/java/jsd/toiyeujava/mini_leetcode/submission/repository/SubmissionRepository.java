@@ -81,4 +81,15 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     /** Id các bài mà user đã từng nộp chính thức (bất kể kết quả; không tính Run) → tiến độ IN_PROGRESS. */
     @Query("select distinct s.problem.id from Submission s where s.user.id = :userId and s.quickRun = false")
     List<Long> findAttemptedProblemIdsByUserId(@Param("userId") Long userId);
+
+    /**
+     * Tiến độ học viên (role USER) trên các đề: mỗi dòng {@code [problemId, userId, solved (0/1)]}.
+     * Course Builder dùng để đếm số học viên của plan và số người đang làm dở từng stage.
+     */
+    @Query("select s.problem.id, s.user.id, max(case when s.verdict = :ac then 1 else 0 end) from Submission s"
+            + " where s.problem.id in :problemIds and s.quickRun = false"
+            + " and s.user.role = jsd.toiyeujava.mini_leetcode.entity.Role.USER"
+            + " group by s.problem.id, s.user.id")
+    List<Object[]> findLearnerProgress(@Param("problemIds") Collection<Long> problemIds,
+                                       @Param("ac") SubmissionVerdict ac);
 }

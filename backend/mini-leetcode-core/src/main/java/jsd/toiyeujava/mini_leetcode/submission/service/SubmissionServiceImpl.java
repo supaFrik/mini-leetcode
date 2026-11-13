@@ -248,6 +248,10 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (position.isEmpty()) {
             return;
         }
+        // Stage đang được giảng viên sửa (Unlock trong Course Builder, hoặc mới thêm chưa publish).
+        if (problem.getStatus() != jsd.toiyeujava.mini_leetcode.entity.ProblemStatus.PUBLISHED) {
+            throw new StageLockedException("This stage is being updated. Try again later.");
+        }
         long itemId = ((Number) position.get(0)[0]).longValue();
         int stageNo = ((Number) position.get(0)[1]).intValue();
         if (stageNo == 0) {
