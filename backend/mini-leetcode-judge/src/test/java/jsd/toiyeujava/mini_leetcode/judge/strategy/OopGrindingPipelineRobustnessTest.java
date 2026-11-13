@@ -467,44 +467,12 @@ public class OopGrindingPipelineRobustnessTest {
                 .build();
         
 
-        SocketScenarioConfig socketConfig = SocketScenarioConfig.builder()
-                .scenarioName("SERVICE_SOCKET")
-                .mode(SocketAssessmentMode.CLIENT_ASSESSMENT)
-                .targetClass("Service")
-                .role(SocketRole.CLIENT)
-                .build();
         // Cấu hình chấm nằm ở server (problems.grading_config); *Test.java trong bài nộp bị bỏ qua.
-        problem.setGradingConfig(objectMapper.writeValueAsString(
-                Map.of("rules", List.of(rule), "socketScenarios", List.of(socketConfig))));
+        // Chỉ rule cấu trúc: bài nộp đạt mọi phần được cấu hình ⇒ 100 điểm, AC. (Kịch bản socket thất bại /
+        // điểm một phần được phủ bởi test 3.2.) Judge không còn đọc execution-report.json dựng sẵn — điểm
+        // được tính từ lần chấm thật, nên test không dựng report giả nữa.
+        problem.setGradingConfig(objectMapper.writeValueAsString(Map.of("rules", List.of(rule))));
 
-        // Stage mock execution report for in-process harness simulation
-        ExecutionReport mockReport = ExecutionReport.builder()
-                .submissionId(submissionId)
-                .executionPhase("COMPLETED")
-                .phases(ExecutionReport.PhaseBreakdown.builder()
-                        .compilation(ExecutionReport.CompilationPhase.builder().passed(true).durationMs(150L).build())
-                        .oopInspection(ExecutionReport.OopInspectionPhase.builder()
-                                .score(100.0).weight(0.30).weightedScore(30.0)
-                                .rules(List.of(OopRuleResult.builder().ruleName("CLASS_SERVICE").passed(true).build()))
-                                .build())
-                        .unitTest(ExecutionReport.UnitTestPhase.builder()
-                                .score(100.0).weight(0.40).weightedScore(40.0).passedCount(1).totalCount(1)
-                                .build())
-                        .socketIntegration(ExecutionReport.SocketIntegrationPhase.builder()
-                                .score(100.0).weight(0.30).weightedScore(30.0)
-                                .scenarios(List.of(ExecutionReport.SocketScenarioResult.builder().scenarioName("SERVICE_SOCKET").passed(true).build()))
-                                .build())
-                        .build())
-                .build();
-
-        mockReport = scoreCalculator.aggregateAndEnrich(mockReport, true);
-        Files.writeString(workDir.resolve("execution-report.json"), objectMapper.writeValueAsString(mockReport));
-
-        when(processLauncher.launch(any())).thenReturn(process);
-        when(process.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
-        when(process.getErrorStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
-        when(process.waitFor(anyLong(), any(TimeUnit.class))).thenReturn(true);
-        when(process.exitValue()).thenReturn(0);
 
         when(submissionService.getSubmissionById(submissionId)).thenReturn(submission);
         when(submissionService.getSubmissionCode(submissionId)).thenReturn(codeBundle);
@@ -546,8 +514,9 @@ public class OopGrindingPipelineRobustnessTest {
         JsonNode oopNode = phases.get("oopInspection");
         assertThat(oopNode).isNotNull();
         assertThat(oopNode.get("score").asDouble()).isEqualTo(100.0);
-        assertThat(oopNode.get("weight").asDouble()).isEqualTo(0.50);
-        assertThat(oopNode.get("weightedScore").asDouble()).isEqualTo(50.0);
+        // Phần duy nhất được cấu hình ⇒ chiếm toàn bộ trọng số.
+        assertThat(oopNode.get("weight").asDouble()).isEqualTo(1.0);
+        assertThat(oopNode.get("weightedScore").asDouble()).isEqualTo(100.0);
         assertThat(oopNode.get("rules")).isNotEmpty();
 
         // Phase 3: Unit Test
@@ -559,18 +528,17 @@ public class OopGrindingPipelineRobustnessTest {
         assertThat(unitNode.get("passedCount").asInt()).isEqualTo(0); // ServiceTest.java của học viên không được chạy
         assertThat(unitNode.get("totalCount").asInt()).isEqualTo(0);
 
-        // Phase 4: Socket Integration
+        // Phase 4: Socket Integration — không cấu hình ⇒ tắt, không đóng góp điểm.
         JsonNode socketNode = phases.get("socketIntegration");
-        assertThat(socketNode).isNotNull();
-        assertThat(socketNode.get("score").asDouble()).isEqualTo(100.0);
-        assertThat(socketNode.get("weight").asDouble()).isEqualTo(0.50);
-        assertThat(socketNode.get("weightedScore").asDouble()).isEqualTo(50.0);
-        assertThat(socketNode.get("scenarios")).isNotEmpty();
+        double socketWeighted = socketNode == null ? 0.0 : socketNode.path("weightedScore").asDouble(0.0);
+        if (socketNode != null) {
+            assertThat(socketNode.path("weight").asDouble(0.0)).isEqualTo(0.0);
+        }
 
         // Mathematical summation integrity check
         double expectedTotal = oopNode.get("weightedScore").asDouble()
                 + unitNode.get("weightedScore").asDouble()
-                + socketNode.get("weightedScore").asDouble();
+                + socketWeighted;
         assertThat(root.get("totalScore").asDouble()).isEqualTo(expectedTotal);
     }
 

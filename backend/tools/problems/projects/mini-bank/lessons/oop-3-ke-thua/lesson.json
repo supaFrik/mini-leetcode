@@ -1,0 +1,44 @@
+{
+  "slug": "oop-3-ke-thua",
+  "title": "Inheritance: payroll",
+  "difficulty": "EASY",
+  "tags": ["OOP", "Inheritance", "Override"],
+  "forStage": 2,
+  "rules": [
+    {
+      "ruleName": "EMPLOYEE_BASE",
+      "targetClassName": "Employee",
+      "expectedType": "CLASS",
+      "constructors": [{"parameterTypes": ["String", "long"]}],
+      "methods": [
+        {"name": "salary", "returnType": "long", "requiredModifiers": ["public"]},
+        {"name": "role", "returnType": "String", "requiredModifiers": ["public"]}
+      ],
+      "customFailureMessage": "Employee needs Employee(String, long), public long salary() and public String role()"
+    },
+    {
+      "ruleName": "MANAGER_EXTENDS_EMPLOYEE",
+      "targetClassName": "Manager",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Employee",
+      "constructors": [{"parameterTypes": ["String", "long", "long"]}],
+      "methods": [{"name": "salary", "returnType": "long", "requiredModifiers": ["public"]}],
+      "customFailureMessage": "Manager must extend Employee, have Manager(String, long, long) and override salary()"
+    },
+    {
+      "ruleName": "INTERN_EXTENDS_EMPLOYEE",
+      "targetClassName": "Intern",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Employee",
+      "methods": [{"name": "salary", "returnType": "long", "requiredModifiers": ["public"]}],
+      "customFailureMessage": "Intern must extend Employee and override salary()"
+    }
+  ],
+  "cases": [
+    {"name": "example", "stdin": "3\nE Ann 10000000\nM Ha 20000000 5000000\nI Tu 6000000\n"},
+    {"name": "employees-only", "stdin": "2\nE Lan 7000000\nE Minh 8000000\n"},
+    {"name": "odd-intern-salary", "stdin": "2\nI Bao 5000001\nI Chi 1\n"},
+    {"name": "several-managers", "stdin": "4\nM A 30000000 0\nM B 30000000 10000000\nE C 9000000\nI D 4000000\n"},
+    {"name": "nobody", "stdin": "0\n"}
+  ]
+}

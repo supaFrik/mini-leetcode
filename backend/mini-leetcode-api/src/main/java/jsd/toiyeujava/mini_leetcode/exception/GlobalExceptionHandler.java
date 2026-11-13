@@ -26,11 +26,60 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /**
+     * Lỗi có {@code code} đọc được bằng máy cho plugin IDE (specs/study-plan.spec.md, Error Handling).
+     * Dùng chung cho handler bên dưới và cho {@code JwtAuthenticationFilter} (lỗi xảy ra trước controller).
+     */
+    public static ProblemDetail coded(HttpStatus status, String title, String type, String detail, String code) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        problem.setTitle(title);
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/" + type));
+        problem.setProperty("code", code);
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException.class)
+    public ProblemDetail handlePatForbidden(jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException ex) {
+        return coded(HttpStatus.FORBIDDEN, "Forbidden", "forbidden", ex.getMessage(),
+                jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException.CODE);
+    }
+
+    @ExceptionHandler(StageLockedException.class)
+    public ProblemDetail handleStageLocked(StageLockedException ex) {
+        return coded(HttpStatus.CONFLICT, "Stage Locked", "conflict", ex.getMessage(), StageLockedException.CODE);
+    }
+
+    @ExceptionHandler(TopicLockedException.class)
+    public ProblemDetail handleTopicLocked(TopicLockedException ex) {
+        return coded(HttpStatus.CONFLICT, "Topic Locked", "conflict", ex.getMessage(), TopicLockedException.CODE);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail handleAccessDeniedException(AccessDeniedException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied: insufficient permissions");
         problem.setTitle("Forbidden");
         problem.setType(URI.create("https://api.mini-leetcode.com/errors/forbidden"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ProblemDetail handleForbiddenOperation(ForbiddenOperationException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problem.setTitle("Forbidden");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/forbidden"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    /** Hai người cùng sửa một bản ghi có {@code @Version}: người lưu sau phải tải lại. */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ProblemDetail handleOptimisticLock(Exception ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "Contest was changed by someone else, reload");
+        problem.setTitle("Resource Conflict");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/conflict"));
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
@@ -157,6 +206,25 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
         problem.setTitle("Storage Error");
         problem.setType(URI.create("https://api.mini-leetcode.com/errors/storage-error"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidGradingConfigException.class)
+    public ProblemDetail handleInvalidGradingConfigException(InvalidGradingConfigException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Grading configuration is invalid");
+        problem.setTitle("Invalid Grading Configuration");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/bad-request"));
+        problem.setProperty("errors", ex.getErrors());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(JudgeUnavailableException.class)
+    public ProblemDetail handleJudgeUnavailableException(JudgeUnavailableException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        problem.setTitle("Judge Unavailable");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/judge-unavailable"));
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }

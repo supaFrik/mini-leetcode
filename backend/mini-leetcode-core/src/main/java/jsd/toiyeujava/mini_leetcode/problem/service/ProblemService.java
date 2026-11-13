@@ -1,5 +1,6 @@
 package jsd.toiyeujava.mini_leetcode.problem.service;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
+import jsd.toiyeujava.mini_leetcode.entity.ProblemScope;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
 
 import jakarta.persistence.criteria.Join;
@@ -17,6 +18,8 @@ import jsd.toiyeujava.mini_leetcode.testcase.entity.TestCase;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.exception.StateConflictException;
+import jsd.toiyeujava.mini_leetcode.contest.repository.ContestProblemRepository;
+import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemTagRepository;
 import jsd.toiyeujava.mini_leetcode.problem.util.TagNormalizer;
@@ -53,6 +56,14 @@ public class ProblemService {
     private final ProblemTagRepository problemTagRepository;
     private final SubmissionRepository submissionRepository;
 
+    /** Tuỳ chọn (không có trong unit test dựng tay): chặn gỡ bài đang nằm trong kỳ thi chưa kết thúc. */
+    private ContestProblemRepository contestProblemRepository;
+
+    @Autowired(required = false)
+    public void setContestProblemRepository(ContestProblemRepository contestProblemRepository) {
+        this.contestProblemRepository = contestProblemRepository;
+    }
+
     public ProblemService(ProblemRepository problemRepository) {
         this(problemRepository, null, null, null, null);
     }
@@ -84,6 +95,8 @@ public class ProblemService {
                 .memoryLimitMb(request.getMemoryLimitMbOrDefault())
                 .status(ProblemStatus.DRAFT)
                 .tags(TagNormalizer.normalize(request.tags()))
+                .problemType(request.problemType() != null ? request.problemType() : ProblemType.ALGORITHMIC)
+                .starterTemplates(blankToNull(request.starterTemplates()))
                 .createdBy(creator)
                 .build();
 
@@ -123,6 +136,12 @@ public class ProblemService {
         if (request.tags() != null) {
             problem.setTags(TagNormalizer.normalize(request.tags()));
         }
+        if (request.problemType() != null) {
+            problem.setProblemType(request.problemType());
+        }
+        if (request.starterTemplates() != null) {
+            problem.setStarterTemplates(blankToNull(request.starterTemplates()));
+        }
 
         problem = problemRepository.save(problem);
         return ProblemResponse.fromEntity(problem, countOfTestCases(problem.getId()), null);
@@ -153,6 +172,10 @@ public class ProblemService {
                     + ProblemLifecycle.allowedTargets(current));
         }
 
+        if (current == ProblemStatus.PUBLISHED) {
+            requireNotInActiveContest(id);
+        }
+
         if (target == ProblemStatus.PUBLISHED && !hasPublicTestCase(id)) {
             throw new StateConflictException(
                     "Cannot publish problem " + id + ": at least one public test case is required");
@@ -161,6 +184,22 @@ public class ProblemService {
         problem.setStatus(target);
         problem = problemRepository.save(problem);
         return ProblemResponse.fromEntity(problem, countOfTestCases(problem.getId()), null);
+    }
+
+    /**
+     * Bài đang dùng trong kỳ thi chưa kết thúc thì không được rời PUBLISHED / bị xoá:
+     * thí sinh sẽ mất đề giữa chừng. Trả 409 nêu tên kỳ thi.
+     */
+    private void requireNotInActiveContest(Long problemId) {
+        if (contestProblemRepository == null) {
+            return;
+        }
+        contestProblemRepository.findContestsByProblemId(problemId).stream()
+                .filter(c -> c.resolveStatus() != ContestStatus.COMPLETED)
+                .findFirst()
+                .ifPresent(c -> {
+                    throw new StateConflictException("Problem is used by contest '" + c.getTitle() + "'");
+                });
     }
 
     /** Số testcase của một bài (một truy vấn COUNT, không N+1). */
@@ -259,6 +298,31 @@ public class ProblemService {
     public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
                                              List<String> tags, UserProgress progress, Long userId,
                                              Pageable pageable, boolean staff, ProblemType problemType) {
+        return getProblems(difficulty, status, search, tags, progress, userId, pageable, staff, problemType,
+                ProblemScope.STANDALONE);
+    }
+
+    /** Đề thuộc khoá học: trong mục của plan chưa ARCHIVED, hoặc là bài code của chủ đề chưa ARCHIVED. */
+    private static Predicate inCourse(jakarta.persistence.criteria.Root<Problem> root,
+                                      jakarta.persistence.criteria.CriteriaQuery<?> query,
+                                      jakarta.persistence.criteria.CriteriaBuilder cb) {
+        var planProblems = query.subquery(Long.class);
+        var item = planProblems.from(jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem.class);
+        planProblems.select(item.<jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem, Long>join("problemIds"))
+                .where(cb.notEqual(item.get("plan").get("status"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus.ARCHIVED));
+        var topicProblems = query.subquery(Long.class);
+        var step = topicProblems.from(jsd.toiyeujava.mini_leetcode.topic.entity.TopicStep.class);
+        topicProblems.select(step.get("problemId"))
+                .where(cb.isNotNull(step.get("problemId")),
+                        cb.notEqual(step.get("topic").get("status"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus.ARCHIVED));
+        return cb.or(root.get("id").in(planProblems), root.get("id").in(topicProblems));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
+                                             List<String> tags, UserProgress progress, Long userId,
+                                             Pageable pageable, boolean staff, ProblemType problemType,
+                                             ProblemScope scope) {
         Set<Long> solvedIds = Set.of();
         Set<Long> attemptedIds = Set.of();
         if (userId != null && submissionRepository != null) {
@@ -273,6 +337,13 @@ public class ProblemService {
 
             if (!staff) {
                 predicates.add(cb.equal(root.get("status"), ProblemStatus.PUBLISHED));
+            }
+            // Trang Problems chỉ có đề lẻ; đề của khoá học vào qua plan / chủ đề. Học viên không bao giờ thấy ALL / COURSE.
+            ProblemScope effective = staff && scope != null ? scope : ProblemScope.STANDALONE;
+            if (effective == ProblemScope.STANDALONE) {
+                predicates.add(cb.not(inCourse(root, query, cb)));
+            } else if (effective == ProblemScope.COURSE) {
+                predicates.add(inCourse(root, query, cb));
             }
             if (difficulty != null) {
                 predicates.add(cb.equal(root.get("difficulty"), difficulty));
@@ -399,6 +470,8 @@ public class ProblemService {
         Problem problem = problemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + id));
 
+        requireNotInActiveContest(id);
+
         // Bài đã có bài nộp thì không được xoá cứng: lịch sử nộp bài trỏ tới
         // bài này và sẽ mất dữ liệu chấm điểm. Muốn gỡ thì chuyển sang ARCHIVED.
         if (submissionRepository != null && submissionRepository.countByProblemId(id) > 0) {
@@ -450,5 +523,9 @@ public class ProblemService {
             slug = slug.substring(0, slug.length() - 1);
         }
         return slug.isEmpty() ? "problem" : slug;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 }

@@ -1,0 +1,35 @@
+{
+  "slug": "oop-6-collections",
+  "title": "Collections: library",
+  "difficulty": "MEDIUM",
+  "tags": ["OOP", "Collections", "Encapsulation"],
+  "forStage": 4,
+  "rules": [
+    {
+      "ruleName": "LIBRARY_ENCAPSULATION",
+      "targetClassName": "Library",
+      "expectedType": "CLASS",
+      "enforceEncapsulation": true,
+      "methods": [
+        {"name": "add", "returnType": "boolean", "parameterTypes": ["Book"], "requiredModifiers": ["public"]},
+        {"name": "find", "returnType": "Book", "parameterTypes": ["String"], "requiredModifiers": ["public"]},
+        {"name": "all", "returnType": "List", "requiredModifiers": ["public"]}
+      ],
+      "customFailureMessage": "Library must keep its fields private and have public boolean add(Book), public Book find(String), public List<Book> all()"
+    },
+    {
+      "ruleName": "BOOK_ENCAPSULATION",
+      "targetClassName": "Book",
+      "expectedType": "CLASS",
+      "fields": [{"name": "*", "matchAllFields": true, "forbiddenModifiers": ["public"]}],
+      "customFailureMessage": "Book must have no public fields"
+    }
+  ],
+  "cases": [
+    {"name": "example", "stdin": "ADD B1 Clean Code\nADD B2 Effective Java\nADD B1 Refactoring\nFIND B2\nREMOVE B9\nLIST\nCOUNT\n"},
+    {"name": "empty", "stdin": "LIST\nCOUNT\nFIND X\nREMOVE X\n"},
+    {"name": "remove-and-add-again", "stdin": "ADD A Book A\nADD B Book B\nREMOVE A\nADD A New book A\nLIST\nCOUNT\n"},
+    {"name": "multi-word-title", "stdin": "ADD J1 Java   Concurrency   in Practice\nFIND J1\nLIST\n"},
+    {"name": "remove-all", "stdin": "ADD X1 One\nADD X2 Two\nREMOVE X1\nREMOVE X2\nREMOVE X2\nLIST\nCOUNT\n"}
+  ]
+}

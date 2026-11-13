@@ -173,7 +173,7 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await enterExamWorkspace(page);
 
       // Monaco loads from a CDN after the workspace renders; dispatch only once an editor exists.
-      await expect(page.locator('.monaco-editor, textarea[aria-label="Source code"]').first()).toBeVisible();
+      await expect(page.locator('.monaco-editor, textarea[aria-label="Source code"]').first()).toBeVisible({ timeout: 20_000 });
 
       // Check contextmenu event cancellation in editor
       const isDefaultPrevented = await page.evaluate(() => {
@@ -204,7 +204,7 @@ test.describe("Adversarial Stress-Testing: Proctored Exam & Workspace Flows", ()
       await enterExamWorkspace(page);
 
       // Monaco loads from a CDN after the workspace renders; dispatch only once an editor exists.
-      await expect(page.locator('.monaco-editor, textarea[aria-label="Source code"]').first()).toBeVisible();
+      await expect(page.locator('.monaco-editor, textarea[aria-label="Source code"]').first()).toBeVisible({ timeout: 20_000 });
 
       const dropPrevented = await page.evaluate(() => {
         const editor = document.querySelector(".monaco-editor") || document.querySelector('textarea[aria-label="Source code"]');

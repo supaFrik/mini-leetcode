@@ -1,0 +1,65 @@
+{
+  "slug": "oop-truu-tuong-da-hinh",
+  "title": "Abstract classes and polymorphism",
+  "summary": "",
+  "estMinutes": 20,
+  "steps": [
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
+    {
+      "type": "CHOICE", "title": "Which method runs?",
+      "content": {
+        "prompt": "```java\nShape s = new Circle(1);\nSystem.out.println(s.name());\n```\n`Circle.name()` returns `\"Circle\"`; `Shape.name()` is abstract. What is printed?",
+        "options": [{"id": "a", "text": "Circle"}, {"id": "b", "text": "Error: cannot call an abstract method"}, {"id": "c", "text": "null"}, {"id": "d", "text": "Shape"}]
+      },
+      "answer": {"correct": ["a"], "explanation": "The JVM picks Circle's implementation at run time."}
+    },
+    {
+      "type": "CHOICE", "title": "Abstract classes",
+      "content": {
+        "prompt": "Select all true statements about `abstract class Shape`.",
+        "multiple": true,
+        "options": [
+          {"id": "a", "text": "new Shape() does not compile"},
+          {"id": "b", "text": "It can have fields, constructors and methods with bodies"},
+          {"id": "c", "text": "A concrete subclass must implement every abstract method"},
+          {"id": "d", "text": "It may contain only abstract methods"}
+        ]
+      },
+      "answer": {"correct": ["a", "b", "c"]}
+    },
+    {
+      "type": "MATCHING", "title": "Declared and actual type",
+      "content": {
+        "prompt": "For `Shape s = new Square(2);`, match each question with its answer.",
+        "left": [{"id": "l1", "text": "Declared type of s"}, {"id": "l2", "text": "Actual type of the object"}, {"id": "l3", "text": "Decides which methods may be called"}, {"id": "l4", "text": "Decides which implementation runs"}],
+        "right": [{"id": "r1", "text": "Shape"}, {"id": "r2", "text": "Square"}, {"id": "r3", "text": "The compiler"}, {"id": "r4", "text": "The JVM at run time"}]
+      },
+      "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
+    },
+    {
+      "type": "ORDERING", "title": "Template method",
+      "content": {
+        "prompt": "Order the lines of `Shape`.",
+        "items": [
+          {"id": "a", "text": "public abstract class Shape {"},
+          {"id": "b", "text": "    public abstract double area();"},
+          {"id": "c", "text": "    public abstract String name();"},
+          {"id": "d", "text": "    public String describe() {"},
+          {"id": "e", "text": "        return String.format(Locale.ROOT, \"%s: %.2f\", name(), area());"},
+          {"id": "f", "text": "    }"},
+          {"id": "g", "text": "}"}
+        ]
+      },
+      "answer": {"order": ["a", "b", "c", "d", "e", "f", "g"]}
+    },
+    {
+      "type": "FILL_BLANK", "title": "Circle",
+      "content": {
+        "prompt": "Fill in the blanks.",
+        "code": "public class Circle [[1]] Shape {\n    private final double r;\n\n    public Circle(double r) { this.r = r; }\n\n    @Override\n    public double [[2]]() {\n        return Math.PI * r * r;\n    }\n\n    @Override\n    public String name() { return \"Circle\"; }\n}"
+      },
+      "answer": {"blanks": {"1": ["extends"], "2": ["area"]}, "caseSensitive": true}
+    },
+    {"type": "CODE", "title": "Shapes", "content": {}, "problem": "oop-4-truu-tuong-da-hinh"}
+  ]
+}

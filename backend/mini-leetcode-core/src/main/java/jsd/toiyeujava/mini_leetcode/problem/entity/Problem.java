@@ -70,6 +70,14 @@ public class Problem {
     private String gradingConfig;
 
     /**
+     * Lời giải mẫu {@code [{"path": "Main.java", "content": "..."}]} — sinh output kỳ vọng cho testcase.
+     * Chỉ API soạn bài của INSTRUCTOR/ADMIN đọc; KHÔNG đưa vào DTO công khai.
+     */
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "reference_solution", columnDefinition = "JSON")
+    private String referenceSolution;
+
+    /**
      * Chủ đề của bài tập (Array, String, Hash Table...).
      * Dùng bảng nối {@code problem_tags} để lọc được ở tầng SQL.
      */

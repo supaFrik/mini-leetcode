@@ -1,0 +1,25 @@
+{
+  "rules": [
+    {
+      "ruleName": "ECHO_SERVER_API",
+      "targetClassName": "EchoServer",
+      "expectedType": "CLASS",
+      "weight": 2.0,
+      "enforceEncapsulation": true,
+      "methods": [
+        {"name": "start", "returnType": "void", "parameterTypes": ["int"], "requiredModifiers": ["public"]},
+        {"name": "stop", "returnType": "void", "requiredModifiers": ["public"]}
+      ],
+      "customFailureMessage": "EchoServer cần public void start(int port), public void stop() và field private"
+    },
+    {
+      "ruleName": "CLIENT_HANDLER_RUNNABLE",
+      "targetClassName": "ClientHandler",
+      "expectedType": "CLASS",
+      "expectedInterfaces": ["Runnable"],
+      "enforceEncapsulation": true,
+      "methods": [{"name": "run", "returnType": "void", "requiredModifiers": ["public"]}],
+      "constructors": [{"parameterTypes": ["Socket"]}]
+    }
+  ]
+}

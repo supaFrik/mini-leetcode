@@ -1,0 +1,31 @@
+{
+  "slug": "oop-5-exception",
+  "title": "Exceptions: age validation",
+  "difficulty": "MEDIUM",
+  "tags": ["OOP", "Exceptions"],
+  "forStage": 3,
+  "rules": [
+    {
+      "ruleName": "CHECKED_INVALID_AGE",
+      "targetClassName": "InvalidAgeException",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Exception",
+      "constructors": [{"parameterTypes": ["String"], "requiredModifiers": ["public"]}],
+      "customFailureMessage": "InvalidAgeException must extend Exception and have public InvalidAgeException(String)"
+    },
+    {
+      "ruleName": "AGE_VALIDATOR",
+      "targetClassName": "AgeValidator",
+      "expectedType": "CLASS",
+      "methods": [{"name": "validate", "returnType": "int", "parameterTypes": ["String"], "requiredModifiers": ["public", "static"]}],
+      "customFailureMessage": "AgeValidator needs public static int validate(String)"
+    }
+  ],
+  "cases": [
+    {"name": "example", "stdin": "Ann 20\nBob abc\nCarl 200\nDan -1\nEve 0\n"},
+    {"name": "boundary-150", "stdin": "Old 150\nOlder 151\n"},
+    {"name": "decimals", "stdin": "Lan 20.5\nMai 1e3\nNam 7\n"},
+    {"name": "all-valid", "stdin": "A 1\nB 2\nC 3\n"},
+    {"name": "too-large", "stdin": "X 99999999999\nY 42\n"}
+  ]
+}

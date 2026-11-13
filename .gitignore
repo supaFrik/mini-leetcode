@@ -133,3 +133,7 @@ backend/tools/*/cases/
 
 # seed sinh bằng backend/tools/problems/seed_sql.py từ problems.json và statements/*.md
 backend/tools/seed-problems.sql
+backend/tools/seed-mini-bank-project.sql
+
+# ZIP plugin IntelliJ chép bằng `npm run plugin:copy` (bản build, không commit)
+frontend/public/downloads/*.zip

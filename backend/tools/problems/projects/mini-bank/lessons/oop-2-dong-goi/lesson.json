@@ -1,0 +1,29 @@
+{
+  "slug": "oop-2-dong-goi",
+  "title": "Encapsulation: wallet",
+  "difficulty": "EASY",
+  "tags": ["OOP", "Encapsulation"],
+  "forStage": 1,
+  "rules": [
+    {
+      "ruleName": "WALLET_ENCAPSULATED",
+      "targetClassName": "Wallet",
+      "expectedType": "CLASS",
+      "fields": [{"name": "*", "matchAllFields": true, "forbiddenModifiers": ["public"]}],
+      "constructors": [{"parameterTypes": ["String"], "requiredModifiers": ["public"]}],
+      "methods": [
+        {"name": "deposit", "returnType": "void", "parameterTypes": ["long"], "requiredModifiers": ["public"]},
+        {"name": "pay", "returnType": "void", "parameterTypes": ["long"], "requiredModifiers": ["public"]},
+        {"name": "getBalance", "returnType": "long", "requiredModifiers": ["public"]}
+      ],
+      "customFailureMessage": "Wallet must have no public fields and public void deposit(long), public void pay(long), public long getBalance()"
+    }
+  ],
+  "cases": [
+    {"name": "example", "stdin": "Lan\nDEPOSIT 100000\nPAY 30000\nPAY 500000\nDEPOSIT 0\nSHOW\n"},
+    {"name": "pay-everything", "stdin": "Minh\nDEPOSIT 50\nPAY 50\nPAY 1\nSHOW\n"},
+    {"name": "negative-amounts", "stdin": "Hoa\nDEPOSIT -10\nPAY -5\nSHOW\nDEPOSIT 7\nSHOW\n"},
+    {"name": "show-only", "stdin": "Nam Tran\nSHOW\n"},
+    {"name": "large-balance", "stdin": "Big\nDEPOSIT 2000000000\nDEPOSIT 2000000000\nPAY 1\nSHOW\n"}
+  ]
+}

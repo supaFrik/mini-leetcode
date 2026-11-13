@@ -251,29 +251,117 @@ public class TestCaseService {
                 : testCaseRepository.findByProblemIdAndIsHiddenFalseOrderByOrderIndexAsc(problemId);
 
         return testCases.stream().map(tc -> {
-            String inContent = null;
-            String outContent = null;
+            Preview in = Preview.EMPTY;
+            Preview out = Preview.EMPTY;
             if (!tc.getIsHidden() || includeHidden) {
-                inContent = readContentQuietly(tc.getInputFileUri());
-                outContent = readContentQuietly(tc.getExpectedOutputUri());
+                in = readPreviewQuietly(tc.getInputFileUri());
+                out = readPreviewQuietly(tc.getExpectedOutputUri());
             }
-            return TestCaseResponse.fromEntity(tc, inContent, outContent);
+            return TestCaseResponse.fromEntity(tc, in.text(), out.text(), in.truncated(), out.truncated());
         }).toList();
     }
 
-    private String readContentQuietly(String uri) {
+    /** Số byte tối đa trả về trong phần xem trước nội dung testcase. */
+    public static final int PREVIEW_BYTES = 8192;
+
+    private record Preview(String text, boolean truncated) {
+        static final Preview EMPTY = new Preview(null, false);
+    }
+
+    private Preview readPreviewQuietly(String uri) {
         if (uri == null || uri.isBlank()) {
-            return null;
+            return Preview.EMPTY;
         }
         try (InputStream is = storageService.downloadFileByUri(uri)) {
             if (is == null) {
-                return null;
+                return Preview.EMPTY;
             }
-            byte[] bytes = is.readNBytes(8192);
-            return new String(bytes, StandardCharsets.UTF_8);
+            // Đọc thêm 1 byte để biết file có dài hơn phần xem trước không.
+            byte[] bytes = is.readNBytes(PREVIEW_BYTES + 1);
+            boolean truncated = bytes.length > PREVIEW_BYTES;
+            int length = truncated ? PREVIEW_BYTES : bytes.length;
+            return new Preview(new String(bytes, 0, length, StandardCharsets.UTF_8), truncated);
         } catch (Exception e) {
-            return null;
+            return Preview.EMPTY;
         }
+    }
+
+    /**
+     * Đọc toàn bộ nội dung một file testcase (dùng khi chạy lời giải mẫu).
+     *
+     * @return nội dung, hoặc {@code null} nếu file lớn hơn {@code maxBytes}
+     */
+    public String readFullContent(String uri, int maxBytes) {
+        try (InputStream is = storageService.downloadFileByUri(uri)) {
+            if (is == null) {
+                throw new StorageException("Test case file not found: " + uri);
+            }
+            byte[] bytes = is.readNBytes(maxBytes + 1);
+            return bytes.length > maxBytes ? null : new String(bytes, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new StorageException("Failed to read test case file", e);
+        }
+    }
+
+    /**
+     * Thay output kỳ vọng của một testcase bằng nội dung văn bản (output sinh từ lời giải mẫu).
+     * Cùng quy tắc với {@link #updateTestCase}: khoá object bất biến, dọn file cũ sau commit, bài PUBLISHED bị khoá.
+     */
+    @Transactional
+    public TestCaseResponse replaceExpectedOutput(Long problemId, Long testCaseId, String content) {
+        TestCase testCase = testCaseRepository.findById(testCaseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Test case not found with id: " + testCaseId));
+        if (!testCase.getProblem().getId().equals(problemId)) {
+            throw new IllegalArgumentException("Test case does not belong to problem: " + problemId);
+        }
+        if (ProblemLifecycle.isTestCaseFrozen(testCase.getProblem().getStatus())) {
+            throw new StateConflictException("Test cases of a PUBLISHED problem are frozen and cannot be modified");
+        }
+        byte[] bytes = (content == null ? "" : content).getBytes(StandardCharsets.UTF_8);
+        String objectName = String.format("problems/%d/testcases/%d_output_%s.txt",
+                problemId, testCase.getOrderIndex(), UUID.randomUUID());
+        String oldOutputUri = testCase.getExpectedOutputUri();
+        String uploaded = storageService.uploadFile(objectName, new java.io.ByteArrayInputStream(bytes),
+                bytes.length, "text/plain");
+        try {
+            long inputSize = Math.max(0, testCase.getFileSizeBytes() - sizeOfQuietly(oldOutputUri));
+            testCase.setExpectedOutputUri(uploaded);
+            testCase.setFileSizeBytes(inputSize + bytes.length);
+            TestCase saved = testCaseRepository.save(testCase);
+            String inputUri = testCase.getInputFileUri();
+            scheduleCleanupAfterCommit(inputUri, inputUri, oldOutputUri, uploaded);
+            return TestCaseResponse.fromEntity(saved);
+        } catch (RuntimeException e) {
+            storageService.deleteFileByUri(uploaded);
+            throw e;
+        }
+    }
+
+    private long sizeOfQuietly(String uri) {
+        try (InputStream is = storageService.downloadFileByUri(uri)) {
+            return is == null ? 0 : is.transferTo(java.io.OutputStream.nullOutputStream());
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Đặt nhãn hiển thị trong thông báo lỗi của judge (vd. "stage 1 · two-accounts"); rỗng ⇒ bỏ nhãn.
+     * Nhãn không phải dữ liệu chấm nên đổi được cả khi bài đang PUBLISHED (testcase bị khoá).
+     */
+    @Transactional
+    public TestCaseResponse setLabel(Long problemId, Long testCaseId, String label) {
+        TestCase testCase = testCaseRepository.findById(testCaseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Test case not found with id: " + testCaseId));
+        if (!testCase.getProblem().getId().equals(problemId)) {
+            throw new IllegalArgumentException("Test case does not belong to problem: " + problemId);
+        }
+        String trimmed = label == null ? null : label.trim();
+        if (trimmed != null && trimmed.length() > 100) {
+            throw new IllegalArgumentException("Test case label must be at most 100 characters");
+        }
+        testCase.setLabel(trimmed == null || trimmed.isEmpty() ? null : trimmed);
+        return TestCaseResponse.fromEntity(testCaseRepository.save(testCase));
     }
 
     @Transactional

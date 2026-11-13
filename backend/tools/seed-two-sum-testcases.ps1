@@ -47,9 +47,13 @@ $order = 0
 foreach ($in in Get-ChildItem $cases -Filter *.in | Sort-Object Name) {
     $out = [IO.Path]::ChangeExtension($in.FullName, ".out")
     $hidden = if ($in.BaseName -like "*-hidden") { "true" } else { "false" }
+    # Nhãn hiện trong thông báo lỗi của judge: "02-s1-two-accounts-hidden" -> "stage 1: two-accounts"
+    # (bộ sinh của project Mini Bank), tên khác -> bỏ số thứ tự đầu, vd "03-large-input".
+    $stem = $in.BaseName -replace '-hidden$', ''
+    $label = if ($stem -match '^\d+-s(\d+)-(.+)$') { "stage $($Matches[1]): $($Matches[2])" } else { $stem -replace '^\d+-', '' }
     # curl.exe vì Invoke-RestMethod của PowerShell 5.1 không gửi được multipart.
     & curl.exe -sS -f -X POST "$base`?isHidden=$hidden&orderIndex=$order" -H "Authorization: Bearer $($login.accessToken)" `
-        -F "inputFile=@$($in.FullName)" -F "outputFile=@$out" | Out-Null
+        -F "inputFile=@$($in.FullName)" -F "outputFile=@$out" -F "label=$label" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Upload failed: $($in.Name)" }
     Write-Host "uploaded $($in.BaseName) (hidden=$hidden)"
     $order++

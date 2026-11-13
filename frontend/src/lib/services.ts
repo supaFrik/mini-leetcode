@@ -10,8 +10,12 @@ import { setTokens } from "./auth";
 import * as mock from "./mock-server";
 import type { PollFetch } from "./polling";
 import type {
-  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
+  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemScope, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
+  AccessToken, CreatedAccessToken, PublishCheck, StudyPlanDetail, StudyPlanDraft, StudyPlanStatus, StudyPlanSummary,
+  AttemptResult, AuthoringTopic, LearnerTopic, StepAnswer, TopicDraft, TopicSummary,
+  GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
+  AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
 } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
@@ -119,6 +123,8 @@ export interface AdminProblemQuery {
   status: string;
   tags: string[];
   type?: ProblemType;
+  /** STANDALONE (mặc định của server) = đề lẻ; COURSE = đề nằm trong study plan / chủ đề; ALL = tất cả. */
+  scope?: ProblemScope;
 }
 
 /** Danh sách bài cho trang quản trị — staff thấy cả bài chưa publish. */
@@ -130,6 +136,7 @@ export async function fetchAdminProblems(q: AdminProblemQuery): Promise<Page<Pro
   if (q.status) qs.set("status", q.status);
   if (q.type) qs.set("type", q.type);
   if (q.tags.length) qs.set("tags", q.tags.join(","));
+  if (q.scope) qs.set("scope", q.scope);
   const raw = await api<Raw>(`/api/v1/problems?${qs}`);
   const page = normPage<Raw>(raw);
   return { ...page, content: page.content.map(normProblem) };
@@ -167,6 +174,7 @@ export async function deleteProblem(id: number): Promise<void> {
 const normCase = (r: Raw): TestCase => ({
   id: r.id, input: r.input ?? r.inputContent ?? r.inputPreview ?? "", expectedOutput: r.expectedOutput ?? r.expectedOutputContent ?? r.outputPreview ?? "",
   isHidden: !!(r.isHidden ?? r.hidden), orderIndex: r.orderIndex ?? 0, explanation: r.explanation,
+  inputTruncated: !!r.inputTruncated, expectedOutputTruncated: !!r.expectedOutputTruncated,
 });
 export async function fetchTestCases(problemId: number): Promise<TestCase[]> {
   if (USE_MOCK) return mock.getTestCases(problemId);
@@ -180,6 +188,66 @@ export async function addTestCase(problemId: number, c: { input: string; expecte
   fd.append("outputFile", new Blob([c.expectedOutput], { type: "text/plain" }), "output.txt");
   fd.append("isHidden", String(c.isHidden));
   return normCase(await api<Raw>(`/api/v1/problems/${problemId}/test-cases`, { method: "POST", body: fd }));
+}
+
+/** Cập nhật testcase. Trường nào không truyền thì giữ nguyên (file được gửi dạng multipart). */
+export async function updateTestCase(
+  problemId: number,
+  testCaseId: number,
+  c: { input?: string; expectedOutput?: string; isHidden?: boolean },
+): Promise<TestCase> {
+  if (USE_MOCK) return mock.updateTestCase(problemId, testCaseId, c);
+  const fd = new FormData();
+  if (c.input !== undefined) fd.append("inputFile", new Blob([c.input], { type: "text/plain" }), "input.txt");
+  if (c.expectedOutput !== undefined) fd.append("outputFile", new Blob([c.expectedOutput], { type: "text/plain" }), "output.txt");
+  if (c.isHidden !== undefined) fd.append("isHidden", String(c.isHidden));
+  return normCase(await api<Raw>(`/api/v1/problems/${problemId}/test-cases/${testCaseId}`, { method: "PUT", body: fd }));
+}
+export async function deleteTestCase(problemId: number, testCaseId: number): Promise<void> {
+  if (USE_MOCK) return mock.deleteTestCase(problemId, testCaseId);
+  await api<Raw>(`/api/v1/problems/${problemId}/test-cases/${testCaseId}`, { method: "DELETE" });
+}
+
+// ---------- Soạn bài: grading_config, lời giải mẫu, sinh output (INSTRUCTOR/ADMIN) ----------
+const authoringBase = (id: number) => `/api/v1/admin/problems/${id}`;
+const normAuthoring = (r: Raw): ProblemAuthoring => ({
+  problemId: r.problemId, status: r.status, problemType: r.problemType ?? "ALGORITHMIC",
+  gradingConfig: r.gradingConfig ?? null, referenceSolution: r.referenceSolution ?? [],
+  gradingFrozen: !!r.gradingFrozen, timeLimitMs: r.timeLimitMs ?? 1000, memoryLimitMb: r.memoryLimitMb ?? 256,
+});
+export async function fetchAuthoring(problemId: number): Promise<ProblemAuthoring> {
+  if (USE_MOCK) return mock.getAuthoring(problemId);
+  return normAuthoring(await api<Raw>(`${authoringBase(problemId)}/authoring`));
+}
+export async function validateGradingConfig(problemId: number, gradingConfig: string): Promise<GradingValidation> {
+  if (USE_MOCK) return mock.validateGradingConfig(gradingConfig);
+  return api<GradingValidation>(`${authoringBase(problemId)}/grading-config/validate`, {
+    method: "POST", body: JSON.stringify({ gradingConfig }),
+  });
+}
+/** Lưu grading_config (rỗng ⇒ xoá). Lỗi 400 mang `errors` trong ApiError.body. */
+export async function saveGradingConfig(problemId: number, gradingConfig: string | null): Promise<ProblemAuthoring> {
+  if (USE_MOCK) return mock.saveGradingConfig(problemId, gradingConfig);
+  return normAuthoring(await api<Raw>(`${authoringBase(problemId)}/grading-config`, {
+    method: "PUT", body: JSON.stringify({ gradingConfig }),
+  }));
+}
+export async function saveReferenceSolution(problemId: number, files: SubmissionFile[]): Promise<ProblemAuthoring> {
+  if (USE_MOCK) return mock.saveReferenceSolution(problemId, files);
+  return normAuthoring(await api<Raw>(`${authoringBase(problemId)}/reference-solution`, {
+    method: "PUT", body: JSON.stringify({ files }),
+  }));
+}
+/**
+ * Chạy lời giải mẫu đã lưu trong sandbox của judge.
+ * `inputs`: stdin tuỳ ý (soạn testcase mới). Không có `inputs`: chạy trên testcase của bài, `apply` ghi output mới.
+ */
+export async function runReference(
+  problemId: number,
+  body: { inputs?: string[]; testCaseIds?: number[]; apply?: boolean },
+): Promise<ReferenceRunResult> {
+  if (USE_MOCK) return mock.runReference(problemId, body);
+  return api<ReferenceRunResult>(`${authoringBase(problemId)}/reference-run`, { method: "POST", body: JSON.stringify(body) });
 }
 
 // ---------- Submissions ----------
@@ -310,4 +378,142 @@ export async function loadDraft(cid: number, pid: number, lang: Language): Promi
 export async function saveDraft(cid: number, pid: number, lang: Language, value: string): Promise<void> {
   if (USE_MOCK) return mock.saveDraft(cid, pid, lang, value);
   await api(`/api/v1/contests/${cid}/problems/${pid}/draft`, { method: "PUT", body: JSON.stringify({ language: lang, code: value }) });
+}
+
+// ---------- Study plans (specs/study-plan.spec.md) ----------
+// Backend trả thẳng JSON (không bọc ApiResponse); `api()` xử lý được cả hai dạng.
+export async function fetchStudyPlans(): Promise<StudyPlanSummary[]> {
+  if (USE_MOCK) return mock.listStudyPlans();
+  return (await api<StudyPlanSummary[]>("/api/v1/study-plans")) ?? [];
+}
+export async function fetchStudyPlan(slug: string): Promise<StudyPlanDetail> {
+  if (USE_MOCK) return mock.getStudyPlan(slug);
+  return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}`);
+}
+
+// Soạn plan (INSTRUCTOR / ADMIN). Server kiểm tra quyền tác giả, đề PUBLISHED, đề không thuộc plan khác.
+export async function createStudyPlan(draft: StudyPlanDraft): Promise<StudyPlanDetail> {
+  if (USE_MOCK) return mock.saveStudyPlan(null, draft);
+  return api<StudyPlanDetail>("/api/v1/study-plans", { method: "POST", body: JSON.stringify(draft) });
+}
+export async function updateStudyPlan(slug: string, draft: StudyPlanDraft): Promise<StudyPlanDetail> {
+  if (USE_MOCK) return mock.saveStudyPlan(slug, draft);
+  return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}`, { method: "PUT", body: JSON.stringify(draft) });
+}
+export async function transitionStudyPlan(slug: string, status: StudyPlanStatus): Promise<StudyPlanDetail> {
+  if (USE_MOCK) return mock.transitionStudyPlan(slug, status);
+  return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}/transitions`, { method: "POST", body: JSON.stringify({ status }) });
+}
+export async function deleteStudyPlan(slug: string): Promise<void> {
+  if (USE_MOCK) return mock.deleteStudyPlan(slug);
+  await api(`/api/v1/study-plans/${encodeURIComponent(slug)}`, { method: "DELETE" });
+}
+
+// ---------- Course Builder (specs/course-builder.spec.md) ----------
+export async function fetchPublishCheck(slug: string): Promise<PublishCheck> {
+  if (USE_MOCK) return mock.publishCheck(slug);
+  return api<PublishCheck>(`/api/v1/study-plans/${encodeURIComponent(slug)}/publish-check`);
+}
+/** Publish plan cùng mọi đề / chủ đề chưa PUBLISHED bên trong (một transaction ở server). */
+export async function publishStudyPlan(slug: string): Promise<StudyPlanDetail> {
+  if (USE_MOCK) return mock.publishStudyPlan(slug);
+  return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}/publish`, { method: "POST" });
+}
+/** Đề DRAFT mới chép đề bài, grading, starter, lời giải mẫu và mọi testcase của `problemId`. */
+export async function cloneProblem(problemId: number, title: string): Promise<ProblemFull> {
+  if (USE_MOCK) return mock.cloneProblem(problemId, title);
+  return normProblem(await api<Raw>(`/api/v1/admin/problems/${problemId}/clone`, { method: "POST", body: JSON.stringify({ title }) }));
+}
+/** PUBLISHED → DRAFT để sửa testcase / grading; học viên không nộp được stage này cho tới khi publish lại. */
+export async function unlockProblem(problemId: number): Promise<ProblemFull> {
+  if (USE_MOCK) return mock.unlockProblem(problemId);
+  return normProblem(await api<Raw>(`/api/v1/admin/problems/${problemId}/unlock`, { method: "POST" }));
+}
+
+// ---------- Chủ đề học (specs/topics.spec.md) ----------
+const topicPath = (slug: string) => `/api/v1/topics/${encodeURIComponent(slug)}`;
+export async function fetchTopic(slug: string): Promise<LearnerTopic> {
+  if (USE_MOCK) return mock.getTopic(slug);
+  return api<LearnerTopic>(topicPath(slug));
+}
+export async function attemptTopicStep(slug: string, stepId: number, answer: StepAnswer): Promise<AttemptResult> {
+  if (USE_MOCK) return mock.attemptTopicStep(slug, stepId, answer);
+  return api<AttemptResult>(`${topicPath(slug)}/steps/${stepId}/attempts`, { method: "POST", body: JSON.stringify({ answer }) });
+}
+export async function setTopicSkipped(slug: string, skipped: boolean): Promise<void> {
+  if (USE_MOCK) return mock.setTopicSkipped(slug, skipped);
+  await api(`${topicPath(slug)}/skip`, { method: skipped ? "POST" : "DELETE" });
+}
+// Soạn (INSTRUCTOR / ADMIN)
+export async function fetchTopics(search = ""): Promise<TopicSummary[]> {
+  if (USE_MOCK) return mock.listTopics(search);
+  return (await api<TopicSummary[]>(`/api/v1/topics${search ? `?search=${encodeURIComponent(search)}` : ""}`)) ?? [];
+}
+export async function fetchTopicForAuthoring(slug: string): Promise<AuthoringTopic> {
+  if (USE_MOCK) return mock.getTopicForAuthoring(slug);
+  return api<AuthoringTopic>(`${topicPath(slug)}/authoring`);
+}
+export async function saveTopic(slug: string | null, draft: TopicDraft): Promise<AuthoringTopic> {
+  if (USE_MOCK) return mock.saveTopic(slug, draft);
+  return slug
+    ? api<AuthoringTopic>(topicPath(slug), { method: "PUT", body: JSON.stringify(draft) })
+    : api<AuthoringTopic>("/api/v1/topics", { method: "POST", body: JSON.stringify(draft) });
+}
+export async function transitionTopic(slug: string, status: StudyPlanStatus): Promise<AuthoringTopic> {
+  if (USE_MOCK) return mock.transitionTopic(slug, status);
+  return api<AuthoringTopic>(`${topicPath(slug)}/transitions`, { method: "POST", body: JSON.stringify({ status }) });
+}
+export async function deleteTopic(slug: string): Promise<void> {
+  if (USE_MOCK) return mock.deleteTopic(slug);
+  await api(topicPath(slug), { method: "DELETE" });
+}
+
+// ---------- Personal access tokens (plugin IntelliJ) ----------
+export async function fetchAccessTokens(): Promise<AccessToken[]> {
+  if (USE_MOCK) return mock.listTokens();
+  return (await api<AccessToken[]>("/api/v1/me/tokens")) ?? [];
+}
+export async function createAccessToken(name: string, expiresInDays: number): Promise<CreatedAccessToken> {
+  if (USE_MOCK) return mock.createToken(name, expiresInDays);
+  return api<CreatedAccessToken>("/api/v1/me/tokens", { method: "POST", body: JSON.stringify({ name, expiresInDays }) });
+}
+export async function revokeAccessToken(id: number): Promise<void> {
+  if (USE_MOCK) return mock.revokeToken(id);
+  await api(`/api/v1/me/tokens/${id}`, { method: "DELETE" });
+}
+
+/** File ZIP của plugin; `npm run plugin:copy` chép bản build vào public/downloads. */
+export const PLUGIN_DOWNLOAD_URL = process.env.NEXT_PUBLIC_PLUGIN_DOWNLOAD_URL || "/downloads/mini-leetcode-intellij.zip";
+// ---------- Admin: kỳ thi (/api/v1/admin/contests, INSTRUCTOR + ADMIN; xoá chỉ ADMIN) ----------
+// Không có bản mock: trang này luôn nói chuyện với API thật (e2e chặn request bằng page.route).
+export async function fetchAdminContests(q: { status?: string; search?: string } = {}): Promise<AdminContestSummary[]> {
+  const qs = new URLSearchParams();
+  if (q.status) qs.set("status", q.status);
+  if (q.search) qs.set("search", q.search);
+  const s = qs.toString();
+  return api<AdminContestSummary[]>(`/api/v1/admin/contests${s ? `?${s}` : ""}`);
+}
+export async function fetchAdminContest(id: number): Promise<AdminContestDetail> {
+  return api<AdminContestDetail>(`/api/v1/admin/contests/${id}`);
+}
+export async function createContest(body: ContestUpsert): Promise<AdminContestDetail> {
+  return api<AdminContestDetail>("/api/v1/admin/contests", { method: "POST", body: JSON.stringify(body) });
+}
+export async function updateContest(id: number, body: ContestUpsert): Promise<AdminContestDetail> {
+  return api<AdminContestDetail>(`/api/v1/admin/contests/${id}`, { method: "PUT", body: JSON.stringify(body) });
+}
+export async function deleteContest(id: number): Promise<void> {
+  await api(`/api/v1/admin/contests/${id}`, { method: "DELETE" });
+}
+export async function fetchContestParticipants(id: number): Promise<AdminParticipant[]> {
+  return api<AdminParticipant[]>(`/api/v1/admin/contests/${id}/participants`);
+}
+export async function addContestParticipants(id: number, entries: string): Promise<BulkParticipantsResult> {
+  return api<BulkParticipantsResult>(`/api/v1/admin/contests/${id}/participants`, {
+    method: "POST",
+    body: JSON.stringify({ entries }),
+  });
+}
+export async function removeContestParticipant(id: number, userId: number): Promise<void> {
+  await api(`/api/v1/admin/contests/${id}/participants/${userId}`, { method: "DELETE" });
 }

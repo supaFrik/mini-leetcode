@@ -1,0 +1,69 @@
+{
+  "slug": "oop-collections",
+  "title": "Collections",
+  "summary": "",
+  "estMinutes": 15,
+  "steps": [
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
+    {
+      "type": "CHOICE", "title": "Pick a collection",
+      "content": {
+        "prompt": "A bank needs fast lookup by id and listing in opening order. Which type?",
+        "options": [
+          {"id": "a", "text": "ArrayList<Account>"},
+          {"id": "b", "text": "HashSet<Account>"},
+          {"id": "c", "text": "LinkedHashMap<Integer, Account>"},
+          {"id": "d", "text": "HashMap<Integer, Account>"}
+        ]
+      },
+      "answer": {"correct": ["c"], "explanation": "A map looks up by id; the linked variant keeps insertion order."}
+    },
+    {
+      "type": "CHOICE", "title": "Safe getter",
+      "content": {
+        "prompt": "`Bank` has `private final List<Account> accounts`. Select every return statement that callers cannot use to change the bank's data.",
+        "multiple": true,
+        "options": [
+          {"id": "a", "text": "return accounts;"},
+          {"id": "b", "text": "return List.copyOf(accounts);"},
+          {"id": "c", "text": "return Collections.unmodifiableList(accounts);"},
+          {"id": "d", "text": "Make the field public"}
+        ]
+      },
+      "answer": {"correct": ["b", "c"]}
+    },
+    {
+      "type": "MATCHING", "title": "Interfaces",
+      "content": {
+        "prompt": "Match each type with its property.",
+        "left": [{"id": "l1", "text": "List"}, {"id": "l2", "text": "Set"}, {"id": "l3", "text": "Map"}, {"id": "l4", "text": "LinkedHashMap"}],
+        "right": [{"id": "r1", "text": "Ordered, duplicates allowed"}, {"id": "r2", "text": "No duplicates"}, {"id": "r3", "text": "Key to value, unique keys"}, {"id": "r4", "text": "Map that keeps insertion order"}]
+      },
+      "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
+    },
+    {
+      "type": "ORDERING", "title": "Add without duplicates",
+      "content": {
+        "prompt": "Order the lines of `Library`.",
+        "items": [
+          {"id": "a", "text": "public class Library {"},
+          {"id": "b", "text": "    private final Map<String, Book> books = new LinkedHashMap<>();"},
+          {"id": "c", "text": "    public boolean add(Book book) {"},
+          {"id": "d", "text": "        return books.putIfAbsent(book.getId(), book) == null;"},
+          {"id": "e", "text": "    }"},
+          {"id": "f", "text": "}"}
+        ]
+      },
+      "answer": {"order": ["a", "b", "c", "d", "e", "f"]}
+    },
+    {
+      "type": "FILL_BLANK", "title": "Generics",
+      "content": {
+        "prompt": "Fill in the blanks.",
+        "code": "private final Map<Integer, [[1]]> byId = new LinkedHashMap<>();\n\npublic Account find(int id) {\n    return byId.[[2]](id);\n}\n\npublic List<Account> all() {\n    return List.[[3]](byId.values());\n}"
+      },
+      "answer": {"blanks": {"1": ["Account"], "2": ["get"], "3": ["copyOf"]}, "caseSensitive": true}
+    },
+    {"type": "CODE", "title": "Library", "content": {}, "problem": "oop-6-collections"}
+  ]
+}

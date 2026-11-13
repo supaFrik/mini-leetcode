@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, Clock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLoad } from "@/hooks/use-load";
 import { useUrlState } from "@/hooks/use-url-state";
-import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
 import { fmtMemory } from "@/lib/format";
 import { fetchMySubmissionSummary, fetchMySubmissions } from "@/lib/services";
@@ -56,24 +56,6 @@ function fmtWhen(iso?: string, now = Date.now()) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(d.getFullYear() !== new Date(now).getFullYear() ? { year: "numeric" } : {}) });
 }
 
-type Load<T> = { state: "loading" } | { state: "ok"; data: T } | { state: "error"; message: string };
-
-/** Tải dữ liệu theo deps; không bao giờ kẹt ở "đang tải". */
-function useLoad<T>(fn: () => Promise<T>, deps: unknown[]): Load<T> {
-  const [load, setLoad] = useState<Load<T>>({ state: "loading" });
-  useEffect(() => {
-    let off = false;
-    setLoad({ state: "loading" });
-    fn()
-      .then((data) => !off && setLoad({ state: "ok", data }))
-      .catch((e) => !off && setLoad({ state: "error", message: errorMessage(e) }));
-    return () => {
-      off = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-  return load;
-}
 
 export function SubmissionsList() {
   const { sp, set } = useUrlState();

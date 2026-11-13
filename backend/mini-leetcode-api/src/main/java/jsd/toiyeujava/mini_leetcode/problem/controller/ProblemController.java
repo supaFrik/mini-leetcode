@@ -113,6 +113,8 @@ public class ProblemController {
             @RequestParam(required = false) UserProgress progress,
             @Parameter(description = "Filter by problem type (ALGORITHMIC, OOP_GRINDING)")
             @RequestParam(required = false) ProblemType type,
+            @Parameter(description = "STANDALONE (default): problems outside any course; COURSE / ALL: staff only")
+            @RequestParam(required = false) jsd.toiyeujava.mini_leetcode.entity.ProblemScope scope,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             jakarta.servlet.http.HttpServletRequest httpRequest,
             @AuthenticationPrincipal UserPrincipal currentUser) {
@@ -143,7 +145,7 @@ public class ProblemController {
         Page<ProblemResponse> page = problemService.getProblems(
                 difficulty, status, search, tags, progress,
                 currentUser != null ? currentUser.getId() : null,
-                pageable, isStaff(currentUser), type);
+                pageable, isStaff(currentUser), type, scope);
         return ResponseEntity.ok(page);
     }
 

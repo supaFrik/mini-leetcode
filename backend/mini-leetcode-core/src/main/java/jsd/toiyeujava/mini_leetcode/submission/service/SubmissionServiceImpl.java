@@ -2,9 +2,18 @@ package jsd.toiyeujava.mini_leetcode.submission.service;
 
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.auth.repository.UserRepository;
+import jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException;
+import jsd.toiyeujava.mini_leetcode.auth.security.UserPrincipal;
+import jsd.toiyeujava.mini_leetcode.entity.Role;
+import jsd.toiyeujava.mini_leetcode.exception.StageLockedException;
+import jsd.toiyeujava.mini_leetcode.studyplan.repository.StudyPlanRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import java.util.List;
 import jsd.toiyeujava.mini_leetcode.contest.entity.Contest;
 import jsd.toiyeujava.mini_leetcode.contest.entity.ContestParticipant;
 import jsd.toiyeujava.mini_leetcode.contest.repository.ContestParticipantRepository;
+import jsd.toiyeujava.mini_leetcode.contest.repository.ContestProblemRepository;
 import jsd.toiyeujava.mini_leetcode.contest.repository.ContestRepository;
 import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
 import jsd.toiyeujava.mini_leetcode.entity.ParticipantStatus;
@@ -47,6 +56,8 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final ContestRepository contestRepository;
     private final ContestParticipantRepository contestParticipantRepository;
     private final SubmissionArchiveService submissionArchiveService;
+    private StudyPlanRepository studyPlanRepository;
+    private ContestProblemRepository contestProblemRepository;
 
     @Autowired
     public SubmissionServiceImpl(
@@ -76,6 +87,17 @@ public class SubmissionServiceImpl implements SubmissionService {
             ContestParticipantRepository contestParticipantRepository
     ) {
         this(submissionRepository, problemRepository, userRepository, storageService, contestRepository, contestParticipantRepository, null);
+    }
+
+    /**
+     * Bắt buộc trong Spring context (thiếu bean ⇒ khởi động lỗi, không âm thầm tắt khoá stage).
+     * Unit test dựng tay bằng constructor không gọi setter thì khoá stage bị bỏ qua.
+     */
+    @Autowired
+    public void setStageLockRepositories(StudyPlanRepository studyPlanRepository,
+                                         ContestProblemRepository contestProblemRepository) {
+        this.studyPlanRepository = studyPlanRepository;
+        this.contestProblemRepository = contestProblemRepository;
     }
 
     @Override
@@ -108,6 +130,11 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        if (request.contestId() != null && isViaPat()) {
+            throw new PatForbiddenException("Contest submissions are only accepted from the proctored web interface");
+        }
+        assertStageUnlocked(problem, user, request);
 
         // If submitted under an active contest (Exam mode), validate contest and participant status
         if (request.contestId() != null) {
@@ -201,6 +228,45 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .build();
 
         return submissionRepository.save(submission);
+    }
+
+    /**
+     * Khoá stage tuần tự (specs/study-plan.spec.md, FR-SP-003): đề là stage N > 1 của một mục lộ trình
+     * thì stage N-1 phải đã AC. Mọi đường nộp (JSON, multipart, /submit, /run) đều đi qua đây.
+     * Chỉ tính plan PUBLISHED. Không áp dụng cho INSTRUCTOR / ADMIN (cần thử đề của chính mình) và cho bài nộp
+     * kỳ thi khi đề thật sự thuộc kỳ thi đó — gắn contestId của kỳ thi khác không lách được khoá.
+     */
+    private void assertStageUnlocked(Problem problem, User user, SubmitCodeRequest request) {
+        if (studyPlanRepository == null || user.getRole() != Role.USER) {
+            return;
+        }
+        if (request.contestId() != null && contestProblemRepository != null
+                && contestProblemRepository.findByContestIdAndProblemId(request.contestId(), problem.getId()).isPresent()) {
+            return;
+        }
+        List<Object[]> position = studyPlanRepository.findStagePosition(problem.getId());
+        if (position.isEmpty()) {
+            return;
+        }
+        // Stage đang được giảng viên sửa (Unlock trong Course Builder, hoặc mới thêm chưa publish).
+        if (problem.getStatus() != jsd.toiyeujava.mini_leetcode.entity.ProblemStatus.PUBLISHED) {
+            throw new StageLockedException("This stage is being updated. Try again later.");
+        }
+        long itemId = ((Number) position.get(0)[0]).longValue();
+        int stageNo = ((Number) position.get(0)[1]).intValue();
+        if (stageNo == 0) {
+            return;
+        }
+        List<Number> previous = studyPlanRepository.findStageProblemId(itemId, stageNo - 1);
+        if (!previous.isEmpty() && !submissionRepository.existsByUser_IdAndProblem_IdAndVerdictAndQuickRunFalse(
+                user.getId(), previous.get(0).longValue(), SubmissionVerdict.AC)) {
+            throw new StageLockedException("Complete stage " + stageNo + " before submitting stage " + (stageNo + 1));
+        }
+    }
+
+    private static boolean isViaPat() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getPrincipal() instanceof UserPrincipal principal && principal.isViaPat();
     }
 
     @Override

@@ -1,0 +1,71 @@
+{
+  "slug": "oop-exception",
+  "title": "Exceptions",
+  "summary": "",
+  "estMinutes": 20,
+  "steps": [
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
+    {
+      "type": "CHOICE", "title": "Checked or unchecked?",
+      "content": {
+        "prompt": "Select all **checked** exceptions.",
+        "multiple": true,
+        "hint": "Checked: extends Exception but not RuntimeException.",
+        "options": [
+          {"id": "a", "text": "IOException"},
+          {"id": "b", "text": "InsufficientFundsException extends Exception"},
+          {"id": "c", "text": "IllegalArgumentException"},
+          {"id": "d", "text": "NumberFormatException"}
+        ]
+      },
+      "answer": {"correct": ["a", "b"]}
+    },
+    {
+      "type": "CHOICE", "title": "Catch order",
+      "content": {
+        "prompt": "```java\ntry { ... }\ncatch (Exception e) { ... }\ncatch (NumberFormatException e) { ... }\n```\nWhat happens?",
+        "options": [
+          {"id": "a", "text": "It runs; the second catch handles NumberFormatException"},
+          {"id": "b", "text": "Compile error: NumberFormatException is already caught"},
+          {"id": "c", "text": "Both catch blocks run"},
+          {"id": "d", "text": "Runtime error"}
+        ]
+      },
+      "answer": {"correct": ["b"]}
+    },
+    {
+      "type": "MATCHING", "title": "Keywords",
+      "content": {
+        "prompt": "Match each keyword with its role.",
+        "left": [{"id": "l1", "text": "throw"}, {"id": "l2", "text": "throws"}, {"id": "l3", "text": "catch"}, {"id": "l4", "text": "finally"}],
+        "right": [{"id": "r1", "text": "Throws an exception now"}, {"id": "r2", "text": "Declares that a method may throw"}, {"id": "r3", "text": "Handles one kind of exception"}, {"id": "r4", "text": "Always runs"}]
+      },
+      "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
+    },
+    {
+      "type": "ORDERING", "title": "Wrapping",
+      "content": {
+        "prompt": "Order the lines of `validate` so that a format error becomes a business error and keeps its cause.",
+        "items": [
+          {"id": "a", "text": "public static int validate(String raw) throws InvalidAgeException {"},
+          {"id": "b", "text": "    try {"},
+          {"id": "c", "text": "        return Integer.parseInt(raw);"},
+          {"id": "d", "text": "    } catch (NumberFormatException e) {"},
+          {"id": "e", "text": "        throw new InvalidAgeException(\"Not a number: \" + raw, e);"},
+          {"id": "f", "text": "    }"},
+          {"id": "g", "text": "}"}
+        ]
+      },
+      "answer": {"order": ["a", "b", "c", "d", "e", "f", "g"]}
+    },
+    {
+      "type": "FILL_BLANK", "title": "Custom exception",
+      "content": {
+        "prompt": "Fill in the blanks.",
+        "code": "public class InsufficientFundsException [[1]] Exception {\n    public InsufficientFundsException(String message) {\n        [[2]](message);\n    }\n}\n\npublic long withdraw(long amount) [[3]] InsufficientFundsException { ... }"
+      },
+      "answer": {"blanks": {"1": ["extends"], "2": ["super"], "3": ["throws"]}, "caseSensitive": true}
+    },
+    {"type": "CODE", "title": "Age validation", "content": {}, "problem": "oop-5-exception"}
+  ]
+}

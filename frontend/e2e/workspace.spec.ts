@@ -56,12 +56,34 @@ test.describe("Problem Solving Workspace E2E Suite", () => {
     }
   });
 
-  test("executes code Run action and verifies testcase output display", async ({ page }) => {
+  // Console live chỉ có ở bài OOP (console.spec.ts). Bài DSA: Run với mọi ngôn ngữ chạy thử testcase
+  // công khai qua HTTP /run và hiện kết quả ở tab Test Result, không mở WebSocket.
+  test("Java Run on a DSA problem executes public testcases over HTTP", async ({ page }) => {
+    let socketOpened = false;
+    await page.routeWebSocket(/\/api\/v1\/console\/ws/, () => { socketOpened = true; });
     await page.goto("/problems/two-sum", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("tab", { name: "Console" })).toHaveCount(0);
 
-    // Locate and click the Run button
-    const runBtn = page.getByRole("button", { name: "Run" });
-    await expect(runBtn).toBeVisible();
+    const runBtn = page.getByRole("button", { name: "Run", exact: true });
+    await expect(runBtn).toBeEnabled();
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes("/run")),
+      runBtn.click(),
+    ]);
+
+    await expect(page.getByRole("tab", { name: /Test Result/ })).toHaveAttribute("data-state", "active");
+    await expect(page.getByText("Accepted", { exact: true })).toBeVisible();
+    expect(socketOpened).toBe(false);
+  });
+
+  test("Python Run executes public testcases over HTTP and shows the result", async ({ page }) => {
+    await page.goto("/problems/two-sum", { waitUntil: "domcontentloaded" });
+    const langTrigger = page.getByRole("combobox", { name: /Language/i }).or(page.getByLabel("Language"));
+    await langTrigger.click();
+    await page.getByRole("option", { name: /Python/i }).click();
+    await expect(page.getByText("solution.py")).toBeVisible();
+
+    const runBtn = page.getByRole("button", { name: "Run", exact: true });
     await expect(runBtn).toBeEnabled();
     await Promise.all([
       page.waitForResponse((r) => r.url().includes("/run")),

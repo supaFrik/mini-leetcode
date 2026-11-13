@@ -53,8 +53,13 @@ public class TestCaseController {
             @Parameter(description = "Whether this test case is hidden from contestants")
             @RequestParam(value = "isHidden", defaultValue = "true") Boolean isHidden,
             @Parameter(description = "Ordering index of this test case (defaults to next sequential index)")
-            @RequestParam(value = "orderIndex", required = false) Integer orderIndex) {
+            @RequestParam(value = "orderIndex", required = false) Integer orderIndex,
+            @Parameter(description = "Label shown in judge feedback, e.g. \"stage 1 · two-accounts\" (max 100 chars)")
+            @RequestParam(value = "label", required = false) String label) {
         TestCaseResponse response = testCaseService.addTestCase(problemId, inputFile, outputFile, isHidden, orderIndex);
+        if (label != null) {
+            response = testCaseService.setLabel(problemId, response.id(), label);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -98,9 +103,18 @@ public class TestCaseController {
             @Parameter(description = "Whether this test case is hidden from contestants")
             @RequestParam(value = "isHidden", required = false) Boolean isHidden,
             @Parameter(description = "New ordering index of this test case")
-            @RequestParam(value = "orderIndex", required = false) Integer orderIndex) {
+            @RequestParam(value = "orderIndex", required = false) Integer orderIndex,
+            @Parameter(description = "New label shown in judge feedback (empty string removes it); allowed even when frozen")
+            @RequestParam(value = "label", required = false) String label) {
+        boolean onlyLabel = inputFile == null && outputFile == null && isHidden == null && orderIndex == null;
+        if (onlyLabel && label != null) {
+            return ResponseEntity.ok(testCaseService.setLabel(problemId, testCaseId, label));
+        }
         TestCaseResponse response = testCaseService.updateTestCase(
                 problemId, testCaseId, inputFile, outputFile, isHidden, orderIndex);
+        if (label != null) {
+            response = testCaseService.setLabel(problemId, testCaseId, label);
+        }
         return ResponseEntity.ok(response);
     }
 

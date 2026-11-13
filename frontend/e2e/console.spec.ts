@@ -45,11 +45,20 @@ test.describe("Live console", () => {
     await setMockAuthSession(page, { username: "student", role: "USER" });
   });
 
-  test("Console tab is available for both OOP and algorithmic problems", async ({ page }) => {
+  test("Console tab exists only for OOP problems", async ({ page }) => {
     await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("tab", { name: "Console" })).toBeVisible();
     await page.goto("/problems/double-it", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("tab", { name: "Console" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Test Result" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Console" })).toHaveCount(0);
+  });
+
+  test("Run on a DSA problem stays on Test Result and never opens a console socket", async ({ page }) => {
+    const received = await mockConsole(page, () => {});
+    await openAndRun(page, "double-it");
+    await expect(page.getByRole("tab", { name: /Test Result/ })).toHaveAttribute("data-state", "active");
+    await page.waitForTimeout(500);
+    expect(received).toHaveLength(0);
   });
 
   test("Scanner program: prompt appears, typed line goes to stdin, output follows", async ({ page }) => {
@@ -61,7 +70,7 @@ test.describe("Live console", () => {
         ws.close();
       }
     });
-    await openAndRun(page, "double-it");
+    await openAndRun(page, "shape-hierarchy");
     await expect(page.getByRole("tab", { name: "Console" })).toHaveAttribute("data-state", "active");
 
     const log = page.getByRole("log", { name: "Console output" });
@@ -77,8 +86,8 @@ test.describe("Live console", () => {
     await expect(input).toBeHidden();
 
     const start = received.find((f) => f.type === "start")!;
-    expect(start).toMatchObject({ problemId: 43, language: "JAVA" });
-    expect((start.files as { path: string }[])[0].path).toBe("Solution.java");
+    expect(start).toMatchObject({ problemId: 42, language: "JAVA" });
+    expect((start.files as { path: string }[]).length).toBeGreaterThan(0);
     expect(received).toContainEqual({ type: "stdin", data: "5\n" });
   });
 
@@ -115,7 +124,7 @@ test.describe("Live console", () => {
       }
       ws.close();
     });
-    await openAndRun(page, "double-it");
+    await openAndRun(page, "shape-hierarchy");
     const log = page.getByRole("log", { name: "Console output" });
 
     await expect(log).toContainText("Solution.java:3: error: ';' expected");

@@ -1,0 +1,98 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. Cannot be changed between versions. -->
+    <id>jsd.toiyeujava.minileetcode.plugin</id>
+
+    <!-- Public plugin name displayed in the Plugin Manager and Settings. -->
+    <name>Mini LeetCode</name>
+
+    <!-- Plugin vendor information. -->
+    <vendor email="support@toiyeujava.jsd" url="https://toiyeujava.jsd">Mini LeetCode Team</vendor>
+
+    <!-- Short description of the plugin shown in Settings > Plugins. -->
+    <description><![CDATA[
+        <h3>Mini LeetCode Study Plan Plugin</h3>
+        <p>A project-based learning and programming challenge platform directly integrated into IntelliJ IDEA.</p>
+        <p><b>Features:</b></p>
+        <ul>
+            <li>Browse published Study Plans, project stages, and practice problems.</li>
+            <li>Track learning progress with visual status indicators (Locked, Never, In Progress, Done).</li>
+            <li>Secure credential management using IntelliJ Platform PasswordSafe.</li>
+            <li>Direct project setup and stage-by-stage automated checking.</li>
+        </ul>
+    ]]></description>
+
+    <change-notes><![CDATA[
+        <p><b>Version 0.1.0</b></p>
+        <ul>
+            <li>Initial skeleton release: Data models, API client, Settings page, and Study Plan Tool Window.</li>
+        </ul>
+    ]]></change-notes>
+
+    <!-- Product and plugin compatibility requirements.
+         Must declare com.intellij.modules.platform to run on all IntelliJ-based IDEs. -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- Extension points: Registered extensions will be activated in Milestones 2 and 3. -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Milestone 2: Settings configurable & PersistentStateComponent (PL-1) -->
+        <applicationService
+            serviceImplementation="jsd.toiyeujava.minileetcode.plugin.settings.MiniLeetCodeSettingsState"/>
+        <applicationService
+            serviceImplementation="jsd.toiyeujava.minileetcode.plugin.settings.MiniLeetCodePasswordSafe"/>
+        <projectConfigurable
+            parentId="tools"
+            id="jsd.toiyeujava.minileetcode.plugin.settings.MiniLeetCodeConfigurable"
+            displayName="Mini LeetCode"
+            instance="jsd.toiyeujava.minileetcode.plugin.settings.MiniLeetCodeConfigurable"/>
+
+        <!-- Milestone 3: Notification Group for balloon feedback -->
+        <notificationGroup id="Mini LeetCode" displayType="BALLOON"/>
+
+        <!-- Milestone 3: Tool Window (PL-2) -->
+        <toolWindow
+            id="Mini LeetCode"
+            anchor="right"
+            icon="/icons/toolWindow.svg"
+            factoryClass="jsd.toiyeujava.minileetcode.plugin.ui.MiniLeetCodeToolWindowFactory"/>
+    </extensions>
+
+    <actions>
+        <!-- Milestone 3: Toolbar Refresh Action (PL-2) -->
+        <action
+            id="MiniLeetCode.RefreshPlans"
+            class="jsd.toiyeujava.minileetcode.plugin.ui.RefreshPlansAction"
+            text="Refresh Study Plans"
+            description="Reload study plans and progress from server"
+            icon="AllIcons.Actions.Refresh"/>
+
+        <!-- Milestone 3: Open Stage Action (PL-3, PL-4) -->
+        <action
+            id="MiniLeetCode.OpenStage"
+            class="jsd.toiyeujava.minileetcode.plugin.actions.OpenStageAction"
+            text="Open Stage"
+            description="Initialize local workspace and open study plan stage"
+            icon="AllIcons.Actions.Execute"/>
+
+        <!-- Milestone 3: Check Stage Action (R3, Features 13 & 14) -->
+        <action
+            id="MiniLeetCode.CheckAction"
+            class="jsd.toiyeujava.minileetcode.plugin.actions.CheckAction"
+            text="Check Stage"
+            description="Submit src/main/java to the Mini LeetCode server and show the verdict"
+            icon="AllIcons.Actions.Commit">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>
+            <add-to-group group-id="MainToolBar" anchor="last"/>        </action>
+
+        <!-- PL-6: Next stage into the same project folder (never overwrites student files) -->
+        <action
+            id="MiniLeetCode.NextStage"
+            class="jsd.toiyeujava.minileetcode.plugin.actions.NextStageAction"
+            text="Next Stage"
+            description="Download the next stage statement and new starter files into this project"
+            icon="AllIcons.Actions.Forward">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="MiniLeetCode.CheckAction"/>
+            <add-to-group group-id="MainToolBar" anchor="after" relative-to-action="MiniLeetCode.CheckAction"/>
+        </action>    </actions>
+</idea-plugin>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <!-- Done: Green circle with white checkmark -->
+  <circle cx="8" cy="8" r="6.5" fill="#59A869"/>
+  <path d="M5 8.2L7.2 10.5L11.5 5.5" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

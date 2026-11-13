@@ -1,0 +1,194 @@
+{
+  "_comment": "OOP rules per stage: stage N uses every rule with fromStage <= N. fromStage is dropped when written to problems.grading_config. 'output' applies to every stage (normalized: extra spaces and blank lines ignored).",
+  "output": {
+    "mode": "normalized",
+    "ignoreCase": false
+  },
+  "rules": [
+    {
+      "fromStage": 1,
+      "ruleName": "ACCOUNT_ENCAPSULATED",
+      "targetClassName": "Account",
+      "weight": 1.0,
+      "fields": [
+        {
+          "name": "*",
+          "matchAllFields": true,
+          "forbiddenModifiers": [
+            "public"
+          ]
+        }
+      ],
+      "methods": [
+        {
+          "name": "deposit",
+          "returnType": "long",
+          "parameterTypes": [
+            "long"
+          ],
+          "requiredModifiers": [
+            "public"
+          ]
+        },
+        {
+          "name": "getBalance",
+          "returnType": "long",
+          "requiredModifiers": [
+            "public"
+          ]
+        }
+      ],
+      "customFailureMessage": "Account must have no public fields and public long deposit(long), public long getBalance()"
+    },
+    {
+      "fromStage": 2,
+      "ruleName": "ACCOUNT_IS_ABSTRACT_BASE",
+      "targetClassName": "Account",
+      "expectedType": "ABSTRACT_CLASS",
+      "weight": 2.0,
+      "methods": [
+        {
+          "name": "canWithdraw",
+          "returnType": "boolean",
+          "parameterTypes": [
+            "long"
+          ],
+          "requiredModifiers": [
+            "abstract"
+          ]
+        },
+        {
+          "name": "endOfMonth",
+          "returnType": "void",
+          "requiredModifiers": [
+            "abstract"
+          ]
+        },
+        {
+          "name": "getType",
+          "returnType": "String",
+          "requiredModifiers": [
+            "abstract"
+          ]
+        },
+        {
+          "name": "withdraw",
+          "returnType": "long",
+          "parameterTypes": [
+            "long"
+          ],
+          "requiredModifiers": [
+            "public"
+          ]
+        }
+      ],
+      "customFailureMessage": "Account must be abstract with abstract canWithdraw(long), endOfMonth(), getType() and public long withdraw(long)"
+    },
+    {
+      "fromStage": 2,
+      "ruleName": "SAVINGS_EXTENDS_ACCOUNT",
+      "targetClassName": "SavingsAccount",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Account",
+      "methods": [
+        {
+          "name": "canWithdraw",
+          "returnType": "boolean",
+          "parameterTypes": [
+            "long"
+          ],
+          "forbiddenModifiers": [
+            "abstract"
+          ]
+        },
+        {
+          "name": "endOfMonth",
+          "returnType": "void",
+          "forbiddenModifiers": [
+            "abstract"
+          ]
+        }
+      ],
+      "customFailureMessage": "SavingsAccount must extend Account and implement canWithdraw(long), endOfMonth()"
+    },
+    {
+      "fromStage": 2,
+      "ruleName": "CHECKING_EXTENDS_ACCOUNT",
+      "targetClassName": "CheckingAccount",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Account",
+      "methods": [
+        {
+          "name": "canWithdraw",
+          "returnType": "boolean",
+          "parameterTypes": [
+            "long"
+          ],
+          "forbiddenModifiers": [
+            "abstract"
+          ]
+        },
+        {
+          "name": "endOfMonth",
+          "returnType": "void",
+          "forbiddenModifiers": [
+            "abstract"
+          ]
+        }
+      ],
+      "customFailureMessage": "CheckingAccount must extend Account and implement canWithdraw(long), endOfMonth()"
+    },
+    {
+      "fromStage": 3,
+      "ruleName": "CHECKED_INSUFFICIENT_FUNDS",
+      "targetClassName": "InsufficientFundsException",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Exception",
+      "customFailureMessage": "InsufficientFundsException must be a checked exception (extends Exception)"
+    },
+    {
+      "fromStage": 4,
+      "ruleName": "BANK_ENCAPSULATION",
+      "targetClassName": "Bank",
+      "expectedType": "CLASS",
+      "enforceEncapsulation": true,
+      "methods": [
+        {
+          "name": "open",
+          "returnType": "Account",
+          "parameterTypes": [
+            "String",
+            "String",
+            "long"
+          ],
+          "requiredModifiers": [
+            "public"
+          ]
+        },
+        {
+          "name": "find",
+          "returnType": "Account",
+          "parameterTypes": [
+            "int"
+          ],
+          "requiredModifiers": [
+            "public"
+          ]
+        },
+        {
+          "name": "transfer",
+          "returnType": "void",
+          "parameterTypes": [
+            "int",
+            "int",
+            "long"
+          ],
+          "requiredModifiers": [
+            "public"
+          ]
+        }
+      ],
+      "customFailureMessage": "Bank must keep its accounts private and have public open(String, String, long), find(int), transfer(int, int, long)"
+    }
+  ]
+}

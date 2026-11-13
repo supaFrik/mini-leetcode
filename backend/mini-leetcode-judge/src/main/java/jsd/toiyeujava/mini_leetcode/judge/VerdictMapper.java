@@ -18,6 +18,11 @@ public final class VerdictMapper {
      *                     với peak memory đo được khi Docker không báo OOM.
      */
     public static SubmissionVerdict map(ExecutionResult result, String expectedOutput, int memoryLimitKb) {
+        return map(result, expectedOutput, memoryLimitKb, OutputPolicy.EXACT);
+    }
+
+    /** Như trên, so stdout theo {@link OutputPolicy} của đề. */
+    public static SubmissionVerdict map(ExecutionResult result, String expectedOutput, int memoryLimitKb, OutputPolicy policy) {
         if (result.timedOut()) {
             return SubmissionVerdict.TLE;
         }
@@ -33,7 +38,7 @@ public final class VerdictMapper {
         if (result.exitCode() != 0) {
             return SubmissionVerdict.RE;
         }
-        return OutputComparator.matches(result.stdout(), expectedOutput)
+        return OutputComparator.matches(result.stdout(), expectedOutput, policy)
                 ? SubmissionVerdict.AC
                 : SubmissionVerdict.WA;
     }

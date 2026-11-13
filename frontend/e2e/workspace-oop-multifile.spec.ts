@@ -6,6 +6,35 @@ import {
 } from "./fixtures/mock-api";
 import type { ProblemFull } from "../src/types/api";
 
+type ConsoleFrame = { type: string; [k: string]: unknown };
+
+/**
+ * Run với bài OOP chạy main trong tab Console qua WebSocket (specs/live-terminal-console.spec.md),
+ * không còn gọi HTTP /run. Server console giả: in một dòng rồi kết thúc với exit code 0.
+ */
+async function mockConsoleRun(page: Page) {
+  const frames: ConsoleFrame[] = [];
+  await page.routeWebSocket(/\/api\/v1\/console\/ws/, (ws) => {
+    ws.onMessage((raw) => {
+      const frame = JSON.parse(String(raw)) as ConsoleFrame;
+      frames.push(frame);
+      if (frame.type === "start") {
+        ws.send(JSON.stringify({ type: "stdout", data: "Circle area: 3.14\n" }));
+        ws.send(JSON.stringify({ type: "exit", code: 0, elapsedMs: 700, reason: null }));
+        ws.close();
+      }
+    });
+  });
+  return frames;
+}
+
+async function expectConsoleRun(page: Page) {
+  await expect(page.getByRole("tab", { name: "Console" })).toHaveAttribute("data-state", "active");
+  const log = page.getByRole("log", { name: "Console output" });
+  await expect(log).toContainText("Circle area: 3.14");
+  await expect(log).toContainText("Process finished with exit code 0");
+}
+
 /**
  * 4-Tier E2E Playwright Test Suite for Hybrid Multi-Channel Ingestion & Starter Scaffolding.
  * Conforms to SPEC-OOPG-SUBMISSION-001, HYBRID_SUBMISSION_SPECIFICATION.md, and SCOPE.md.
@@ -28,6 +57,7 @@ Implement the \`double calculateArea()\` method in each subclass.`,
   timeLimitMs: 2000,
   memoryLimitMb: 256,
   status: "PUBLISHED",
+  type: "OOP_GRINDING", // tab Console chỉ có ở bài OOP
   likes: 420,
   dislikes: 12,
 };
@@ -137,7 +167,7 @@ test.describe("OOP Grinding Multi-File Workspace & Hybrid Ingestion E2E Suite", 
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
       const editor = page.locator(".monaco-editor").or(page.locator('textarea[aria-label="Source code"]'));
-      await expect(editor.first()).toBeVisible();
+      await expect(editor.first()).toBeVisible({ timeout: 20_000 }); // Monaco tải từ CDN
     });
 
     test("1.1.3: displays file tab indicating active source file", async ({ page }) => {
@@ -235,7 +265,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
       const editor = page.locator(".monaco-editor").or(page.locator('textarea[aria-label="Source code"]'));
-      await expect(editor.first()).toBeVisible();
+      await expect(editor.first()).toBeVisible({ timeout: 20_000 }); // Monaco tải từ CDN
     });
   });
 
@@ -365,24 +395,21 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
     test("1.5.1: renders Run button and Submit button side-by-side", async ({ page }) => {
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const runBtn = page.getByRole("button", { name: "Run" });
+      const runBtn = page.getByRole("button", { name: "Run", exact: true });
       const submitBtn = page.getByRole("button", { name: "Submit", exact: true });
 
       await expect(runBtn).toBeVisible();
       await expect(submitBtn).toBeVisible();
     });
 
-    test("1.5.2: executes Run Code action and displays public testcase result", async ({ page }) => {
+    test("1.5.2: Run executes main in the Console and streams its output", async ({ page }) => {
+      const frames = await mockConsoleRun(page);
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const runBtn = page.getByRole("button", { name: "Run" });
-      await Promise.all([
-        page.waitForResponse((r) => r.url().includes("/run")),
-        runBtn.click(),
-      ]);
+      await page.getByRole("button", { name: "Run", exact: true }).click();
 
-      await expect(page.getByText("Accepted", { exact: true })).toBeVisible();
-      await expect(page.getByText("Run: public testcases only")).toBeVisible();
+      await expectConsoleRun(page);
+      expect(frames.find((f) => f.type === "start")).toMatchObject({ problemId: 42, language: "JAVA" });
     });
 
     test("1.5.3: executes Submit action and displays official evaluation result", async ({ page }) => {
@@ -398,27 +425,23 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
       await expect(page.getByText(/Passed \(\d+\/\d+\)/)).toBeVisible();
     });
 
-    test("1.5.4: Run action completes with low latency (< 3.0s NFR-PERF-001)", async ({ page }) => {
+    test("1.5.4: Run output reaches the Console quickly (NFR-PERF-001)", async ({ page }) => {
+      await mockConsoleRun(page);
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const runBtn = page.getByRole("button", { name: "Run" });
       const start = Date.now();
-      await Promise.all([
-        page.waitForResponse((r) => r.url().includes("/run")),
-        runBtn.click(),
-      ]);
-      const duration = Date.now() - start;
-      expect(duration).toBeLessThan(5000); // UI interaction + network under 5s
+      await page.getByRole("button", { name: "Run", exact: true }).click();
+      await expect(page.getByRole("log", { name: "Console output" })).toContainText("Process finished with exit code 0");
+      expect(Date.now() - start).toBeLessThan(5000); // UI + WebSocket dưới 5s (server giả trả ngay)
     });
 
-    test("1.5.5: Run action switches active panel to Result tab", async ({ page }) => {
+    test("1.5.5: Run switches the bottom panel to the Console tab", async ({ page }) => {
+      await mockConsoleRun(page);
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const runBtn = page.getByRole("button", { name: "Run" });
-      await runBtn.click();
+      await page.getByRole("button", { name: "Run", exact: true }).click();
 
-      // Result panel should become active
-      await expect(page.getByText("Accepted", { exact: true })).toBeVisible();
+      await expect(page.getByRole("tab", { name: "Console" })).toHaveAttribute("data-state", "active");
     });
   });
 
@@ -558,40 +581,18 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
       await expect(page.locator("body")).toBeVisible();
     });
 
-    test("2.6: handles rapid double-click on Run Code without duplicate execution", async ({ page }) => {
+    test("2.6: rapid double-click on Run leaves a single finished program in the Console", async ({ page }) => {
+      const frames = await mockConsoleRun(page);
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const runBtn = page.getByRole("button", { name: "Run" });
-      let callCount = 0;
-      await page.route("**/api/v1/problems/*/run", async (route) => {
-        callCount++;
-        return route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            id: 9999,
-            problemId: 42,
-            language: "JAVA",
-            status: "COMPLETED",
-            verdict: "AC",
-            executionTimeMs: 40,
-            memoryUsedKb: 18000,
-            passTestCases: 2,
-            totalTestCases: 2,
-            errorMessage: null,
-          }),
-        });
-      });
+      const runBtn = page.getByRole("button", { name: "Run", exact: true });
+      await Promise.all([runBtn.click(), runBtn.click().catch(() => {})]);
 
-      // Rapidly click twice
-      await Promise.all([
-        runBtn.click(),
-        runBtn.click().catch(() => {}),
-      ]);
-
-      await expect(page.getByText("Accepted", { exact: true })).toBeVisible();
-      // Should not spawn unchecked requests
-      expect(callCount).toBeGreaterThanOrEqual(1);
+      await expectConsoleRun(page);
+      // Lần bấm thứ hai có thể khởi động lại chương trình, nhưng không bao giờ quá 2 phiên.
+      const starts = frames.filter((f) => f.type === "start").length;
+      expect(starts).toBeGreaterThanOrEqual(1);
+      expect(starts).toBeLessThanOrEqual(2);
     });
   });
 
@@ -601,6 +602,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
 
   test.describe("Tier 3: Cross-Feature Combinations", () => {
     test("3.1: Delimited multi-file code + Run Code verifies console feedback", async ({ page }) => {
+      await mockConsoleRun(page);
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
       const delimited = `// === FILE: Shape.java ===
@@ -613,9 +615,8 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
         await fallback.fill(delimited);
       }
 
-      const runBtn = page.getByRole("button", { name: "Run" });
-      await runBtn.click();
-      await expect(page.getByText("Accepted", { exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "Run", exact: true }).click();
+      await expectConsoleRun(page);
     });
 
     test("3.2: Download starter -> verifies download -> Submit official solution", async ({ page }) => {
@@ -647,14 +648,15 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
     });
 
     test("3.4: Quick run followed immediately by Submit transitions cleanly in UI", async ({ page }) => {
+      await mockConsoleRun(page);
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      const runBtn = page.getByRole("button", { name: "Run" });
+      const runBtn = page.getByRole("button", { name: "Run", exact: true });
       const submitBtn = page.getByRole("button", { name: "Submit", exact: true });
 
-      // First run
+      // First run: chương trình chạy trong Console
       await runBtn.click();
-      await expect(page.getByText("Run: public testcases only")).toBeVisible();
+      await expectConsoleRun(page);
 
       // Then submit
       await submitBtn.click();
@@ -721,18 +723,14 @@ public class Rectangle extends Shape {
     });
 
     test("4.2: In-Browser Iteration Workflow: Run Code (Check) -> Fix OOP Rules -> Official Submit", async ({ page }) => {
+      await mockConsoleRun(page);
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
-      // Step 1: Student writes preliminary code and hits "Run Code"
-      const runBtn = page.getByRole("button", { name: "Run" });
-      await Promise.all([
-        page.waitForResponse((r) => r.url().includes("/run")),
-        runBtn.click(),
-      ]);
+      // Step 1: Student writes preliminary code and hits "Run" — main chạy trong Console
+      await page.getByRole("button", { name: "Run", exact: true }).click();
 
       // Step 2: Observes fast console feedback
-      await expect(page.getByText("Accepted", { exact: true })).toBeVisible();
-      await expect(page.getByText("Run: public testcases only")).toBeVisible();
+      await expectConsoleRun(page);
 
       // Step 3: Satisfied with quick check, clicks "Submit" for full evaluation
       const submitBtn = page.getByRole("button", { name: "Submit", exact: true });

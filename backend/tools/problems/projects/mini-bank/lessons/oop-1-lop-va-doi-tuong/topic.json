@@ -1,0 +1,67 @@
+{
+  "slug": "oop-lop-va-doi-tuong",
+  "title": "Classes and objects",
+  "summary": "",
+  "estMinutes": 15,
+  "steps": [
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
+    {
+      "type": "CHOICE", "title": "Two variables",
+      "content": {
+        "prompt": "```java\nAccount x = new Account(\"Ann\", 0);\nAccount y = x;\ny.deposit(50);\nSystem.out.println(x.getBalance());\n```\nWhat is printed?",
+        "hint": "Assigning an object variable copies the reference.",
+        "options": [{"id": "a", "text": "0"}, {"id": "b", "text": "50"}, {"id": "c", "text": "Compile error"}, {"id": "d", "text": "100"}]
+      },
+      "answer": {"correct": ["b"], "explanation": "x and y refer to the same object."}
+    },
+    {
+      "type": "CHOICE", "title": "static fields",
+      "content": {
+        "prompt": "Select all true statements about `private static int nextId` in `Account`.",
+        "multiple": true,
+        "options": [
+          {"id": "a", "text": "There is one copy shared by all Account objects"},
+          {"id": "b", "text": "Each Account object has its own nextId"},
+          {"id": "c", "text": "It works as an id counter"},
+          {"id": "d", "text": "A static method can read the instance field id directly"}
+        ]
+      },
+      "answer": {"correct": ["a", "c"], "explanation": "A static method has no this, so it cannot read instance fields directly."}
+    },
+    {
+      "type": "MATCHING", "title": "Terms",
+      "content": {
+        "prompt": "Match each term with an example.",
+        "left": [{"id": "l1", "text": "Field"}, {"id": "l2", "text": "Constructor"}, {"id": "l3", "text": "Creating an object"}, {"id": "l4", "text": "Overriding toString"}],
+        "right": [{"id": "r1", "text": "private long balance;"}, {"id": "r2", "text": "public Account(String owner) { ... }"}, {"id": "r3", "text": "new Account(\"Ann\")"}, {"id": "r4", "text": "@Override public String toString()"}]
+      },
+      "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
+    },
+    {
+      "type": "ORDERING", "title": "Customer class",
+      "content": {
+        "prompt": "Order the lines to get a `Customer` with an auto-increment id.",
+        "items": [
+          {"id": "a", "text": "public class Customer {"},
+          {"id": "b", "text": "    private static int nextId = 1;"},
+          {"id": "c", "text": "    private final int id;"},
+          {"id": "d", "text": "    public Customer() {"},
+          {"id": "e", "text": "        this.id = nextId++;"},
+          {"id": "f", "text": "    }"},
+          {"id": "g", "text": "}"}
+        ]
+      },
+      "answer": {"order": ["a", "b", "c", "d", "e", "f", "g"]}
+    },
+    {
+      "type": "FILL_BLANK", "title": "Constructor",
+      "content": {
+        "prompt": "Fill in the blanks.",
+        "hint": "The parameter has the same name as the field.",
+        "code": "public class Account {\n    private final String owner;\n\n    public [[1]](String owner) {\n        [[2]].owner = owner;\n    }\n\n    @Override\n    public String [[3]]() {\n        return \"Account of \" + owner;\n    }\n}"
+      },
+      "answer": {"blanks": {"1": ["Account"], "2": ["this"], "3": ["toString"]}, "caseSensitive": true}
+    },
+    {"type": "CODE", "title": "Customers", "content": {}, "problem": "oop-1-lop-va-doi-tuong"}
+  ]
+}

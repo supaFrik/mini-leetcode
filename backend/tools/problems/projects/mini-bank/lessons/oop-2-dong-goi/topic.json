@@ -1,0 +1,68 @@
+{
+  "slug": "oop-dong-goi",
+  "title": "Encapsulation",
+  "summary": "",
+  "estMinutes": 15,
+  "steps": [
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
+    {
+      "type": "CHOICE", "title": "What should be private?",
+      "content": {
+        "prompt": "In `Account`, select everything that should be `private`.",
+        "multiple": true,
+        "options": [
+          {"id": "a", "text": "Field balance"},
+          {"id": "b", "text": "Field owner"},
+          {"id": "c", "text": "Method deposit(long)"},
+          {"id": "d", "text": "A helper used only inside the class"}
+        ]
+      },
+      "answer": {"correct": ["a", "b", "d"], "explanation": "deposit is the entry point other classes call, so it is public."}
+    },
+    {
+      "type": "CHOICE", "title": "Replacing setBalance",
+      "content": {
+        "prompt": "`Account` has `public void setBalance(long b)`. Which change keeps \"the balance is never negative\"?",
+        "options": [
+          {"id": "a", "text": "Keep setBalance and document that callers must not pass negatives"},
+          {"id": "b", "text": "Remove setBalance; add deposit / withdraw that validate before changing the balance"},
+          {"id": "c", "text": "Make balance public"},
+          {"id": "d", "text": "Check the balance in Main after each setBalance call"}
+        ]
+      },
+      "answer": {"correct": ["b"]}
+    },
+    {
+      "type": "MATCHING", "title": "Access modifiers",
+      "content": {
+        "prompt": "Match each modifier with its visibility.",
+        "left": [{"id": "l1", "text": "private"}, {"id": "l2", "text": "(none)"}, {"id": "l3", "text": "protected"}, {"id": "l4", "text": "public"}],
+        "right": [{"id": "r1", "text": "Same class"}, {"id": "r2", "text": "Same package"}, {"id": "r3", "text": "Same package and subclasses"}, {"id": "r4", "text": "Everyone"}]
+      },
+      "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
+    },
+    {
+      "type": "ORDERING", "title": "withdraw",
+      "content": {
+        "prompt": "Order the lines of `withdraw` so that an error never corrupts the balance.",
+        "items": [
+          {"id": "a", "text": "public void withdraw(long amount) {"},
+          {"id": "b", "text": "    if (amount <= 0) throw new IllegalArgumentException(\"Amount must be positive\");"},
+          {"id": "c", "text": "    if (amount > balance) throw new IllegalArgumentException(\"Insufficient funds\");"},
+          {"id": "d", "text": "    balance -= amount;"},
+          {"id": "e", "text": "}"}
+        ]
+      },
+      "answer": {"order": ["a", "b", "c", "d", "e"]}
+    },
+    {
+      "type": "FILL_BLANK", "title": "Wallet",
+      "content": {
+        "prompt": "Fill in the blanks.",
+        "code": "public class Wallet {\n    [[1]] long balance;\n\n    public void deposit(long amount) {\n        if (amount <= 0) {\n            [[2]] new IllegalArgumentException(\"Amount must be positive\");\n        }\n        balance += amount;\n    }\n\n    public long [[3]]() {\n        return balance;\n    }\n}"
+      },
+      "answer": {"blanks": {"1": ["private"], "2": ["throw"], "3": ["getBalance"]}, "caseSensitive": true}
+    },
+    {"type": "CODE", "title": "Wallet", "content": {}, "problem": "oop-2-dong-goi"}
+  ]
+}

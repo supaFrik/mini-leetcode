@@ -217,15 +217,19 @@ class ProblemAndTestCaseIntegrationTest {
         MockMultipartFile outputFile2 = new MockMultipartFile(
                 "outputFile", "output_2.txt", "text/plain", "1 2".getBytes());
 
-        mockMvc.perform(multipart("/api/v1/problems/" + p1Id + "/test-cases")
+        MvcResult hiddenResult = mockMvc.perform(multipart("/api/v1/problems/" + p1Id + "/test-cases")
                         .file(inputFile2)
                         .file(outputFile2)
                         .param("isHidden", "true")
                         .param("orderIndex", "2")
+                        .param("label", "stage 1: two-accounts")
                         .header("Authorization", "Bearer " + instructorToken))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.isHidden").value(true))
-                .andExpect(jsonPath("$.orderIndex").value(2));
+                .andExpect(jsonPath("$.orderIndex").value(2))
+                .andExpect(jsonPath("$.label").value("stage 1: two-accounts"))
+                .andReturn();
+        long hiddenId = objectMapper.readTree(hiddenResult.getResponse().getContentAsString()).get("id").asLong();
 
         // 9b. Now that a public test case exists, publishing succeeds.
         mockMvc.perform(post("/api/v1/problems/" + p1Id + "/transitions")
@@ -267,6 +271,14 @@ class ProblemAndTestCaseIntegrationTest {
                         .header("Authorization", "Bearer " + instructorToken))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
+
+        // 9f. Label is feedback metadata, not grading data: it can still be changed while frozen.
+        mockMvc.perform(multipart(org.springframework.http.HttpMethod.PUT,
+                                "/api/v1/problems/" + p1Id + "/test-cases/" + hiddenId)
+                        .param("label", "stage 2: transfer")
+                        .header("Authorization", "Bearer " + instructorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.label").value("stage 2: transfer"));
 
         // 10. Normal User gets testcases -> ONLY sees public testcases (count = 1)
         MvcResult userTcResult = mockMvc.perform(get("/api/v1/problems/" + p1Id + "/test-cases")

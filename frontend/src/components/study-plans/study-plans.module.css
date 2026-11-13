@@ -1,0 +1,351 @@
+/* Màu và font từ layout/plex-theme.module.css; bố cục trang, bảng và trạng thái trống dùng chung problems.module.css. */
+
+.title {
+  margin: 0 0 6px;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.lead {
+  margin: 0 0 24px;
+  max-width: 720px;
+  color: var(--muted);
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--link);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.back:hover {
+  text-decoration: underline;
+}
+
+/* ---- Danh sách plan ---- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.card:hover {
+  border-color: var(--control);
+  background: #fcfcfd;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.meta {
+  color: var(--faint);
+  font-size: 13px;
+  font-family: var(--mono);
+}
+
+/* ---- Thanh tiến độ ---- */
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+
+.bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--hover);
+  overflow: hidden;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: var(--solved);
+}
+
+.badge {
+  align-self: flex-start;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+/* ---- Chi tiết plan ---- */
+.headerBox {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  max-width: 720px;
+}
+
+.ide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px dashed var(--control);
+  border-radius: 8px;
+}
+
+.ide a {
+  color: var(--link);
+  font-weight: 500;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.item {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.itemHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.itemHead h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.itemHead p {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.kind {
+  color: var(--faint);
+  font-size: 12px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.done {
+  color: var(--solved);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: 24px 72px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 52px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--hover);
+  color: inherit;
+  text-decoration: none;
+}
+
+.stage:last-child {
+  border-bottom: 0;
+}
+
+a.stage:hover {
+  background: #f1f3f5;
+}
+
+.stageNo {
+  color: var(--faint);
+  font-size: 13px;
+  font-family: var(--mono);
+}
+
+.locked {
+  color: var(--faint);
+}
+
+.hint {
+  color: var(--faint);
+  font-size: 13px;
+}
+
+.iconDone {
+  color: var(--solved);
+}
+
+.iconProgress {
+  color: var(--attempted);
+}
+
+/* ---- Trang IntelliJ: các bước + token ---- */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 860px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  padding: 18px 20px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.step h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.step p,
+.step li {
+  color: var(--muted);
+}
+
+.step code {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.secret {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+  background: #f1fbf8;
+  border: 1px solid #b7e2d8;
+  border-radius: 6px;
+}
+
+.secret code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.tokenRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 140px 90px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--hover);
+  font-size: 14px;
+}
+
+.tokenRow span:not(:first-child) {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.danger {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--error);
+  cursor: pointer;
+}
+
+.danger:hover {
+  background: #fdf2f1;
+}
+
+@media (max-width: 720px) {
+  .stage {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+  .stage > :nth-child(2),
+  .stage > :nth-child(4) {
+    display: none;
+  }
+  .tokenRow {
+    grid-template-columns: minmax(0, 1fr) 90px;
+  }
+  .tokenRow > :nth-child(2),
+  .tokenRow > :nth-child(3) {
+    display: none;
+  }
+}
+
+/* Stage nằm cuối dòng thời gian chủ đề (components/topics/stage-timeline.tsx) */
+.stageCompact {
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  min-height: 44px;
+  margin-left: -8px;
+  padding: 4px 8px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+.stageCompact:last-child {
+  border-bottom: 1px dashed var(--line);
+}

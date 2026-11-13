@@ -1,0 +1,71 @@
+{
+  "slug": "oop-ke-thua",
+  "title": "Inheritance",
+  "summary": "",
+  "estMinutes": 15,
+  "steps": [
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
+    {
+      "type": "CHOICE", "title": "Is-a or has-a?",
+      "content": {
+        "prompt": "Which relation fits `extends`?",
+        "hint": "Say \"B is an A\" out loud.",
+        "options": [
+          {"id": "a", "text": "SavingsAccount is an Account"},
+          {"id": "b", "text": "Bank has a list of Accounts"},
+          {"id": "c", "text": "Account has an owner Customer"},
+          {"id": "d", "text": "Main uses a Scanner"}
+        ]
+      },
+      "answer": {"correct": ["a"]}
+    },
+    {
+      "type": "CHOICE", "title": "Override or overload?",
+      "content": {
+        "prompt": "The parent has `public long salary()`. Which subclass declaration overrides it?",
+        "options": [
+          {"id": "a", "text": "public long salary(int month)"},
+          {"id": "b", "text": "@Override public long salary()"},
+          {"id": "c", "text": "private long salary()"},
+          {"id": "d", "text": "public static long salary()"}
+        ]
+      },
+      "answer": {"correct": ["b"], "explanation": "(a) overloads, (c) narrows access, (d) is static."}
+    },
+    {
+      "type": "MATCHING", "title": "Keywords",
+      "content": {
+        "prompt": "Match each keyword with what it does.",
+        "left": [{"id": "l1", "text": "extends"}, {"id": "l2", "text": "super(...)"}, {"id": "l3", "text": "super.salary()"}, {"id": "l4", "text": "@Override"}],
+        "right": [{"id": "r1", "text": "Declares the parent class"}, {"id": "r2", "text": "Calls the parent constructor"}, {"id": "r3", "text": "Calls the parent's version of a method"}, {"id": "r4", "text": "Makes the compiler check the override"}]
+      },
+      "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
+    },
+    {
+      "type": "ORDERING", "title": "Manager",
+      "content": {
+        "prompt": "Order the lines of `Manager`.",
+        "items": [
+          {"id": "a", "text": "public class Manager extends Employee {"},
+          {"id": "b", "text": "    private final long bonus;"},
+          {"id": "c", "text": "    public Manager(String name, long base, long bonus) {"},
+          {"id": "d", "text": "        super(name, base);"},
+          {"id": "e", "text": "        this.bonus = bonus;"},
+          {"id": "f", "text": "    }"},
+          {"id": "g", "text": "    @Override public long salary() { return super.salary() + bonus; }"},
+          {"id": "h", "text": "}"}
+        ]
+      },
+      "answer": {"order": ["a", "b", "c", "d", "e", "f", "g", "h"]}
+    },
+    {
+      "type": "FILL_BLANK", "title": "Intern",
+      "content": {
+        "prompt": "Fill in the blanks. An intern earns half the base salary.",
+        "code": "public class Intern [[1]] Employee {\n    public Intern(String name, long base) {\n        [[2]](name, base);\n    }\n\n    [[3]]\n    public long salary() {\n        return baseSalary / 2;\n    }\n}"
+      },
+      "answer": {"blanks": {"1": ["extends"], "2": ["super"], "3": ["@Override"]}, "caseSensitive": true}
+    },
+    {"type": "CODE", "title": "Payroll", "content": {}, "problem": "oop-3-ke-thua"}
+  ]
+}

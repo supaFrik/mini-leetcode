@@ -13,9 +13,13 @@
 import { ApiError } from "./api";
 import { decodeUser, getToken } from "./auth";
 import { TEMPLATES } from "./templates";
+import { MOCK_STAGE_TOPICS, stageTopicRefs, topicById, topicProblemIds, transitionTopic } from "./mock-topics";
+export { attemptTopicStep, deleteTopic, getTopic, getTopicForAuthoring, listTopics, saveTopic, setTopicSkipped, transitionTopic } from "./mock-topics";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ContestProblem, Draft, Language, LeaderboardCell, LeaderboardRow, Page,
-  ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
+  ProblemFull, ProblemLifecycle, ProblemScope, ProblemSummary, ProblemType, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
+  AccessToken, CreatedAccessToken, PublishCheck, PublishIssue, StudyPlanDetail, StudyPlanDraft, StudyPlanStage, StudyPlanSummary,
+  GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
 } from "@/types/api";
 
 const sleep = (ms = 150) => new Promise<void>((r) => setTimeout(r, ms));
@@ -73,6 +77,18 @@ const PROBLEMS: ProblemFull[] = Array.from({ length: 36 }, (_, i) => {
 });
 const withEdits = (p: ProblemFull): ProblemFull => ({ ...p, ...store.get<Record<number, Partial<ProblemFull>>>("mock:problemEdits", {})[p.id] });
 
+/** Đề thuộc khoá học: nằm trong mục của plan chưa ARCHIVED hoặc là bài code của chủ đề (giống ProblemService.inCourse). */
+function courseProblemIds(): Set<number> {
+  const ids = new Set(topicProblemIds());
+  for (const plan of mockPlans) {
+    if (plan.status === "ARCHIVED") continue;
+    for (const it of plan.items) for (const st of it.stages) ids.add(st.problemId);
+  }
+  return ids;
+}
+const inScope = (id: number, scope: ProblemScope, course: Set<number>) =>
+  scope === "ALL" || (scope === "COURSE") === course.has(id);
+
 export async function listProblems(q: { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType; size?: number }): Promise<Page<ProblemSummary>> {
   await sleep(); ensureOnline();
   const done = new Set(store.get<SubRec[]>("mock:subs", []).filter((s) => s.verdict === "AC" && !s.run).map((s) => s.problemId));
@@ -81,8 +97,10 @@ export async function listProblems(q: { page: number; q: string; difficulty: str
   // Bộ lọc chủ đề dùng ngữ nghĩa OR + so khớp chính xác không phân biệt hoa/thường
   // (giống hệt backend: bài chỉ cần thuộc ÍT NHẤT MỘT chủ đề được chọn).
   const wanted = q.tags.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 0);
+  const course = courseProblemIds();
   const all = PROBLEMS.map(withEdits).map((p) => ({ ...p, progress: done.has(p.id) ? ("DONE" as const) : p.progress }))
     .filter((p) =>
+      !course.has(p.id) &&
       (!qText || p.title.toLowerCase().includes(qText.toLowerCase()) || p.tags.join(" ").toLowerCase().includes(qText.toLowerCase()) || (/^[0-9]+$/.test(qText) && p.id === Number(qText))) &&
       (!q.difficulty || p.difficulty === q.difficulty) && (!q.progress || p.progress === q.progress) &&
       (!q.type || (p.type ?? "ALGORITHMIC") === q.type) &&
@@ -167,11 +185,13 @@ export async function transitionProblem(id: number, target: ProblemLifecycle): P
  * Danh sách bài cho trang quản trị. Khác với `listProblems`, staff thấy được
  * cả bài chưa publish, và lọc theo trạng thái vòng đời.
  */
-export async function listAdminProblems(q: { page: number; q: string; difficulty: string; status: string; tags: string[]; type?: ProblemType }): Promise<Page<ProblemFull>> {
+export async function listAdminProblems(q: { page: number; q: string; difficulty: string; status: string; tags: string[]; type?: ProblemType; scope?: ProblemScope }): Promise<Page<ProblemFull>> {
   await sleep(); ensureOnline();
   const size = 20;
   const wanted = q.tags.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 0);
+  const course = courseProblemIds();
   const all = PROBLEMS.map(withEdits).filter((p) =>
+    inScope(p.id, q.scope ?? "STANDALONE", course) &&
     (!q.q || p.title.toLowerCase().includes(q.q.toLowerCase()) || p.description.toLowerCase().includes(q.q.toLowerCase())) &&
     (!q.difficulty || p.difficulty === q.difficulty) &&
     (!q.status || (p.status ?? "PUBLISHED") === q.status) &&
@@ -237,6 +257,97 @@ export async function addTestCase(problemId: number, c: { input: string; expecte
   all[problemId] = [...list, created];
   store.set("mock:extraCases", all);
   return created;
+}
+
+function editExtraCase(problemId: number, id: number, edit: (list: TestCase[], idx: number) => TestCase[]) {
+  const all = store.get<Record<number, TestCase[]>>("mock:extraCases", {});
+  const list = all[problemId] ?? [];
+  const idx = list.findIndex((c) => c.id === id);
+  if (idx < 0) throw new ApiError(409, { title: "Conflict", status: 409, detail: "Built-in mock test cases are read-only." });
+  all[problemId] = edit(list, idx);
+  store.set("mock:extraCases", all);
+  return all[problemId];
+}
+export async function updateTestCase(problemId: number, id: number, c: { input?: string; expectedOutput?: string; isHidden?: boolean }): Promise<TestCase> {
+  await sleep(); ensureOnline();
+  const list = editExtraCase(problemId, id, (l, i) => l.map((x, j) => (j === i ? { ...x, ...c } : x)));
+  return list.find((x) => x.id === id)!;
+}
+export async function deleteTestCase(problemId: number, id: number): Promise<void> {
+  await sleep(); ensureOnline();
+  editExtraCase(problemId, id, (l, i) => l.filter((_, j) => j !== i));
+}
+
+// ===================== AUTHORING (mock: lưu localStorage, "chạy" lời giải mẫu = echo stdin) =====================
+interface MockAuthoring { gradingConfig: string | null; referenceSolution: SubmissionFile[] }
+function authoringOf(problemId: number): MockAuthoring {
+  return store.get<Record<number, MockAuthoring>>("mock:authoring", {})[problemId] ?? { gradingConfig: null, referenceSolution: [] };
+}
+async function toAuthoring(problemId: number): Promise<ProblemAuthoring> {
+  const p = await getProblem(String(problemId));
+  return {
+    problemId, status: p.status ?? "DRAFT", problemType: p.type ?? "ALGORITHMIC", ...authoringOf(problemId),
+    gradingFrozen: p.status === "PUBLISHED", timeLimitMs: p.timeLimitMs, memoryLimitMb: p.memoryLimitMb,
+  };
+}
+function putAuthoring(problemId: number, patch: Partial<MockAuthoring>) {
+  const all = store.get<Record<number, MockAuthoring>>("mock:authoring", {});
+  all[problemId] = { ...authoringOf(problemId), ...patch };
+  store.set("mock:authoring", all);
+}
+export async function getAuthoring(problemId: number): Promise<ProblemAuthoring> {
+  await sleep(); ensureOnline();
+  return toAuthoring(problemId);
+}
+export async function validateGradingConfig(raw: string): Promise<GradingValidation> {
+  await sleep();
+  try {
+    const parsed = JSON.parse(raw);
+    const rules = Array.isArray(parsed?.rules) ? parsed.rules : [];
+    const scenarios = Array.isArray(parsed?.socketScenarios) ? parsed.socketScenarios : [];
+    const errors = rules.flatMap((r: { targetClassName?: string }, i: number) =>
+      r?.targetClassName ? [] : [`rules[${i}].targetClassName: required`]);
+    return { valid: errors.length === 0, errors, ruleCount: rules.length, socketScenarioCount: scenarios.length,
+      totalRuleWeight: rules.reduce((sum: number, r: { weight?: number }) => sum + (r?.weight ?? 1), 0) };
+  } catch (e) {
+    return { valid: false, errors: [`Not valid JSON: ${(e as Error).message}`], ruleCount: 0, socketScenarioCount: 0, totalRuleWeight: 0 };
+  }
+}
+export async function saveGradingConfig(problemId: number, raw: string | null): Promise<ProblemAuthoring> {
+  if (raw && raw.trim()) {
+    const v = await validateGradingConfig(raw);
+    if (!v.valid) throw new ApiError(400, { title: "Invalid Grading Configuration", status: 400, detail: "Grading configuration is invalid", errors: v.errors });
+  }
+  putAuthoring(problemId, { gradingConfig: raw && raw.trim() ? raw.trim() : null });
+  return toAuthoring(problemId);
+}
+export async function saveReferenceSolution(problemId: number, files: SubmissionFile[]): Promise<ProblemAuthoring> {
+  await sleep();
+  putAuthoring(problemId, { referenceSolution: files });
+  return toAuthoring(problemId);
+}
+export async function runReference(problemId: number, body: { inputs?: string[]; testCaseIds?: number[]; apply?: boolean }): Promise<ReferenceRunResult> {
+  await sleep(400); ensureOnline();
+  if (authoringOf(problemId).referenceSolution.length === 0) {
+    throw new ApiError(400, { title: "Bad Request", status: 400, detail: "Save a reference solution before running it" });
+  }
+  const run = (stdin: string) => ({ stdout: stdin, stderr: "", exitCode: 0, runtimeMs: 120 });
+  if (body.inputs?.length) {
+    return { compiled: true, compileOutput: null, mainClass: "Main", error: null, appliedCount: 0,
+      cases: body.inputs.map((i) => ({ testCaseId: null, orderIndex: null, hidden: null, status: "OK" as const, applied: false, ...run(i) })) };
+  }
+  const cases = casesFor(problemId).filter((c) => !body.testCaseIds?.length || body.testCaseIds.includes(c.id));
+  let applied = 0;
+  const results = await Promise.all(cases.map(async (c) => {
+    const r = run(c.input);
+    const same = r.stdout.trimEnd() === c.expectedOutput.trimEnd();
+    let didApply = false;
+    if (body.apply && !same) {
+      try { await updateTestCase(problemId, c.id, { expectedOutput: r.stdout }); didApply = true; applied++; } catch { /* built-in case */ }
+    }
+    return { testCaseId: c.id, orderIndex: c.orderIndex, hidden: c.isHidden, status: same ? "MATCH" as const : "DIFF" as const, applied: didApply, ...r };
+  }));
+  return { compiled: true, compileOutput: null, mainClass: "Main", error: null, cases: results, appliedCount: applied };
 }
 
 // ===================== SUBMISSIONS =====================
@@ -479,4 +590,174 @@ export async function plagiarism(contestId: number): Promise<PlagiarismRow[]> {
     { id: 1, problemId: 1, problemTitle: "Two Sum", userA: "alice", userB: "bob", similarity: 0.93 },
     { id: 2, problemId: 2, problemTitle: "Valid Parentheses", userA: "charlie", userB: "david", similarity: 0.84 },
   ];
+}
+
+// ---------- Study plans (giống seed "OOP với Java" ở backend/tools/problems/projects/mini-bank) ----------
+const bankStage = (n: number, title: string, status: StudyPlanStage["status"]): StudyPlanStage => ({
+  stageNo: n, problemId: 100 + n, slug: `mini-bank-stage-${n}`, title: `Mini Bank ${n}/5 — ${title}`,
+  difficulty: n <= 2 ? "EASY" : "MEDIUM", problemType: "OOP_GRINDING", published: true, status,
+});
+const MOCK_PLAN: StudyPlanDetail = {
+  id: 1, slug: "oop-voi-java", title: "OOP in Java: Mini Bank", status: "PUBLISHED", stageCount: 5, doneStages: 1,
+  description: null,
+  items: [
+    { id: 3, position: 0, kind: "PROJECT", title: "Mini Bank Console", done: false, description: null,
+      stages: [bankStage(1, "Accounts", "DONE"), bankStage(2, "Account types", "NEVER"),
+        bankStage(3, "Transfers", "LOCKED"), bankStage(4, "Opening accounts", "LOCKED"),
+        bankStage(5, "Full CLI", "LOCKED")] },
+  ],
+};
+MOCK_PLAN.createdById = 2;
+MOCK_PLAN.createdByUsername = "instructor";
+/** Plan trong bộ nhớ (mất khi tải lại trang) — đủ để thử màn hình soạn plan ở chế độ mock. */
+const mockPlans: StudyPlanDetail[] = [MOCK_PLAN];
+const findPlan = (slug: string) => {
+  const plan = mockPlans.find((p) => p.slug === slug);
+  if (!plan) throw notFound(`Study plan not found: ${slug}`);
+  return plan;
+};
+export async function listStudyPlans(): Promise<StudyPlanSummary[]> {
+  await sleep(); ensureOnline();
+  return mockPlans.map(({ items, ...rest }) => ({ ...rest, itemCount: items.length }));
+}
+/** id chủ đề theo (id mục, stageNo) của các plan mock; plan mẫu gắn sẵn chủ đề vào project Mini Bank. */
+const mockStageTopics = new Map<string, number[]>(
+  Object.entries(MOCK_STAGE_TOPICS).map(([stageNo, ids]) => [`3:${stageNo}`, ids]),
+);
+export async function getStudyPlan(slug: string): Promise<StudyPlanDetail> {
+  await sleep(); ensureOnline();
+  const plan = findPlan(slug);
+  const staff = me().role !== "USER";
+  // Đề mock có thể đã đổi tên / trạng thái (Course Builder) ⇒ đọc lại từ PROBLEMS nếu có.
+  const live = (st: StudyPlanStage): StudyPlanStage => {
+    const p = PROBLEMS.find((x) => x.id === st.problemId);
+    if (!p) return { ...st, problemStatus: staff ? "PUBLISHED" : null, learnersOnStage: staff ? 0 : null };
+    const cur = withEdits(p);
+    const status = (cur.status ?? "PUBLISHED") as ProblemLifecycle;
+    return { ...st, slug: cur.slug, title: cur.title, difficulty: cur.difficulty, problemType: cur.type ?? "ALGORITHMIC",
+      published: status === "PUBLISHED", problemStatus: staff ? status : null, learnersOnStage: staff ? 0 : null };
+  };
+  return { ...plan, learnerCount: staff ? (plan.learnerCount ?? 0) : null,
+    items: plan.items.map((item) => ({ ...item, stages: item.stages.map((st) => ({
+      ...live(st), topics: stageTopicRefs(mockStageTopics.get(`${item.id}:${st.stageNo}`) ?? [], staff) })) })) };
+}
+export async function saveStudyPlan(slug: string | null, draft: StudyPlanDraft): Promise<StudyPlanDetail> {
+  await sleep(); ensureOnline();
+  const user = decodeUser(getToken());
+  const old = slug ? findPlan(slug) : null;
+  if (old && draft.expectedUpdatedAt && old.updatedAt && draft.expectedUpdatedAt !== old.updatedAt) {
+    throw new ApiError(409, { title: "Resource Conflict", status: 409,
+      detail: "This study plan was changed in another tab or by another user. Reload to continue." });
+  }
+  const id = old?.id ?? Date.now();
+  const plan: StudyPlanDetail = {
+    id, slug: draft.slug, title: draft.title, description: draft.description ?? null,
+    status: old?.status ?? "DRAFT", createdById: old?.createdById ?? user?.id, createdByUsername: old?.createdByUsername ?? user?.username,
+    stageCount: draft.items.reduce((n, i) => n + i.problemIds.length, 0), doneStages: 0,
+    updatedAt: new Date().toISOString(), learnerCount: old?.learnerCount ?? 0,
+    items: draft.items.map((it, position) => ({
+      id: id * 100 + position + 1, position, kind: it.kind, title: it.title, description: it.description ?? null, done: false,
+      stages: it.problemIds.map((problemId, k) => {
+        const prev = old?.items.flatMap((i) => i.stages).find((s) => s.problemId === problemId);
+        return { stageNo: k + 1, problemId, slug: prev?.slug ?? `problem-${problemId}`, title: prev?.title ?? `Problem #${problemId}`,
+          difficulty: prev?.difficulty ?? "EASY", problemType: prev?.problemType ?? "ALGORITHMIC", published: true,
+          status: k === 0 ? "NEVER" : "LOCKED" } satisfies StudyPlanStage;
+      }),
+    })),
+  };
+  plan.items.forEach((item, position) => (draft.items[position].stageTopics ?? [])
+    .forEach((ids, k) => mockStageTopics.set(`${item.id}:${k + 1}`, ids)));
+  if (old) mockPlans.splice(mockPlans.indexOf(old), 1, plan); else mockPlans.push(plan);
+  return getStudyPlan(plan.slug);
+}
+
+/** Checklist publish giống server (StudyPlanService.check). */
+export async function publishCheck(slug: string): Promise<PublishCheck> {
+  const plan = await getStudyPlan(slug);
+  const errors: PublishIssue[] = [];
+  const warnings: PublishIssue[] = [];
+  const problemsToPublish: number[] = [];
+  const topicsToPublish: number[] = [];
+  if (plan.items.length === 0) errors.push({ node: "plan", message: "Add at least one project or practice problem" });
+  plan.items.forEach((item, itemIndex) => {
+    const project = item.kind === "PROJECT";
+    if (item.stages.length === 0) errors.push({ node: "item", itemIndex, message: `"${item.title}" has no ${project ? "stage" : "problem"}` });
+    item.stages.forEach((st) => {
+      const where = project ? `${item.title} · stage ${st.stageNo}` : item.title;
+      if (st.problemStatus && st.problemStatus !== "PUBLISHED") problemsToPublish.push(st.problemId);
+      const p = PROBLEMS.find((x) => x.id === st.problemId);
+      if (p && !withEdits(p).description.trim()) errors.push({ node: "stage", itemIndex, problemId: st.problemId, message: `${where}: the statement is empty` });
+      if (p && (withEdits(p).type ?? "ALGORITHMIC") === "OOP_GRINDING" && authoringOf(p.id).referenceSolution.length === 0) {
+        warnings.push({ node: "stage", itemIndex, problemId: st.problemId, message: `${where}: no reference solution, expected outputs are not verified` });
+      }
+      (st.topics ?? []).forEach((t) => {
+        if (t.status === "PUBLISHED" || topicsToPublish.includes(t.id)) return;
+        const topic = topicById(t.id);
+        if (topic && topic.steps.length === 0) errors.push({ node: "topic", topicId: t.id, message: `Topic "${t.title}" has no steps` });
+        topicsToPublish.push(t.id);
+      });
+    });
+  });
+  return { ok: errors.length === 0, errors, warnings, problemsToPublish, topicsToPublish };
+}
+export async function publishStudyPlan(slug: string): Promise<StudyPlanDetail> {
+  const check = await publishCheck(slug);
+  if (!check.ok) throw new ApiError(409, { title: "Resource Conflict", status: 409, detail: `Cannot publish: ${check.errors[0].message}` });
+  const paths: Record<string, ProblemLifecycle[]> = {
+    ARCHIVED: ["DRAFT", "REVIEWING", "PUBLISHED"], DRAFT: ["REVIEWING", "PUBLISHED"], REVIEWING: ["PUBLISHED"],
+  };
+  for (const id of check.problemsToPublish) {
+    const p = PROBLEMS.find((x) => x.id === id);
+    for (const target of paths[(p && withEdits(p).status) ?? "PUBLISHED"] ?? []) await transitionProblem(id, target);
+  }
+  for (const id of check.topicsToPublish) {
+    const t = topicById(id);
+    if (t) await transitionTopic(t.slug, "PUBLISHED");
+  }
+  findPlan(slug).status = "PUBLISHED";
+  return getStudyPlan(slug);
+}
+export async function cloneProblem(problemId: number, title: string): Promise<ProblemFull> {
+  const src = await getProblem(String(problemId));
+  const copy = await createProblem({ title, description: src.description, difficulty: src.difficulty, timeLimitMs: src.timeLimitMs,
+    memoryLimitMb: src.memoryLimitMb, tags: src.tags, type: src.type, starterTemplates: src.starterTemplates });
+  const extra = store.get<Record<number, TestCase[]>>("mock:extraCases", {});
+  if (extra[problemId]) {
+    extra[copy.id] = extra[problemId].map((c, i) => ({ ...c, id: copy.id * 100 + 50 + i }));
+    store.set("mock:extraCases", extra);
+  }
+  putAuthoring(copy.id, authoringOf(problemId));
+  return copy;
+}
+export async function unlockProblem(problemId: number): Promise<ProblemFull> {
+  await transitionProblem(problemId, "ARCHIVED");
+  return transitionProblem(problemId, "DRAFT");
+}
+export async function transitionStudyPlan(slug: string, status: StudyPlanDetail["status"]): Promise<StudyPlanDetail> {
+  await sleep(); ensureOnline();
+  const plan = findPlan(slug);
+  plan.status = status;
+  return plan;
+}
+export async function deleteStudyPlan(slug: string): Promise<void> {
+  await sleep(); ensureOnline();
+  mockPlans.splice(mockPlans.indexOf(findPlan(slug)), 1);
+}
+
+// ---------- Personal access tokens ----------
+const TOKENS_KEY = "mock:tokens";
+export async function listTokens(): Promise<AccessToken[]> { await sleep(); ensureOnline(); return store.get<AccessToken[]>(TOKENS_KEY, []); }
+export async function createToken(name: string, expiresInDays: number): Promise<CreatedAccessToken> {
+  await sleep(); ensureOnline();
+  const all = store.get<AccessToken[]>(TOKENS_KEY, []);
+  if (all.filter((t) => !t.revoked).length >= 5) throw new ApiError(409, { title: "Resource Conflict", status: 409, detail: "At most 5 active tokens per user; revoke one first" });
+  const now = new Date();
+  const info: AccessToken = { id: Date.now(), name, createdAt: now.toISOString(), revoked: false, lastUsedAt: null,
+    expiresAt: new Date(now.getTime() + expiresInDays * 86400000).toISOString() };
+  store.set(TOKENS_KEY, [info, ...all]);
+  return { token: `mlc_pat_mock${Math.random().toString(36).slice(2, 14)}`, info };
+}
+export async function revokeToken(id: number): Promise<void> {
+  await sleep(); ensureOnline();
+  store.set(TOKENS_KEY, store.get<AccessToken[]>(TOKENS_KEY, []).map((t) => (t.id === id ? { ...t, revoked: true } : t)));
 }

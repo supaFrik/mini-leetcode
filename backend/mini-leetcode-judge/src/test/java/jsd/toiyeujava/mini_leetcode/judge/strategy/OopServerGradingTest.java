@@ -146,13 +146,37 @@ class OopServerGradingTest {
                 eq(SubmissionVerdict.WA), any(), any(), eq(1), eq(2), any());
         JsonNode failures = objectMapper.readTree(saved.getScoreBreakdown()).get("phases").get("unitTest").get("failures");
         assertThat(failures.get(0).get("testMethod").asText()).isEqualTo("Test case #2 (hidden)");
-        assertThat(failures.get(0).get("error").asText()).isEqualTo("Wrong answer");
+        // Thông báo cụ thể: testcase ẩn chỉ nêu số dòng lệch, không lộ dữ liệu (TestFeedback).
+        assertThat(failures.get(0).get("error").asText())
+                .startsWith("Wrong answer on test case #2 (hidden)")
+                .contains("differs from the expected output at line 1");
+        verify(submissionService).updateSubmissionVerdict(eq(SUBMISSION_ID), eq(SubmissionStatus.COMPLETED),
+                eq(SubmissionVerdict.WA), any(), any(), eq(1), eq(2),
+                org.mockito.ArgumentMatchers.startsWith("Wrong answer on test case #2 (hidden)"));
     }
 
     @Test
     void rulesAndTestCases_areWeighted40And60(@TempDir Path workDir) throws Exception {
         twoCasesHalfPassing();
         assertThat(judge(GOOD, RULES, workDir).getScore()).isEqualTo(70.0); // 0.4*100 + 0.6*50
+    }
+
+    @Test
+    void quickRun_usesOnlyPublicTestCases(@TempDir Path workDir) throws Exception {
+        twoCasesHalfPassing(); // case 1 công khai (đúng), case 2 ẩn (sai)
+        Problem problem = Problem.builder().id(1L).problemType(ProblemType.OOP_GRINDING)
+                .timeLimitMs(2000).memoryLimitMb(256).build();
+        Submission submission = Submission.builder().id(SUBMISSION_ID).build();
+        when(submissionService.getSubmissionById(SUBMISSION_ID)).thenReturn(submission);
+        when(submissionService.getSubmissionCode(SUBMISSION_ID)).thenReturn(GOOD);
+        when(submissionRepository.findById(SUBMISSION_ID)).thenReturn(Optional.of(submission));
+
+        strategy.executeJudge(new SubmissionTaskMessage(SUBMISSION_ID, 1L, 1L, SubmissionLanguage.JAVA, true),
+                problem, workDir);
+
+        verify(submissionService).updateSubmissionVerdict(eq(SUBMISSION_ID), eq(SubmissionStatus.COMPLETED),
+                eq(SubmissionVerdict.AC), any(), any(), eq(1), eq(1), any());
+        verify(container, never()).runClass(any(), any(), anyList(), eq("input in2"), anyLong(), anyInt());
     }
 
     @Test

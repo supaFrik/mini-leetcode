@@ -1,0 +1,46 @@
+{
+  "slug": "oop-7-interface",
+  "title": "Interfaces: command table",
+  "difficulty": "MEDIUM",
+  "tags": ["OOP", "Interface", "Design Pattern"],
+  "forStage": 5,
+  "rules": [
+    {
+      "ruleName": "COMMAND_IS_INTERFACE",
+      "targetClassName": "Command",
+      "expectedType": "INTERFACE",
+      "methods": [
+        {"name": "name", "returnType": "String"},
+        {"name": "run", "returnType": "String", "parameterTypes": ["String"]}
+      ],
+      "customFailureMessage": "Command must be an interface with String name() and String run(String)"
+    },
+    {
+      "ruleName": "ECHO_IMPLEMENTS_COMMAND",
+      "targetClassName": "EchoCommand",
+      "expectedType": "CLASS",
+      "expectedInterfaces": ["Command"],
+      "customFailureMessage": "EchoCommand must implement Command"
+    },
+    {
+      "ruleName": "ADD_IMPLEMENTS_COMMAND",
+      "targetClassName": "AddCommand",
+      "expectedType": "CLASS",
+      "expectedInterfaces": ["Command"],
+      "customFailureMessage": "AddCommand must implement Command"
+    },
+    {
+      "ruleName": "UPPER_IMPLEMENTS_COMMAND",
+      "targetClassName": "UpperCommand",
+      "expectedType": "CLASS",
+      "expectedInterfaces": ["Command"],
+      "customFailureMessage": "UpperCommand must implement Command"
+    }
+  ],
+  "cases": [
+    {"name": "example", "stdin": "HELP\nECHO hello   world\nADD 1 2 3\nADD 4 x\nUPPER mini bank\nPING\n"},
+    {"name": "add-empty-and-negative", "stdin": "ADD\nADD -5 10\nADD 3000000000 3000000000\n"},
+    {"name": "unknown-commands", "stdin": "echo lower\nEXIT\nHELP\n"},
+    {"name": "upper-and-empty-echo", "stdin": "UPPER java bank\nECHO\n"}
+  ]
+}

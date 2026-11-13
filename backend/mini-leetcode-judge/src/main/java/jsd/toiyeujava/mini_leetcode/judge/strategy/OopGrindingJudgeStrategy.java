@@ -10,6 +10,8 @@ import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
 import jsd.toiyeujava.mini_leetcode.judge.CompileResult;
 import jsd.toiyeujava.mini_leetcode.judge.DockerExecutor;
 import jsd.toiyeujava.mini_leetcode.judge.OutputComparator;
+import jsd.toiyeujava.mini_leetcode.judge.OutputPolicy;
+import jsd.toiyeujava.mini_leetcode.judge.TestFeedback;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.calculator.OopScoreCalculator;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.compilation.MultiFileSourceExtractor;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.compilation.OopGrindingCompiler;
@@ -200,6 +202,10 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
         HarnessConfig harnessConfig = buildServerHarnessConfig(submissionId, problem);
         List<TestCase> testCases = testCaseRepository == null || problem == null ? List.of()
                 : testCaseRepository.findByProblemIdOrderByOrderIndexAsc(problem.getId());
+        if (Boolean.TRUE.equals(message.isQuickRun())) {
+            // Run (chấm thử) chỉ dùng testcase công khai để không lộ kết quả testcase ẩn; Submit chạy đủ.
+            testCases = testCases.stream().filter(tc -> !Boolean.TRUE.equals(tc.getIsHidden())).toList();
+        }
         if (!harnessConfig.getOopInspection().isEnabled() && !harnessConfig.getSocketIntegration().isEnabled()
                 && testCases.isEmpty()) {
             submissionService.failSubmission(submissionId,
@@ -332,12 +338,13 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
             return null;
         }
         Optional<String> mainClass = OopMainClassDetector.detectMainClass(workDir.resolve("classes"));
+        OutputPolicy policy = OutputPolicy.fromGradingConfig(problem.getGradingConfig());
         List<ExecutionReport.UnitTestFailure> failures = new ArrayList<>();
         int passed = 0;
         int index = 0;
         for (TestCase testCase : testCases) {
             index++;
-            String label = "Test case #" + index + (Boolean.TRUE.equals(testCase.getIsHidden()) ? " (hidden)" : "");
+            String label = "T" + TestFeedback.caseName(index, testCase).substring(1);
             String error;
             if (mainClass.isEmpty()) {
                 error = "No 'public static void main(String[] args)' found";
@@ -354,10 +361,11 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
                     error = "Memory limit exceeded";
                 } else if (result.exitCode() != null && result.exitCode() != 0) {
                     error = "Runtime error (exit code " + result.exitCode() + ")";
-                } else if (!OutputComparator.matches(result.stdout(), readText(testCase.getExpectedOutputUri()))) {
-                    error = "Wrong answer";
                 } else {
-                    error = null;
+                    String expected = readText(testCase.getExpectedOutputUri());
+                    // Thông báo cụ thể (dòng lệch; testcase ẩn chỉ số dòng + nhãn stage), xem TestFeedback.
+                    error = OutputComparator.matches(result.stdout(), expected, policy) ? null
+                            : TestFeedback.wrongAnswer(index, testCase, result.stdout(), expected, policy);
                 }
             }
             if (error == null) {
@@ -415,6 +423,8 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
         }
 
         String scoreBreakdownJson = scoreCalculator.formatScoreBreakdownJson(report);
+        String errorMessage = report != null && report.getErrorMessage() != null ? report.getErrorMessage()
+                : summarizeFailures(report);
 
         submissionService.updateSubmissionVerdict(
                 submissionId,
@@ -424,7 +434,7 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
                 peakMemoryKb,
                 passedCount,
                 totalCount,
-                report != null ? report.getErrorMessage() : null
+                errorMessage
         );
 
         if (submissionRepository != null) {
@@ -439,6 +449,44 @@ public class OopGrindingJudgeStrategy implements JudgeStrategy {
                 }
             });
         }
+    }
+
+    /**
+     * Tóm tắt lỗi để web / plugin hiển thị ngay (chi tiết đầy đủ vẫn ở score_breakdown):
+     * rule OOP sai (thông báo của giảng viên), testcase stdin/stdout sai đầu tiên, kịch bản socket sai đầu tiên.
+     * {@code null} khi không có lỗi nào.
+     */
+    static String summarizeFailures(ExecutionReport report) {
+        if (report == null || report.getPhases() == null) {
+            return null;
+        }
+        List<String> lines = new ArrayList<>();
+        ExecutionReport.OopInspectionPhase oop = report.getPhases().getOopInspection();
+        if (oop != null && oop.getRules() != null) {
+            oop.getRules().stream().filter(r -> !r.isPassed()).limit(5).forEach(r -> lines.add("OOP rule "
+                    + (r.getRuleName() != null ? r.getRuleName() : r.getTargetClass()) + ": "
+                    + (r.getMessage() != null && !r.getMessage().isBlank() ? r.getMessage()
+                    : r.getDetails() != null && !r.getDetails().isEmpty() ? String.join("; ", r.getDetails()) : "failed")));
+        }
+        ExecutionReport.UnitTestPhase io = report.getPhases().getUnitTest();
+        if (io != null && io.getFailures() != null && !io.getFailures().isEmpty()) {
+            ExecutionReport.UnitTestFailure first = io.getFailures().get(0);
+            String error = first.getError() != null ? first.getError() : "failed";
+            lines.add(error.startsWith("Wrong answer") ? error : first.getTestMethod() + ": " + error);
+            if (io.getFailures().size() > 1) {
+                lines.add("(+" + (io.getFailures().size() - 1) + " more failing test cases)");
+            }
+        }
+        ExecutionReport.SocketIntegrationPhase socket = report.getPhases().getSocketIntegration();
+        if (socket != null && socket.getScenarios() != null) {
+            socket.getScenarios().stream().filter(s -> !s.isPassed()).findFirst().ifPresent(s ->
+                    lines.add("Socket scenario " + s.getScenarioName() + ": " + (s.getError() != null ? s.getError() : "failed")));
+        }
+        if (lines.isEmpty()) {
+            return null;
+        }
+        String text = String.join("\n", lines);
+        return text.length() > 2000 ? text.substring(0, 2000) + "…" : text;
     }
 
     private SubmissionVerdict mapVerdict(String verdictStr) {

@@ -51,6 +51,16 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     /** Số bài nộp của một bài — dùng để chặn xoá cứng khi bài đã có lịch sử. */
     long countByProblemId(Long problemId);
 
+    /** Mọi bài nộp (kể cả "run") trong kỳ thi — chặn xoá kỳ thi đã có người nộp. */
+    long countByContestId(Long contestId);
+
+    /** Bài nộp của một thí sinh trong kỳ thi — chặn gỡ thí sinh đã làm bài. */
+    long countByContestIdAndUserId(Long contestId, Long userId);
+
+    /** Id các thí sinh đã có ít nhất một bài nộp (kể cả "run") trong kỳ thi. */
+    @Query("select distinct s.user.id from Submission s where s.contestId = :contestId")
+    List<Long> findUserIdsByContestId(@Param("contestId") Long contestId);
+
     /** Các bài nộp (không phải "run") trong một kỳ thi, dùng để tính bảng xếp hạng. */
     @Query("select s from Submission s where s.contestId = :contestId and s.quickRun = false")
     List<Submission> findByContestId(@Param("contestId") Long contestId);
@@ -65,7 +75,21 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     List<Long> findSolvedProblemIdsByUserId(@Param("userId") Long userId,
                                              @Param("verdict") SubmissionVerdict verdict);
 
-    /** Id các bài mà user đã từng nộp (bất kể kết quả) → tiến độ IN_PROGRESS. */
-    @Query("select distinct s.problem.id from Submission s where s.user.id = :userId")
+    /** User đã có bài nộp chính thức (không phải Run) được AC cho đề này chưa — dùng để mở khoá stage. */
+    boolean existsByUser_IdAndProblem_IdAndVerdictAndQuickRunFalse(Long userId, Long problemId, SubmissionVerdict verdict);
+
+    /** Id các bài mà user đã từng nộp chính thức (bất kể kết quả; không tính Run) → tiến độ IN_PROGRESS. */
+    @Query("select distinct s.problem.id from Submission s where s.user.id = :userId and s.quickRun = false")
     List<Long> findAttemptedProblemIdsByUserId(@Param("userId") Long userId);
+
+    /**
+     * Tiến độ học viên (role USER) trên các đề: mỗi dòng {@code [problemId, userId, solved (0/1)]}.
+     * Course Builder dùng để đếm số học viên của plan và số người đang làm dở từng stage.
+     */
+    @Query("select s.problem.id, s.user.id, max(case when s.verdict = :ac then 1 else 0 end) from Submission s"
+            + " where s.problem.id in :problemIds and s.quickRun = false"
+            + " and s.user.role = jsd.toiyeujava.mini_leetcode.entity.Role.USER"
+            + " group by s.problem.id, s.user.id")
+    List<Object[]> findLearnerProgress(@Param("problemIds") Collection<Long> problemIds,
+                                       @Param("ac") SubmissionVerdict ac);
 }

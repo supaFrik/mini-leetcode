@@ -1,0 +1,27 @@
+{
+  "slug": "oop-1-lop-va-doi-tuong",
+  "title": "Classes and objects: customers",
+  "difficulty": "EASY",
+  "tags": ["OOP", "Class", "Constructor", "Static"],
+  "forStage": 1,
+  "rules": [
+    {
+      "ruleName": "CUSTOMER_CLASS",
+      "targetClassName": "Customer",
+      "expectedType": "CLASS",
+      "constructors": [{"parameterTypes": ["String"], "requiredModifiers": ["public"]}],
+      "fields": [{"name": "nextId", "type": "int", "requiredModifiers": ["private", "static"]}],
+      "methods": [
+        {"name": "count", "returnType": "int", "requiredModifiers": ["public", "static"]},
+        {"name": "toString", "returnType": "String", "requiredModifiers": ["public"]}
+      ],
+      "customFailureMessage": "Customer needs public Customer(String), private static int nextId, public static int count() and toString()"
+    }
+  ],
+  "cases": [
+    {"name": "example", "stdin": "3\nAnn\nBob\nCarol Lee\n"},
+    {"name": "one-customer", "stdin": "1\nDan Brown\n"},
+    {"name": "no-customers", "stdin": "0\n"},
+    {"name": "many-customers", "stdin": "12\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\n"}
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "_comment": "Mini Bank Console project (5 stages) and the 'OOP in Java' plan. Seed / cases: python backend/tools/problems/mini_bank_project.py",
+  "reference": "projects/mini-bank/reference",
+  "_lessons_comment": "Lessons: lessons/<slug>/ holds theory.md + topic.json (topic steps) and the code exercise (lesson.md, lesson.json, starter/, solution/).",
+  "lessons": [
+    "oop-1-lop-va-doi-tuong",
+    "oop-2-dong-goi",
+    "oop-3-ke-thua",
+    "oop-4-truu-tuong-da-hinh",
+    "oop-5-exception",
+    "oop-6-collections",
+    "oop-7-interface"
+  ],
+  "plan": {
+    "slug": "oop-voi-java",
+    "title": "OOP in Java: Mini Bank",
+    "description": "",
+    "items": [
+      {
+        "kind": "PROJECT",
+        "title": "Mini Bank Console",
+        "description": "",
+        "problems": [
+          "mini-bank-stage-1",
+          "mini-bank-stage-2",
+          "mini-bank-stage-3",
+          "mini-bank-stage-4",
+          "mini-bank-stage-5"
+        ],
+        "stageTopics": [
+          [
+            "oop-lop-va-doi-tuong",
+            "oop-dong-goi"
+          ],
+          [
+            "oop-ke-thua",
+            "oop-truu-tuong-da-hinh"
+          ],
+          [
+            "oop-exception"
+          ],
+          [
+            "oop-collections"
+          ],
+          [
+            "oop-interface"
+          ]
+        ]
+      }
+    ]
+  },
+  "stages": [
+    {
+      "slug": "mini-bank-stage-1",
+      "title": "Mini Bank 1/5 — Accounts",
+      "difficulty": "EASY",
+      "tags": [
+        "OOP",
+        "Encapsulation",
+        "Scanner"
+      ]
+    },
+    {
+      "slug": "mini-bank-stage-2",
+      "title": "Mini Bank 2/5 — Account types",
+      "difficulty": "EASY",
+      "tags": [
+        "OOP",
+        "Inheritance",
+        "Polymorphism"
+      ]
+    },
+    {
+      "slug": "mini-bank-stage-3",
+      "title": "Mini Bank 3/5 — Transfers",
+      "difficulty": "MEDIUM",
+      "tags": [
+        "OOP",
+        "Exceptions"
+      ]
+    },
+    {
+      "slug": "mini-bank-stage-4",
+      "title": "Mini Bank 4/5 — Opening accounts",
+      "difficulty": "MEDIUM",
+      "tags": [
+        "OOP",
+        "Encapsulation",
+        "Collections"
+      ]
+    },
+    {
+      "slug": "mini-bank-stage-5",
+      "title": "Mini Bank 5/5 — Full CLI",
+      "difficulty": "MEDIUM",
+      "tags": [
+        "OOP",
+        "Scanner"
+      ]
+    }
+  ],
+  "_cases_comment": "Each case belongs to the earliest stage that has every command it uses. Stage N runs all cases with stage <= N; the first case of a stage is its public example. Do not use 'EXIT <non-zero>' (the judge treats it as a runtime error).",
+  "cases": [
+    {
+      "stage": 1,
+      "name": "two-accounts",
+      "stdin": "2\nAn\nS\n100000\nBinh\nC\n0\nDEPOSIT 2 50000\nBALANCE 1\nLIST\nEXIT\n"
+    },
+    {
+      "stage": 1,
+      "name": "eof-summary",
+      "stdin": "1\nChi\nS\n0\nDEPOSIT 1 1000\nDEPOSIT 1 2500\nBALANCE 1\n"
+    },
+    {
+      "stage": 1,
+      "name": "no-accounts",
+      "stdin": "0\nLIST\nEXIT\n"
+    },
+    {
+      "stage": 2,
+      "name": "savings-minimum",
+      "stdin": "1\nChi\nS\n80000\nWITHDRAW 1 30001\nWITHDRAW 1 30000\nWITHDRAW 1 1\nLIST\nEXIT\n"
+    },
+    {
+      "stage": 2,
+      "name": "interest-rounding",
+      "stdin": "1\nAn\nS\n123457\nMONTH\nMONTH\nMONTH\nBALANCE 1\nDEPOSIT 1 999\nMONTH\nLIST\nEXIT\n"
+    },
+    {
+      "stage": 2,
+      "name": "overdraft-limit",
+      "stdin": "1\nBinh\nC\n0\nWITHDRAW 1 500000\nWITHDRAW 1 1\nDEPOSIT 1 1\nWITHDRAW 1 1\nMONTH\nBALANCE 1\nEXIT\n"
+    },
+    {
+      "stage": 2,
+      "name": "month-then-eof",
+      "stdin": "1\nGiang\nC\n250000\nDEPOSIT 1 50000\nMONTH\n"
+    },
+    {
+      "stage": 3,
+      "name": "transfer",
+      "stdin": "2\nDung\nS\n60000\nEm\nC\n0\nTRANSFER 1 2 10000\nTRANSFER 2 1 400000\nLIST\nEXIT\n"
+    },
+    {
+      "stage": 3,
+      "name": "failed-transfer-is-atomic",
+      "stdin": "2\nDung\nS\n60000\nEm\nC\n0\nTRANSFER 1 2 20000\nTRANSFER 1 9 1\nTRANSFER 9 1 1\nLIST\nEXIT\n"
+    },
+    {
+      "stage": 3,
+      "name": "bad-input-keeps-running",
+      "stdin": "1\nHa\nC\n1000\nDEPOSIT 1 -5\nDEPOSIT 7 10\nFOO\nWITHDRAW 1\nBALANCE x\nBALANCE 1\nEXIT\n"
+    },
+    {
+      "stage": 4,
+      "name": "open-accounts",
+      "stdin": "0\nOPEN S 70000 Le Thi Hong Nhung\nOPEN C 5000 Pham Quang\nLIST\nTRANSFER 1 2 15000\nLIST\nEXIT\n"
+    },
+    {
+      "stage": 4,
+      "name": "open-rejects-bad-type",
+      "stdin": "1\nKim\nX\n10\nOPEN X 1 Nobody\nOPEN C 0 Lan\nBALANCE 1\nLIST\nEXIT\n"
+    },
+    {
+      "stage": 5,
+      "name": "help-and-report",
+      "stdin": "1\nMinh\nC\n10\nHELP\nREPORT 3\nREPORT 0\nEXIT\n"
+    },
+    {
+      "stage": 5,
+      "name": "polymorphic-month",
+      "stdin": "3\nH1\nS\n200000\nH2\nC\n0\nH3\nS\n50000\nMONTH\nTRANSFER 1 2 100000\nMONTH\nLIST\nREPORT 2\nEXIT\n"
+    }
+  ]
+}
