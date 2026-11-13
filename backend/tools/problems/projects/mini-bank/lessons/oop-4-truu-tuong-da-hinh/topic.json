@@ -1,0 +1,70 @@
+{
+  "slug": "oop-truu-tuong-da-hinh",
+  "title": "Lớp trừu tượng & đa hình",
+  "summary": "abstract class, method trừu tượng, kiểu khai báo và kiểu thật, dynamic dispatch, template method.",
+  "estMinutes": 25,
+  "steps": [
+    {"type": "THEORY", "title": "Lý thuyết", "theoryFile": "theory.md"},
+    {
+      "type": "CHOICE", "title": "Method nào chạy?",
+      "content": {
+        "prompt": "```java\nShape s = new Circle(1);\nSystem.out.println(s.name());\n```\n`Circle.name()` trả `\"Hình tròn\"`, `Shape.name()` là abstract. Đoạn code in ra gì?",
+        "hint": "Method được chọn theo kiểu thật của đối tượng lúc chạy.",
+        "options": [{"id": "a", "text": "Hình tròn"}, {"id": "b", "text": "Lỗi: không gọi được method abstract"}, {"id": "c", "text": "null"}, {"id": "d", "text": "Shape"}]
+      },
+      "answer": {"correct": ["a"], "explanation": "Kiểu khai báo Shape cho phép gọi name(); lúc chạy JVM chọn bản của Circle (dynamic dispatch)."}
+    },
+    {
+      "type": "CHOICE", "title": "Về lớp trừu tượng",
+      "content": {
+        "prompt": "Chọn **tất cả** câu đúng về `abstract class Shape`.",
+        "multiple": true,
+        "options": [
+          {"id": "a", "text": "Không thể viết new Shape()"},
+          {"id": "b", "text": "Có thể có field, constructor và method có thân"},
+          {"id": "c", "text": "Lớp con cụ thể phải cài mọi method abstract"},
+          {"id": "d", "text": "Chỉ được chứa method abstract"}
+        ]
+      },
+      "answer": {"correct": ["a", "b", "c"], "explanation": "Lớp trừu tượng là lớp cha chưa hoàn chỉnh: vẫn có trạng thái và code, chỉ không tạo trực tiếp được."}
+    },
+    {
+      "type": "MATCHING", "title": "Kiểu khai báo và kiểu thật",
+      "content": {
+        "prompt": "Với `Shape s = new Square(2);`, ghép mỗi câu hỏi với câu trả lời.",
+        "left": [{"id": "l1", "text": "Kiểu khai báo của s"}, {"id": "l2", "text": "Kiểu thật của đối tượng"}, {"id": "l3", "text": "Ai quyết định được gọi method nào"}, {"id": "l4", "text": "Ai quyết định bản nào chạy"}],
+        "right": [{"id": "r1", "text": "Shape"}, {"id": "r2", "text": "Square"}, {"id": "r3", "text": "Trình biên dịch"}, {"id": "r4", "text": "JVM lúc chạy"}]
+      },
+      "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
+    },
+    {
+      "type": "ORDERING", "title": "Template method",
+      "content": {
+        "prompt": "Sắp xếp để có lớp trừu tượng `Shape` với template method `describe()`.",
+        "items": [
+          {"id": "a", "text": "public abstract class Shape {"},
+          {"id": "b", "text": "    public abstract double area();"},
+          {"id": "c", "text": "    public abstract String name();"},
+          {"id": "d", "text": "    public String describe() {"},
+          {"id": "e", "text": "        return String.format(Locale.ROOT, \"%s: %.2f\", name(), area());"},
+          {"id": "f", "text": "    }"},
+          {"id": "g", "text": "}"}
+        ]
+      },
+      "answer": {"order": ["a", "b", "c", "d", "e", "f", "g"], "explanation": "Lớp cha cố định khung (describe), lớp con điền chi tiết (name, area)."}
+    },
+    {
+      "type": "FILL_BLANK", "title": "Hoàn thành Circle",
+      "content": {
+        "prompt": "Điền phần còn thiếu để `Circle` là một `Shape` cụ thể.",
+        "code": "public class Circle [[1]] Shape {\n    private final double r;\n\n    public Circle(double r) { this.r = r; }\n\n    @Override\n    public double [[2]]() {\n        return Math.PI * r * r;\n    }\n\n    @Override\n    public String name() { return \"Hình tròn\"; }\n}"
+      },
+      "answer": {"blanks": {"1": ["extends"], "2": ["area"]}, "caseSensitive": true}
+    },
+    {
+      "type": "CODE", "title": "Bài tập: diện tích các hình",
+      "content": {"intro": "Áp dụng: Shape trừu tượng, Circle / Rectangle / Square và một vòng lặp đa hình."},
+      "problem": "oop-4-truu-tuong-da-hinh"
+    }
+  ]
+}

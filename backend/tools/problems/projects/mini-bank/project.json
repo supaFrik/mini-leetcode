@@ -14,26 +14,18 @@
   "plan": {
     "slug": "oop-voi-java",
     "title": "OOP với Java: xây Mini Bank",
-    "description": "Khóa học theo project: mỗi tính chất OOP có bài lý thuyết kèm bài tập code, rồi áp dụng ngay vào một stage của ngân hàng mini chạy trên console. Học nhóm 'Kiến thức cho Stage N' trước khi làm Stage N.",
+    "description": "Khóa học theo project kiểu Hyperskill: mỗi stage của ngân hàng mini có các chủ đề OOP (lý thuyết, quiz, kéo thả, điền code, bài code nhỏ) dẫn tới chính stage đó.",
     "items": [
-      {"kind": "PROBLEM", "title": "Kiến thức cho Stage 1: lớp, đối tượng & đóng gói",
-       "description": "Lớp và đối tượng, constructor, static, toString; đóng gói với private và method có kiểm tra. Làm xong hai bài này rồi sang Stage 1.",
-       "problems": ["oop-1-lop-va-doi-tuong", "oop-2-dong-goi"]},
-      {"kind": "PROBLEM", "title": "Kiến thức cho Stage 2: kế thừa, trừu tượng & đa hình",
-       "description": "extends, super, override; lớp trừu tượng, đa hình, template method.",
-       "problems": ["oop-3-ke-thua", "oop-4-truu-tuong-da-hinh"]},
-      {"kind": "PROBLEM", "title": "Kiến thức cho Stage 3: exception",
-       "description": "Checked / unchecked, throw / throws, try / catch, exception tự định nghĩa.",
-       "problems": ["oop-5-exception"]},
-      {"kind": "PROBLEM", "title": "Kiến thức cho Stage 4: collections",
-       "description": "List / Set / Map, generics, đóng gói collection.",
-       "problems": ["oop-6-collections"]},
-      {"kind": "PROBLEM", "title": "Kiến thức cho Stage 5: interface",
-       "description": "Interface là hợp đồng, so với lớp trừu tượng, bảng lệnh Map<String, Command>.",
-       "problems": ["oop-7-interface"]},
       {"kind": "PROJECT", "title": "Project: Mini Bank Console",
-       "description": "Ngân hàng mini đọc lệnh bằng Scanner. Mỗi stage thêm tính năng; code của stage trước vẫn phải chạy đúng.",
-       "problems": ["mini-bank-stage-1", "mini-bank-stage-2", "mini-bank-stage-3", "mini-bank-stage-4", "mini-bank-stage-5"]}
+       "description": "Ngân hàng mini đọc lệnh bằng Scanner. Mỗi stage có các chủ đề lý thuyết + luyện tập (quiz, ghép cặp, sắp xếp, điền chỗ trống, bài code nhỏ) ngay phía trên; học xong (hoặc Skip) rồi làm stage. Code của stage trước vẫn phải chạy đúng.",
+       "problems": ["mini-bank-stage-1", "mini-bank-stage-2", "mini-bank-stage-3", "mini-bank-stage-4", "mini-bank-stage-5"],
+       "stageTopics": [
+         ["oop-lop-va-doi-tuong", "oop-dong-goi"],
+         ["oop-ke-thua", "oop-truu-tuong-da-hinh"],
+         ["oop-exception"],
+         ["oop-collections"],
+         ["oop-interface"]
+       ]}
     ]
   },
   "stages": [

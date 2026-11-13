@@ -60,6 +60,14 @@ Thứ tự hiển thị của `right` (MATCHING) và `items` (ORDERING) do ngư�
 - `/topics/[slug]`: thanh tiến độ theo step; nút **Theory / Practice**, **Skip topic**. Theory: mục lục bên trái, section mở dần bằng **Read more** hoặc **Expand all**. Practice: một thẻ cho mỗi step, **See hint**, **Submit**, phản hồi, **Continue**. Ghép cặp và sắp xếp: kéo thả + nút ↑↓ (dùng được bằng bàn phím).
 - `/admin/topics`: danh sách + trình soạn (thông tin chung, thêm step theo loại, sửa, ↑↓, xoá, Publish). `/admin/study-plans`: mục PROJECT có ô chọn chủ đề cho từng stage.
 
+## Tiến độ triển khai (nhánh `feature/topics`)
+
+- [x] Backend: Flyway V12, `StepGrader` (kiểm tra / chấm / nội dung công khai), `TopicService`, `TopicController`, chủ đề trong DTO + upsert của study plan. Test: `StepGraderTest` (9), `TopicIntegrationTest` (4), study plan không đổi (12)
+- [x] Web học viên: dòng thời gian stage, `/topics/[slug]` (lý thuyết + 5 widget luyện tập), mock mode; e2e `topics.spec.ts` (3)
+- [x] Web soạn: `/admin/topics`, trình soạn mọi loại step, chọn chủ đề cho từng stage; e2e `admin-topics.spec.ts` (3)
+- [x] Nội dung: 7 chủ đề Mini Bank (49 step) gắn vào 5 stage, seed bằng `mini_bank_project.py sql`; `MiniBankProjectContentTest` kiểm tra mọi step bằng `StepGrader`
+- [x] Chạy thật trên stack Docker: lý thuyết, quiz sai → gợi ý, đúng → giải thích, kéo thả ghép cặp, step code tự xong khi đề đã AC
+
 ## Ngoài phạm vi (để sau)
 
 Gems / điểm thưởng, bình luận, "Get unstuck", plugin IntelliJ hiển thị chủ đề (plugin bỏ qua trường mới), lặp lại ngắt quãng.

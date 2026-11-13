@@ -4,10 +4,10 @@ Hai loại tài khoản giờ có **quy tắc khác nhau**. Thay vì `if (loại
 
 ### Học trước
 
-Hai bài trong nhóm *Kiến thức cho Stage 2* của plan:
+Các chủ đề ngay phía trên stage này trong plan (lý thuyết, quiz, kéo thả, điền code, bài code nhỏ):
 
-- **Bài 3 — Kế thừa & ghi đè**: `extends`, `super(...)`, `@Override`; phần chung (id, chủ, số dư) nằm ở lớp cha.
-- **Bài 4 — Lớp trừu tượng & đa hình**: `Account` trừu tượng, `withdraw` là template method gọi `canWithdraw` của từng loại; `MONTH` là một vòng lặp đa hình.
+- **Kế thừa & ghi đè**: `extends`, `super(...)`, `@Override`; phần chung (id, chủ, số dư) nằm ở lớp cha.
+- **Lớp trừu tượng & đa hình**: `Account` trừu tượng, `withdraw` là template method gọi `canWithdraw` của từng loại; `MONTH` là một vòng lặp đa hình.
 
 ### Yêu cầu
 

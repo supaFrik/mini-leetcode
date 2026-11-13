@@ -4,9 +4,9 @@
 
 ### Học trước
 
-Bài trong nhóm *Kiến thức cho Stage 4* của plan:
+Các chủ đề ngay phía trên stage này trong plan (lý thuyết, quiz, kéo thả, điền code, bài code nhỏ):
 
-- **Bài 6 — Collections & đóng gói danh sách**: `Bank` giữ tài khoản trong collection `private`, tìm theo id bằng `Map`, không trả danh sách bên trong ra ngoài.
+- **Collections & đóng gói danh sách**: `Bank` giữ tài khoản trong collection `private`, tìm theo id bằng `Map`, không trả danh sách bên trong ra ngoài.
 
 ### Yêu cầu
 

@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jsd.toiyeujava.mini_leetcode.entity.TopicStepType;
 import jsd.toiyeujava.mini_leetcode.judge.authoring.GradingConfigValidator;
+import jsd.toiyeujava.mini_leetcode.topic.service.StepGrader;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.OopInspectionReport;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.OopRuleResult;
 import org.junit.jupiter.api.Test;
@@ -103,7 +105,8 @@ class MiniBankProjectContentTest {
         Path folder = PROJECT.resolve("lessons").resolve(slug);
         JsonNode lesson = mapper.readTree(folder.resolve("lesson.json").toFile());
         assertThat(lesson.get("slug").asText()).isEqualTo(slug);
-        assertThat(Files.readString(folder.resolve("lesson.md"))).contains("### Lý thuyết", "### Bài tập", "### Tóm tắt");
+        assertThat(Files.readString(folder.resolve("lesson.md"))).contains("### Bài tập", "### Cách chấm");
+        assertThat(Files.readString(folder.resolve("theory.md"))).contains("## Mục tiêu", "## Lỗi thường gặp", "## Tóm tắt");
         assertThat(lesson.get("cases").size()).as("public sample + at least one hidden case").isGreaterThanOrEqualTo(2);
         assertThat(javaFiles(folder.resolve("starter"))).anyMatch(p -> p.getFileName().toString().equals("Main.java"));
 
@@ -113,12 +116,38 @@ class MiniBankProjectContentTest {
         assertThat(new GradingConfigValidator(mapper).validate(mapper.writeValueAsString(config)).errors()).isEmpty();
     }
 
+    /** Chủ đề học (specs/topics.spec.md): mọi step hợp lệ theo đúng bộ kiểm tra của server, kết thúc bằng bài code của bài. */
+    @ParameterizedTest(name = "{0}: topic steps are valid and end with the lesson's code exercise")
+    @MethodSource("lessons")
+    void lessonTopicIsValid(String slug) throws Exception {
+        Path folder = PROJECT.resolve("lessons").resolve(slug);
+        JsonNode topic = mapper.readTree(folder.resolve("topic.json").toFile());
+        StepGrader grader = new StepGrader(mapper);
+        List<String> types = new ArrayList<>();
+        for (int i = 0; i < topic.get("steps").size(); i++) {
+            JsonNode step = topic.get("steps").get(i);
+            TopicStepType type = TopicStepType.valueOf(step.get("type").asText());
+            types.add(type.name());
+            JsonNode content = type == TopicStepType.THEORY
+                    ? mapper.createObjectNode().put("markdown", Files.readString(folder.resolve(step.get("theoryFile").asText())))
+                    : step.get("content");
+            grader.validate(type, content, step.get("answer"), slug + " steps[" + i + "]");
+        }
+        assertThat(types).first().isEqualTo("THEORY");
+        assertThat(types).contains("CHOICE", "MATCHING", "ORDERING", "FILL_BLANK").last().isEqualTo("CODE");
+        assertThat(topic.at("/steps/" + (types.size() - 1) + "/problem").asText()).isEqualTo(slug);
+    }
+
     @Test
-    void everyLessonIsInThePlan() throws Exception {
+    void everyLessonTopicIsAttachedToAProjectStage() throws Exception {
         JsonNode project = mapper.readTree(PROJECT.resolve("project.json").toFile());
-        List<String> planned = new ArrayList<>();
-        project.get("plan").get("items").forEach(item -> item.get("problems").forEach(p -> planned.add(p.asText())));
-        assertThat(planned).containsAll(lessons().toList());
+        List<String> attached = new ArrayList<>();
+        project.get("plan").get("items").forEach(item -> item.path("stageTopics").forEach(stage -> stage.forEach(t -> attached.add(t.asText()))));
+        List<String> topics = new ArrayList<>();
+        for (String slug : lessons().toList()) {
+            topics.add(mapper.readTree(PROJECT.resolve("lessons").resolve(slug).resolve("topic.json").toFile()).get("slug").asText());
+        }
+        assertThat(attached).containsExactlyInAnyOrderElementsOf(topics);
     }
 
     private String lessonRules(String slug) throws IOException {

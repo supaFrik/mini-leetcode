@@ -6,10 +6,10 @@ Trong project này bạn xây dần một **ngân hàng mini chạy trên consol
 
 ### Học trước
 
-Hai bài trong nhóm *Kiến thức cho Stage 1* của plan:
+Các chủ đề ngay phía trên stage này trong plan (lý thuyết, quiz, kéo thả, điền code, bài code nhỏ):
 
-- **Bài 1 — Lớp, đối tượng & constructor**: id tự tăng bằng field `static`, ghi đè `toString()`.
-- **Bài 2 — Đóng gói**: field `private`, `deposit` từ chối số tiền `<= 0` bằng `IllegalArgumentException`.
+- **Lớp, đối tượng & constructor**: id tự tăng bằng field `static`, ghi đè `toString()`.
+- **Đóng gói**: field `private`, `deposit` từ chối số tiền `<= 0` bằng `IllegalArgumentException`.
 
 ### Yêu cầu
 

@@ -84,9 +84,9 @@ python backend\tools\problems\oop_console_cases.py
 
 Nguồn: `problems/projects/mini-bank/` (`project.json` = plan, stage, testcase; `grading.json` = rule theo `fromStage`; `stages/stage-N.md` = đề; `starters/stage-N/` = file khung). Lời giải tham chiếu dùng chung cho 5 stage là `problems/oop-starters/mini-bank-console/`. Stage N chấm **mọi** testcase và rule của stage 1..N (đặc tả: `specs/study-plan.spec.md`).
 
-Plan được tổ chức như khóa học trên Hyperskill: trước mỗi stage có nhóm **"Kiến thức cho Stage N"** gồm các bài học. Mỗi bài là một đề OOP: phần đề là lý thuyết (khái niệm, ví dụ code, lỗi thường gặp, liên hệ Mini Bank), cuối đề là bài tập code chấm bằng rule OOP + testcase. Đề stage có mục "Học trước" trỏ về các bài tương ứng.
+Plan được tổ chức như project trên Hyperskill: mục project có 5 stage, mỗi stage gắn sẵn các **chủ đề học** (đặc tả `specs/topics.spec.md`) hiện thành dòng thời gian Continue / Skip phía trên stage. Mỗi chủ đề gồm lý thuyết chia section (mục lục, Read more), 2 quiz, 1 bài ghép cặp, 1 bài sắp xếp, 1 bài điền chỗ trống và cuối cùng là bài code của bài học (đề OOP chấm bằng rule + testcase). Chủ đề không khoá stage. Đề stage có mục "Học trước" trỏ về các chủ đề tương ứng. INSTRUCTOR / ADMIN sửa chủ đề trên web tại `/admin/topics`.
 
-| Bài | Slug | Cho stage |
+| Chủ đề (bài code) | Slug đề code | Cho stage |
 |-----|------|-----------|
 | 1. Lớp, đối tượng & constructor | `oop-1-lop-va-doi-tuong` | 1 |
 | 2. Đóng gói | `oop-2-dong-goi` | 1 |
@@ -96,7 +96,7 @@ Plan được tổ chức như khóa học trên Hyperskill: trước mỗi stag
 | 6. Collections & đóng gói danh sách | `oop-6-collections` | 4 |
 | 7. Interface & tách lệnh | `oop-7-interface` | 5 |
 
-Mỗi bài nằm ở `projects/mini-bank/lessons/<slug>/`: `lesson.md` (đề), `lesson.json` (tiêu đề, tag, rule, testcase; case đầu là ví dụ công khai), `starter/` (khung có TODO), `solution/` (lời giải tham chiếu, sinh output kỳ vọng). Thêm bài: tạo thư mục, khai báo slug trong `project.json` → `lessons` và đưa vào một mục của plan. `MiniBankProjectContentTest` kiểm tra lời giải đạt mọi rule, rule hợp lệ, đề đủ các phần.
+Mỗi bài nằm ở `projects/mini-bank/lessons/<slug>/`: `theory.md` (lý thuyết của chủ đề, tách section theo `## `), `topic.json` (chủ đề: slug, tóm tắt, thời lượng, các step quiz / ghép cặp / sắp xếp / điền chỗ trống kèm đáp án; step CODE trỏ tới đề bằng `problem`), `lesson.md` (đề bài code), `lesson.json` (tiêu đề, tag, rule, testcase; case đầu là ví dụ công khai), `starter/` (khung có TODO), `solution/` (lời giải tham chiếu, sinh output kỳ vọng). Thêm bài: tạo thư mục, khai báo slug trong `project.json` → `lessons` và thêm slug chủ đề vào `plan.items[].stageTopics`. `MiniBankProjectContentTest` kiểm tra lời giải đạt mọi rule, rule hợp lệ, mọi step chủ đề hợp lệ theo `StepGrader` của server. Lưu ý: chạy lại `sql` tạo lại các step của chủ đề nên tiến độ học viên trên các chủ đề mẫu bị đặt lại; sửa trên web thì không.
 
 ```powershell
 # 0. Cần API đã chạy một lần (Flyway V11).

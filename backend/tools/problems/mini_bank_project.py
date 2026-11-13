@@ -134,6 +134,45 @@ def problem_sql(slug, title, difficulty, tags, description, starters, rule_list)
     ]
 
 
+def load_topics(meta):
+    """Chủ đề học của từng bài (lessons/<slug>/topic.json); step THEORY lấy markdown từ theoryFile."""
+    topics = []
+    for lesson in load_lessons(meta):
+        path = lesson["folder"] / "topic.json"
+        if not path.exists():
+            continue
+        topic = json.loads(path.read_text(encoding="utf-8"))
+        for step in topic["steps"]:
+            if step["type"] == "THEORY" and "theoryFile" in step:
+                step["content"] = {"markdown": (lesson["folder"] / step.pop("theoryFile")).read_text(encoding="utf-8")}
+        topics.append(topic)
+    return topics
+
+
+def topic_sql(topic):
+    """Chủ đề PUBLISHED của seed_author; step xoá rồi tạo lại. CODE trỏ tới đề theo slug (`problem`)."""
+    slug = sql_str(topic["slug"])
+    out = [
+        "INSERT INTO topics (slug, title, summary, est_minutes, status, created_by, created_at, updated_at) VALUES ("
+        f"{slug}, {sql_str(topic['title'])}, {sql_str(topic.get('summary', ''))}, {int(topic['estMinutes'])},"
+        " 'PUBLISHED', @seed_author, NOW(), NOW())"
+        " ON DUPLICATE KEY UPDATE"
+        " title = IF(created_by = @seed_author, VALUES(title), title),"
+        " summary = IF(created_by = @seed_author, VALUES(summary), summary),"
+        " est_minutes = IF(created_by = @seed_author, VALUES(est_minutes), est_minutes), updated_at = NOW();",
+        f"SET @tid := (SELECT id FROM topics WHERE slug = {slug} AND created_by = @seed_author);",
+        "DELETE FROM topic_steps WHERE topic_id = @tid;",
+    ]
+    for i, step in enumerate(topic["steps"]):
+        content = sql_str(json.dumps(step.get("content", {}), ensure_ascii=False))
+        answer = sql_str(json.dumps(step["answer"], ensure_ascii=False)) if step.get("answer") else "NULL"
+        problem = f"(SELECT id FROM problems WHERE slug = {sql_str(step['problem'])})" if step.get("problem") else "NULL"
+        out.append("INSERT INTO topic_steps (topic_id, sort_order, type, title, content, answer, problem_id)"
+                   f" SELECT @tid, {i}, {sql_str(step['type'])}, {sql_str(step['title'])}, {content}, {answer}, {problem}"
+                   " FROM DUAL WHERE @tid IS NOT NULL;")
+    return out
+
+
 def cmd_sql():
     meta, rules = load()
     out = [
@@ -157,6 +196,11 @@ def cmd_sql():
         description = (lesson["folder"] / "lesson.md").read_text(encoding="utf-8").removesuffix("\n")
         out += problem_sql(lesson["slug"], lesson["title"], lesson["difficulty"], lesson["tags"], description,
                            java_files(lesson["folder"] / "starter"), lesson["rules"])
+
+    out += ["", "-- 1c. Chủ đề học (specs/topics.spec.md): lý thuyết + quiz / ghép cặp / sắp xếp / điền chỗ trống + bài code.",
+            "--     Nạp lại xoá rồi tạo lại các step ⇒ tiến độ chủ đề của học viên trên các step này bị đặt lại."]
+    for topic in load_topics(meta):
+        out += topic_sql(topic)
 
     plan = meta["plan"]
     out += [
@@ -182,11 +226,18 @@ def cmd_sql():
             f" SELECT @item, {k}, id FROM problems WHERE slug = {sql_str(slug)} AND @item IS NOT NULL;"
             for k, slug in enumerate(item["problems"])
         ]
+        order = 0
+        for k, topic_slugs in enumerate(item.get("stageTopics", [])):
+            for topic_slug in topic_slugs:
+                out.append(f"INSERT INTO study_plan_stage_topics (item_id, sort_order, stage_no, topic_id)"
+                           f" SELECT @item, {order}, {k}, id FROM topics WHERE slug = {sql_str(topic_slug)} AND @item IS NOT NULL;")
+                order += 1
     out += [
         "",
         "-- 3. Kiểm tra nhanh: mục nào bị bỏ qua sẽ không có dòng ở đây.",
-        "SELECT i.sort_order, i.kind, i.title, COUNT(s.problem_id) AS stages FROM study_plan_items i"
-        " LEFT JOIN study_plan_item_stages s ON s.item_id = i.id WHERE i.plan_id = @plan"
+        "SELECT i.sort_order, i.kind, i.title, COUNT(DISTINCT s.problem_id) AS stages, COUNT(DISTINCT t.topic_id) AS topics"
+        " FROM study_plan_items i LEFT JOIN study_plan_item_stages s ON s.item_id = i.id"
+        " LEFT JOIN study_plan_stage_topics t ON t.item_id = i.id WHERE i.plan_id = @plan"
         " GROUP BY i.id, i.sort_order, i.kind, i.title ORDER BY i.sort_order;",
     ]
     target = TOOLS / "seed-mini-bank-project.sql"

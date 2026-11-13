@@ -1,0 +1,74 @@
+{
+  "slug": "oop-collections",
+  "title": "Collections & đóng gói danh sách",
+  "summary": "List / Set / Map, generics, tìm theo khoá bằng Map và không để lộ collection bên trong ra ngoài.",
+  "estMinutes": 20,
+  "steps": [
+    {"type": "THEORY", "title": "Lý thuyết", "theoryFile": "theory.md"},
+    {
+      "type": "CHOICE", "title": "Chọn collection",
+      "content": {
+        "prompt": "Ngân hàng cần **tìm tài khoản theo id thật nhanh** và **in theo thứ tự mở**. Chọn kiểu nào?",
+        "hint": "Cần tra theo khoá và giữ thứ tự thêm vào.",
+        "options": [
+          {"id": "a", "text": "ArrayList<Account>"},
+          {"id": "b", "text": "HashSet<Account>"},
+          {"id": "c", "text": "LinkedHashMap<Integer, Account>"},
+          {"id": "d", "text": "HashMap<Integer, Account>"}
+        ]
+      },
+      "answer": {"correct": ["c"], "explanation": "Map tra theo id; Linked giữ thứ tự thêm. HashMap không giữ thứ tự, ArrayList phải duyệt cả danh sách."}
+    },
+    {
+      "type": "CHOICE", "title": "Getter an toàn",
+      "content": {
+        "prompt": "`Bank` giữ `private final List<Account> accounts`. Chọn **tất cả** cách trả danh sách ra ngoài mà nơi gọi **không** sửa được dữ liệu của Bank.",
+        "multiple": true,
+        "options": [
+          {"id": "a", "text": "return accounts;"},
+          {"id": "b", "text": "return List.copyOf(accounts);"},
+          {"id": "c", "text": "return Collections.unmodifiableList(accounts);"},
+          {"id": "d", "text": "Đổi field thành public"}
+        ]
+      },
+      "answer": {"correct": ["b", "c"], "explanation": "private chỉ giấu field; trả thẳng tham chiếu thì nơi gọi vẫn clear() được."}
+    },
+    {
+      "type": "MATCHING", "title": "Interface và đặc điểm",
+      "content": {
+        "prompt": "Ghép mỗi interface với đặc điểm của nó.",
+        "left": [{"id": "l1", "text": "List"}, {"id": "l2", "text": "Set"}, {"id": "l3", "text": "Map"}, {"id": "l4", "text": "LinkedHashMap"}],
+        "right": [{"id": "r1", "text": "Có thứ tự, cho phép trùng, truy cập theo chỉ số"}, {"id": "r2", "text": "Không chứa phần tử trùng"}, {"id": "r3", "text": "Cặp khoá → giá trị, khoá không trùng"}, {"id": "r4", "text": "Map giữ thứ tự thêm vào"}]
+      },
+      "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
+    },
+    {
+      "type": "ORDERING", "title": "Thêm sách không trùng",
+      "content": {
+        "prompt": "Sắp xếp lớp `Library` dùng Map và chỉ thêm sách khi chưa có mã.",
+        "items": [
+          {"id": "a", "text": "public class Library {"},
+          {"id": "b", "text": "    private final Map<String, Book> books = new LinkedHashMap<>();"},
+          {"id": "c", "text": "    public boolean add(Book book) {"},
+          {"id": "d", "text": "        return books.putIfAbsent(book.getId(), book) == null;"},
+          {"id": "e", "text": "    }"},
+          {"id": "f", "text": "}"}
+        ]
+      },
+      "answer": {"order": ["a", "b", "c", "d", "e", "f"]}
+    },
+    {
+      "type": "FILL_BLANK", "title": "Generics và bản chỉ đọc",
+      "content": {
+        "prompt": "Điền phần còn thiếu.",
+        "code": "private final Map<Integer, [[1]]> byId = new LinkedHashMap<>();\n\npublic Account find(int id) {\n    return byId.[[2]](id);\n}\n\npublic List<Account> all() {\n    return List.[[3]](byId.values());\n}"
+      },
+      "answer": {"blanks": {"1": ["Account"], "2": ["get"], "3": ["copyOf"]}, "caseSensitive": true}
+    },
+    {
+      "type": "CODE", "title": "Bài tập: thư viện sách",
+      "content": {"intro": "Áp dụng: Library đóng gói LinkedHashMap, all() trả bản không sửa được."},
+      "problem": "oop-6-collections"
+    }
+  ]
+}

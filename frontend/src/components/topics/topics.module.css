@@ -453,6 +453,19 @@ a.nodeTitle:hover {
   padding-left: 22px;
 }
 
+/* Tailwind preflight bỏ list-style; trả lại dấu đầu dòng cho nội dung markdown. */
+.prose ul {
+  list-style: disc;
+}
+
+.prose ol {
+  list-style: decimal;
+}
+
+.prose li + li {
+  margin-top: 4px;
+}
+
 .more {
   display: flex;
   flex-direction: column;
