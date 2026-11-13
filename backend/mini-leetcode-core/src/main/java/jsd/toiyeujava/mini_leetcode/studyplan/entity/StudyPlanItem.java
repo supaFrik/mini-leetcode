@@ -47,4 +47,11 @@ public class StudyPlanItem {
     @Column(name = "problem_id", nullable = false)
     @Builder.Default
     private List<Long> problemIds = new ArrayList<>();
+
+    /** Chủ đề học gắn vào từng stage, theo thứ tự hiển thị (specs/topics.spec.md). */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "study_plan_stage_topics", joinColumns = @JoinColumn(name = "item_id"))
+    @OrderColumn(name = "sort_order")
+    @Builder.Default
+    private List<StageTopic> stageTopics = new ArrayList<>();
 }

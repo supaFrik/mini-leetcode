@@ -11,6 +11,7 @@ import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.entity.StageStatus;
 import jsd.toiyeujava.mini_leetcode.entity.StudyPlanItemKind;
 import jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus;
+import jsd.toiyeujava.mini_leetcode.topic.dto.TopicDtos.TopicRef;
 
 import java.util.List;
 
@@ -36,7 +37,7 @@ public final class StudyPlanDtos {
      * (không tải / nộp được) — trạng thái học vẫn giữ nguyên.
      */
     public record Stage(int stageNo, Long problemId, String slug, String title, Difficulty difficulty,
-                        ProblemType problemType, boolean published, StageStatus status) {}
+                        ProblemType problemType, boolean published, StageStatus status, List<TopicRef> topics) {}
 
     public record UpsertPlanRequest(
             @NotBlank @Size(max = 200) @Pattern(regexp = "^[a-z0-9]+(-[a-z0-9]+)*$",
@@ -45,12 +46,16 @@ public final class StudyPlanDtos {
             String description,
             @NotNull @Valid List<ItemRequest> items) {}
 
-    /** {@code PROBLEM} có đúng 1 đề; {@code PROJECT} có ≥ 1 đề theo thứ tự stage. */
+    /**
+     * {@code PROBLEM} có đúng 1 đề; {@code PROJECT} có ≥ 1 đề theo thứ tự stage.
+     * {@code stageTopics} (không bắt buộc): id chủ đề học cho từng stage, cùng thứ tự với {@code problemIds}.
+     */
     public record ItemRequest(
             @NotNull StudyPlanItemKind kind,
             @NotBlank @Size(max = 200) String title,
             String description,
-            @NotEmpty List<@NotNull Long> problemIds) {}
+            @NotEmpty List<@NotNull Long> problemIds,
+            List<List<@NotNull Long>> stageTopics) {}
 
     public record TransitionRequest(@NotNull StudyPlanStatus status) {}
 }

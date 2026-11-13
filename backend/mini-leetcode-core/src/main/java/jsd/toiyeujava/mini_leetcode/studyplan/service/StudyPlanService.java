@@ -15,9 +15,14 @@ import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.studyplan.dto.StudyPlanDtos.*;
 import jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlan;
+import jsd.toiyeujava.mini_leetcode.studyplan.entity.StageTopic;
 import jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem;
 import jsd.toiyeujava.mini_leetcode.studyplan.repository.StudyPlanRepository;
 import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
+import jsd.toiyeujava.mini_leetcode.topic.dto.TopicDtos.TopicRef;
+import jsd.toiyeujava.mini_leetcode.topic.entity.Topic;
+import jsd.toiyeujava.mini_leetcode.topic.repository.TopicRepository;
+import jsd.toiyeujava.mini_leetcode.topic.service.TopicService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,13 +46,18 @@ public class StudyPlanService {
     private final ProblemRepository problemRepository;
     private final SubmissionRepository submissionRepository;
     private final UserRepository userRepository;
+    private final TopicRepository topicRepository;
+    private final TopicService topicService;
 
     public StudyPlanService(StudyPlanRepository planRepository, ProblemRepository problemRepository,
-                            SubmissionRepository submissionRepository, UserRepository userRepository) {
+                            SubmissionRepository submissionRepository, UserRepository userRepository,
+                            TopicRepository topicRepository, TopicService topicService) {
         this.planRepository = planRepository;
         this.problemRepository = problemRepository;
         this.submissionRepository = submissionRepository;
         this.userRepository = userRepository;
+        this.topicRepository = topicRepository;
+        this.topicService = topicService;
     }
 
     /** Học viên chỉ thấy plan PUBLISHED; giảng viên / admin thấy mọi plan. */
@@ -58,7 +68,7 @@ public class StudyPlanService {
         Progress progress = progressOf(userId, staff);
         // ponytail: duyệt items/stages lazy theo từng plan (N+1 theo số plan) — đủ nhanh với vài chục plan.
         return plans.stream().map(p -> {
-            PlanDetail d = toDetail(p, progress, Map.of());
+            PlanDetail d = toDetail(p, progress, Map.of(), Map.of());
             return new PlanSummary(p.getId(), p.getSlug(), p.getTitle(), p.getDescription(), p.getStatus(),
                     p.getItems().size(), d.stageCount(), d.doneStages(), d.createdById(), d.createdByUsername());
         }).toList();
@@ -70,7 +80,9 @@ public class StudyPlanService {
         List<Long> ids = plan.getItems().stream().flatMap(i -> i.getProblemIds().stream()).toList();
         Map<Long, Problem> problems = problemRepository.findAllById(ids).stream()
                 .collect(Collectors.toMap(Problem::getId, Function.identity()));
-        return toDetail(plan, progressOf(userId, staff), problems);
+        List<Long> topicIds = plan.getItems().stream()
+                .flatMap(i -> i.getStageTopics().stream()).map(StageTopic::getTopicId).toList();
+        return toDetail(plan, progressOf(userId, staff), problems, topicService.refs(topicIds, userId, staff));
     }
 
     @Transactional
@@ -152,10 +164,38 @@ public class StudyPlanService {
                     + problems.get(taken.get(0).longValue()).getSlug());
         }
 
+        Set<Long> topicIds = request.items().stream().filter(i -> i.stageTopics() != null)
+                .flatMap(i -> i.stageTopics().stream()).filter(java.util.Objects::nonNull)
+                .flatMap(List::stream).collect(Collectors.toSet());
+        Set<Long> existingTopics = topicIds.isEmpty() ? Set.of() : topicRepository.findAllById(topicIds).stream()
+                .map(Topic::getId).collect(Collectors.toSet());
+        topicIds.stream().filter(id -> !existingTopics.contains(id)).findFirst().ifPresent(id -> {
+            throw new ResourceNotFoundException("Topic not found with id: " + id);
+        });
+
         int position = 0;
         for (ItemRequest itemRequest : request.items()) {
             if (itemRequest.kind() == StudyPlanItemKind.PROBLEM && itemRequest.problemIds().size() != 1) {
                 throw new IllegalArgumentException("A PROBLEM item must contain exactly one problem");
+            }
+            List<StageTopic> stageTopics = new ArrayList<>();
+            if (itemRequest.stageTopics() != null) {
+                if (itemRequest.stageTopics().size() > itemRequest.problemIds().size()) {
+                    throw new IllegalArgumentException("stageTopics has more entries than the item has stages: "
+                            + itemRequest.title());
+                }
+                for (int stage = 0; stage < itemRequest.stageTopics().size(); stage++) {
+                    List<Long> ids = itemRequest.stageTopics().get(stage);
+                    if (ids == null) {
+                        continue;
+                    }
+                    if (new HashSet<>(ids).size() != ids.size()) {
+                        throw new IllegalArgumentException("A topic can appear only once in a stage: " + itemRequest.title());
+                    }
+                    for (Long id : ids) {
+                        stageTopics.add(new StageTopic(stage, id));
+                    }
+                }
             }
             plan.getItems().add(StudyPlanItem.builder()
                     .plan(plan)
@@ -164,6 +204,7 @@ public class StudyPlanService {
                     .title(itemRequest.title())
                     .description(itemRequest.description())
                     .problemIds(new ArrayList<>(itemRequest.problemIds()))
+                    .stageTopics(stageTopics)
                     .build());
         }
     }
@@ -192,8 +233,12 @@ public class StudyPlanService {
                 staff);
     }
 
-    /** {@code problems} rỗng ⇒ bỏ thông tin đề (dùng cho danh sách, chỉ cần đếm). */
-    private PlanDetail toDetail(StudyPlan plan, Progress progress, Map<Long, Problem> problems) {
+    /**
+     * {@code problems} rỗng ⇒ bỏ thông tin đề (dùng cho danh sách, chỉ cần đếm). {@code topics}: chủ đề người xem
+     * được thấy (chủ đề DRAFT bị ẩn với học viên vì không có trong map).
+     */
+    private PlanDetail toDetail(StudyPlan plan, Progress progress, Map<Long, Problem> problems,
+                                Map<Long, TopicRef> topics) {
         List<Item> items = new ArrayList<>();
         int stageCount = 0;
         int done = 0;
@@ -212,10 +257,14 @@ public class StudyPlanService {
                 }
                 previousDone = status == StageStatus.DONE;
                 Problem p = problems.get(problemId);
+                int stageNo = i;
+                List<TopicRef> stageTopics = item.getStageTopics().stream()
+                        .filter(t -> t.getStageNo() == stageNo).map(t -> topics.get(t.getTopicId()))
+                        .filter(java.util.Objects::nonNull).toList();
                 stages.add(new Stage(i + 1, problemId,
                         p == null ? null : p.getSlug(), p == null ? null : p.getTitle(),
                         p == null ? null : p.getDifficulty(), p == null ? null : p.getProblemType(),
-                        p != null && p.getStatus() == ProblemStatus.PUBLISHED, status));
+                        p != null && p.getStatus() == ProblemStatus.PUBLISHED, status, stageTopics));
             }
             long itemDone = stages.stream().filter(s -> s.status() == StageStatus.DONE).count();
             stageCount += stages.size();
