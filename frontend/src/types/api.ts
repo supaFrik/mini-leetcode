@@ -225,6 +225,9 @@ export interface StudyPlanStage {
   problemType: ProblemType | null; published: boolean; status: StageStatus;
   /** Chủ đề học gắn vào stage (specs/topics.spec.md); có thể thiếu ở API cũ. */
   topics?: TopicRef[];
+  /** Chỉ staff: trạng thái vòng đời của đề và số học viên đã nộp nhưng chưa AC (specs/course-builder.spec.md). */
+  problemStatus?: ProblemLifecycle | null;
+  learnersOnStage?: number | null;
 }
 
 // ===== Chủ đề học (specs/topics.spec.md) =====
@@ -232,7 +235,7 @@ export type TopicStepType = "THEORY" | "CHOICE" | "MATCHING" | "ORDERING" | "FIL
 export type TopicProgress = "NEW" | "IN_PROGRESS" | "SKIPPED" | "DONE";
 export interface TopicRef {
   id: number; slug: string; title: string; summary?: string | null; estMinutes: number;
-  progress: TopicProgress; stepCount: number; doneSteps: number;
+  progress: TopicProgress; stepCount: number; doneSteps: number; status?: StudyPlanStatus;
 }
 export interface IdText { id: string; text: string }
 /** Nội dung công khai từng loại step (đã bỏ đáp án, cột phải / các dòng đã xáo trộn). */
@@ -290,10 +293,22 @@ export interface StudyPlanDetail {
   id: number; slug: string; title: string; description?: string | null; status: StudyPlanStatus;
   stageCount: number; doneStages: number; items: StudyPlanItem[];
   createdById?: number; createdByUsername?: string;
+  /** Gửi lại làm `expectedUpdatedAt` khi lưu để phát hiện sửa ở tab khác. */
+  updatedAt?: string | null;
+  /** Chỉ staff: số học viên có bài nộp chính thức trên đề của plan. */
+  learnerCount?: number | null;
+}
+/** Một mục checklist publish; `node` chỉ tới nút trên outline của Course Builder. */
+export interface PublishIssue {
+  node: "plan" | "item" | "stage" | "topic"; itemIndex?: number | null; problemId?: number | null; topicId?: number | null; message: string;
+}
+export interface PublishCheck {
+  ok: boolean; errors: PublishIssue[]; warnings: PublishIssue[]; problemsToPublish: number[]; topicsToPublish: number[];
 }
 /** Body của POST / PUT /api/v1/study-plans (thay toàn bộ nội dung plan). */
 export interface StudyPlanDraft {
   slug: string; title: string; description?: string;
+  expectedUpdatedAt?: string | null;
   /** `stageTopics[k]`: id chủ đề học của stage k (cùng thứ tự với problemIds). */
   items: { kind: StudyPlanItemKind; title: string; description?: string; problemIds: number[]; stageTopics?: number[][] }[];
 }

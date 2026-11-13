@@ -13,12 +13,12 @@
 import { ApiError } from "./api";
 import { decodeUser, getToken } from "./auth";
 import { TEMPLATES } from "./templates";
-import { MOCK_STAGE_TOPICS, stageTopicRefs } from "./mock-topics";
+import { MOCK_STAGE_TOPICS, stageTopicRefs, topicById, transitionTopic } from "./mock-topics";
 export { attemptTopicStep, deleteTopic, getTopic, getTopicForAuthoring, listTopics, saveTopic, setTopicSkipped, transitionTopic } from "./mock-topics";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ContestProblem, Draft, Language, LeaderboardCell, LeaderboardRow, Page,
   ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
-  AccessToken, CreatedAccessToken, StudyPlanDetail, StudyPlanDraft, StudyPlanStage, StudyPlanSummary,
+  AccessToken, CreatedAccessToken, PublishCheck, PublishIssue, StudyPlanDetail, StudyPlanDraft, StudyPlanStage, StudyPlanSummary,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
 } from "@/types/api";
 
@@ -611,26 +611,111 @@ const mockStageTopics = new Map<string, number[]>(
 export async function getStudyPlan(slug: string): Promise<StudyPlanDetail> {
   await sleep(); ensureOnline();
   const plan = findPlan(slug);
-  return { ...plan, items: plan.items.map((item) => ({ ...item, stages: item.stages.map((st) => ({
-    ...st, topics: stageTopicRefs(mockStageTopics.get(`${item.id}:${st.stageNo}`) ?? []) })) })) };
+  const staff = me().role !== "USER";
+  // Đề mock có thể đã đổi tên / trạng thái (Course Builder) ⇒ đọc lại từ PROBLEMS nếu có.
+  const live = (st: StudyPlanStage): StudyPlanStage => {
+    const p = PROBLEMS.find((x) => x.id === st.problemId);
+    if (!p) return { ...st, problemStatus: staff ? "PUBLISHED" : null, learnersOnStage: staff ? 0 : null };
+    const cur = withEdits(p);
+    const status = (cur.status ?? "PUBLISHED") as ProblemLifecycle;
+    return { ...st, slug: cur.slug, title: cur.title, difficulty: cur.difficulty, problemType: cur.type ?? "ALGORITHMIC",
+      published: status === "PUBLISHED", problemStatus: staff ? status : null, learnersOnStage: staff ? 0 : null };
+  };
+  return { ...plan, learnerCount: staff ? (plan.learnerCount ?? 0) : null,
+    items: plan.items.map((item) => ({ ...item, stages: item.stages.map((st) => ({
+      ...live(st), topics: stageTopicRefs(mockStageTopics.get(`${item.id}:${st.stageNo}`) ?? [], staff) })) })) };
 }
 export async function saveStudyPlan(slug: string | null, draft: StudyPlanDraft): Promise<StudyPlanDetail> {
   await sleep(); ensureOnline();
-  const me = decodeUser(getToken());
+  const user = decodeUser(getToken());
   const old = slug ? findPlan(slug) : null;
+  if (old && draft.expectedUpdatedAt && old.updatedAt && draft.expectedUpdatedAt !== old.updatedAt) {
+    throw new ApiError(409, { title: "Resource Conflict", status: 409,
+      detail: "This study plan was changed in another tab or by another user. Reload to continue." });
+  }
+  const id = old?.id ?? Date.now();
   const plan: StudyPlanDetail = {
-    id: old?.id ?? Date.now(), slug: draft.slug, title: draft.title, description: draft.description ?? null,
-    status: old?.status ?? "DRAFT", createdById: old?.createdById ?? me?.id, createdByUsername: old?.createdByUsername ?? me?.username,
+    id, slug: draft.slug, title: draft.title, description: draft.description ?? null,
+    status: old?.status ?? "DRAFT", createdById: old?.createdById ?? user?.id, createdByUsername: old?.createdByUsername ?? user?.username,
     stageCount: draft.items.reduce((n, i) => n + i.problemIds.length, 0), doneStages: 0,
+    updatedAt: new Date().toISOString(), learnerCount: old?.learnerCount ?? 0,
     items: draft.items.map((it, position) => ({
-      id: position + 1, position, kind: it.kind, title: it.title, description: it.description ?? null, done: false,
-      stages: it.problemIds.map((problemId, k) => ({ stageNo: k + 1, problemId, slug: `problem-${problemId}`, title: `Problem #${problemId}`,
-        difficulty: "EASY", problemType: "ALGORITHMIC", published: true, status: k === 0 ? "NEVER" : "LOCKED" })),
+      id: id * 100 + position + 1, position, kind: it.kind, title: it.title, description: it.description ?? null, done: false,
+      stages: it.problemIds.map((problemId, k) => {
+        const prev = old?.items.flatMap((i) => i.stages).find((s) => s.problemId === problemId);
+        return { stageNo: k + 1, problemId, slug: prev?.slug ?? `problem-${problemId}`, title: prev?.title ?? `Problem #${problemId}`,
+          difficulty: prev?.difficulty ?? "EASY", problemType: prev?.problemType ?? "ALGORITHMIC", published: true,
+          status: k === 0 ? "NEVER" : "LOCKED" } satisfies StudyPlanStage;
+      }),
     })),
   };
-  draft.items.forEach((it, position) => (it.stageTopics ?? []).forEach((ids, k) => mockStageTopics.set(`${position + 1}:${k + 1}`, ids)));
+  plan.items.forEach((item, position) => (draft.items[position].stageTopics ?? [])
+    .forEach((ids, k) => mockStageTopics.set(`${item.id}:${k + 1}`, ids)));
   if (old) mockPlans.splice(mockPlans.indexOf(old), 1, plan); else mockPlans.push(plan);
   return getStudyPlan(plan.slug);
+}
+
+/** Checklist publish giống server (StudyPlanService.check). */
+export async function publishCheck(slug: string): Promise<PublishCheck> {
+  const plan = await getStudyPlan(slug);
+  const errors: PublishIssue[] = [];
+  const warnings: PublishIssue[] = [];
+  const problemsToPublish: number[] = [];
+  const topicsToPublish: number[] = [];
+  if (plan.items.length === 0) errors.push({ node: "plan", message: "Add at least one project or practice problem" });
+  plan.items.forEach((item, itemIndex) => {
+    const project = item.kind === "PROJECT";
+    if (item.stages.length === 0) errors.push({ node: "item", itemIndex, message: `"${item.title}" has no ${project ? "stage" : "problem"}` });
+    item.stages.forEach((st) => {
+      const where = project ? `${item.title} · stage ${st.stageNo}` : item.title;
+      if (st.problemStatus && st.problemStatus !== "PUBLISHED") problemsToPublish.push(st.problemId);
+      const p = PROBLEMS.find((x) => x.id === st.problemId);
+      if (p && !withEdits(p).description.trim()) errors.push({ node: "stage", itemIndex, problemId: st.problemId, message: `${where}: the statement is empty` });
+      if (p && (withEdits(p).type ?? "ALGORITHMIC") === "OOP_GRINDING" && authoringOf(p.id).referenceSolution.length === 0) {
+        warnings.push({ node: "stage", itemIndex, problemId: st.problemId, message: `${where}: no reference solution, expected outputs are not verified` });
+      }
+      (st.topics ?? []).forEach((t) => {
+        if (t.status === "PUBLISHED" || topicsToPublish.includes(t.id)) return;
+        const topic = topicById(t.id);
+        if (topic && topic.steps.length === 0) errors.push({ node: "topic", topicId: t.id, message: `Topic "${t.title}" has no steps` });
+        topicsToPublish.push(t.id);
+      });
+    });
+  });
+  return { ok: errors.length === 0, errors, warnings, problemsToPublish, topicsToPublish };
+}
+export async function publishStudyPlan(slug: string): Promise<StudyPlanDetail> {
+  const check = await publishCheck(slug);
+  if (!check.ok) throw new ApiError(409, { title: "Resource Conflict", status: 409, detail: `Cannot publish: ${check.errors[0].message}` });
+  const paths: Record<string, ProblemLifecycle[]> = {
+    ARCHIVED: ["DRAFT", "REVIEWING", "PUBLISHED"], DRAFT: ["REVIEWING", "PUBLISHED"], REVIEWING: ["PUBLISHED"],
+  };
+  for (const id of check.problemsToPublish) {
+    const p = PROBLEMS.find((x) => x.id === id);
+    for (const target of paths[(p && withEdits(p).status) ?? "PUBLISHED"] ?? []) await transitionProblem(id, target);
+  }
+  for (const id of check.topicsToPublish) {
+    const t = topicById(id);
+    if (t) await transitionTopic(t.slug, "PUBLISHED");
+  }
+  findPlan(slug).status = "PUBLISHED";
+  return getStudyPlan(slug);
+}
+export async function cloneProblem(problemId: number, title: string): Promise<ProblemFull> {
+  const src = await getProblem(String(problemId));
+  const copy = await createProblem({ title, description: src.description, difficulty: src.difficulty, timeLimitMs: src.timeLimitMs,
+    memoryLimitMb: src.memoryLimitMb, tags: src.tags, type: src.type, starterTemplates: src.starterTemplates });
+  const extra = store.get<Record<number, TestCase[]>>("mock:extraCases", {});
+  if (extra[problemId]) {
+    extra[copy.id] = extra[problemId].map((c, i) => ({ ...c, id: copy.id * 100 + 50 + i }));
+    store.set("mock:extraCases", extra);
+  }
+  putAuthoring(copy.id, authoringOf(problemId));
+  return copy;
+}
+export async function unlockProblem(problemId: number): Promise<ProblemFull> {
+  await transitionProblem(problemId, "ARCHIVED");
+  return transitionProblem(problemId, "DRAFT");
 }
 export async function transitionStudyPlan(slug: string, status: StudyPlanDetail["status"]): Promise<StudyPlanDetail> {
   await sleep(); ensureOnline();

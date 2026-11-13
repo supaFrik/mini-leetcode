@@ -170,10 +170,15 @@ export async function setTopicSkipped(slug: string, value: boolean): Promise<voi
 }
 
 /** Chủ đề (kèm tiến độ) cho một stage của plan mock. */
-export function stageTopicRefs(ids: number[]): TopicRef[] {
-  return ids.map((id) => TOPICS.find((t) => t.id === id)).filter((t): t is AuthoringTopic => !!t && t.status === "PUBLISHED")
+/** `staff`: kèm cả chủ đề chưa PUBLISHED (Course Builder cần thấy bản nháp). */
+export function stageTopicRefs(ids: number[], staff = false): TopicRef[] {
+  return ids.map((id) => TOPICS.find((t) => t.id === id)).filter((t): t is AuthoringTopic => !!t && (staff || t.status === "PUBLISHED"))
     .map((t) => ({ id: t.id, slug: t.slug, title: t.title, summary: t.summary, estMinutes: t.estMinutes,
-      progress: statusOf(t), stepCount: t.steps.length, doneSteps: doneOf(t) }));
+      progress: statusOf(t), stepCount: t.steps.length, doneSteps: doneOf(t), status: t.status }));
+}
+/** Chủ đề theo id, cho checklist publish ở chế độ mock. */
+export function topicById(id: number): AuthoringTopic | undefined {
+  return TOPICS.find((t) => t.id === id);
 }
 
 // ── Soạn ────────────────────────────────────────────────────────────────────

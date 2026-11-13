@@ -12,7 +12,7 @@ import type { PollFetch } from "./polling";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
-  AccessToken, CreatedAccessToken, StudyPlanDetail, StudyPlanDraft, StudyPlanStatus, StudyPlanSummary,
+  AccessToken, CreatedAccessToken, PublishCheck, StudyPlanDetail, StudyPlanDraft, StudyPlanStatus, StudyPlanSummary,
   AttemptResult, AuthoringTopic, LearnerTopic, StepAnswer, TopicDraft, TopicSummary,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
@@ -404,6 +404,27 @@ export async function transitionStudyPlan(slug: string, status: StudyPlanStatus)
 export async function deleteStudyPlan(slug: string): Promise<void> {
   if (USE_MOCK) return mock.deleteStudyPlan(slug);
   await api(`/api/v1/study-plans/${encodeURIComponent(slug)}`, { method: "DELETE" });
+}
+
+// ---------- Course Builder (specs/course-builder.spec.md) ----------
+export async function fetchPublishCheck(slug: string): Promise<PublishCheck> {
+  if (USE_MOCK) return mock.publishCheck(slug);
+  return api<PublishCheck>(`/api/v1/study-plans/${encodeURIComponent(slug)}/publish-check`);
+}
+/** Publish plan cùng mọi đề / chủ đề chưa PUBLISHED bên trong (một transaction ở server). */
+export async function publishStudyPlan(slug: string): Promise<StudyPlanDetail> {
+  if (USE_MOCK) return mock.publishStudyPlan(slug);
+  return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}/publish`, { method: "POST" });
+}
+/** Đề DRAFT mới chép đề bài, grading, starter, lời giải mẫu và mọi testcase của `problemId`. */
+export async function cloneProblem(problemId: number, title: string): Promise<ProblemFull> {
+  if (USE_MOCK) return mock.cloneProblem(problemId, title);
+  return normProblem(await api<Raw>(`/api/v1/admin/problems/${problemId}/clone`, { method: "POST", body: JSON.stringify({ title }) }));
+}
+/** PUBLISHED → DRAFT để sửa testcase / grading; học viên không nộp được stage này cho tới khi publish lại. */
+export async function unlockProblem(problemId: number): Promise<ProblemFull> {
+  if (USE_MOCK) return mock.unlockProblem(problemId);
+  return normProblem(await api<Raw>(`/api/v1/admin/problems/${problemId}/unlock`, { method: "POST" }));
 }
 
 // ---------- Chủ đề học (specs/topics.spec.md) ----------
