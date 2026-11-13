@@ -4,6 +4,13 @@ Trong project này bạn xây dần một **ngân hàng mini chạy trên consol
 
 Ở stage này: mở tài khoản lúc khởi động, nạp tiền, xem số dư.
 
+### Học trước
+
+Hai bài trong nhóm *Kiến thức cho Stage 1* của plan:
+
+- **Bài 1 — Lớp, đối tượng & constructor**: id tự tăng bằng field `static`, ghi đè `toString()`.
+- **Bài 2 — Đóng gói**: field `private`, `deposit` từ chối số tiền `<= 0` bằng `IllegalArgumentException`.
+
 ### Yêu cầu
 
 1. **`Account`**: id tự tăng bắt đầu từ `1`, loại tài khoản, chủ tài khoản, số dư. **Không field nào `public`** (judge kiểm tra bằng reflection).

@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jsd.toiyeujava.mini_leetcode.judge.authoring.GradingConfigValidator;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.OopInspectionReport;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.OopRuleResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.tools.ToolProvider;
@@ -64,6 +66,64 @@ class MiniBankProjectContentTest {
             assertThat(project.get("cases")).as("stage %d needs its own sample case", stage)
                     .anyMatch(c -> c.get("stage").asInt() == current);
         }
+    }
+
+    // ── Bài học (lessons/<slug>): lý thuyết + bài tập ─────────────────────────────
+
+    static Stream<String> lessons() throws IOException {
+        JsonNode project = new ObjectMapper().readTree(PROJECT.resolve("project.json").toFile());
+        List<String> slugs = new ArrayList<>();
+        project.get("lessons").forEach(s -> slugs.add(s.asText()));
+        return slugs.stream();
+    }
+
+    @ParameterizedTest(name = "{0}: reference solution passes the lesson rules")
+    @MethodSource("lessons")
+    void lessonSolutionPassesItsRules(String slug, @TempDir Path classes) throws Exception {
+        compile(classes, javaFiles(PROJECT.resolve("lessons").resolve(slug).resolve("solution")));
+
+        OopInspectionReport report = inspector.inspect(classes, lessonRules(slug));
+
+        assertThat(report.getRules()).filteredOn(r -> !r.isPassed()).extracting(OopRuleResult::getRuleName).isEmpty();
+        assertThat(report.getScore()).isEqualTo(100.0);
+    }
+
+    /** Bài 2 và 6 cố ý để khung đã đúng cấu trúc (học viên chỉ điền thân method), nên không nằm trong danh sách này. */
+    @ParameterizedTest(name = "{0}: rules reject the untouched starter")
+    @ValueSource(strings = {"oop-1-lop-va-doi-tuong", "oop-3-ke-thua", "oop-4-truu-tuong-da-hinh", "oop-5-exception", "oop-7-interface"})
+    void lessonRulesRejectTheStarter(String slug, @TempDir Path classes) throws Exception {
+        compile(classes, javaFiles(PROJECT.resolve("lessons").resolve(slug).resolve("starter")));
+
+        assertThat(inspector.inspect(classes, lessonRules(slug)).isPassed()).isFalse();
+    }
+
+    @ParameterizedTest(name = "{0}: has theory, an exercise, cases and a valid grading config")
+    @MethodSource("lessons")
+    void lessonIsComplete(String slug) throws Exception {
+        Path folder = PROJECT.resolve("lessons").resolve(slug);
+        JsonNode lesson = mapper.readTree(folder.resolve("lesson.json").toFile());
+        assertThat(lesson.get("slug").asText()).isEqualTo(slug);
+        assertThat(Files.readString(folder.resolve("lesson.md"))).contains("### Lý thuyết", "### Bài tập", "### Tóm tắt");
+        assertThat(lesson.get("cases").size()).as("public sample + at least one hidden case").isGreaterThanOrEqualTo(2);
+        assertThat(javaFiles(folder.resolve("starter"))).anyMatch(p -> p.getFileName().toString().equals("Main.java"));
+
+        ObjectNode config = mapper.createObjectNode();
+        config.set("rules", lesson.get("rules"));
+        config.set("output", mapper.readTree(PROJECT.resolve("grading.json").toFile()).get("output"));
+        assertThat(new GradingConfigValidator(mapper).validate(mapper.writeValueAsString(config)).errors()).isEmpty();
+    }
+
+    @Test
+    void everyLessonIsInThePlan() throws Exception {
+        JsonNode project = mapper.readTree(PROJECT.resolve("project.json").toFile());
+        List<String> planned = new ArrayList<>();
+        project.get("plan").get("items").forEach(item -> item.get("problems").forEach(p -> planned.add(p.asText())));
+        assertThat(planned).containsAll(lessons().toList());
+    }
+
+    private String lessonRules(String slug) throws IOException {
+        JsonNode lesson = mapper.readTree(PROJECT.resolve("lessons").resolve(slug).resolve("lesson.json").toFile());
+        return mapper.writeValueAsString(lesson.get("rules"));
     }
 
     /** Giống mini_bank_project.py: rule có fromStage <= stage, bỏ trường fromStage. */

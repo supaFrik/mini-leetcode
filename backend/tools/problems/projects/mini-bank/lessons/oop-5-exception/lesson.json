@@ -1,0 +1,31 @@
+{
+  "slug": "oop-5-exception",
+  "title": "Bài 5 — Exception: checked, unchecked & exception tự định nghĩa",
+  "difficulty": "MEDIUM",
+  "tags": ["OOP", "Exceptions"],
+  "forStage": 3,
+  "rules": [
+    {
+      "ruleName": "CHECKED_INVALID_AGE",
+      "targetClassName": "InvalidAgeException",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Exception",
+      "constructors": [{"parameterTypes": ["String"], "requiredModifiers": ["public"]}],
+      "customFailureMessage": "InvalidAgeException phải là checked exception (extends Exception) với constructor public InvalidAgeException(String)"
+    },
+    {
+      "ruleName": "AGE_VALIDATOR",
+      "targetClassName": "AgeValidator",
+      "expectedType": "CLASS",
+      "methods": [{"name": "validate", "returnType": "int", "parameterTypes": ["String"], "requiredModifiers": ["public", "static"]}],
+      "customFailureMessage": "AgeValidator cần public static int validate(String)"
+    }
+  ],
+  "cases": [
+    {"name": "vi-du", "stdin": "An 20\nBình abc\nChi 200\nDũng -1\nEm 0\n"},
+    {"name": "bien-150", "stdin": "Ông 150\nCụ 151\n"},
+    {"name": "so-thuc", "stdin": "Lan 20.5\nMai 1e3\nNam 7\n"},
+    {"name": "tat-ca-hop-le", "stdin": "A 1\nB 2\nC 3\n"},
+    {"name": "so-qua-lon", "stdin": "X 99999999999\nY 42\n"}
+  ]
+}

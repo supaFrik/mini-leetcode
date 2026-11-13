@@ -2,6 +2,13 @@
 
 Hai loại tài khoản giờ có **quy tắc khác nhau**. Thay vì `if (loại == ...)` khắp nơi, hãy để mỗi lớp con tự quyết định.
 
+### Học trước
+
+Hai bài trong nhóm *Kiến thức cho Stage 2* của plan:
+
+- **Bài 3 — Kế thừa & ghi đè**: `extends`, `super(...)`, `@Override`; phần chung (id, chủ, số dư) nằm ở lớp cha.
+- **Bài 4 — Lớp trừu tượng & đa hình**: `Account` trừu tượng, `withdraw` là template method gọi `canWithdraw` của từng loại; `MONTH` là một vòng lặp đa hình.
+
 ### Yêu cầu
 
 1. **`Account` thành lớp `abstract`** (bỏ field "loại" của stage 1):

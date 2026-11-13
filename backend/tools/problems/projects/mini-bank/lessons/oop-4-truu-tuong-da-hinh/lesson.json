@@ -1,0 +1,50 @@
+{
+  "slug": "oop-4-truu-tuong-da-hinh",
+  "title": "Bài 4 — Lớp trừu tượng & đa hình",
+  "difficulty": "EASY",
+  "tags": ["OOP", "Abstraction", "Polymorphism"],
+  "forStage": 2,
+  "rules": [
+    {
+      "ruleName": "SHAPE_IS_ABSTRACT",
+      "targetClassName": "Shape",
+      "expectedType": "ABSTRACT_CLASS",
+      "methods": [
+        {"name": "area", "returnType": "double", "requiredModifiers": ["public", "abstract"]},
+        {"name": "name", "returnType": "String", "requiredModifiers": ["public", "abstract"]},
+        {"name": "describe", "returnType": "String", "requiredModifiers": ["public"], "forbiddenModifiers": ["abstract"]}
+      ],
+      "customFailureMessage": "Shape phải là lớp abstract với public abstract double area(), public abstract String name() và public String describe()"
+    },
+    {
+      "ruleName": "CIRCLE_EXTENDS_SHAPE",
+      "targetClassName": "Circle",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Shape",
+      "methods": [{"name": "area", "returnType": "double", "forbiddenModifiers": ["abstract"]}],
+      "customFailureMessage": "Circle phải kế thừa Shape và cài area()"
+    },
+    {
+      "ruleName": "RECTANGLE_EXTENDS_SHAPE",
+      "targetClassName": "Rectangle",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Shape",
+      "methods": [{"name": "area", "returnType": "double", "forbiddenModifiers": ["abstract"]}],
+      "customFailureMessage": "Rectangle phải kế thừa Shape và cài area()"
+    },
+    {
+      "ruleName": "SQUARE_EXTENDS_RECTANGLE",
+      "targetClassName": "Square",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Rectangle",
+      "customFailureMessage": "Square phải kế thừa Rectangle (hình vuông là một hình chữ nhật)"
+    }
+  ],
+  "cases": [
+    {"name": "vi-du", "stdin": "CIRCLE 1\nRECT 2 3\nSQUARE 2.5\n"},
+    {"name": "hoa-lay-truoc", "stdin": "RECT 2 2\nSQUARE 2\nCIRCLE 0.5\n"},
+    {"name": "bang-khong", "stdin": "CIRCLE 0\nRECT 0 5\n"},
+    {"name": "khong-co-hinh", "stdin": "\n"},
+    {"name": "so-lon", "stdin": "CIRCLE 1000\nRECT 1000 1000\nSQUARE 1500\nCIRCLE 10.5\n"}
+  ]
+}

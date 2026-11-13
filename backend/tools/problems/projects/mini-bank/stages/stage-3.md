@@ -2,6 +2,12 @@
 
 Rút tiền thất bại không còn là "trả về false": nó là một **tình huống ngoại lệ có kiểm tra** mà người gọi bắt buộc phải xử lý.
 
+### Học trước
+
+Bài trong nhóm *Kiến thức cho Stage 3* của plan:
+
+- **Bài 5 — Exception**: `InsufficientFundsException` là checked exception, `withdraw` khai báo `throws`; mỗi lệnh một `try / catch` để input sai không làm dừng chương trình.
+
 ### Yêu cầu
 
 1. **`InsufficientFundsException extends Exception`** (checked exception).

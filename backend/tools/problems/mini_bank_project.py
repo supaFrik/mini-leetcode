@@ -36,6 +36,25 @@ def load():
     return meta, rules
 
 
+def load_lessons(meta):
+    """Bài học lý thuyết + bài tập (lessons/<slug>/): lesson.json, lesson.md, starter/, solution/."""
+    lessons = []
+    for slug in meta.get("lessons", []):
+        folder = PROJECT / "lessons" / slug
+        lesson = json.loads((folder / "lesson.json").read_text(encoding="utf-8"))
+        if lesson["slug"] != slug:
+            raise SystemExit(f"lessons/{slug}/lesson.json: slug mismatch ({lesson['slug']})")
+        lesson["folder"] = folder
+        lessons.append(lesson)
+    return lessons
+
+
+def java_files(folder):
+    """[{path, content}] của mọi .java trong folder, Main.java đứng đầu."""
+    files = sorted(folder.glob("*.java"), key=lambda f: (f.name != "Main.java", f.name))
+    return [{"path": f.name, "content": f.read_text(encoding="utf-8")} for f in files]
+
+
 def starter_files(stage_no):
     """Bản mới nhất của mỗi file khung tính tới stage_no (stage sau thay bản của stage trước)."""
     files = {}
@@ -63,15 +82,22 @@ def stage_cases(cases, stage_no):
 
 # ------------------------------------------------------------------ check
 
+def compile_files(files, label):
+    with tempfile.TemporaryDirectory(prefix="mb-check-") as tmp:
+        for f in files:
+            (Path(tmp) / f["path"]).write_text(f["content"], encoding="utf-8")
+        sources = [str(p) for p in Path(tmp).glob("*.java")]
+        subprocess.run(["javac", "-encoding", "UTF-8", "-d", tmp, *sources], check=True)
+        print(f"{label}: compiles ({len(sources)} files)")
+
+
 def cmd_check():
     meta, _ = load()
     for n in range(1, len(meta["stages"]) + 1):
-        with tempfile.TemporaryDirectory(prefix=f"mb-starter-{n}-") as tmp:
-            for f in starter_files(n):
-                (Path(tmp) / f["path"]).write_text(f["content"], encoding="utf-8")
-            sources = [str(p) for p in Path(tmp).glob("*.java")]
-            subprocess.run(["javac", "-encoding", "UTF-8", "-d", tmp, *sources], check=True)
-            print(f"stage {n}: starter compiles ({len(sources)} files)")
+        compile_files(starter_files(n), f"stage {n} starter")
+    for lesson in load_lessons(meta):
+        compile_files(java_files(lesson["folder"] / "starter"), f"{lesson['slug']} starter")
+        compile_files(java_files(lesson["folder"] / "solution"), f"{lesson['slug']} solution")
 
 
 # ------------------------------------------------------------------ sql
@@ -79,6 +105,33 @@ def cmd_check():
 def sql_str(value):
     # Nạp qua mysql CLI (sql_mode mặc định): backslash là ký tự escape.
     return "'" + value.replace("\\", "\\\\").replace("'", "''") + "'"
+
+
+def problem_sql(slug, title, difficulty, tags, description, starters, rule_list):
+    """INSERT ... ON DUPLICATE KEY UPDATE một đề OOP_GRINDING do seed_author tạo (chạy lại được)."""
+    config = {"rules": rule_list}
+    if OUTPUT_POLICY:
+        config["output"] = OUTPUT_POLICY  # cách so stdout (OutputPolicy ở judge)
+    grading = json.dumps(config, ensure_ascii=False)
+    starters_json = json.dumps(starters, ensure_ascii=False)
+    return [
+        "INSERT INTO problems (title, slug, description, difficulty, time_limit_ms, memory_limit_mb, status,"
+        " created_by, problem_type, starter_templates, grading_config, created_at, updated_at) VALUES ("
+        f"{sql_str(title)}, {sql_str(slug)}, {sql_str(description)}, {sql_str(difficulty)},"
+        f" 3000, 256, 'PUBLISHED', @seed_author, 'OOP_GRINDING', {sql_str(starters_json)}, {sql_str(grading)}, NOW(), NOW())"
+        " ON DUPLICATE KEY UPDATE"
+        " title = IF(created_by = @seed_author, VALUES(title), title),"
+        " description = IF(created_by = @seed_author, VALUES(description), description),"
+        " difficulty = IF(created_by = @seed_author, VALUES(difficulty), difficulty),"
+        " starter_templates = IF(created_by = @seed_author, VALUES(starter_templates), starter_templates),"
+        " grading_config = IF(created_by = @seed_author, VALUES(grading_config), grading_config),"
+        " updated_at = NOW();",
+        f"SET @pid := (SELECT id FROM problems WHERE slug = {sql_str(slug)} AND created_by = @seed_author);",
+        "DELETE FROM problem_tags WHERE problem_id = @pid;",
+        "INSERT INTO problem_tags (problem_id, sort_order, tag) SELECT @pid, t.sort_order, t.tag FROM ("
+        + " UNION ALL ".join(f"SELECT {i} AS sort_order, {sql_str(tag)} AS tag" for i, tag in enumerate(tags))
+        + ") t WHERE @pid IS NOT NULL;",
+    ]
 
 
 def cmd_sql():
@@ -96,29 +149,14 @@ def cmd_sql():
     ]
     for n, stage in enumerate(meta["stages"], start=1):
         description = (PROJECT / "stages" / f"stage-{n}.md").read_text(encoding="utf-8").removesuffix("\n")
-        starters = json.dumps(starter_files(n), ensure_ascii=False)
-        config = {"rules": stage_rules(rules, n)}
-        if OUTPUT_POLICY:
-            config["output"] = OUTPUT_POLICY  # cách so stdout (OutputPolicy ở judge)
-        grading = json.dumps(config, ensure_ascii=False)
-        out += [
-            "INSERT INTO problems (title, slug, description, difficulty, time_limit_ms, memory_limit_mb, status,"
-            " created_by, problem_type, starter_templates, grading_config, created_at, updated_at) VALUES ("
-            f"{sql_str(stage['title'])}, {sql_str(stage['slug'])}, {sql_str(description)}, {sql_str(stage['difficulty'])},"
-            f" 3000, 256, 'PUBLISHED', @seed_author, 'OOP_GRINDING', {sql_str(starters)}, {sql_str(grading)}, NOW(), NOW())"
-            " ON DUPLICATE KEY UPDATE"
-            " title = IF(created_by = @seed_author, VALUES(title), title),"
-            " description = IF(created_by = @seed_author, VALUES(description), description),"
-            " difficulty = IF(created_by = @seed_author, VALUES(difficulty), difficulty),"
-            " starter_templates = IF(created_by = @seed_author, VALUES(starter_templates), starter_templates),"
-            " grading_config = IF(created_by = @seed_author, VALUES(grading_config), grading_config),"
-            " updated_at = NOW();",
-            f"SET @pid := (SELECT id FROM problems WHERE slug = {sql_str(stage['slug'])} AND created_by = @seed_author);",
-            "DELETE FROM problem_tags WHERE problem_id = @pid;",
-            "INSERT INTO problem_tags (problem_id, sort_order, tag) SELECT @pid, t.sort_order, t.tag FROM ("
-            + " UNION ALL ".join(f"SELECT {i} AS sort_order, {sql_str(tag)} AS tag" for i, tag in enumerate(stage["tags"]))
-            + ") t WHERE @pid IS NOT NULL;",
-        ]
+        out += problem_sql(stage["slug"], stage["title"], stage["difficulty"], stage["tags"], description,
+                           starter_files(n), stage_rules(rules, n))
+
+    out += ["", "-- 1b. Bài học: lý thuyết (đề) + bài tập code, chấm bằng rule OOP + testcase."]
+    for lesson in load_lessons(meta):
+        description = (lesson["folder"] / "lesson.md").read_text(encoding="utf-8").removesuffix("\n")
+        out += problem_sql(lesson["slug"], lesson["title"], lesson["difficulty"], lesson["tags"], description,
+                           java_files(lesson["folder"] / "starter"), lesson["rules"])
 
     plan = meta["plan"]
     out += [
@@ -158,38 +196,60 @@ def cmd_sql():
 
 # ------------------------------------------------------------------ cases
 
-def cmd_cases(local):
-    meta, _ = load()
-    reference = HERE / meta["reference"]
+def run_reference(source_dir, cases, local):
+    """Biên dịch lời giải trong source_dir, chạy từng case; trả {tên case: stdout bytes}."""
     work = Path(tempfile.mkdtemp(prefix="mb-ref-"))
     try:
-        subprocess.run(["javac", "-encoding", "UTF-8", "-d", str(work), *map(str, reference.glob("*.java"))], check=True)
+        subprocess.run(["javac", "-encoding", "UTF-8", "-d", str(work), *map(str, source_dir.glob("*.java"))], check=True)
         env = dict(os.environ, MSYS_NO_PATHCONV="1")
         if local:
-            print("WARNING: --local dùng java trên máy; output có thể khác image của judge. Không nạp lên server.")
             runner = ["java", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US", "-cp", str(work), "Main"]
         else:
             runner = ["docker", "run", "-i", "--rm", "--network", "none", "-v", f"{work}:/w:ro", IMAGE,
                       "java", "-cp", "/w", "Main"]
         outputs = {}
-        for case in meta["cases"]:
+        for case in cases:
             run = subprocess.run(runner, input=case["stdin"].encode("utf-8"), capture_output=True, env=env, timeout=60)
             if run.returncode != 0:
-                raise SystemExit(f"{case['name']}: reference exited {run.returncode}: "
+                raise SystemExit(f"{source_dir.name}/{case['name']}: reference exited {run.returncode}: "
                                  f"{run.stderr.decode('utf-8', 'replace')}")
             outputs[case["name"]] = run.stdout
-        for n, stage in enumerate(meta["stages"], start=1):
-            out_dir = TOOLS / stage["slug"] / "cases"
-            if out_dir.exists():
-                shutil.rmtree(out_dir)
-            out_dir.mkdir(parents=True)
-            for stem, stdin in stage_cases(meta["cases"], n):
-                name = stem.split("-", 2)[2].removesuffix("-hidden")
-                (out_dir / f"{stem}.in").write_bytes(stdin.encode("utf-8"))
-                (out_dir / f"{stem}.out").write_bytes(outputs[name])
-            print(f"{stage['slug']}: {len(list(out_dir.glob('*.in')))} cases -> {out_dir}")
+        return outputs
     finally:
         shutil.rmtree(work, ignore_errors=True)
+
+
+def write_lesson_cases(lesson, outputs):
+    """Case đầu tiên là ví dụ công khai, còn lại ẩn. Tên file thành nhãn testcase (seed-two-sum-testcases.ps1)."""
+    out_dir = TOOLS / lesson["slug"] / "cases"
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    out_dir.mkdir(parents=True)
+    for i, case in enumerate(lesson["cases"]):
+        stem = f"{i + 1:02d}-{case['name']}" + ("" if i == 0 else "-hidden")
+        (out_dir / f"{stem}.in").write_bytes(case["stdin"].encode("utf-8"))
+        (out_dir / f"{stem}.out").write_bytes(outputs[case["name"]])
+    print(f"{lesson['slug']}: {len(lesson['cases'])} cases -> {out_dir}")
+
+
+def cmd_cases(local):
+    meta, _ = load()
+    if local:
+        print("WARNING: --local dùng java trên máy; output có thể khác image của judge. Không nạp lên server.")
+    for lesson in load_lessons(meta):
+        write_lesson_cases(lesson, run_reference(lesson["folder"] / "solution", lesson["cases"], local))
+    reference = HERE / meta["reference"]
+    outputs = run_reference(reference, meta["cases"], local)
+    for n, stage in enumerate(meta["stages"], start=1):
+        out_dir = TOOLS / stage["slug"] / "cases"
+        if out_dir.exists():
+            shutil.rmtree(out_dir)
+        out_dir.mkdir(parents=True)
+        for stem, stdin in stage_cases(meta["cases"], n):
+            name = stem.split("-", 2)[2].removesuffix("-hidden")
+            (out_dir / f"{stem}.in").write_bytes(stdin.encode("utf-8"))
+            (out_dir / f"{stem}.out").write_bytes(outputs[name])
+        print(f"{stage['slug']}: {len(list(out_dir.glob('*.in')))} cases -> {out_dir}")
 
 
 def main(argv):

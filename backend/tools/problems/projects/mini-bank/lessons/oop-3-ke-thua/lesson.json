@@ -1,0 +1,44 @@
+{
+  "slug": "oop-3-ke-thua",
+  "title": "Bài 3 — Kế thừa & ghi đè (override)",
+  "difficulty": "EASY",
+  "tags": ["OOP", "Inheritance", "Override"],
+  "forStage": 2,
+  "rules": [
+    {
+      "ruleName": "EMPLOYEE_BASE",
+      "targetClassName": "Employee",
+      "expectedType": "CLASS",
+      "constructors": [{"parameterTypes": ["String", "long"]}],
+      "methods": [
+        {"name": "salary", "returnType": "long", "requiredModifiers": ["public"]},
+        {"name": "role", "returnType": "String", "requiredModifiers": ["public"]}
+      ],
+      "customFailureMessage": "Employee cần constructor Employee(String, long), public long salary() và public String role()"
+    },
+    {
+      "ruleName": "MANAGER_EXTENDS_EMPLOYEE",
+      "targetClassName": "Manager",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Employee",
+      "constructors": [{"parameterTypes": ["String", "long", "long"]}],
+      "methods": [{"name": "salary", "returnType": "long", "requiredModifiers": ["public"]}],
+      "customFailureMessage": "Manager phải kế thừa Employee, có constructor Manager(String, long, long) và ghi đè salary()"
+    },
+    {
+      "ruleName": "INTERN_EXTENDS_EMPLOYEE",
+      "targetClassName": "Intern",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Employee",
+      "methods": [{"name": "salary", "returnType": "long", "requiredModifiers": ["public"]}],
+      "customFailureMessage": "Intern phải kế thừa Employee và ghi đè salary()"
+    }
+  ],
+  "cases": [
+    {"name": "vi-du", "stdin": "3\nE An 10000000\nM Hà 20000000 5000000\nI Tú 6000000\n"},
+    {"name": "chi-nhan-vien", "stdin": "2\nE Lan 7000000\nE Minh 8000000\n"},
+    {"name": "thuc-tap-le", "stdin": "2\nI Bảo 5000001\nI Chi 1\n"},
+    {"name": "nhieu-quan-ly", "stdin": "4\nM A 30000000 0\nM B 30000000 10000000\nE C 9000000\nI D 4000000\n"},
+    {"name": "khong-ai", "stdin": "0\n"}
+  ]
+}

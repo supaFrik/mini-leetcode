@@ -1,0 +1,27 @@
+{
+  "slug": "oop-1-lop-va-doi-tuong",
+  "title": "Bài 1 — Lớp, đối tượng & constructor",
+  "difficulty": "EASY",
+  "tags": ["OOP", "Class", "Constructor", "Static"],
+  "forStage": 1,
+  "rules": [
+    {
+      "ruleName": "CUSTOMER_CLASS",
+      "targetClassName": "Customer",
+      "expectedType": "CLASS",
+      "constructors": [{"parameterTypes": ["String"], "requiredModifiers": ["public"]}],
+      "fields": [{"name": "nextId", "type": "int", "requiredModifiers": ["private", "static"]}],
+      "methods": [
+        {"name": "count", "returnType": "int", "requiredModifiers": ["public", "static"]},
+        {"name": "toString", "returnType": "String", "requiredModifiers": ["public"]}
+      ],
+      "customFailureMessage": "Customer cần constructor public Customer(String), field private static int nextId, public static int count() và toString()"
+    }
+  ],
+  "cases": [
+    {"name": "vi-du", "stdin": "3\nAn\nBình\nNguyễn Văn Cường\n"},
+    {"name": "mot-khach", "stdin": "1\nTrần Thị Dung\n"},
+    {"name": "khong-khach", "stdin": "0\n"},
+    {"name": "nhieu-khach", "stdin": "12\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\n"}
+  ]
+}

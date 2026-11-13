@@ -1,0 +1,29 @@
+{
+  "slug": "oop-2-dong-goi",
+  "title": "Bài 2 — Đóng gói (Encapsulation)",
+  "difficulty": "EASY",
+  "tags": ["OOP", "Encapsulation"],
+  "forStage": 1,
+  "rules": [
+    {
+      "ruleName": "WALLET_ENCAPSULATED",
+      "targetClassName": "Wallet",
+      "expectedType": "CLASS",
+      "fields": [{"name": "*", "matchAllFields": true, "forbiddenModifiers": ["public"]}],
+      "constructors": [{"parameterTypes": ["String"], "requiredModifiers": ["public"]}],
+      "methods": [
+        {"name": "deposit", "returnType": "void", "parameterTypes": ["long"], "requiredModifiers": ["public"]},
+        {"name": "pay", "returnType": "void", "parameterTypes": ["long"], "requiredModifiers": ["public"]},
+        {"name": "getBalance", "returnType": "long", "requiredModifiers": ["public"]}
+      ],
+      "customFailureMessage": "Wallet không được có field public và phải có public void deposit(long), public void pay(long), public long getBalance()"
+    }
+  ],
+  "cases": [
+    {"name": "vi-du", "stdin": "Lan\nNAP 100000\nTRA 30000\nTRA 500000\nNAP 0\nXEM\n"},
+    {"name": "tra-het", "stdin": "Minh\nNAP 50\nTRA 50\nTRA 1\nXEM\n"},
+    {"name": "so-am", "stdin": "Hoa\nNAP -10\nTRA -5\nXEM\nNAP 7\nXEM\n"},
+    {"name": "chi-xem", "stdin": "Trần Văn Nam\nXEM\n"},
+    {"name": "so-lon", "stdin": "Big\nNAP 2000000000\nNAP 2000000000\nTRA 1\nXEM\n"}
+  ]
+}

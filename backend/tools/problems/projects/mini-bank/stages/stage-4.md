@@ -2,6 +2,12 @@
 
 `Main` nên chỉ đọc lệnh và in kết quả; mọi quy tắc nghiệp vụ nằm trong `Bank` và các lớp tài khoản.
 
+### Học trước
+
+Bài trong nhóm *Kiến thức cho Stage 4* của plan:
+
+- **Bài 6 — Collections & đóng gói danh sách**: `Bank` giữ tài khoản trong collection `private`, tìm theo id bằng `Map`, không trả danh sách bên trong ra ngoài.
+
 ### Yêu cầu
 
 1. **`Bank` đóng gói** danh sách tài khoản (field `private`, không để `Main` sửa trực tiếp) và có:

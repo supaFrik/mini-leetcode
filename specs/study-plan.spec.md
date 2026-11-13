@@ -286,7 +286,13 @@ ide-plugin/                         Gradle (tách khỏi Maven backend), Intelli
 - [x] WA trả dòng lệch đầu tiên: testcase công khai có kỳ vọng / thực tế, testcase ẩn chỉ có số dòng + nhãn (không lộ dữ liệu). TLE / MLE / RE ghi testcase nào. OOP gộp rule hỏng + testcase hỏng đầu tiên vào `errorMessage` (`TestFeedback`)
 - [x] Nhãn testcase: Flyway `V11__add_label_to_test_cases.sql`, tham số `label` ở POST / PUT testcase (sửa riêng nhãn được cả khi bài đã PUBLISHED); `seed-two-sum-testcases.ps1` đặt nhãn `stage N: tên`
 - [x] Test: `OutputFeedbackTest`, `AlgorithmicJudgeStrategyTest`, `OopServerGradingTest`, `ProblemAndTestCaseIntegrationTest`
-- [ ] Khi merge nhánh admin-console-authoring: thêm `"output"` vào `ROOT_KEYS` của `GradingConfigValidator`
+- [x] Khi merge nhánh admin-console-authoring: thêm `"output"` vào `ROOT_KEYS` của `GradingConfigValidator` (nhánh `integration/study-plan-admin`)
+
+### Slice 9 — Khóa học Mini Bank kiểu Hyperskill ✅ (nhánh `feature/mini-bank-course`)
+- [x] 7 bài học trong `backend/tools/problems/projects/mini-bank/lessons/`: lớp & đối tượng, đóng gói, kế thừa, trừu tượng & đa hình, exception, collections, interface. Mỗi bài: lý thuyết (đề markdown) + bài tập code chấm bằng rule OOP + testcase, có khung TODO và lời giải tham chiếu
+- [x] Plan `oop-voi-java` thành 5 nhóm "Kiến thức cho Stage N" + project; đề stage có mục "Học trước". Thay 2 bài luyện tiếng Anh cũ
+- [x] `mini_bank_project.py check | sql | cases` xử lý bài học; `MiniBankProjectContentTest` thêm 20 test cho bài học
+- Quyết định: bài lý thuyết là **đề** (item `PROBLEM`), không thêm kiểu item `THEORY` — chạy được ngay trên web và plugin, không đổi schema. Kiểu item riêng (trang đọc không cần nộp bài) để sau nếu cần
 
 ## Out of Scope
 - CLI, extension VS Code, JetBrains Marketplace, kho plugin tự cập nhật, IDE JetBrains khác.

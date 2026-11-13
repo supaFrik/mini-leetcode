@@ -2,6 +2,12 @@
 
 Stage cuối: hoàn thiện bảng lệnh và mã thoát. Xong stage này bạn có một chương trình console hoàn chỉnh dùng đủ đóng gói, kế thừa, đa hình và exception.
 
+### Học trước
+
+Bài trong nhóm *Kiến thức cho Stage 5* của plan:
+
+- **Bài 7 — Interface & tách lệnh**: tách mỗi lệnh CLI thành một lớp `Command`, tra bằng `Map<String, Command>` thay vì một `switch` dài. Judge chỉ chấm output, nhưng đây là cách tổ chức `Main` gọn nhất cho stage cuối.
+
 ### Yêu cầu
 
 | Lệnh | Output |
