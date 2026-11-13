@@ -147,6 +147,14 @@ Cảnh báo "reference solution not run since last edit" cần biết lần ch�
 5. **Publish + Unlock**: hộp checklist, banner live.
 6. **E2E**: viết lại `admin-study-plans.spec.ts` theo AC-CB-01…08; mock (`USE_MOCK`) cho endpoint mới.
 
+## Tiến độ
+
+- [x] 1–2. Backend: BE-1, BE-2, BE-4…BE-7 + khoá lạc quan (`updatedAt`). BE-3 không làm endpoint riêng: frontend gọi clone (BE-2) rồi lưu plan. `CourseBuilderIntegrationTest` (6)
+- [x] 3–5. Frontend `components/admin/course-builder/`: outline (kéo thả bằng tay nắm, Alt+↑/↓, `?node=`), autosave 1 s, chặn rời trang, panel plan / item / stage (tab soạn đề + Unlock) / topic (`TopicEditor` nhúng, tự lưu, Preview), checklist Publish, banner live. URL đổi bằng `history.replaceState` để đổi slug không remount trang
+- [x] 6. E2E `admin-study-plans.spec.ts` (7): AC-CB-01/02, 03, 04/05, 07, 08, gắn topic, chỉ đọc
+- [x] Chạy thật trên Docker: autosave nhiều lần, clone stage, tạo topic, checklist chặn khi thiếu testcase công khai
+- Sửa khi chạy thật: `update` flush trước khi trả `updatedAt`; so khớp phiên bản cho phép lệch < 2 s (MySQL TIMESTAMP làm tròn phần lẻ của giây)
+
 ## Đã chốt sau review
 
 - **C1.** Unlock đưa đề về DRAFT; học viên đang ở stage đó tạm thấy "Stage is being updated" cho tới khi publish lại. **Chấp nhận** — không làm bản nháp song song.

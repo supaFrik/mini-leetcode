@@ -79,7 +79,7 @@ test.describe("Admin: topic authoring and stage topics", () => {
 
     // Step 1 (theory) có sẵn
     const theory = page.getByRole("region", { name: "Step 1: Theory" });
-    await theory.getByLabel(/Theory \(Markdown/).fill("## Vấn đề\nai cũng sửa\n## Modifier\nprivate");
+    await theory.getByLabel("Theory markdown").fill("## Vấn đề\nai cũng sửa\n## Modifier\nprivate");
 
     const add = page.getByRole("group", { name: "Add a step" });
     await add.getByRole("button", { name: "Quiz" }).click();
@@ -158,20 +158,5 @@ test.describe("Admin: topic authoring and stage topics", () => {
     await expect(page.getByRole("alert").filter({ hasText: "Step 2" })).toHaveText("Step 2 (Code exercise): choose the problem.");
     expect(api.writes).toHaveLength(0);
   });
-
-  test("the study plan editor attaches topics to project stages", async ({ page }) => {
-    const api = await serve(page);
-    api.topics.set("oop-dong-goi", { id: 55, slug: "oop-dong-goi", title: "Đóng gói", estMinutes: 15, status: "PUBLISHED", steps: [{}, {}] });
-    await page.goto("/admin/study-plans/new");
-    await page.getByLabel("Title", { exact: true }).fill("OOP");
-    await page.getByLabel("Item title").fill("Mini Bank");
-    await page.getByLabel("Search published problems").fill("mini");
-    await page.getByRole("button", { name: /Mini Bank 1\/5/ }).click();
-    await page.getByLabel("Search topics for Item 1 stage 1").fill("đóng");
-    await page.getByRole("button", { name: /Đóng gói/ }).click();
-    await expect(page.getByRole("list", { name: "Item 1 stage 1 topics" })).toContainText("Đóng gói");
-
-    await page.getByRole("button", { name: "Create draft" }).click();
-    await expect.poll(() => api.writes.find((w) => w.path === "/api/v1/study-plans")?.body.items[0].stageTopics).toEqual([[55]]);
-  });
+  // Gắn topic vào stage: xem admin-study-plans.spec.ts (Course Builder).
 });

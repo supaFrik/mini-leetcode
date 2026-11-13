@@ -33,7 +33,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -121,7 +120,7 @@ public class StudyPlanService {
             throw new DuplicateResourceException("Study plan slug already exists: " + request.slug());
         }
         if (request.expectedUpdatedAt() != null && plan.getUpdatedAt() != null
-                && !sameSecond(request.expectedUpdatedAt(), plan.getUpdatedAt())) {
+                && !sameVersion(request.expectedUpdatedAt(), plan.getUpdatedAt())) {
             throw new StateConflictException("This study plan was changed in another tab or by another user. Reload to continue.");
         }
         if (plan.getStatus() == StudyPlanStatus.PUBLISHED) {
@@ -132,7 +131,8 @@ public class StudyPlanService {
         planRepository.flush(); // xoá stage cũ trước để UNIQUE(problem_id) không chặn chính các đề này
         apply(plan, request);
         plan.setUpdatedAt(LocalDateTime.now()); // đổi mục không làm plan "dirty" ⇒ tự đánh dấu cho khoá lạc quan
-        planRepository.save(plan);
+        // Flush trước khi đọc lại: response phải mang updatedAt mới (client gửi lại ở lần lưu sau).
+        planRepository.saveAndFlush(plan);
         return get(plan.getSlug(), userId, true);
     }
 
@@ -279,8 +279,12 @@ public class StudyPlanService {
         });
     }
 
-    private static boolean sameSecond(LocalDateTime a, LocalDateTime b) {
-        return a.truncatedTo(ChronoUnit.SECONDS).equals(b.truncatedTo(ChronoUnit.SECONDS));
+    /**
+     * MySQL TIMESTAMP làm tròn phần lẻ của giây khi lưu, còn response trả giá trị trong bộ nhớ (có nano giây) ⇒ hai giá trị
+     * của cùng một lần lưu có thể lệch tới 1 giây. Coi là cùng phiên bản nếu lệch dưới 2 giây.
+     */
+    private static boolean sameVersion(LocalDateTime a, LocalDateTime b) {
+        return Math.abs(java.time.Duration.between(a, b).toMillis()) < 2000;
     }
 
     /** Số học viên (USER) của plan và số người đang làm dở (đã nộp, chưa AC) từng stage. */
