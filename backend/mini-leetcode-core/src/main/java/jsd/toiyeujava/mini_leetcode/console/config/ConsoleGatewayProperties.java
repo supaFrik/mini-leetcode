@@ -18,6 +18,9 @@ public class ConsoleGatewayProperties {
     /** WebSocket nội bộ của judge worker. */
     private String judgeWsUrl = "ws://localhost:8081/internal/console/ws";
 
+    /** HTTP nội bộ của judge worker (soạn bài: kiểm tra grading_config, chạy lời giải mẫu). */
+    private String judgeHttpUrl = "http://localhost:8081";
+
     /** Token nội bộ gửi qua header {@code X-Internal-Token} khi handshake với judge. */
     private String internalToken = "mini-leetcode-internal-token";
 

@@ -12,6 +12,7 @@ import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useLoad } from "@/hooks/use-load";
 import { useUser } from "@/hooks/use-user";
+import { AdminNav } from "./admin-nav";
 import {
   createStudyPlan, deleteStudyPlan, fetchAdminProblems, fetchStudyPlan, fetchStudyPlans, transitionStudyPlan, updateStudyPlan,
 } from "@/lib/services";
@@ -43,13 +44,13 @@ export function AdminStudyPlansView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+      <AdminNav />
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="eyebrow">Admin</p>
           <h1 className="mt-1 text-heading-lg text-ink">Study plans</h1>
           <p className="mt-1 text-body-md text-mute">
-            Build learning paths from published problems. Students see a plan once it is published.{" "}
-            <Link href="/admin/problems" className="text-link underline-offset-4 hover:underline">Manage problems</Link>
+            Build learning paths from published problems. Students see a plan once it is published.
           </p>
         </div>
         <Button asChild>

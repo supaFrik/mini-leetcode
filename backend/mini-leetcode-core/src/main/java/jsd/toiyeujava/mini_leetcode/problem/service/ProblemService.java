@@ -17,6 +17,8 @@ import jsd.toiyeujava.mini_leetcode.testcase.entity.TestCase;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.exception.StateConflictException;
+import jsd.toiyeujava.mini_leetcode.contest.repository.ContestProblemRepository;
+import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemTagRepository;
 import jsd.toiyeujava.mini_leetcode.problem.util.TagNormalizer;
@@ -53,6 +55,14 @@ public class ProblemService {
     private final ProblemTagRepository problemTagRepository;
     private final SubmissionRepository submissionRepository;
 
+    /** Tuỳ chọn (không có trong unit test dựng tay): chặn gỡ bài đang nằm trong kỳ thi chưa kết thúc. */
+    private ContestProblemRepository contestProblemRepository;
+
+    @Autowired(required = false)
+    public void setContestProblemRepository(ContestProblemRepository contestProblemRepository) {
+        this.contestProblemRepository = contestProblemRepository;
+    }
+
     public ProblemService(ProblemRepository problemRepository) {
         this(problemRepository, null, null, null, null);
     }
@@ -84,6 +94,8 @@ public class ProblemService {
                 .memoryLimitMb(request.getMemoryLimitMbOrDefault())
                 .status(ProblemStatus.DRAFT)
                 .tags(TagNormalizer.normalize(request.tags()))
+                .problemType(request.problemType() != null ? request.problemType() : ProblemType.ALGORITHMIC)
+                .starterTemplates(blankToNull(request.starterTemplates()))
                 .createdBy(creator)
                 .build();
 
@@ -123,6 +135,12 @@ public class ProblemService {
         if (request.tags() != null) {
             problem.setTags(TagNormalizer.normalize(request.tags()));
         }
+        if (request.problemType() != null) {
+            problem.setProblemType(request.problemType());
+        }
+        if (request.starterTemplates() != null) {
+            problem.setStarterTemplates(blankToNull(request.starterTemplates()));
+        }
 
         problem = problemRepository.save(problem);
         return ProblemResponse.fromEntity(problem, countOfTestCases(problem.getId()), null);
@@ -153,6 +171,10 @@ public class ProblemService {
                     + ProblemLifecycle.allowedTargets(current));
         }
 
+        if (current == ProblemStatus.PUBLISHED) {
+            requireNotInActiveContest(id);
+        }
+
         if (target == ProblemStatus.PUBLISHED && !hasPublicTestCase(id)) {
             throw new StateConflictException(
                     "Cannot publish problem " + id + ": at least one public test case is required");
@@ -161,6 +183,22 @@ public class ProblemService {
         problem.setStatus(target);
         problem = problemRepository.save(problem);
         return ProblemResponse.fromEntity(problem, countOfTestCases(problem.getId()), null);
+    }
+
+    /**
+     * Bài đang dùng trong kỳ thi chưa kết thúc thì không được rời PUBLISHED / bị xoá:
+     * thí sinh sẽ mất đề giữa chừng. Trả 409 nêu tên kỳ thi.
+     */
+    private void requireNotInActiveContest(Long problemId) {
+        if (contestProblemRepository == null) {
+            return;
+        }
+        contestProblemRepository.findContestsByProblemId(problemId).stream()
+                .filter(c -> c.resolveStatus() != ContestStatus.COMPLETED)
+                .findFirst()
+                .ifPresent(c -> {
+                    throw new StateConflictException("Problem is used by contest '" + c.getTitle() + "'");
+                });
     }
 
     /** Số testcase của một bài (một truy vấn COUNT, không N+1). */
@@ -406,6 +444,8 @@ public class ProblemService {
         Problem problem = problemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + id));
 
+        requireNotInActiveContest(id);
+
         // Bài đã có bài nộp thì không được xoá cứng: lịch sử nộp bài trỏ tới
         // bài này và sẽ mất dữ liệu chấm điểm. Muốn gỡ thì chuyển sang ARCHIVED.
         if (submissionRepository != null && submissionRepository.countByProblemId(id) > 0) {
@@ -457,5 +497,9 @@ public class ProblemService {
             slug = slug.substring(0, slug.length() - 1);
         }
         return slug.isEmpty() ? "problem" : slug;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 }

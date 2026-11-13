@@ -346,7 +346,9 @@ class JudgeServiceTest {
                 .execute(any(Path.class), eq(LanguageRuntime.PYTHON), anyString(), anyLong(), anyInt());
         verify(submissionService).updateSubmissionVerdict(
                 eq(1L), eq(SubmissionStatus.COMPLETED), eq(SubmissionVerdict.TLE),
-                eq(200), eq(0), eq(0), eq(2), eq("Time limit exceeded on test case #2 (hidden)"));
+                // Hai testcase chạy song song nên kết quả giả (WA / TLE) rơi vào case #1 hay #2 tuỳ luồng nào gọi trước.
+                eq(200), eq(0), eq(0), eq(2),
+                org.mockito.ArgumentMatchers.matches("Time limit exceeded on test case #[12] \\(hidden\\)"));
     }
 
     @Test

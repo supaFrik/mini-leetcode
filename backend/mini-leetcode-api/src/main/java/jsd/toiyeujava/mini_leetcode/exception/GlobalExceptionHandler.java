@@ -59,6 +59,26 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ProblemDetail handleForbiddenOperation(ForbiddenOperationException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problem.setTitle("Forbidden");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/forbidden"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    /** Hai người cùng sửa một bản ghi có {@code @Version}: người lưu sau phải tải lại. */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ProblemDetail handleOptimisticLock(Exception ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "Contest was changed by someone else, reload");
+        problem.setTitle("Resource Conflict");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/conflict"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationException(MethodArgumentNotValidException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed for request fields");
@@ -181,6 +201,25 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
         problem.setTitle("Storage Error");
         problem.setType(URI.create("https://api.mini-leetcode.com/errors/storage-error"));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidGradingConfigException.class)
+    public ProblemDetail handleInvalidGradingConfigException(InvalidGradingConfigException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Grading configuration is invalid");
+        problem.setTitle("Invalid Grading Configuration");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/bad-request"));
+        problem.setProperty("errors", ex.getErrors());
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler(JudgeUnavailableException.class)
+    public ProblemDetail handleJudgeUnavailableException(JudgeUnavailableException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        problem.setTitle("Judge Unavailable");
+        problem.setType(URI.create("https://api.mini-leetcode.com/errors/judge-unavailable"));
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }

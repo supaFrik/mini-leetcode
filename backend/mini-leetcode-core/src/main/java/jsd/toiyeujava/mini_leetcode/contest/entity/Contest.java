@@ -3,6 +3,7 @@ package jsd.toiyeujava.mini_leetcode.contest.entity;
 import jakarta.persistence.*;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
+import jsd.toiyeujava.mini_leetcode.entity.RegistrationMode;
 import jsd.toiyeujava.mini_leetcode.entity.ScoringPolicy;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -49,6 +50,16 @@ public class Contest {
     @Builder.Default
     private ContestStatus status = ContestStatus.SCHEDULED;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "registration_mode", nullable = false, length = 20)
+    @Builder.Default
+    private RegistrationMode registrationMode = RegistrationMode.OPEN;
+
+    /** Khoá lạc quan: hai người cùng sửa một kỳ thi thì người lưu sau nhận 409. */
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
@@ -58,24 +69,32 @@ public class Contest {
     private LocalDateTime createdAt;
 
     /**
-     * Trạng thái hiệu lực của kỳ thi.
+     * Trạng thái hiệu lực của kỳ thi, tính theo giờ tại thời điểm hỏi.
      *
-     * <p>Cột {@code status} trong DB là nguồn chính (được quản lý bởi giảng viên / seed data).
-     * Ngoại lệ duy nhất: kỳ thi đang {@code RUNNING} nhưng đã qua {@code endTime} sẽ được coi là
-     * {@code COMPLETED} để không cho nộp bài sau khi kỳ thi đã kết thúc.
+     * <ul>
+     *   <li>Cột {@code status} = {@code COMPLETED} luôn là COMPLETED (đóng thủ công / seed).</li>
+     *   <li>Đã qua {@code endTime} → COMPLETED, để không cho nộp bài sau giờ.</li>
+     *   <li>Cột còn {@code SCHEDULED} nhưng đã tới {@code startTime} → RUNNING. Nhờ vậy kỳ thi tạo
+     *       trên giao diện admin tự bắt đầu đúng giờ mà không cần job nào cập nhật cột.</li>
+     * </ul>
      *
      * <p>Mọi mốc thời gian trong DB được lưu theo UTC (kết nối JDBC dùng {@code serverTimezone=UTC}),
      * nên phép so sánh dùng {@link java.time.ZoneOffset#UTC} thay vì múi giờ mặc định của JVM.
-     * Nhờ vậy kết luận "kỳ thi đã kết thúc" luôn nhất quán với những gì client nhìn thấy.
      */
     @Transient
     public ContestStatus resolveStatus() {
         if (status == null) {
             return ContestStatus.SCHEDULED;
         }
-        if (status == ContestStatus.RUNNING && endTime != null
-                && !LocalDateTime.now(ZoneOffset.UTC).isBefore(endTime)) {
+        if (status == ContestStatus.COMPLETED) {
             return ContestStatus.COMPLETED;
+        }
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        if (endTime != null && !now.isBefore(endTime)) {
+            return ContestStatus.COMPLETED;
+        }
+        if (status == ContestStatus.SCHEDULED && startTime != null && !now.isBefore(startTime)) {
+            return ContestStatus.RUNNING;
         }
         return status;
     }

@@ -17,6 +17,7 @@ import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ContestProblem, Draft, Language, LeaderboardCell, LeaderboardRow, Page,
   ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
   AccessToken, CreatedAccessToken, StudyPlanDetail, StudyPlanDraft, StudyPlanStage, StudyPlanSummary,
+  GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
 } from "@/types/api";
 
 const sleep = (ms = 150) => new Promise<void>((r) => setTimeout(r, ms));
@@ -238,6 +239,97 @@ export async function addTestCase(problemId: number, c: { input: string; expecte
   all[problemId] = [...list, created];
   store.set("mock:extraCases", all);
   return created;
+}
+
+function editExtraCase(problemId: number, id: number, edit: (list: TestCase[], idx: number) => TestCase[]) {
+  const all = store.get<Record<number, TestCase[]>>("mock:extraCases", {});
+  const list = all[problemId] ?? [];
+  const idx = list.findIndex((c) => c.id === id);
+  if (idx < 0) throw new ApiError(409, { title: "Conflict", status: 409, detail: "Built-in mock test cases are read-only." });
+  all[problemId] = edit(list, idx);
+  store.set("mock:extraCases", all);
+  return all[problemId];
+}
+export async function updateTestCase(problemId: number, id: number, c: { input?: string; expectedOutput?: string; isHidden?: boolean }): Promise<TestCase> {
+  await sleep(); ensureOnline();
+  const list = editExtraCase(problemId, id, (l, i) => l.map((x, j) => (j === i ? { ...x, ...c } : x)));
+  return list.find((x) => x.id === id)!;
+}
+export async function deleteTestCase(problemId: number, id: number): Promise<void> {
+  await sleep(); ensureOnline();
+  editExtraCase(problemId, id, (l, i) => l.filter((_, j) => j !== i));
+}
+
+// ===================== AUTHORING (mock: lưu localStorage, "chạy" lời giải mẫu = echo stdin) =====================
+interface MockAuthoring { gradingConfig: string | null; referenceSolution: SubmissionFile[] }
+function authoringOf(problemId: number): MockAuthoring {
+  return store.get<Record<number, MockAuthoring>>("mock:authoring", {})[problemId] ?? { gradingConfig: null, referenceSolution: [] };
+}
+async function toAuthoring(problemId: number): Promise<ProblemAuthoring> {
+  const p = await getProblem(String(problemId));
+  return {
+    problemId, status: p.status ?? "DRAFT", problemType: p.type ?? "ALGORITHMIC", ...authoringOf(problemId),
+    gradingFrozen: p.status === "PUBLISHED", timeLimitMs: p.timeLimitMs, memoryLimitMb: p.memoryLimitMb,
+  };
+}
+function putAuthoring(problemId: number, patch: Partial<MockAuthoring>) {
+  const all = store.get<Record<number, MockAuthoring>>("mock:authoring", {});
+  all[problemId] = { ...authoringOf(problemId), ...patch };
+  store.set("mock:authoring", all);
+}
+export async function getAuthoring(problemId: number): Promise<ProblemAuthoring> {
+  await sleep(); ensureOnline();
+  return toAuthoring(problemId);
+}
+export async function validateGradingConfig(raw: string): Promise<GradingValidation> {
+  await sleep();
+  try {
+    const parsed = JSON.parse(raw);
+    const rules = Array.isArray(parsed?.rules) ? parsed.rules : [];
+    const scenarios = Array.isArray(parsed?.socketScenarios) ? parsed.socketScenarios : [];
+    const errors = rules.flatMap((r: { targetClassName?: string }, i: number) =>
+      r?.targetClassName ? [] : [`rules[${i}].targetClassName: required`]);
+    return { valid: errors.length === 0, errors, ruleCount: rules.length, socketScenarioCount: scenarios.length,
+      totalRuleWeight: rules.reduce((sum: number, r: { weight?: number }) => sum + (r?.weight ?? 1), 0) };
+  } catch (e) {
+    return { valid: false, errors: [`Not valid JSON: ${(e as Error).message}`], ruleCount: 0, socketScenarioCount: 0, totalRuleWeight: 0 };
+  }
+}
+export async function saveGradingConfig(problemId: number, raw: string | null): Promise<ProblemAuthoring> {
+  if (raw && raw.trim()) {
+    const v = await validateGradingConfig(raw);
+    if (!v.valid) throw new ApiError(400, { title: "Invalid Grading Configuration", status: 400, detail: "Grading configuration is invalid", errors: v.errors });
+  }
+  putAuthoring(problemId, { gradingConfig: raw && raw.trim() ? raw.trim() : null });
+  return toAuthoring(problemId);
+}
+export async function saveReferenceSolution(problemId: number, files: SubmissionFile[]): Promise<ProblemAuthoring> {
+  await sleep();
+  putAuthoring(problemId, { referenceSolution: files });
+  return toAuthoring(problemId);
+}
+export async function runReference(problemId: number, body: { inputs?: string[]; testCaseIds?: number[]; apply?: boolean }): Promise<ReferenceRunResult> {
+  await sleep(400); ensureOnline();
+  if (authoringOf(problemId).referenceSolution.length === 0) {
+    throw new ApiError(400, { title: "Bad Request", status: 400, detail: "Save a reference solution before running it" });
+  }
+  const run = (stdin: string) => ({ stdout: stdin, stderr: "", exitCode: 0, runtimeMs: 120 });
+  if (body.inputs?.length) {
+    return { compiled: true, compileOutput: null, mainClass: "Main", error: null, appliedCount: 0,
+      cases: body.inputs.map((i) => ({ testCaseId: null, orderIndex: null, hidden: null, status: "OK" as const, applied: false, ...run(i) })) };
+  }
+  const cases = casesFor(problemId).filter((c) => !body.testCaseIds?.length || body.testCaseIds.includes(c.id));
+  let applied = 0;
+  const results = await Promise.all(cases.map(async (c) => {
+    const r = run(c.input);
+    const same = r.stdout.trimEnd() === c.expectedOutput.trimEnd();
+    let didApply = false;
+    if (body.apply && !same) {
+      try { await updateTestCase(problemId, c.id, { expectedOutput: r.stdout }); didApply = true; applied++; } catch { /* built-in case */ }
+    }
+    return { testCaseId: c.id, orderIndex: c.orderIndex, hidden: c.isHidden, status: same ? "MATCH" as const : "DIFF" as const, applied: didApply, ...r };
+  }));
+  return { compiled: true, compileOutput: null, mainClass: "Main", error: null, cases: results, appliedCount: applied };
 }
 
 // ===================== SUBMISSIONS =====================

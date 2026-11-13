@@ -18,6 +18,8 @@ import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.auth.repository.UserRepository;
 import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
 import jsd.toiyeujava.mini_leetcode.entity.ParticipantStatus;
+import jsd.toiyeujava.mini_leetcode.entity.RegistrationMode;
+import jsd.toiyeujava.mini_leetcode.exception.ForbiddenOperationException;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
@@ -85,6 +87,11 @@ public class ContestService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        boolean alreadyRegistered = participantRepository.findByContestIdAndUserId(contestId, userId).isPresent();
+        if (!alreadyRegistered && contest.getRegistrationMode() == RegistrationMode.INVITE_ONLY) {
+            throw new ForbiddenOperationException("This contest is invite-only");
+        }
 
         participantRepository.findByContestIdAndUserId(contestId, userId)
                 .orElseGet(() -> participantRepository.save(ContestParticipant.builder()

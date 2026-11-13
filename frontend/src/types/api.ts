@@ -13,6 +13,8 @@ export interface ProblemDetail {
   detail: string;
   instance?: string;
   invalid_params?: Record<string, string>;
+  /** Lỗi theo đường dẫn JSON khi grading_config không hợp lệ (400). */
+  errors?: string[];
 }
 export interface Page<T> {
   content: T[];
@@ -67,6 +69,52 @@ export interface TestCase {
   isHidden: boolean;
   orderIndex: number;
   explanation?: string;
+  /** Server chỉ trả 8 KB đầu; true ⇒ nội dung hiển thị chưa đầy đủ, không được lưu ngược lại. */
+  inputTruncated?: boolean;
+  expectedOutputTruncated?: boolean;
+}
+
+// ===== Soạn bài (INSTRUCTOR/ADMIN) =====
+export interface ProblemAuthoring {
+  problemId: number;
+  status: ProblemLifecycle;
+  problemType: ProblemType;
+  /** JSON {"rules": [...], "socketScenarios": [...]} hoặc null. */
+  gradingConfig: string | null;
+  referenceSolution: SubmissionFile[];
+  /** Bài PUBLISHED: rule chấm và testcase bị khoá. */
+  gradingFrozen: boolean;
+  timeLimitMs: number;
+  memoryLimitMb: number;
+}
+export interface GradingValidation {
+  valid: boolean;
+  errors: string[];
+  ruleCount: number;
+  socketScenarioCount: number;
+  totalRuleWeight: number;
+}
+export type ReferenceCaseStatus =
+  | "MATCH" | "DIFF" | "OK" | "TIME_LIMIT" | "MEMORY_LIMIT" | "RUNTIME_ERROR" | "OUTPUT_LIMIT";
+export interface ReferenceCaseResult {
+  testCaseId: number | null;
+  orderIndex: number | null;
+  hidden: boolean | null;
+  status: ReferenceCaseStatus;
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  runtimeMs: number | null;
+  applied: boolean;
+}
+export interface ReferenceRunResult {
+  compiled: boolean;
+  compileOutput: string | null;
+  mainClass: string | null;
+  /** Lỗi hạ tầng (sandbox không chạy được). */
+  error: string | null;
+  cases: ReferenceCaseResult[];
+  appliedCount: number;
 }
 
 // ===== Bài nộp =====
@@ -197,3 +245,70 @@ export interface AccessToken {
 }
 /** `token` chỉ có đúng một lần, ngay khi tạo. */
 export interface CreatedAccessToken { token: string; info: AccessToken }
+
+// ---------- Admin: quản lý kỳ thi (/api/v1/admin/contests) ----------
+export type RegistrationMode = "OPEN" | "INVITE_ONLY";
+export type ScoringPolicy = "ACM_ICPC" | "PARTIAL_IOI";
+
+export interface AdminContestSummary {
+  id: number;
+  title: string;
+  slug: string;
+  status: ContestStatus;
+  startTime: string;
+  endTime: string;
+  registrationMode: RegistrationMode;
+  problemCount: number;
+  participantCount: number;
+}
+export interface AdminContestProblem {
+  problemId: number;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  problemStatus?: ProblemLifecycle;
+  label: string;
+  orderIndex: number;
+}
+export interface AdminContestDetail {
+  id: number;
+  title: string;
+  slug: string;
+  status: ContestStatus;
+  startTime: string;
+  endTime: string;
+  scoringPolicy: ScoringPolicy;
+  maxViolationsAllowed: number;
+  registrationMode: RegistrationMode;
+  createdBy: string | null;
+  version: number;
+  hasSubmissions: boolean;
+  problems: AdminContestProblem[];
+}
+/** Body tạo/sửa kỳ thi. Mốc thời gian là ISO UTC (`toISOString()`). */
+export interface ContestUpsert {
+  title: string;
+  startTime: string;
+  endTime: string;
+  scoringPolicy: ScoringPolicy;
+  maxViolationsAllowed: number;
+  registrationMode: RegistrationMode;
+  problems: { problemId: number; label: string; orderIndex: number }[];
+  version?: number;
+}
+export interface AdminParticipant {
+  userId: number;
+  username: string;
+  email: string;
+  status: ParticipantStatus;
+  violationCount: number;
+  solved: number;
+  penaltyMinutes: number;
+  rank: number | null;
+  hasSubmissions: boolean;
+}
+export type BulkOutcome = "ADDED" | "ALREADY_REGISTERED" | "NOT_FOUND" | "BLOCKED";
+export interface BulkParticipantsResult {
+  lines: { input: string; outcome: BulkOutcome; username: string | null }[];
+  added: number;
+}

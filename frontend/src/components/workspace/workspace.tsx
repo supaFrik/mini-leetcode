@@ -102,8 +102,9 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
   const canAct = !locked && autosave.ready && !judge.judging;
 
   const isOopGrinding = problem.type === "OOP_GRINDING";
-  // Console live (terminal chạy main) mở cho mọi bài, trừ khi đang thi hoặc phiên đã bị khoá.
-  const consoleEnabled = !examMode && !locked;
+  // Console live (terminal chạy main) chỉ cho bài OOP, ngoài kỳ thi và khi phiên chưa bị khoá.
+  // Bài DSA: không có tab Console, Run chạy thử với testcase.
+  const consoleEnabled = isOopGrinding && !examMode && !locked;
   const defaultFiles = useMemo<SubmissionFile[]>(() => {
     if (problem.starterTemplates) {
       try {
@@ -225,10 +226,15 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
     }
   };
   const onRun = () => {
-    // Run = chạy main trong terminal live (Java). Ngôn ngữ console chưa hỗ trợ ⇒ chạy thử với testcase như cũ.
-    if (canAct && consoleEnabled && (isOopGrinding || lang === "JAVA")) {
+    // OOP: Run = chạy main trong terminal live + chấm thử. DSA: chạy thử với testcase (Test Result).
+    if (canAct && consoleEnabled) {
       setTab("console");
       setRunSignal((n) => n + 1);
+      // Đồng thời chấm thử (quick run: rule cấu trúc + testcase công khai) ⇒ verdict ở tab Test Result.
+      if (RUN_ENABLED) {
+        setLastRun(true);
+        void judge.submit("JAVA", multiFiles, { run: true });
+      }
       return;
     }
     if (canAct && RUN_ENABLED && !examMode) {
@@ -515,8 +521,8 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
         <TabsContent value="console" forceMount className="mt-0 h-full data-[state=inactive]:hidden">
           <ConsolePanel
             problemId={problem.id}
-            language={isOopGrinding ? "JAVA" : lang}
-            files={isOopGrinding ? multiFiles : [{ path: FILE_NAME[lang], content: codes[lang] }]}
+            language="JAVA"
+            files={multiFiles}
             runSignal={runSignal}
           />
         </TabsContent>

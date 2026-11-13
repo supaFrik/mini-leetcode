@@ -392,7 +392,10 @@ class ProctoringIntegrationTest {
     @Test
     @DisplayName("Proctoring: Từ chối sự kiện (403 Forbidden) khi contest chưa bắt đầu (SCHEDULED)")
     void recordEvent_ContestScheduled_Forbidden() throws Exception {
+        // Trạng thái tính theo giờ: kỳ "chưa bắt đầu" phải có giờ bắt đầu ở tương lai.
         contest.setStatus(ContestStatus.SCHEDULED);
+        contest.setStartTime(LocalDateTime.now(java.time.ZoneOffset.UTC).plusHours(1));
+        contest.setEndTime(LocalDateTime.now(java.time.ZoneOffset.UTC).plusHours(3));
         contestRepository.save(contest);
 
         ProctoringEventRequest request = new ProctoringEventRequest(ProctoringEventType.WINDOW_BLUR, System.currentTimeMillis());

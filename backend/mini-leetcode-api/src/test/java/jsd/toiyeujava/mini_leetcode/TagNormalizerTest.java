@@ -64,4 +64,14 @@ class TagNormalizerTest {
 
         assertThat(TagNormalizer.normalize(List.of(atLimit))).containsExactly(atLimit);
     }
+
+    @Test
+    @DisplayName("Kết quả luôn sửa được (gán vào @ElementCollection) — kể cả khi rỗng/null")
+    void resultIsAlwaysMutable() {
+        for (List<String> input : Arrays.asList(null, List.<String>of(), List.of("Array"))) {
+            List<String> out = TagNormalizer.normalize(input);
+            out.add("X");
+            out.clear();
+        }
+    }
 }

@@ -57,6 +57,7 @@ Implement the \`double calculateArea()\` method in each subclass.`,
   timeLimitMs: 2000,
   memoryLimitMb: 256,
   status: "PUBLISHED",
+  type: "OOP_GRINDING", // tab Console chỉ có ở bài OOP
   likes: 420,
   dislikes: 12,
 };
@@ -166,7 +167,7 @@ test.describe("OOP Grinding Multi-File Workspace & Hybrid Ingestion E2E Suite", 
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
       const editor = page.locator(".monaco-editor").or(page.locator('textarea[aria-label="Source code"]'));
-      await expect(editor.first()).toBeVisible();
+      await expect(editor.first()).toBeVisible({ timeout: 20_000 }); // Monaco tải từ CDN
     });
 
     test("1.1.3: displays file tab indicating active source file", async ({ page }) => {
@@ -264,7 +265,7 @@ public class Circle extends Shape { public double area(){ return 3.14; } }`;
       await page.goto("/problems/shape-hierarchy", { waitUntil: "domcontentloaded" });
 
       const editor = page.locator(".monaco-editor").or(page.locator('textarea[aria-label="Source code"]'));
-      await expect(editor.first()).toBeVisible();
+      await expect(editor.first()).toBeVisible({ timeout: 20_000 }); // Monaco tải từ CDN
     });
   });
 

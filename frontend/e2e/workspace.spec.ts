@@ -56,29 +56,24 @@ test.describe("Problem Solving Workspace E2E Suite", () => {
     }
   });
 
-  // Từ khi có console live (specs/live-terminal-console.spec.md), Run với Java chạy main trong tab Console
-  // qua WebSocket; ngôn ngữ console chưa hỗ trợ (Python) vẫn chạy thử testcase công khai qua HTTP /run.
-  test("Java Run starts the program in the Console tab over WebSocket", async ({ page }) => {
-    const frames: Array<Record<string, unknown>> = [];
-    await page.routeWebSocket(/\/api\/v1\/console\/ws/, (ws) => {
-      ws.onMessage((raw) => {
-        const frame = JSON.parse(String(raw));
-        frames.push(frame);
-        if (frame.type === "start") {
-          ws.send(JSON.stringify({ type: "stdout", data: "hello from main\n" }));
-          ws.send(JSON.stringify({ type: "exit", code: 0, elapsedMs: 900, reason: null }));
-          ws.close();
-        }
-      });
-    });
+  // Console live chỉ có ở bài OOP (console.spec.ts). Bài DSA: Run với mọi ngôn ngữ chạy thử testcase
+  // công khai qua HTTP /run và hiện kết quả ở tab Test Result, không mở WebSocket.
+  test("Java Run on a DSA problem executes public testcases over HTTP", async ({ page }) => {
+    let socketOpened = false;
+    await page.routeWebSocket(/\/api\/v1\/console\/ws/, () => { socketOpened = true; });
     await page.goto("/problems/two-sum", { waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: "Run", exact: true }).click();
+    await expect(page.getByRole("tab", { name: "Console" })).toHaveCount(0);
 
-    await expect(page.getByRole("tab", { name: "Console" })).toHaveAttribute("data-state", "active");
-    const log = page.getByRole("log", { name: "Console output" });
-    await expect(log).toContainText("hello from main");
-    await expect(log).toContainText("Process finished with exit code 0");
-    expect(frames.find((f) => f.type === "start")).toMatchObject({ language: "JAVA" });
+    const runBtn = page.getByRole("button", { name: "Run", exact: true });
+    await expect(runBtn).toBeEnabled();
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes("/run")),
+      runBtn.click(),
+    ]);
+
+    await expect(page.getByRole("tab", { name: /Test Result/ })).toHaveAttribute("data-state", "active");
+    await expect(page.getByText("Accepted", { exact: true })).toBeVisible();
+    expect(socketOpened).toBe(false);
   });
 
   test("Python Run executes public testcases over HTTP and shows the result", async ({ page }) => {

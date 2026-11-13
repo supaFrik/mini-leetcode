@@ -1,0 +1,42 @@
+{
+  "rules": [
+    {
+      "ruleName": "SHAPE_IS_ABSTRACT_BASE",
+      "targetClassName": "Shape",
+      "expectedType": "ABSTRACT_CLASS",
+      "weight": 2.0,
+      "fields": [{"name": "*", "matchAllFields": true, "forbiddenModifiers": ["public"]}],
+      "methods": [
+        {"name": "getArea", "returnType": "double", "requiredModifiers": ["abstract"]},
+        {"name": "getPerimeter", "returnType": "double", "requiredModifiers": ["abstract"]},
+        {"name": "getName", "returnType": "String", "requiredModifiers": ["public"]}
+      ],
+      "constructors": [{"parameterTypes": ["String"]}],
+      "customFailureMessage": "Shape phải là lớp abstract, khai báo getArea()/getPerimeter() abstract, không có field public"
+    },
+    {
+      "ruleName": "CIRCLE_EXTENDS_SHAPE",
+      "targetClassName": "Circle",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Shape",
+      "enforceEncapsulation": true,
+      "methods": [
+        {"name": "getArea", "returnType": "double", "forbiddenModifiers": ["abstract"]},
+        {"name": "getPerimeter", "returnType": "double", "forbiddenModifiers": ["abstract"]}
+      ],
+      "constructors": [{"parameterTypes": ["String", "double"]}]
+    },
+    {
+      "ruleName": "RECTANGLE_EXTENDS_SHAPE",
+      "targetClassName": "Rectangle",
+      "expectedType": "CLASS",
+      "expectedSuperclass": "Shape",
+      "enforceEncapsulation": true,
+      "methods": [
+        {"name": "getArea", "returnType": "double", "forbiddenModifiers": ["abstract"]},
+        {"name": "getPerimeter", "returnType": "double", "forbiddenModifiers": ["abstract"]}
+      ],
+      "constructors": [{"parameterTypes": ["String", "double", "double"]}]
+    }
+  ]
+}

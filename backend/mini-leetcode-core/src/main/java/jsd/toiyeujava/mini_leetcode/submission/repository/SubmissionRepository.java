@@ -51,6 +51,16 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     /** Số bài nộp của một bài — dùng để chặn xoá cứng khi bài đã có lịch sử. */
     long countByProblemId(Long problemId);
 
+    /** Mọi bài nộp (kể cả "run") trong kỳ thi — chặn xoá kỳ thi đã có người nộp. */
+    long countByContestId(Long contestId);
+
+    /** Bài nộp của một thí sinh trong kỳ thi — chặn gỡ thí sinh đã làm bài. */
+    long countByContestIdAndUserId(Long contestId, Long userId);
+
+    /** Id các thí sinh đã có ít nhất một bài nộp (kể cả "run") trong kỳ thi. */
+    @Query("select distinct s.user.id from Submission s where s.contestId = :contestId")
+    List<Long> findUserIdsByContestId(@Param("contestId") Long contestId);
+
     /** Các bài nộp (không phải "run") trong một kỳ thi, dùng để tính bảng xếp hạng. */
     @Query("select s from Submission s where s.contestId = :contestId and s.quickRun = false")
     List<Submission> findByContestId(@Param("contestId") Long contestId);

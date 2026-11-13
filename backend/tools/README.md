@@ -22,6 +22,10 @@ Mỗi generator nhận thêm danh sách slug để chỉ sinh vài bài, ví d�
 
 ## Chấm bài OOP (`problem_type = OOP_GRINDING`)
 
+> **Soạn bài trên giao diện (khuyên dùng):** `/admin/problems` → mở bài → các tab **Test cases** (thêm/sửa/xoá testcase, *Fill from reference*, *Check against reference* rồi *Use reference output*), **Grading** (sửa `grading_config` dạng JSON, judge kiểm tra đúng schema và báo lỗi theo đường dẫn) và **Reference & console** (lời giải mẫu + console live để thử). Các script bên dưới vẫn dùng được để seed hàng loạt.
+>
+> API: `GET /api/v1/admin/problems/{id}/authoring`, `PUT …/grading-config`, `POST …/grading-config/validate`, `PUT …/reference-solution`, `POST …/reference-run` (`{"apply": true}` ghi output mới cho các testcase bị khác). Chỉ INSTRUCTOR/ADMIN. Lời giải mẫu chạy trong Docker sandbox của judge qua `JUDGE_HTTP_URL` (mặc định `http://mini-leetcode-judge:8081`), không chạy ở API. Bài **PUBLISHED** bị khoá rule chấm và testcase.
+
 Judge **không** đọc bất kỳ cấu hình chấm nào trong bài nộp: `harness-config.json`, `rules.json`, `socket-scenarios.json`, lớp `*Test.java` của học viên đều bị bỏ qua. Mỗi bài OOP cần cấu hình phía server:
 
 | Thành phần | Lưu ở đâu | Chấm thế nào | Trọng số |
@@ -33,6 +37,14 @@ Judge **không** đọc bất kỳ cấu hình chấm nào trong bài nộp: `ha
 Bài chỉ có một loại thì loại đó chiếm 100%. Bài **không có** rule, socket lẫn testcase ⇒ bài nộp bị đánh lỗi "no grading configuration", không bao giờ AC.
 
 Rule là danh sách `OopConstraintRule` (xem `mini-leetcode-judge/.../oop_grinding/model`): `targetClassName`, `expectedType` (`CLASS`, `ABSTRACT_CLASS`, `INTERFACE`, `ENUM`, `RECORD`), `expectedSuperclass`, `expectedInterfaces`, `requiredModifiers` / `forbiddenModifiers` (chữ thường), `enforceEncapsulation`, `fields`, `methods` (`name`, `returnType`, `parameterTypes`), `constructors`, `weight`. Ví dụ đầy đủ: `problems/grading/mini-bank-console.json`.
+
+Nạp `grading_config` của **mọi** bài có file `problems/grading/<slug>.json` (hiện có `shape-hierarchy`, `socket-echo-server`, `mini-bank-console`):
+
+```powershell
+python backend\tools\problems\seed_grading.py | docker exec -i mini_leetcode_mysql mysql --default-character-set=utf8mb4 -u leetcode -pleetcode_password mini_leetcode
+```
+
+Run (chấm thử) chỉ dùng testcase **công khai**; Submit dùng tất cả testcase.
 
 ### Cách so stdout và thông báo lỗi (`grading_config.output`, nhãn testcase)
 

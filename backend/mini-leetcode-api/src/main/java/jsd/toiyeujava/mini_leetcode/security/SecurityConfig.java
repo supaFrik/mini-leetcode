@@ -71,6 +71,10 @@ public class SecurityConfig {
                         // Console live: handshake WebSocket công khai, JWT được kiểm tra ở frame "start" đầu tiên
                         // (trình duyệt không gửi được header Authorization khi mở WebSocket).
                         .requestMatchers("/api/v1/console/ws").permitAll()
+                        // Soạn bài (grading_config, lời giải mẫu): KHÔNG công khai như GET /api/v1/problems/**
+                        // Xoá kỳ thi: chỉ ADMIN (gỡ thí sinh /contests/{id}/participants/{uid} thì giảng viên vẫn làm được).
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/contests/*").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                         // Problems public reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/problems/**").permitAll()
                         // Testcase management (more specific paths must come before general problem routes)
