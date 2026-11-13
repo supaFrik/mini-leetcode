@@ -31,6 +31,10 @@ public class TopicStepProgress {
     @Column(nullable = false)
     private int attempts;
 
+    /** Số lần sai liên tiếp; về 0 khi đúng hoặc khi vừa khoá chủ đề. */
+    @Column(name = "wrong_streak", nullable = false)
+    private int wrongStreak;
+
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 

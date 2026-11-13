@@ -162,15 +162,18 @@ class StudyPlanIntegrationTest {
     // ---------------------------------------------------------------- visibility
 
     @Test
-    @DisplayName("AC-010: project stages are hidden from /problems for students, single problems stay")
+    @DisplayName("AC-010: every problem of a course (project stage or practice item) is hidden from /problems")
     void projectProblemsHiddenFromCatalog() throws Exception {
-        mockMvc.perform(get("/api/v1/problems?size=100").header("Authorization", studentJwt))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[*].slug", not(hasItem("sp-bank-1"))))
-                .andExpect(jsonPath("$.content[*].slug", not(hasItem("sp-bank-2"))))
+        for (String auth : List.of(studentJwt, instructorJwt)) {
+            mockMvc.perform(get("/api/v1/problems?size=100").header("Authorization", auth))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content[*].slug", not(hasItem("sp-bank-1"))))
+                    .andExpect(jsonPath("$.content[*].slug", not(hasItem("sp-bank-2"))))
+                    .andExpect(jsonPath("$.content[*].slug", not(hasItem("sp-two-sum"))));
+        }
+        mockMvc.perform(get("/api/v1/problems?size=100&scope=COURSE").header("Authorization", instructorJwt))
+                .andExpect(jsonPath("$.content[*].slug", hasItem("sp-bank-2")))
                 .andExpect(jsonPath("$.content[*].slug", hasItem("sp-two-sum")));
-        mockMvc.perform(get("/api/v1/problems?size=100").header("Authorization", instructorJwt))
-                .andExpect(jsonPath("$.content[*].slug", hasItem("sp-bank-2")));
         // Vẫn mở trực tiếp được (plan / plugin cần đề bài).
         mockMvc.perform(get("/api/v1/problems/sp-bank-2").header("Authorization", studentJwt))
                 .andExpect(status().isOk());

@@ -50,6 +50,11 @@ public class GlobalExceptionHandler {
         return coded(HttpStatus.CONFLICT, "Stage Locked", "conflict", ex.getMessage(), StageLockedException.CODE);
     }
 
+    @ExceptionHandler(TopicLockedException.class)
+    public ProblemDetail handleTopicLocked(TopicLockedException ex) {
+        return coded(HttpStatus.CONFLICT, "Topic Locked", "conflict", ex.getMessage(), TopicLockedException.CODE);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail handleAccessDeniedException(AccessDeniedException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied: insufficient permissions");

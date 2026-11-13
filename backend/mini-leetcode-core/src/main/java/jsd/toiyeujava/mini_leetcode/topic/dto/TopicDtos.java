@@ -31,15 +31,21 @@ public final class TopicDtos {
     public record LearnerStep(Long id, int position, TopicStepType type, String title, JsonNode content,
                               boolean passed, int attempts) {}
 
+    /**
+     * {@code lockedUntil}: luyện tập bị khoá tới thời điểm này (sai 3 lần liên tiếp); {@code mustReread}: phải đọc lại
+     * hết lý thuyết trước khi luyện tập tiếp. Cả hai mở thì mới được gửi bài luyện tập.
+     */
     public record LearnerTopic(Long id, String slug, String title, String summary, int estMinutes,
                                StudyPlanStatus status, TopicProgressStatus progress, int stepCount, int doneSteps,
-                               List<LearnerStep> steps) {}
+                               List<LearnerStep> steps, LocalDateTime lockedUntil, boolean mustReread) {}
 
     /** THEORY gửi {@code {}} để đánh dấu đã đọc. CODE không nhận bài gửi (xong khi đề được AC). */
     public record AttemptRequest(@NotNull JsonNode answer) {}
 
+    /** {@code wrongStreak}: số lần sai liên tiếp ở câu này (khoá ở lần thứ {@code LOCK_AFTER}). */
     public record AttemptResult(boolean correct, String message, String explanation, boolean stepPassed,
-                                int attempts, TopicProgressStatus progress, int doneSteps, int stepCount) {}
+                                int attempts, TopicProgressStatus progress, int doneSteps, int stepCount,
+                                int wrongStreak, LocalDateTime lockedUntil, boolean mustReread) {}
 
     // ── Soạn (INSTRUCTOR / ADMIN) ───────────────────────────────────────────
 

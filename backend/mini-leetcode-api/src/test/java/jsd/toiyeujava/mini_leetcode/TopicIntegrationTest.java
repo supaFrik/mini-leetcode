@@ -30,6 +30,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -50,6 +51,7 @@ class TopicIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private ProblemRepository problemRepository;
     @Autowired private SubmissionRepository submissionRepository;
+    @Autowired private jsd.toiyeujava.mini_leetcode.topic.repository.TopicLockRepository lockRepository;
 
     @MockBean private SubmissionProducer submissionProducer;
     @MockBean private StorageService storageService;
@@ -199,6 +201,75 @@ class TopicIntegrationTest {
         mockMvc.perform(get("/api/v1/topics/tp-edit").header("Authorization", studentJwt))
                 .andExpect(jsonPath("$.steps[1].passed").value(true))
                 .andExpect(jsonPath("$.doneSteps").value(1));
+    }
+
+    @Test
+    @DisplayName("The problem list shows standalone problems only; course problems are staff-only via scope")
+    void problemListExcludesCourseProblems() throws Exception {
+        Problem standalone = problem("tp-standalone");
+        createTopic("tp-scope").andExpect(status().isCreated()); // bài code của chủ đề: tp-wallet
+        mockMvc.perform(post("/api/v1/study-plans").header("Authorization", instructorJwt)
+                .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(Map.of(
+                        "slug", "tp-scope-plan", "title", "Plan", "items", List.of(Map.of("kind", "PROBLEM", "title", "Practice",
+                                "problemIds", List.of(stage1.getId())))))))
+                .andExpect(status().isCreated());
+
+        for (String auth : List.of(studentJwt, instructorJwt)) {
+            mockMvc.perform(get("/api/v1/problems?size=100").header("Authorization", auth))
+                    .andExpect(jsonPath("$.content[*].slug", hasItem(standalone.getSlug())))
+                    .andExpect(jsonPath("$.content[*].slug", not(hasItem("tp-wallet"))))
+                    .andExpect(jsonPath("$.content[*].slug", not(hasItem("tp-bank-1"))));
+        }
+        mockMvc.perform(get("/api/v1/problems?size=100&scope=COURSE").header("Authorization", instructorJwt))
+                .andExpect(jsonPath("$.content[*].slug", hasItem("tp-wallet")))
+                .andExpect(jsonPath("$.content[*].slug", hasItem("tp-bank-1")))
+                .andExpect(jsonPath("$.content[*].slug", not(hasItem(standalone.getSlug()))));
+        // Học viên không mở được phạm vi khoá học
+        mockMvc.perform(get("/api/v1/problems?size=100&scope=ALL").header("Authorization", studentJwt))
+                .andExpect(jsonPath("$.content[*].slug", not(hasItem("tp-wallet"))));
+    }
+
+    @Test
+    @DisplayName("Three wrong answers in a row lock practice for 5 minutes and require reading the theory again")
+    void lockoutAfterThreeWrongAnswers() throws Exception {
+        createTopic("tp-lock").andExpect(status().isCreated());
+        transitionTopic("tp-lock", "PUBLISHED").andExpect(status().isOk());
+        JsonNode topic = json(mockMvc.perform(get("/api/v1/topics/tp-lock").header("Authorization", studentJwt)));
+        long theory = topic.at("/steps/0/id").asLong();
+        long choice = topic.at("/steps/1/id").asLong();
+        attempt("tp-lock", theory, Map.of());
+
+        attempt("tp-lock", choice, Map.of("selected", List.of("c"))).andExpect(jsonPath("$.wrongStreak").value(1));
+        // Đúng một lần thì chuỗi sai về 0
+        attempt("tp-lock", choice, Map.of("selected", List.of("a", "b"))).andExpect(jsonPath("$.wrongStreak").value(0));
+        attempt("tp-lock", choice, Map.of("selected", List.of("c")));
+        attempt("tp-lock", choice, Map.of("selected", List.of("a")));
+        attempt("tp-lock", choice, Map.of("selected", List.of("b")))
+                .andExpect(jsonPath("$.correct").value(false))
+                .andExpect(jsonPath("$.lockedUntil").isNotEmpty())
+                .andExpect(jsonPath("$.mustReread").value(true))
+                .andExpect(jsonPath("$.message").value(containsString("locked for 5 minutes")));
+
+        // Đang khoá: luyện tập bị từ chối, lý thuyết thành chưa đọc
+        mockMvc.perform(post("/api/v1/topics/tp-lock/steps/" + choice + "/attempts").header("Authorization", studentJwt)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"answer\":{\"selected\":[\"a\",\"b\"]}}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("TOPIC_LOCKED"));
+        mockMvc.perform(get("/api/v1/topics/tp-lock").header("Authorization", studentJwt))
+                .andExpect(jsonPath("$.steps[0].passed").value(false))
+                .andExpect(jsonPath("$.lockedUntil").isNotEmpty())
+                .andExpect(jsonPath("$.mustReread").value(true));
+
+        // Hết 5 phút nhưng chưa đọc lại lý thuyết: vẫn bị chặn
+        lockRepository.findAll().forEach(l -> { l.setLockedUntil(java.time.LocalDateTime.now().minusSeconds(1)); lockRepository.save(l); });
+        mockMvc.perform(post("/api/v1/topics/tp-lock/steps/" + choice + "/attempts").header("Authorization", studentJwt)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"answer\":{\"selected\":[\"a\",\"b\"]}}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.detail").value(containsString("Read the theory again")));
+
+        // Đọc lại lý thuyết ⇒ luyện tập mở lại
+        attempt("tp-lock", theory, Map.of()).andExpect(jsonPath("$.mustReread").value(false));
+        mockMvc.perform(get("/api/v1/topics/tp-lock").header("Authorization", studentJwt))
+                .andExpect(jsonPath("$.lockedUntil").doesNotExist()).andExpect(jsonPath("$.mustReread").value(false));
+        attempt("tp-lock", choice, Map.of("selected", List.of("a", "b"))).andExpect(jsonPath("$.correct").value(true));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package jsd.toiyeujava.mini_leetcode.problem.service;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
+import jsd.toiyeujava.mini_leetcode.entity.ProblemScope;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
 
 import jakarta.persistence.criteria.Join;
@@ -297,6 +298,31 @@ public class ProblemService {
     public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
                                              List<String> tags, UserProgress progress, Long userId,
                                              Pageable pageable, boolean staff, ProblemType problemType) {
+        return getProblems(difficulty, status, search, tags, progress, userId, pageable, staff, problemType,
+                ProblemScope.STANDALONE);
+    }
+
+    /** Đề thuộc khoá học: trong mục của plan chưa ARCHIVED, hoặc là bài code của chủ đề chưa ARCHIVED. */
+    private static Predicate inCourse(jakarta.persistence.criteria.Root<Problem> root,
+                                      jakarta.persistence.criteria.CriteriaQuery<?> query,
+                                      jakarta.persistence.criteria.CriteriaBuilder cb) {
+        var planProblems = query.subquery(Long.class);
+        var item = planProblems.from(jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem.class);
+        planProblems.select(item.<jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem, Long>join("problemIds"))
+                .where(cb.notEqual(item.get("plan").get("status"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus.ARCHIVED));
+        var topicProblems = query.subquery(Long.class);
+        var step = topicProblems.from(jsd.toiyeujava.mini_leetcode.topic.entity.TopicStep.class);
+        topicProblems.select(step.get("problemId"))
+                .where(cb.isNotNull(step.get("problemId")),
+                        cb.notEqual(step.get("topic").get("status"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus.ARCHIVED));
+        return cb.or(root.get("id").in(planProblems), root.get("id").in(topicProblems));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
+                                             List<String> tags, UserProgress progress, Long userId,
+                                             Pageable pageable, boolean staff, ProblemType problemType,
+                                             ProblemScope scope) {
         Set<Long> solvedIds = Set.of();
         Set<Long> attemptedIds = Set.of();
         if (userId != null && submissionRepository != null) {
@@ -311,13 +337,13 @@ public class ProblemService {
 
             if (!staff) {
                 predicates.add(cb.equal(root.get("status"), ProblemStatus.PUBLISHED));
-                // Đề thuộc một project trong lộ trình chỉ vào qua plan (specs/study-plan.spec.md, Q15).
-                var projectProblems = query.subquery(Long.class);
-                var item = projectProblems.from(jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem.class);
-                projectProblems.select(item.<jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem, Long>join("problemIds"))
-                        .where(cb.equal(item.get("kind"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanItemKind.PROJECT),
-                                cb.equal(item.get("plan").get("status"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus.PUBLISHED));
-                predicates.add(cb.not(root.get("id").in(projectProblems)));
+            }
+            // Trang Problems chỉ có đề lẻ; đề của khoá học vào qua plan / chủ đề. Học viên không bao giờ thấy ALL / COURSE.
+            ProblemScope effective = staff && scope != null ? scope : ProblemScope.STANDALONE;
+            if (effective == ProblemScope.STANDALONE) {
+                predicates.add(cb.not(inCourse(root, query, cb)));
+            } else if (effective == ProblemScope.COURSE) {
+                predicates.add(inCourse(root, query, cb));
             }
             if (difficulty != null) {
                 predicates.add(cb.equal(root.get("difficulty"), difficulty));
