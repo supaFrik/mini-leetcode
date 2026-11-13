@@ -1,5 +1,6 @@
 "use client";
 import { ThemeProvider } from "next-themes";
+import { ConfirmProvider } from "@/components/ui/confirm";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // Light-only by design decision: the ink-and-mesh system is a near-white
@@ -7,7 +8,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   // and the toggle is absent rather than hidden.
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
-      {children}
+      <ConfirmProvider>{children}</ConfirmProvider>
     </ThemeProvider>
   );
 }

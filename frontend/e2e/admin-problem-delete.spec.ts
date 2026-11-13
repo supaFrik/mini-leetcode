@@ -31,7 +31,7 @@ async function openAdmin(page: Page, role: "ADMIN" | "INSTRUCTOR", deleteStatus?
   const deletes = deleteStatus === undefined ? [] : await trackDeletes(page, deleteStatus);
   await setMockAuthSession(page, { username: role === "ADMIN" ? "admin" : "teacher1", role });
   await page.goto("/admin/problems", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("button", { name: /^ZZ Delete Me/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^ZZ Delete Me/ })).toBeVisible();
   return deletes;
 }
 
@@ -48,7 +48,7 @@ test.describe("Admin: delete problem", () => {
     await page.getByRole("button", { name: "Delete ZZ Delete Me" }).click();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("alertdialog")).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^ZZ Delete Me/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^ZZ Delete Me/ })).toBeVisible();
     expect(deletes).toEqual([]);
   });
 
@@ -71,6 +71,6 @@ test.describe("Admin: delete problem", () => {
   test("Instructors do not see the delete button", async ({ page }) => {
     await openAdmin(page, "INSTRUCTOR");
     await expect(page.getByRole("button", { name: "Delete ZZ Delete Me" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "View ZZ Delete Me" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "View ZZ Delete Me" })).toBeVisible();
   });
 });

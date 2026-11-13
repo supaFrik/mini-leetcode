@@ -54,11 +54,29 @@ const TOPICS: AuthoringTopic[] = [
     ],
   },
 ];
+/** Id các đề là bài code của một chủ đề chưa ARCHIVED (thuộc khoá học, không hiện ở Problems). */
+export const topicProblemIds = (): number[] =>
+  TOPICS.filter((t) => t.status !== "ARCHIVED").flatMap((t) => t.steps.filter((s) => s.type === "CODE" && s.problemId).map((s) => s.problemId!));
 /** Chủ đề gắn vào stage của project Mini Bank trong plan mock: stage 1 → [1], stage 2 → [2]. */
 export const MOCK_STAGE_TOPICS: Record<number, number[]> = { 1: [1], 2: [2] };
 
 const progress = new Map<number, { passed: boolean; attempts: number }>();
 const skipped = new Set<number>();
+/** Khoá luyện tập sau 3 lần sai liên tiếp (giống TopicService): khoá 5 phút + phải đọc lại lý thuyết. */
+const streak = new Map<number, number>();
+const locks = new Map<number, { until: number; mustReread: boolean }>();
+const LOCK_AFTER = 3;
+const LOCK_MS = 5 * 60_000;
+const conflict = (detail: string) => new ApiError(409, { title: "Topic Locked", status: 409, detail });
+const lockOf = (t: AuthoringTopic) => {
+  const l = locks.get(t.id);
+  if (!l || (!l.mustReread && l.until <= Date.now())) return null;
+  return l;
+};
+const lockFields = (t: AuthoringTopic) => {
+  const l = lockOf(t);
+  return { lockedUntil: l && l.until > Date.now() ? new Date(l.until).toISOString() : null, mustReread: !!l?.mustReread };
+};
 
 const findTopic = (slug: string) => {
   const t = TOPICS.find((x) => x.slug === slug);
@@ -107,7 +125,7 @@ export async function getTopic(slug: string): Promise<LearnerTopic> {
     passed: passed(s), attempts: progress.get(s.id ?? -1)?.attempts ?? 0,
   }));
   return { id: t.id, slug: t.slug, title: t.title, summary: t.summary, estMinutes: t.estMinutes, status: t.status,
-    progress: statusOf(t), stepCount: steps.length, doneSteps: doneOf(t), steps };
+    progress: statusOf(t), stepCount: steps.length, doneSteps: doneOf(t), steps, ...lockFields(t) };
 }
 
 function grade(s: AuthoringStep, a: StepAnswer): { correct: boolean; message: string } {
@@ -153,14 +171,32 @@ export async function attemptTopicStep(slug: string, stepId: number, answer: Ste
   const t = findTopic(slug);
   const s = t.steps.find((x) => x.id === stepId);
   if (!s) throw notFound(`Step not found: ${stepId}`);
+  const lock = lockOf(t);
+  if (s.type !== "THEORY" && lock) {
+    if (lock.until > Date.now()) throw conflict(`Too many wrong answers. Practice reopens at ${new Date(lock.until).toLocaleTimeString()}; review the theory meanwhile.`);
+    throw conflict("Read the theory again before you continue practicing.");
+  }
   const g = grade(s, answer);
+  let message = g.message;
+  if (s.type !== "THEORY" && s.type !== "CODE") {
+    const n = g.correct ? 0 : (streak.get(stepId) ?? 0) + 1;
+    streak.set(stepId, n >= LOCK_AFTER ? 0 : n);
+    if (n >= LOCK_AFTER) {
+      locks.set(t.id, { until: Date.now() + LOCK_MS, mustReread: true });
+      t.steps.filter((x) => x.type === "THEORY").forEach((x) => { const q = progress.get(x.id ?? -1); if (q) q.passed = false; });
+      message = "Wrong 3 times in a row. Practice is locked for 5 minutes; read the theory again.";
+    }
+  }
   const p = progress.get(stepId) ?? { passed: false, attempts: 0 };
   p.attempts += 1;
   p.passed = p.passed || g.correct;
   progress.set(stepId, p);
+  if (s.type === "THEORY" && lock?.mustReread && t.steps.filter((x) => x.type === "THEORY").every((x) => progress.get(x.id ?? -1)?.passed)) {
+    lock.mustReread = false;
+  }
   const explanation = g.correct ? ((s.answer as Record<string, unknown> | undefined)?.explanation as string | undefined) ?? null : null;
-  return { correct: g.correct, message: g.message, explanation, stepPassed: p.passed, attempts: p.attempts,
-    progress: statusOf(t), doneSteps: doneOf(t), stepCount: t.steps.length };
+  return { correct: g.correct, message, explanation, stepPassed: p.passed, attempts: p.attempts,
+    progress: statusOf(t), doneSteps: doneOf(t), stepCount: t.steps.length, wrongStreak: streak.get(stepId) ?? 0, ...lockFields(t) };
 }
 
 export async function setTopicSkipped(slug: string, value: boolean): Promise<void> {

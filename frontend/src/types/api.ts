@@ -6,6 +6,8 @@ export interface ApiResponse<T> {
   data: T;
   timestamp?: string;
 }
+/** Phạm vi danh sách đề (chỉ staff gửi được; học viên luôn nhận STANDALONE). */
+export type ProblemScope = "STANDALONE" | "COURSE" | "ALL";
 export interface ProblemDetail {
   type?: string;
   title: string;
@@ -254,10 +256,15 @@ export interface LearnerStep {
 export interface LearnerTopic {
   id: number; slug: string; title: string; summary?: string | null; estMinutes: number; status: StudyPlanStatus;
   progress: TopicProgress; stepCount: number; doneSteps: number; steps: LearnerStep[];
+  /** Đang bị khoá luyện tập tới thời điểm này (null = không khoá). */
+  lockedUntil?: string | null;
+  /** Phải đọc lại lý thuyết trước khi luyện tiếp. */
+  mustReread?: boolean;
 }
 export interface AttemptResult {
   correct: boolean; message: string; explanation?: string | null; stepPassed: boolean; attempts: number;
   progress: TopicProgress; doneSteps: number; stepCount: number;
+  wrongStreak?: number; lockedUntil?: string | null; mustReread?: boolean;
 }
 /** Bài gửi của từng loại step. */
 export type StepAnswer =

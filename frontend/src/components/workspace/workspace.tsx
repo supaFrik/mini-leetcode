@@ -37,6 +37,7 @@ import { formatCode } from "@/lib/format-code";
 import { toast } from "@/lib/toast";
 import { VERDICT } from "@/lib/verdict";
 import type { ContestInfo, Language, ProblemFull, ProctoringEventType, Role, SubmissionFile, TestCase } from "@/types/api";
+import { useConfirm } from "@/components/ui/confirm";
 
 export type WorkspaceMode = "student" | "instructor" | "exam";
 interface Props { problem: ProblemFull; testCases: TestCase[]; mode: WorkspaceMode; contest?: ContestInfo; role?: Role }
@@ -150,13 +151,14 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
     setActiveFileIdx(multiFiles.length);
   };
 
-  const handleDeleteFile = (idx: number, e: React.MouseEvent) => {
+  const ask = useConfirm();
+  const handleDeleteFile = async (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (multiFiles.length <= 1) {
       toast("Cannot delete the only file in the workspace.", "error");
       return;
     }
-    if (!window.confirm(`Delete ${multiFiles[idx].path}?`)) return;
+    if (!(await ask({ title: `Delete ${multiFiles[idx].path}?`, action: "Delete", destructive: true }))) return;
     setMultiFiles((prev) => prev.filter((_, i) => i !== idx));
     if (activeFileIdx >= idx && activeFileIdx > 0) {
       setActiveFileIdx(activeFileIdx - 1);
@@ -346,8 +348,8 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
           }} className="text-mute transition-colors hover:text-ink disabled:opacity-40">
             <AlignLeft className="h-3.5 w-3.5" />
           </button>
-          <button aria-label="Reset template" title="Reset template" disabled={locked} onClick={() => {
-            if (window.confirm("Reset code to default template? Current changes will be lost.")) {
+          <button aria-label="Reset template" title="Reset template" disabled={locked} onClick={async () => {
+            if (await ask({ title: "Reset to the starter code?", description: "Your current changes will be lost.", action: "Reset", destructive: true })) {
               if (isOopGrinding) {
                 setMultiFiles(defaultFiles);
                 setActiveFileIdx(0);

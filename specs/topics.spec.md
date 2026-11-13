@@ -35,7 +35,9 @@ Thứ tự hiển thị của `right` (MATCHING) và `items` (ORDERING) do ngư�
 
 - Chấm ở server, so khớp chính xác tập / ánh xạ / thứ tự. FILL_BLANK: bỏ khoảng trắng đầu cuối, gộp khoảng trắng; không phân biệt hoa thường trừ khi `caseSensitive`.
 - Sai: trả `correct=false` và gợi ý mức độ (`2/4 cặp đúng`, `ô 2 chưa đúng`) — không lộ đáp án. Đúng: trả `explanation`.
-- Được làm lại không giới hạn; `attempts` đếm số lần gửi.
+- Được làm lại; `attempts` đếm số lần gửi.
+- **Khoá sau 3 lần sai liên tiếp** (cùng một step luyện tập, đúng một lần thì đếm lại): khoá luyện tập của cả chủ đề 5 phút và đánh dấu mọi step THEORY là chưa đọc (bảng `topic_locks`, Flyway V13). Luyện tập mở lại khi **đã hết 5 phút và đã đọc lại hết lý thuyết** (đọc trong lúc chờ vẫn tính). Trong lúc khoá, gửi bài luyện tập trả `409 TOPIC_LOCKED`. `GET /topics/{slug}` và kết quả attempt trả `lockedUntil`, `mustReread`; attempt trả thêm `wrongStreak`.
+- Giao diện: sai lần 2 báo "One more wrong answer locks practice for 5 minutes."; khi khoá hiện thẻ "Practice locked" có đồng hồ đếm ngược và nút "Read the theory". Nút "Go to practice" không tự đánh dấu đã đọc khi đang phải đọc lại.
 
 ## Trạng thái chủ đề với người học
 

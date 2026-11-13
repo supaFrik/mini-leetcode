@@ -13,11 +13,11 @@
 import { ApiError } from "./api";
 import { decodeUser, getToken } from "./auth";
 import { TEMPLATES } from "./templates";
-import { MOCK_STAGE_TOPICS, stageTopicRefs, topicById, transitionTopic } from "./mock-topics";
+import { MOCK_STAGE_TOPICS, stageTopicRefs, topicById, topicProblemIds, transitionTopic } from "./mock-topics";
 export { attemptTopicStep, deleteTopic, getTopic, getTopicForAuthoring, listTopics, saveTopic, setTopicSkipped, transitionTopic } from "./mock-topics";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ContestProblem, Draft, Language, LeaderboardCell, LeaderboardRow, Page,
-  ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
+  ProblemFull, ProblemLifecycle, ProblemScope, ProblemSummary, ProblemType, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
   AccessToken, CreatedAccessToken, PublishCheck, PublishIssue, StudyPlanDetail, StudyPlanDraft, StudyPlanStage, StudyPlanSummary,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
 } from "@/types/api";
@@ -77,6 +77,18 @@ const PROBLEMS: ProblemFull[] = Array.from({ length: 36 }, (_, i) => {
 });
 const withEdits = (p: ProblemFull): ProblemFull => ({ ...p, ...store.get<Record<number, Partial<ProblemFull>>>("mock:problemEdits", {})[p.id] });
 
+/** Đề thuộc khoá học: nằm trong mục của plan chưa ARCHIVED hoặc là bài code của chủ đề (giống ProblemService.inCourse). */
+function courseProblemIds(): Set<number> {
+  const ids = new Set(topicProblemIds());
+  for (const plan of mockPlans) {
+    if (plan.status === "ARCHIVED") continue;
+    for (const it of plan.items) for (const st of it.stages) ids.add(st.problemId);
+  }
+  return ids;
+}
+const inScope = (id: number, scope: ProblemScope, course: Set<number>) =>
+  scope === "ALL" || (scope === "COURSE") === course.has(id);
+
 export async function listProblems(q: { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType; size?: number }): Promise<Page<ProblemSummary>> {
   await sleep(); ensureOnline();
   const done = new Set(store.get<SubRec[]>("mock:subs", []).filter((s) => s.verdict === "AC" && !s.run).map((s) => s.problemId));
@@ -85,8 +97,10 @@ export async function listProblems(q: { page: number; q: string; difficulty: str
   // Bộ lọc chủ đề dùng ngữ nghĩa OR + so khớp chính xác không phân biệt hoa/thường
   // (giống hệt backend: bài chỉ cần thuộc ÍT NHẤT MỘT chủ đề được chọn).
   const wanted = q.tags.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 0);
+  const course = courseProblemIds();
   const all = PROBLEMS.map(withEdits).map((p) => ({ ...p, progress: done.has(p.id) ? ("DONE" as const) : p.progress }))
     .filter((p) =>
+      !course.has(p.id) &&
       (!qText || p.title.toLowerCase().includes(qText.toLowerCase()) || p.tags.join(" ").toLowerCase().includes(qText.toLowerCase()) || (/^[0-9]+$/.test(qText) && p.id === Number(qText))) &&
       (!q.difficulty || p.difficulty === q.difficulty) && (!q.progress || p.progress === q.progress) &&
       (!q.type || (p.type ?? "ALGORITHMIC") === q.type) &&
@@ -171,11 +185,13 @@ export async function transitionProblem(id: number, target: ProblemLifecycle): P
  * Danh sách bài cho trang quản trị. Khác với `listProblems`, staff thấy được
  * cả bài chưa publish, và lọc theo trạng thái vòng đời.
  */
-export async function listAdminProblems(q: { page: number; q: string; difficulty: string; status: string; tags: string[]; type?: ProblemType }): Promise<Page<ProblemFull>> {
+export async function listAdminProblems(q: { page: number; q: string; difficulty: string; status: string; tags: string[]; type?: ProblemType; scope?: ProblemScope }): Promise<Page<ProblemFull>> {
   await sleep(); ensureOnline();
   const size = 20;
   const wanted = q.tags.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 0);
+  const course = courseProblemIds();
   const all = PROBLEMS.map(withEdits).filter((p) =>
+    inScope(p.id, q.scope ?? "STANDALONE", course) &&
     (!q.q || p.title.toLowerCase().includes(q.q.toLowerCase()) || p.description.toLowerCase().includes(q.q.toLowerCase())) &&
     (!q.difficulty || p.difficulty === q.difficulty) &&
     (!q.status || (p.status ?? "PUBLISHED") === q.status) &&

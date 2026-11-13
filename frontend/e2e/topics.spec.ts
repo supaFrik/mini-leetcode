@@ -37,6 +37,12 @@ async function serve(page: Page) {
   const passed = new Set<number>();
   const attempts: Array<{ stepId: number; answer: unknown }> = [];
   let skipped = false;
+  // Khoá luyện tập giống TopicService: 3 lần sai liên tiếp ⇒ 5 phút + phải đọc lại lý thuyết.
+  const streak = new Map<number, number>();
+  let lock: { until: number; mustReread: boolean } | null = null;
+  const lockFields = () => ({
+    lockedUntil: lock && lock.until > Date.now() ? new Date(lock.until).toISOString() : null, mustReread: !!lock?.mustReread,
+  });
   const progressOf = () => passed.size === TOPIC.steps.length ? "DONE" : skipped ? "SKIPPED" : passed.size || attempts.length ? "IN_PROGRESS" : "NEW";
   const ref = () => ({ id: 7, slug: TOPIC.slug, title: TOPIC.title, summary: TOPIC.summary, estMinutes: 15,
     progress: progressOf(), stepCount: 5, doneSteps: passed.size });
@@ -59,17 +65,26 @@ async function serve(page: Page) {
     if (m) {
       const stepId = Number(m[1]);
       const answer = (req.postDataJSON() as { answer: Record<string, unknown> }).answer;
+      if (stepId !== 1 && lock && (lock.mustReread || lock.until > Date.now())) {
+        return route.fulfill({ status: 409, ...json({ status: 409, title: "Topic Locked", detail: "Read the theory again before you continue practicing.", code: "TOPIC_LOCKED" }) });
+      }
       attempts.push({ stepId, answer });
       const ok = ANSWERS[stepId](answer);
       if (ok) passed.add(stepId);
-      return route.fulfill(json({ correct: ok, message: ok ? "Correct!" : "1 of 2 pairs are correct.",
+      if (stepId === 1 && lock) lock.mustReread = false;
+      if (stepId !== 1) {
+        const n = ok ? 0 : (streak.get(stepId) ?? 0) + 1;
+        streak.set(stepId, n >= 3 ? 0 : n);
+        if (n >= 3) { lock = { until: Date.now() + 5 * 60_000, mustReread: true }; passed.delete(1); }
+      }
+      return route.fulfill(json({ ...lockFields(), wrongStreak: streak.get(stepId) ?? 0, correct: ok, message: ok ? "Correct!" : "1 of 2 pairs are correct.",
         explanation: ok && stepId === 2 ? "Mọi field trạng thái đều private." : null, stepPassed: passed.has(stepId),
         attempts: attempts.filter((a) => a.stepId === stepId).length, progress: progressOf(), doneSteps: passed.size, stepCount: 5 }));
     }
-    return route.fulfill(json({ ...TOPIC, progress: progressOf(), doneSteps: passed.size,
+    return route.fulfill(json({ ...TOPIC, ...lockFields(), progress: progressOf(), doneSteps: passed.size,
       steps: TOPIC.steps.map((s) => ({ ...s, passed: passed.has(s.id) })) }));
   });
-  return { attempts, isSkipped: () => skipped };
+  return { attempts, isSkipped: () => skipped, expireLock: () => { if (lock) lock.until = Date.now() - 1; } };
 }
 
 test.describe("Topics: theory, quiz and drag-and-drop steps on project stages", () => {
@@ -159,5 +174,36 @@ test.describe("Topics: theory, quiz and drag-and-drop steps on project stages", 
     await expect.poll(() => api.attempts.map((a) => a.stepId)).toContain(1);
     await page.getByRole("button", { name: "Finish topic" }).click();
     await expect(page.getByRole("region", { name: "Topic completed" })).toBeVisible();
+  });
+
+  test("three wrong answers in a row lock practice for 5 minutes until the theory is read again", async ({ page }) => {
+    const api = await serve(page);
+    await page.goto("/topics/oop-dong-goi", { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: "Go to practice" }).first().click();
+    const quiz = page.getByRole("region", { name: "Step 1 of 4" });
+    await quiz.getByLabel("Không field nào").check();
+    await quiz.getByRole("button", { name: "Submit" }).click();
+    await expect(quiz.getByRole("status")).toContainText("Wrong answer");
+    await quiz.getByRole("button", { name: "Try again" }).click();
+    await expect(quiz.getByRole("status")).toContainText("One more wrong answer locks practice for 5 minutes.");
+    await quiz.getByRole("button", { name: "Try again" }).click();
+
+    const locked = page.getByRole("region", { name: "Practice locked" });
+    await expect(locked).toContainText(/[45]:\d\d/);
+    await expect(locked).toContainText("Read the theory again while you wait.");
+    // Lý thuyết bị đánh dấu chưa đọc; nút "Go to practice" không tự đánh dấu lại.
+    await expect(page.getByRole("button", { name: "Theory: Lý thuyết", exact: true })).toBeVisible();
+
+    await locked.getByRole("button", { name: "Read the theory" }).click();
+    const theory = page.getByRole("region", { name: "Theory" });
+    await expect(theory.getByRole("heading", { name: "Modifier" })).toHaveCount(0);
+    await theory.getByRole("button", { name: "Expand all 3 sections" }).click();
+    await expect(page.getByRole("button", { name: "Theory: Lý thuyết (done)" })).toBeVisible();
+    await theory.getByRole("button", { name: "Go to practice" }).click();
+    await expect(locked).toContainText("Theory done. Practice reopens when the timer ends.");
+
+    api.expireLock();
+    await page.reload();
+    await expect(page.getByRole("region", { name: "Step 1 of 4" }).getByRole("button", { name: "Submit" })).toBeVisible();
   });
 });

@@ -155,6 +155,14 @@ Cảnh báo "reference solution not run since last edit" cần biết lần ch�
 - [x] Chạy thật trên Docker: autosave nhiều lần, clone stage, tạo topic, checklist chặn khi thiếu testcase công khai
 - Sửa khi chạy thật: `update` flush trước khi trả `updatedAt`; so khớp phiên bản cho phép lệch < 2 s (MySQL TIMESTAMP làm tròn phần lẻ của giây)
 
+## Đề lẻ và đề trong khoá học (nhánh `feature/admin-ux`)
+
+- `GET /problems` chỉ trả **đề lẻ**: bỏ đề nằm trong mục của study plan chưa ARCHIVED và đề là bài CODE của chủ đề chưa ARCHIVED. Staff gửi được `scope=COURSE|ALL`; học viên luôn nhận STANDALONE.
+- `/admin/problems`: công tắc *Standalone / In courses*; bấm một dòng mở trang soạn `/admin/problems/[id]` (bỏ side dialog). Trang soạn dùng chung `ProblemEditor` với panel stage của Course Builder: tự lưu đề bài, tab Tests / Grading / Reference, thanh công cụ vòng đời (Send to review / Publish / Archive / Back to draft), View, Delete. `/admin/problems/new` tạo nháp rồi chuyển sang trang soạn.
+- Ô tìm đề trong Course Builder và bài CODE của chủ đề tìm `scope=ALL`.
+- Bỏ tiêu đề trang (eyebrow "Admin", h1, mô tả, "Edit/New …") ở mọi trang admin; điều hướng bằng `AdminNav`.
+- Mọi hộp xác nhận dùng `AlertDialog` (base-ui, kiểu shadcn: `size`, `AlertDialogMedia`, `variant="destructive"`) qua `useConfirm()`; không còn `window.confirm`.
+
 ## Đã chốt sau review
 
 - **C1.** Unlock đưa đề về DRAFT; học viên đang ở stage đó tạm thấy "Stage is being updated" cho tới khi publish lại. **Chấp nhận** — không làm bản nháp song song.

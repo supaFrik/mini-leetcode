@@ -8,6 +8,7 @@ import { fmtDateTime } from "@/lib/format";
 import { fetchPlagiarism, fetchProctoringReport, unlockParticipant } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import type { ParticipantStatus, PlagiarismRow, ProctorReportRow, Role } from "@/types/api";
+import { useConfirm } from "@/components/ui/confirm";
 
 const STATUS: Record<ParticipantStatus, { label: string; cls: string }> = {
   REGISTERED: { label: "Not Started", cls: "bg-hairline-soft text-body" },
@@ -39,8 +40,9 @@ export function ContestReport({ contestId, role }: { contestId: number; role: Ro
   }, [contestId]);
   useEffect(load, [load]);
 
+  const ask = useConfirm();
   const unlock = async (r: ProctorReportRow) => {
-    if (!window.confirm(`Unlock ${r.username}? Their violation count will be reset.`)) return;
+    if (!(await ask({ title: `Unlock ${r.username}?`, description: "Their violation count will be reset.", action: "Unlock" }))) return;
     try {
       await unlockParticipant(contestId, r.userId);
       toast(`Unlocked ${r.username}.`, "success");

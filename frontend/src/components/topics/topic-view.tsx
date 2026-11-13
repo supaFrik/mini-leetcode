@@ -3,9 +3,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowRight, Check, Clock, Lightbulb, PartyPopper } from "lucide-react";
+import { ArrowRight, Check, Clock, Lightbulb, Lock, PartyPopper } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { errorMessage } from "@/lib/api";
+import { ApiError, errorMessage, getServerOffset } from "@/lib/api";
+import { parseApiDate } from "@/lib/datetime";
 import { toast } from "@/lib/toast";
 import { useLoad } from "@/hooks/use-load";
 import { attemptTopicStep, fetchStudyPlan, fetchTopic, setTopicSkipped } from "@/lib/services";
@@ -47,7 +48,16 @@ const KIND: Record<string, string> = {
   CHOICE: "Quiz", MATCHING: "Matching", ORDERING: "Ordering", FILL_BLANK: "Fill in the blanks", CODE: "Code challenge",
 };
 
-type Feedback = { correct: boolean; message: string; explanation?: string | null };
+type Feedback = { correct: boolean; message: string; explanation?: string | null; streak?: number };
+
+/** Số lần sai liên tiếp trên một bài thì khoá luyện tập (khớp TopicService.LOCK_AFTER). */
+const LOCK_AFTER = 3;
+const serverNow = () => Date.now() + getServerOffset();
+
+const clock = (ms: number) => {
+  const sec = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+};
 type Answers = { selected?: string[]; order?: string[]; values?: Record<string, string> };
 
 function initialAnswer(step: LearnerStep): Answers {
@@ -125,8 +135,17 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
   const sectionRefs = useRef<Array<HTMLElement | null>>([]);
   const words = sections.reduce((n, s) => n + s.markdown.split(/\s+/).length, 0);
 
-  const patchStep = (stepId: number, passed: boolean, attempts: number, progress: LearnerTopic["progress"], doneSteps: number) =>
-    setTopic({ ...topic, progress, doneSteps, steps: topic.steps.map((s) => (s.id === stepId ? { ...s, passed: s.passed || passed, attempts } : s)) });
+  // Khoá luyện tập: 3 lần sai liên tiếp ⇒ chờ 5 phút VÀ đọc lại lý thuyết (specs/topics.spec.md).
+  const lockedUntil = parseApiDate(topic.lockedUntil);
+  const [now, setNow] = useState(serverNow);
+  const waiting = Number.isFinite(lockedUntil) && lockedUntil > now;
+  useEffect(() => {
+    if (!Number.isFinite(lockedUntil)) return;
+    setNow(serverNow());
+    const id = setInterval(() => setNow(serverNow()), 1000);
+    return () => clearInterval(id);
+  }, [lockedUntil]);
+  const blocked = waiting || !!topic.mustReread;
 
   /** Đọc tới section cuối ⇒ đánh dấu mọi step THEORY đã đọc. */
   const markTheoryRead = async () => {
@@ -134,7 +153,7 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
     for (const s of theorySteps.filter((x) => !x.passed)) {
       try {
         const r = await attemptTopicStep(topic.slug, s.id, {});
-        current = { ...current, progress: r.progress, doneSteps: r.doneSteps,
+        current = { ...current, progress: r.progress, doneSteps: r.doneSteps, lockedUntil: r.lockedUntil ?? null, mustReread: !!r.mustReread,
           steps: current.steps.map((x) => (x.id === s.id ? { ...x, passed: true, attempts: r.attempts } : x)) };
       } catch (e) {
         toast(errorMessage(e), "error");
@@ -152,9 +171,17 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
   };
 
   const goPractice = () => {
-    if (!theoryRead) void markTheoryRead();
-    setRevealed(sections.length);
+    // Sau khi bị khoá, phải đọc hết lý thuyết thật sự; nút này không tự đánh dấu đã đọc.
+    if (!topic.mustReread) {
+      if (!theoryRead) void markTheoryRead();
+      setRevealed(sections.length);
+    }
     setMode("practice");
+  };
+
+  const rereadTheory = () => {
+    setMode("theory");
+    requestAnimationFrame(() => sectionRefs.current[0]?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   const toggleSkip = async () => {
@@ -179,9 +206,17 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
     setBusy(true);
     try {
       const r = await attemptTopicStep(topic.slug, step.id, toPayload(step, answer));
-      setFeedback({ ...feedback, [step.id]: { correct: r.correct, message: r.message, explanation: r.explanation } });
-      patchStep(step.id, r.stepPassed, r.attempts, r.progress, r.doneSteps);
+      const lockedNow = !!r.mustReread && !topic.mustReread;
+      setFeedback({ ...feedback, [step.id]: { correct: r.correct, message: r.message, explanation: r.explanation, streak: r.wrongStreak } });
+      setTopic({ ...topic, progress: r.progress, doneSteps: r.doneSteps, lockedUntil: r.lockedUntil ?? null, mustReread: !!r.mustReread,
+        steps: topic.steps.map((s) => s.id === step.id ? { ...s, passed: s.passed || r.stepPassed, attempts: r.attempts }
+          : lockedNow && s.type === "THEORY" ? { ...s, passed: false } : s) });
+      if (lockedNow) setRevealed(Math.min(1, sections.length));
     } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        // Bị khoá ở tab khác hoặc đồng hồ lệch: lấy lại trạng thái thật từ server.
+        try { setTopic(await fetchTopic(topic.slug)); } catch { /* giữ trạng thái cũ */ }
+      }
       toast(errorMessage(e), "error");
     } finally {
       setBusy(false);
@@ -269,6 +304,19 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
             </div>
           </div>
         </section>
+      ) : blocked ? (
+        <section className={cn(t.card, t.complete)} aria-label="Practice locked">
+          <Lock size={32} aria-hidden />
+          <h2>{waiting ? clock(lockedUntil - now) : "Practice locked"}</h2>
+          <p>
+            {waiting && topic.mustReread && "Three wrong answers in a row. Read the theory again while you wait."}
+            {waiting && !topic.mustReread && "Theory done. Practice reopens when the timer ends."}
+            {!waiting && topic.mustReread && "Read the theory again to continue."}
+          </p>
+          {topic.mustReread && sections.length > 0 && (
+            <button type="button" className={t.primary} onClick={rereadTheory}>Read the theory <ArrowRight size={15} aria-hidden /></button>
+          )}
+        </section>
       ) : allDone && !fb ? (
         <section className={cn(t.card, t.complete)} aria-label="Topic completed">
           <PartyPopper size={36} aria-hidden />
@@ -317,6 +365,7 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
             <div className={cn(t.feedback, fb.correct ? t.feedbackOk : t.feedbackBad)} role="status" aria-live="polite">
               <strong>{fb.correct ? "Correct!" : "Wrong answer"}</strong>
               {!fb.correct && fb.message}
+              {!fb.correct && fb.streak === LOCK_AFTER - 1 && <div>One more wrong answer locks practice for 5 minutes.</div>}
               {fb.correct && fb.explanation && <div>{fb.explanation}</div>}
             </div>
           )}

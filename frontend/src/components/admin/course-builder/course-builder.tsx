@@ -24,6 +24,7 @@ import {
 import { Outline } from "./outline";
 import { PublishDialog } from "./publish-dialog";
 import { StagePanel } from "./stage-panel";
+import { useConfirm } from "@/components/ui/confirm";
 
 /* /admin/study-plans/[slug] — Course Builder (specs/course-builder.spec.md). */
 
@@ -59,6 +60,7 @@ export function CourseBuilder({ slug }: { slug: string }) {
   const params = useSearchParams();
   const { user } = useUser();
   const [detail, setDetail] = useState<StudyPlanDetail | null>(null);
+  const ask = useConfirm();
   const [model, setModel] = useState<PlanModel | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [planState, setPlanState] = useState<SaveState>("idle");
@@ -148,10 +150,11 @@ export function CourseBuilder({ slug }: { slug: string }) {
       const a = (e.target as HTMLElement).closest("a");
       if (!a || a.target === "_blank" || !a.href || a.origin !== window.location.origin) return;
       if (a.pathname === window.location.pathname) return;
-      if (!window.confirm("You have unsaved changes. Leave this page?")) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      const href = a.href;
+      void ask({ title: "Leave without saving?", description: "Your latest changes have not been saved yet.", action: "Leave", destructive: true })
+        .then((ok) => { if (ok) window.location.assign(href); });
     };
     window.addEventListener("beforeunload", beforeUnload);
     document.addEventListener("click", onClick, true);
@@ -159,7 +162,7 @@ export function CourseBuilder({ slug }: { slug: string }) {
       window.removeEventListener("beforeunload", beforeUnload);
       document.removeEventListener("click", onClick, true);
     };
-  }, [pending]);
+  }, [pending, ask]);
 
   const childSaveState = useCallback((s: SaveState) => {
     setChildState(s);
@@ -219,19 +222,19 @@ export function CourseBuilder({ slug }: { slug: string }) {
     }
   };
 
-  const remove = (id: NodeId) => {
+  const remove = async (id: NodeId) => {
     const n = parseNode(id);
     if (n.kind === "item") {
       const item = model.items.find((it) => it.key === n.key);
       const learners = item?.stages.reduce((s, x) => s + x.learners, 0) ?? 0;
-      if (!window.confirm(`Remove "${item?.title || "this item"}" from the plan?${learners ? ` ${learners} learners have submissions on it.` : ""} Its problems are kept.`)) return;
+      if (!(await ask({ title: `Remove "${item?.title || "this item"}"?`, description: `${learners ? `${learners} learners have submissions on it. ` : ""}Its problems are kept.`, action: "Remove", destructive: true }))) return;
       update({ ...model, items: model.items.filter((it) => it.key !== n.key) });
       select("plan");
     } else if (n.kind === "stage") {
       const found = findStage(model, n.problemId);
       if (!found) return;
       const { stage, item } = found;
-      if (!window.confirm(`Remove "${stage.title}" from ${item.title || "this item"}?${stage.learners ? ` ${stage.learners} learners are on this stage.` : ""} The problem itself is kept.`)) return;
+      if (!(await ask({ title: `Remove "${stage.title}"?`, description: `${stage.learners ? `${stage.learners} learners are on this stage. ` : ""}The problem itself is kept.`, action: "Remove", destructive: true }))) return;
       update({ ...model, items: model.items.map((it) => ({ ...it, stages: it.stages.filter((s) => s.problemId !== n.problemId) })) });
       select(`item:${item.key}`);
     } else if (n.kind === "topic") {
@@ -375,7 +378,6 @@ export function CourseBuilder({ slug }: { slug: string }) {
       <AdminNav />
       <header className="flex flex-wrap items-center gap-3">
         <Link href="/admin/study-plans" className="text-body-sm text-link hover:underline">← Study plans</Link>
-        <h1 className="text-heading-lg text-ink">{model.title || "Untitled plan"}</h1>
         <Badge variant={STATUS_VARIANT[detail.status]}>{detail.status}</Badge>
       </header>
       {!canEdit && (
@@ -397,7 +399,6 @@ export function CourseBuilder({ slug }: { slug: string }) {
             onAddTopic={(stage) => { select(`stage:${stage.problemId}`); setFocusTopics((n) => n + 1); }} />
         </aside>
         <section className="min-w-0 rounded-sm border border-border bg-card p-5" aria-label={`Editor: ${heading}`}>
-          <h2 className="mb-4 text-heading-md text-ink">{heading}</h2>
           {panel}
         </section>
       </div>

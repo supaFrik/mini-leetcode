@@ -17,6 +17,7 @@ import {
   createStudyPlan, deleteStudyPlan, fetchAdminProblems, fetchStudyPlan, fetchStudyPlans, fetchTopics, transitionStudyPlan, updateStudyPlan,
 } from "@/lib/services";
 import type { Difficulty, ProblemFull, StudyPlanDetail, StudyPlanItemKind, StudyPlanStatus, TopicSummary } from "@/types/api";
+import { useConfirm } from "@/components/ui/confirm";
 
 /** Khớp ràng buộc slug của backend (UpsertPlanRequest). */
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -45,18 +46,11 @@ export function AdminStudyPlansView() {
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
       <AdminNav />
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Admin</p>
-          <h1 className="mt-1 text-heading-lg text-ink">Study plans</h1>
-          <p className="mt-1 text-body-md text-mute">
-            Build learning paths from published problems. Students see a plan once it is published.
-          </p>
-        </div>
+      <div className="flex justify-end">
         <Button asChild>
           <Link href="/admin/study-plans/new"><Plus className="h-4 w-4" />New plan</Link>
         </Button>
-      </header>
+      </div>
 
       <div className="overflow-hidden rounded-sm border border-border bg-card" aria-label="Study plans" role="region">
         {load.state === "loading" && <p className="p-6 text-body-md text-mute">Loading study plans…</p>}
@@ -130,7 +124,7 @@ export function ProblemPicker({ exclude, onPick, disabled }: { exclude: Set<numb
     let off = false;
     const t = setTimeout(() => {
       setBusy(true);
-      fetchAdminProblems({ page: 1, q: q.trim(), difficulty: "", status: "PUBLISHED", tags: [] })
+      fetchAdminProblems({ page: 1, q: q.trim(), difficulty: "", status: "PUBLISHED", tags: [], scope: "ALL" })
         .then((page) => !off && setResults(page.content))
         .catch(() => !off && setResults([]))
         .finally(() => !off && setBusy(false));
@@ -302,8 +296,9 @@ export function StudyPlanEditor({ slug }: { slug?: string }) {
     }
   };
 
+  const ask = useConfirm();
   const remove = async () => {
-    if (!slug || !window.confirm(`Delete "${title}"? Students keep their submissions, but the plan disappears.`)) return;
+    if (!slug || !(await ask({ title: `Delete "${title}"?`, description: "Students keep their submissions, but the plan disappears.", action: "Delete", destructive: true }))) return;
     try {
       await deleteStudyPlan(slug);
       toast("Study plan deleted", "success");
@@ -326,7 +321,6 @@ export function StudyPlanEditor({ slug }: { slug?: string }) {
       <header className="space-y-2">
         <Link href="/admin/study-plans" className="text-body-sm text-link hover:underline">← Study plans</Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-heading-lg text-ink">{slug ? "Edit study plan" : "New study plan"}</h1>
           {status && <Badge variant={STATUS_VARIANT[status]}>{status}</Badge>}
         </div>
         {!canEdit && (

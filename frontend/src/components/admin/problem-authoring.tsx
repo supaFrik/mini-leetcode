@@ -24,6 +24,7 @@ import { ConsolePanel } from "@/components/workspace/console-panel";
 import { ApiError, errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/confirm";
 import {
   addTestCase,
   deleteTestCase,
@@ -130,9 +131,10 @@ export function SourceFilesEditor({
     setActiveIdx(files.length);
   };
 
-  const removeFile = (i: number, e: React.MouseEvent) => {
+  const ask = useConfirm();
+  const removeFile = async (i: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm(`Delete ${files[i].path}?`)) return;
+    if (!(await ask({ title: `Delete ${files[i].path}?`, action: "Delete", destructive: true }))) return;
     onChange(files.filter((_, j) => j !== i));
     if (idx >= i && idx > 0) setActiveIdx(idx - 1);
   };
@@ -434,8 +436,9 @@ export function TestCasesPanel({
     }
   };
 
+  const ask = useConfirm();
   const remove = async (tc: TestCase, n: number) => {
-    if (!window.confirm(`Delete test case #${n}? This cannot be undone.`)) return;
+    if (!(await ask({ title: `Delete test case #${n}?`, description: "This cannot be undone.", action: "Delete", destructive: true }))) return;
     try {
       await deleteTestCase(problemId, tc.id);
       toast("Test case deleted.", "success");
@@ -641,6 +644,7 @@ export function GradingPanel({
   onSaved: (a: ProblemAuthoring) => void;
 }) {
   const saved = authoring.gradingConfig ?? "";
+  const ask = useConfirm();
   const pretty = useMemo(() => {
     try {
       return saved ? JSON.stringify(JSON.parse(saved), null, 2) : "";
@@ -774,7 +778,7 @@ export function GradingPanel({
           {saved && (
             <Button
               variant="ghost"
-              onClick={() => window.confirm("Remove all grading rules from this problem?") && save(null)}
+              onClick={async () => (await ask({ title: "Remove all grading rules?", description: "The problem falls back to plain test-case grading.", action: "Remove", destructive: true })) && save(null)}
               disabled={busy !== null}
             >
               Clear rules
@@ -826,6 +830,7 @@ export function ReferencePanel({
   onSaved: (a: ProblemAuthoring) => void;
 }) {
   const savedJson = JSON.stringify(authoring.referenceSolution);
+  const ask = useConfirm();
   const [files, setFiles] = useState<SubmissionFile[]>(authoring.referenceSolution);
   const [busy, setBusy] = useState(false);
   const [runSignal, setRunSignal] = useState(0);
@@ -881,7 +886,7 @@ export function ReferencePanel({
       <div className="flex flex-wrap items-center justify-end gap-2">
         {dirty && <span className="mr-auto text-body-sm text-[#8a5a00]">Unsaved changes</span>}
         {authoring.referenceSolution.length > 0 && files.length > 0 && (
-          <Button variant="ghost" onClick={() => window.confirm("Remove the reference solution?") && setFiles([])}>
+          <Button variant="ghost" onClick={async () => (await ask({ title: "Remove the reference solution?", action: "Remove", destructive: true })) && setFiles([])}>
             Remove
           </Button>
         )}

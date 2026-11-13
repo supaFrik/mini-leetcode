@@ -121,7 +121,7 @@ async function open(page: Page, role: "ADMIN" | "INSTRUCTOR", seed: AdminContest
   const m = await mockAdminContests(page, seed);
   await setMockAuthSession(page, { username: role === "ADMIN" ? "admin" : "teacher1", role });
   await page.goto("/admin/contests", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Contests", level: 1 })).toBeVisible();
+  await expect(page.getByRole("button", { name: "New contest" })).toBeVisible();
   return m;
 }
 

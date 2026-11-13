@@ -17,6 +17,7 @@ import { deleteTopic, fetchTopicForAuthoring, fetchTopics, saveTopic, transition
 import type { AuthoringStep, AuthoringTopic, StudyPlanStatus, TopicStepType, TopicSummary } from "@/types/api";
 import { AdminNav } from "./admin-nav";
 import { ProblemPicker, slugify } from "./admin-study-plans";
+import { useConfirm } from "@/components/ui/confirm";
 
 /* Soạn chủ đề học (specs/topics.spec.md): /admin/topics, /admin/topics/new, /admin/topics/[slug]. */
 
@@ -58,19 +59,12 @@ export function AdminTopicsView() {
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
       <AdminNav />
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="eyebrow">Admin</p>
-          <h1 className="mt-1 text-heading-lg text-ink">Topics</h1>
-          <p className="mt-1 text-body-md text-mute">
-            Theory, quizzes, drag-and-drop and code exercises. Attach published topics to project stages in a study plan.
-          </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-0 max-w-sm flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-mute" aria-hidden="true" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="pl-8" aria-label="Search topics" />
         </div>
-        <Button asChild><Link href="/admin/topics/new"><Plus className="h-4 w-4" />New topic</Link></Button>
-      </header>
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-mute" aria-hidden="true" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search topics" className="pl-8" aria-label="Search topics" />
+        <Button asChild className="ml-auto"><Link href="/admin/topics/new"><Plus className="h-4 w-4" />New topic</Link></Button>
       </div>
       <div className="overflow-hidden rounded-sm border border-border bg-card" aria-label="Topics" role="region">
         {load.state === "loading" && <p className="p-6 text-body-md text-mute">Loading topics…</p>}
@@ -477,8 +471,9 @@ export function TopicEditor({ slug, embedded = false, onSaved, onSaveState }: {
     }
   };
 
+  const ask = useConfirm();
   const remove = async () => {
-    if (!slug || !window.confirm(`Delete "${title}"? Student progress on this topic is deleted too.`)) return;
+    if (!slug || !(await ask({ title: `Delete "${title}"?`, description: "Student progress on this topic is deleted too.", action: "Delete", destructive: true }))) return;
     try {
       await deleteTopic(slug);
       toast("Topic deleted", "success");
@@ -504,7 +499,6 @@ export function TopicEditor({ slug, embedded = false, onSaved, onSaveState }: {
       <header className="space-y-2">
         <Link href="/admin/topics" className="text-body-sm text-link hover:underline">← Topics</Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-heading-lg text-ink">{slug ? "Edit topic" : "New topic"}</h1>
           {status && <Badge variant={STATUS_VARIANT[status]}>{status}</Badge>}
         </div>
         {!canEdit && (

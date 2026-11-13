@@ -126,11 +126,12 @@ test.describe("Admin: console problem authoring", () => {
     });
 
     await page.goto("/admin/problems", { waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: "Mini Bank Console OOP", exact: true }).click();
-    const editor = page.getByRole("dialog", { name: "Problem editor" });
+    await page.getByRole("link", { name: "Mini Bank Console", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/admin/problems/${problem.id}$`));
+    const editor = page.getByRole("region", { name: "Problem editor" });
 
     // 1. Lời giải mẫu
-    await editor.getByRole("tab", { name: "Reference & console" }).click();
+    await editor.getByRole("tab", { name: "Reference" }).click();
     await editor.getByRole("button", { name: "Start with Main.java" }).click();
     await expect(editor.getByLabel("Contents of Main.java")).toContainText("Scanner");
     await editor.getByRole("button", { name: "Save reference" }).click();
@@ -156,7 +157,7 @@ test.describe("Admin: console problem authoring", () => {
     expect(state.gradingConfig).toContain("Account");
 
     // 3. Testcase: output sinh từ lời giải mẫu
-    await editor.getByRole("tab", { name: "Test cases" }).click();
+    await editor.getByRole("tab", { name: "Tests" }).click();
     await expect(editor.getByText("No test cases yet")).toBeVisible();
     await editor.getByRole("button", { name: "Add case" }).click();
     await editor.getByLabel("Input (stdin)").fill("21\n");
@@ -169,7 +170,7 @@ test.describe("Admin: console problem authoring", () => {
     // Một case sai output ⇒ Check báo Differs, Apply sửa lại.
     state.cases.push({ id: 950, input: "5\n", expectedOutput: "11\n", isHidden: false, orderIndex: 1 });
     await editor.getByRole("tab", { name: "Grading" }).click();
-    await editor.getByRole("tab", { name: "Test cases" }).click();
+    await editor.getByRole("tab", { name: "Tests" }).click();
     await editor.getByRole("button", { name: "Check against reference" }).click();
     await expect(editor.getByText(/1\s*match · 1\s*differ · 0\s*failed/)).toBeVisible();
     await expect(editor.getByText("Differs · 310 ms")).toBeVisible();
@@ -178,12 +179,21 @@ test.describe("Admin: console problem authoring", () => {
     expect(state.cases.find((c) => c.id === 950)?.expectedOutput).toBe("10\n");
   });
 
-  test("new problems show the authoring tabs disabled until created", async ({ page }) => {
+  test("statement edits autosave on the full-page editor", async ({ page }) => {
     await mockAuthoring(page);
-    await page.goto("/admin/problems", { waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: /New problem/ }).click();
-    const editor = page.getByRole("dialog", { name: "Problem editor" });
-    await expect(editor.getByRole("tab", { name: "Test cases" })).toBeDisabled();
-    await expect(editor.getByText(/become available once the problem is created/)).toBeVisible();
+    const puts: Record<string, unknown>[] = [];
+    await page.route(new RegExp(`/api/v1/problems/${problem.id}$`), async (route, request) => {
+      if (request.method() !== "PUT") return route.fallback();
+      const body = request.postDataJSON() as Record<string, unknown>;
+      puts.push(body);
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...problem, ...body }) });
+    });
+    await page.goto(`/admin/problems/${problem.id}`, { waitUntil: "domcontentloaded" });
+    const editor = page.getByRole("region", { name: "Problem editor" });
+    await editor.getByLabel("Title").fill("Mini Bank Console v2");
+    await editor.getByLabel("Tags").fill("OOP, oop, Classes");
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible({ timeout: 10_000 });
+    expect(puts.at(-1)).toMatchObject({ title: "Mini Bank Console v2", tags: ["OOP", "Classes"] });
+    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(0);
   });
 });

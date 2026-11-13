@@ -160,9 +160,8 @@ test.describe("Course builder", () => {
     await expect(page).toHaveURL(/\/admin\/study-plans\/oop-with-java\?node=stage%3A502$/);
 
     await page.reload();
-    await expect(page.getByRole("heading", { name: "OOP with Java", level: 1 })).toBeVisible();
     await expect(outline(page).getByRole("button", { name: "3 Mini Bank 3", exact: true })).toBeVisible();
-    await expect(editor(page).getByRole("heading", { name: "Stage 3 · Mini Bank 3" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Editor: Stage 3 · Mini Bank 3" })).toBeVisible();
   });
 
   test("AC-CB-03: leaving with unsaved changes asks first", async ({ page }) => {
@@ -170,9 +169,11 @@ test.describe("Course builder", () => {
     await api.ready;
     await page.goto("/admin/study-plans/oop");
     await editor(page).getByLabel("Description").fill("Changed");
-    const asked = page.waitForEvent("dialog").then(async (d) => { const msg = d.message(); await d.dismiss(); return msg; });
     await page.getByRole("link", { name: "← Study plans" }).click();
-    expect(await asked).toContain("unsaved changes");
+    const asked = page.getByRole("alertdialog");
+    await expect(asked).toContainText("Leave without saving?");
+    await asked.getByRole("button", { name: "Cancel" }).click();
+    await expect(asked).toHaveCount(0);
     await expect(page).toHaveURL(/\/admin\/study-plans\/oop/);
   });
 
@@ -214,9 +215,10 @@ test.describe("Course builder", () => {
     await expect(page.getByRole("status").filter({ hasText: "Live · 23 learners" })).toBeVisible();
     await editor(page).getByRole("tab", { name: "Tests" }).click();
     await expect(editor(page)).toContainText("Locked while live");
-    const asked = page.waitForEvent("dialog").then(async (d) => { const msg = d.message(); await d.accept(); return msg; });
     await editor(page).getByRole("button", { name: "Unlock to edit" }).click();
-    expect(await asked).toContain("5 learners currently on it");
+    const asked = page.getByRole("alertdialog");
+    await expect(asked).toContainText("5 learners currently on it");
+    await asked.getByRole("button", { name: "Unlock" }).click();
     await expect(page.getByRole("status").filter({ hasText: "1 stage unlocked" })).toBeVisible();
     expect(api.problems.get(4)!.status).toBe("DRAFT");
   });

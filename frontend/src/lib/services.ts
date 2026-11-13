@@ -10,7 +10,7 @@ import { setTokens } from "./auth";
 import * as mock from "./mock-server";
 import type { PollFetch } from "./polling";
 import type {
-  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
+  PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemScope, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
   AccessToken, CreatedAccessToken, PublishCheck, StudyPlanDetail, StudyPlanDraft, StudyPlanStatus, StudyPlanSummary,
   AttemptResult, AuthoringTopic, LearnerTopic, StepAnswer, TopicDraft, TopicSummary,
@@ -123,6 +123,8 @@ export interface AdminProblemQuery {
   status: string;
   tags: string[];
   type?: ProblemType;
+  /** STANDALONE (mặc định của server) = đề lẻ; COURSE = đề nằm trong study plan / chủ đề; ALL = tất cả. */
+  scope?: ProblemScope;
 }
 
 /** Danh sách bài cho trang quản trị — staff thấy cả bài chưa publish. */
@@ -134,6 +136,7 @@ export async function fetchAdminProblems(q: AdminProblemQuery): Promise<Page<Pro
   if (q.status) qs.set("status", q.status);
   if (q.type) qs.set("type", q.type);
   if (q.tags.length) qs.set("tags", q.tags.join(","));
+  if (q.scope) qs.set("scope", q.scope);
   const raw = await api<Raw>(`/api/v1/problems?${qs}`);
   const page = normPage<Raw>(raw);
   return { ...page, content: page.content.map(normProblem) };
