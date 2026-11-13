@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ArrowDown, ArrowUp, Plus, Search, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -196,6 +198,31 @@ export function toAuthoring(s: StepState): AuthoringStep {
 // Ô soạn từng loại step
 // =====================================================================================
 
+/** Markdown lý thuyết với tab Preview (react-markdown, cùng cách hiển thị cho học viên). */
+function TheoryField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [preview, setPreview] = useState(false);
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-body-sm text-mute">
+        <span>Theory (Markdown — every “## Heading” becomes a section)</span>
+        <span className="flex gap-1" role="group" aria-label="Theory view">
+          <button type="button" aria-pressed={!preview} onClick={() => setPreview(false)}
+            className={`rounded-sm px-2 py-0.5 ${preview ? "" : "bg-hairline-soft text-ink"}`}>Write</button>
+          <button type="button" aria-pressed={preview} onClick={() => setPreview(true)}
+            className={`rounded-sm px-2 py-0.5 ${preview ? "bg-hairline-soft text-ink" : ""}`}>Preview</button>
+        </span>
+      </div>
+      {preview ? (
+        <div className="prose prose-sm max-w-none rounded-sm border border-border bg-card px-4 py-3" aria-label="Theory preview">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+        </div>
+      ) : (
+        <Textarea rows={12} className="font-mono" aria-label="Theory markdown" value={value} onChange={(e) => onChange(e.target.value)} />
+      )}
+    </div>
+  );
+}
+
 function StepFields({ s, patch, label }: { s: StepState; patch: (p: Partial<StepState>) => void; label: string }) {
   const prompt = (
     <label className={`block ${field}`}>Question / instruction (Markdown)
@@ -212,11 +239,7 @@ function StepFields({ s, patch, label }: { s: StepState; patch: (p: Partial<Step
 
   switch (s.type) {
     case "THEORY":
-      return (
-        <label className={`block ${field}`}>Theory (Markdown — every “## Heading” becomes a section with Read more)
-          <Textarea rows={12} className="font-mono" value={s.markdown} onChange={(e) => patch({ markdown: e.target.value })} />
-        </label>
-      );
+      return <TheoryField value={s.markdown} onChange={(markdown) => patch({ markdown })} />;
     case "CHOICE":
       return (
         <>
@@ -338,12 +361,24 @@ function StepFields({ s, patch, label }: { s: StepState; patch: (p: Partial<Step
   }
 }
 
+const draftJson = (slug: string, title: string, summary: string, estMinutes: number, steps: StepState[]) =>
+  JSON.stringify([slug, title, summary, estMinutes, steps.map((s) => ({ ...toAuthoring(s), id: undefined }))]);
+
 // =====================================================================================
 // /admin/topics/new  và  /admin/topics/[slug]
 // =====================================================================================
 
-export function TopicEditor({ slug }: { slug?: string }) {
+export type SaveState = "idle" | "saving" | "saved" | "error" | "invalid";
+
+/**
+ * {@code embedded}: nhúng trong Course Builder — không header / footer riêng, tự lưu 1 s sau lần sửa cuối,
+ * báo trạng thái qua {@code onSaveState} và bản đã lưu qua {@code onSaved}.
+ */
+export function TopicEditor({ slug, embedded = false, onSaved, onSaveState }: {
+  slug?: string; embedded?: boolean; onSaved?: (t: AuthoringTopic) => void; onSaveState?: (s: SaveState) => void;
+}) {
   const router = useRouter();
+  const lastSaved = useRef<string>("");
   const canEditFn = useCanEdit();
   const [loaded, setLoaded] = useState<AuthoringTopic | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -363,7 +398,9 @@ export function TopicEditor({ slug }: { slug?: string }) {
     setSlugTouched(true);
     setSummary(t.summary ?? "");
     setEstMinutes(t.estMinutes);
-    setSteps(t.steps.map(fromAuthoring));
+    const next = t.steps.map(fromAuthoring);
+    setSteps(next);
+    lastSaved.current = draftJson(t.slug, t.title, t.summary ?? "", t.estMinutes, next);
   };
 
   useEffect(() => {
@@ -390,21 +427,45 @@ export function TopicEditor({ slug }: { slug?: string }) {
   const save = async () => {
     const problem = validate();
     setError(problem);
-    if (problem) return;
+    if (problem) {
+      onSaveState?.("invalid");
+      return;
+    }
     setSaving(true);
+    onSaveState?.("saving");
+    const json = draftJson(topicSlug, title, summary, estMinutes, steps);
     try {
       const saved = await saveTopic(slug ?? null, {
         slug: topicSlug, title: title.trim(), summary: summary.trim() || undefined, estMinutes, steps: steps.map(toAuthoring),
       });
+      onSaved?.(saved);
+      onSaveState?.("saved");
+      if (embedded) {
+        // Giữ nguyên ô đang gõ: chỉ gán id cho step vừa tạo.
+        setLoaded(saved);
+        setSteps((list) => list.map((s, i) => (s.id ? s : { ...s, id: saved.steps[i]?.id ?? null })));
+        lastSaved.current = json;
+        return;
+      }
       apply(saved);
       toast(slug ? "Topic saved" : "Topic created as a draft", "success");
       if (saved.slug !== slug) router.replace(`/admin/topics/${saved.slug}`);
     } catch (e) {
       setError(errorMessage(e));
+      onSaveState?.("error");
     } finally {
       setSaving(false);
     }
   };
+
+  // Autosave khi nhúng trong Course Builder.
+  const current = draftJson(topicSlug, title, summary, estMinutes, steps);
+  useEffect(() => {
+    if (!embedded || !slug || !loaded || !canEdit || saving || current === lastSaved.current) return;
+    const t = setTimeout(() => void save(), 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current, embedded, slug, loaded, saving]);
 
   const transition = async (status: StudyPlanStatus) => {
     if (!slug) return;
@@ -432,7 +493,14 @@ export function TopicEditor({ slug }: { slug?: string }) {
 
   const status = loaded?.status;
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 py-6 sm:px-6">
+    <div className={embedded ? "space-y-5" : "mx-auto w-full max-w-3xl space-y-5 px-4 py-6 sm:px-6"}>
+      {embedded ? (
+        !canEdit && (
+          <p className="rounded-sm border border-border bg-hairline-soft px-3 py-2 text-body-sm text-mute" role="note">
+            Read-only: only {loaded?.createdByUsername ?? "the author"} or an admin can change this topic.
+          </p>
+        )
+      ) : (
       <header className="space-y-2">
         <Link href="/admin/topics" className="text-body-sm text-link hover:underline">← Topics</Link>
         <div className="flex flex-wrap items-center gap-3">
@@ -445,8 +513,9 @@ export function TopicEditor({ slug }: { slug?: string }) {
           </p>
         )}
       </header>
+      )}
 
-      <fieldset disabled={!canEdit || saving} className="space-y-4">
+      <fieldset disabled={!canEdit || (saving && !embedded)} className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_120px]">
           <label className={field}>Title
             <Input value={title} onChange={(e) => { setTitle(e.target.value); if (!slugTouched) setTopicSlug(slugify(e.target.value)); }} />
@@ -495,7 +564,7 @@ export function TopicEditor({ slug }: { slug?: string }) {
 
       {error && <p className="rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2 text-body-sm text-destructive" role="alert">{error}</p>}
 
-      {canEdit && (
+      {canEdit && !embedded && (
         <footer className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
           <Button type="button" onClick={save} disabled={saving}>{saving ? "Saving…" : slug ? "Save changes" : "Create draft"}</Button>
           {status && status !== "PUBLISHED" && <Button type="button" variant="outline" onClick={() => transition("PUBLISHED")}>Publish</Button>}

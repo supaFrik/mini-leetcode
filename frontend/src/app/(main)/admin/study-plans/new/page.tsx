@@ -1,10 +1,10 @@
-import { StudyPlanEditor } from "@/components/admin/admin-study-plans";
+import { NewStudyPlan } from "@/components/admin/course-builder/new-plan";
 import { AdminGuard } from "@/components/layout/role-guard";
 
 export default function NewStudyPlanPage() {
   return (
     <AdminGuard>
-      <StudyPlanEditor />
+      <NewStudyPlan />
     </AdminGuard>
   );
 }
