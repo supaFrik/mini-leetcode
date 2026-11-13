@@ -13,6 +13,7 @@ import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
   ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
   AccessToken, CreatedAccessToken, StudyPlanDetail, StudyPlanDraft, StudyPlanStatus, StudyPlanSummary,
+  AttemptResult, AuthoringTopic, LearnerTopic, StepAnswer, TopicDraft, TopicSummary,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
 } from "@/types/api";
@@ -403,6 +404,44 @@ export async function transitionStudyPlan(slug: string, status: StudyPlanStatus)
 export async function deleteStudyPlan(slug: string): Promise<void> {
   if (USE_MOCK) return mock.deleteStudyPlan(slug);
   await api(`/api/v1/study-plans/${encodeURIComponent(slug)}`, { method: "DELETE" });
+}
+
+// ---------- Chủ đề học (specs/topics.spec.md) ----------
+const topicPath = (slug: string) => `/api/v1/topics/${encodeURIComponent(slug)}`;
+export async function fetchTopic(slug: string): Promise<LearnerTopic> {
+  if (USE_MOCK) return mock.getTopic(slug);
+  return api<LearnerTopic>(topicPath(slug));
+}
+export async function attemptTopicStep(slug: string, stepId: number, answer: StepAnswer): Promise<AttemptResult> {
+  if (USE_MOCK) return mock.attemptTopicStep(slug, stepId, answer);
+  return api<AttemptResult>(`${topicPath(slug)}/steps/${stepId}/attempts`, { method: "POST", body: JSON.stringify({ answer }) });
+}
+export async function setTopicSkipped(slug: string, skipped: boolean): Promise<void> {
+  if (USE_MOCK) return mock.setTopicSkipped(slug, skipped);
+  await api(`${topicPath(slug)}/skip`, { method: skipped ? "POST" : "DELETE" });
+}
+// Soạn (INSTRUCTOR / ADMIN)
+export async function fetchTopics(search = ""): Promise<TopicSummary[]> {
+  if (USE_MOCK) return mock.listTopics(search);
+  return (await api<TopicSummary[]>(`/api/v1/topics${search ? `?search=${encodeURIComponent(search)}` : ""}`)) ?? [];
+}
+export async function fetchTopicForAuthoring(slug: string): Promise<AuthoringTopic> {
+  if (USE_MOCK) return mock.getTopicForAuthoring(slug);
+  return api<AuthoringTopic>(`${topicPath(slug)}/authoring`);
+}
+export async function saveTopic(slug: string | null, draft: TopicDraft): Promise<AuthoringTopic> {
+  if (USE_MOCK) return mock.saveTopic(slug, draft);
+  return slug
+    ? api<AuthoringTopic>(topicPath(slug), { method: "PUT", body: JSON.stringify(draft) })
+    : api<AuthoringTopic>("/api/v1/topics", { method: "POST", body: JSON.stringify(draft) });
+}
+export async function transitionTopic(slug: string, status: StudyPlanStatus): Promise<AuthoringTopic> {
+  if (USE_MOCK) return mock.transitionTopic(slug, status);
+  return api<AuthoringTopic>(`${topicPath(slug)}/transitions`, { method: "POST", body: JSON.stringify({ status }) });
+}
+export async function deleteTopic(slug: string): Promise<void> {
+  if (USE_MOCK) return mock.deleteTopic(slug);
+  await api(topicPath(slug), { method: "DELETE" });
 }
 
 // ---------- Personal access tokens (plugin IntelliJ) ----------

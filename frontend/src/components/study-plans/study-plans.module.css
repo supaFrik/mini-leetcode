@@ -335,3 +335,17 @@ a.stage:hover {
     display: none;
   }
 }
+
+/* Stage nằm cuối dòng thời gian chủ đề (components/topics/stage-timeline.tsx) */
+.stageCompact {
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  min-height: 44px;
+  margin-left: -8px;
+  padding: 4px 8px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+.stageCompact:last-child {
+  border-bottom: 1px dashed var(--line);
+}

@@ -223,6 +223,64 @@ export interface StudyPlanSummary {
 export interface StudyPlanStage {
   stageNo: number; problemId: number; slug: string | null; title: string | null; difficulty: Difficulty | null;
   problemType: ProblemType | null; published: boolean; status: StageStatus;
+  /** Chủ đề học gắn vào stage (specs/topics.spec.md); có thể thiếu ở API cũ. */
+  topics?: TopicRef[];
+}
+
+// ===== Chủ đề học (specs/topics.spec.md) =====
+export type TopicStepType = "THEORY" | "CHOICE" | "MATCHING" | "ORDERING" | "FILL_BLANK" | "CODE";
+export type TopicProgress = "NEW" | "IN_PROGRESS" | "SKIPPED" | "DONE";
+export interface TopicRef {
+  id: number; slug: string; title: string; summary?: string | null; estMinutes: number;
+  progress: TopicProgress; stepCount: number; doneSteps: number;
+}
+export interface IdText { id: string; text: string }
+/** Nội dung công khai từng loại step (đã bỏ đáp án, cột phải / các dòng đã xáo trộn). */
+export interface TheoryContent { markdown: string }
+export interface ChoiceContent { prompt: string; options: IdText[]; multiple?: boolean; hint?: string }
+export interface MatchingContent { prompt: string; left: IdText[]; right: IdText[]; hint?: string }
+export interface OrderingContent { prompt: string; items: IdText[]; hint?: string }
+export interface FillBlankContent { prompt: string; code: string; blanks?: string[]; hint?: string }
+export interface CodeContent {
+  intro?: string; problemId?: number; problemSlug?: string; problemTitle?: string; difficulty?: Difficulty | null; published?: boolean;
+}
+export type StepContent = TheoryContent | ChoiceContent | MatchingContent | OrderingContent | FillBlankContent | CodeContent;
+export interface LearnerStep {
+  id: number; position: number; type: TopicStepType; title: string; content: StepContent; passed: boolean; attempts: number;
+}
+export interface LearnerTopic {
+  id: number; slug: string; title: string; summary?: string | null; estMinutes: number; status: StudyPlanStatus;
+  progress: TopicProgress; stepCount: number; doneSteps: number; steps: LearnerStep[];
+}
+export interface AttemptResult {
+  correct: boolean; message: string; explanation?: string | null; stepPassed: boolean; attempts: number;
+  progress: TopicProgress; doneSteps: number; stepCount: number;
+}
+/** Bài gửi của từng loại step. */
+export type StepAnswer =
+  | Record<string, never>
+  | { selected: string[] }
+  | { pairs: Record<string, string> }
+  | { order: string[] }
+  | { values: Record<string, string> };
+
+// Soạn chủ đề (INSTRUCTOR / ADMIN)
+export interface TopicSummary {
+  id: number; slug: string; title: string; summary?: string | null; estMinutes: number; status: StudyPlanStatus;
+  stepCount: number; createdById: number; createdByUsername: string; updatedAt?: string | null;
+}
+/** `answer`: đáp án — chỉ có ở API soạn. */
+export interface AuthoringStep {
+  id?: number | null; type: TopicStepType; title: string;
+  content: Record<string, unknown>; answer?: Record<string, unknown> | null;
+  problemId?: number | null; problemSlug?: string | null;
+}
+export interface AuthoringTopic {
+  id: number; slug: string; title: string; summary?: string | null; estMinutes: number; status: StudyPlanStatus;
+  steps: AuthoringStep[]; createdById: number; createdByUsername: string;
+}
+export interface TopicDraft {
+  slug: string; title: string; summary?: string; estMinutes: number; steps: AuthoringStep[];
 }
 export interface StudyPlanItem {
   id: number; position: number; kind: StudyPlanItemKind; title: string; description?: string | null;
@@ -236,7 +294,8 @@ export interface StudyPlanDetail {
 /** Body của POST / PUT /api/v1/study-plans (thay toàn bộ nội dung plan). */
 export interface StudyPlanDraft {
   slug: string; title: string; description?: string;
-  items: { kind: StudyPlanItemKind; title: string; description?: string; problemIds: number[] }[];
+  /** `stageTopics[k]`: id chủ đề học của stage k (cùng thứ tự với problemIds). */
+  items: { kind: StudyPlanItemKind; title: string; description?: string; problemIds: number[]; stageTopics?: number[][] }[];
 }
 
 // ===== Personal Access Token cho plugin IntelliJ =====

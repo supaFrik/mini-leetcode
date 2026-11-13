@@ -13,6 +13,8 @@
 import { ApiError } from "./api";
 import { decodeUser, getToken } from "./auth";
 import { TEMPLATES } from "./templates";
+import { MOCK_STAGE_TOPICS, stageTopicRefs } from "./mock-topics";
+export { attemptTopicStep, deleteTopic, getTopic, getTopicForAuthoring, listTopics, saveTopic, setTopicSkipped, transitionTopic } from "./mock-topics";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, ContestProblem, Draft, Language, LeaderboardCell, LeaderboardRow, Page,
   ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType, ProctoringEventType, ProctoringResult, Role, Submission, SubmitBody, TestCase, Verdict,
@@ -607,9 +609,15 @@ export async function listStudyPlans(): Promise<StudyPlanSummary[]> {
   await sleep(); ensureOnline();
   return mockPlans.map(({ items, ...rest }) => ({ ...rest, itemCount: items.length }));
 }
+/** id chủ đề theo (id mục, stageNo) của các plan mock; plan mẫu gắn sẵn chủ đề vào project Mini Bank. */
+const mockStageTopics = new Map<string, number[]>(
+  Object.entries(MOCK_STAGE_TOPICS).map(([stageNo, ids]) => [`3:${stageNo}`, ids]),
+);
 export async function getStudyPlan(slug: string): Promise<StudyPlanDetail> {
   await sleep(); ensureOnline();
-  return findPlan(slug);
+  const plan = findPlan(slug);
+  return { ...plan, items: plan.items.map((item) => ({ ...item, stages: item.stages.map((st) => ({
+    ...st, topics: stageTopicRefs(mockStageTopics.get(`${item.id}:${st.stageNo}`) ?? []) })) })) };
 }
 export async function saveStudyPlan(slug: string | null, draft: StudyPlanDraft): Promise<StudyPlanDetail> {
   await sleep(); ensureOnline();
@@ -625,8 +633,9 @@ export async function saveStudyPlan(slug: string | null, draft: StudyPlanDraft):
         difficulty: "EASY", problemType: "ALGORITHMIC", published: true, status: k === 0 ? "NEVER" : "LOCKED" })),
     })),
   };
+  draft.items.forEach((it, position) => (it.stageTopics ?? []).forEach((ids, k) => mockStageTopics.set(`${position + 1}:${k + 1}`, ids)));
   if (old) mockPlans.splice(mockPlans.indexOf(old), 1, plan); else mockPlans.push(plan);
-  return plan;
+  return getStudyPlan(plan.slug);
 }
 export async function transitionStudyPlan(slug: string, status: StudyPlanDetail["status"]): Promise<StudyPlanDetail> {
   await sleep(); ensureOnline();

@@ -7,6 +7,7 @@ import { useLoad } from "@/hooks/use-load";
 import { useUser } from "@/hooks/use-user";
 import { fetchStudyPlan, fetchStudyPlans } from "@/lib/services";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
+import { StageTimeline } from "@/components/topics/stage-timeline";
 import theme from "@/components/layout/plex-theme.module.css";
 import p from "@/components/problems/problems.module.css";
 import s from "./study-plans.module.css";
@@ -87,12 +88,13 @@ function StageIcon({ stage }: { stage: StudyPlanStage }) {
   }
 }
 
-function StageRow({ item, stage }: { item: StudyPlanItem; stage: StudyPlanStage }) {
+/** {@code compact}: nút cuối dòng thời gian chủ đề — biểu tượng trạng thái đã do dòng thời gian vẽ. */
+function StageRow({ item, stage, compact }: { item: StudyPlanItem; stage: StudyPlanStage; compact?: boolean }) {
   const label = item.kind === "PROJECT" ? `Stage ${stage.stageNo}` : "Practice";
   const title = stage.title ?? `Problem #${stage.problemId}`;
   const content = (
     <>
-      <StageIcon stage={stage} />
+      {!compact && <StageIcon stage={stage} />}
       <span className={s.stageNo}>{label}</span>
       <span className={cn(stage.status === "LOCKED" && s.locked)}>{title}</span>
       <span>
@@ -107,11 +109,17 @@ function StageRow({ item, stage }: { item: StudyPlanItem; stage: StudyPlanStage 
     </>
   );
   const open = stage.published && stage.status !== "LOCKED" && stage.slug;
+  const cls = cn(s.stage, compact && s.stageCompact);
   return open ? (
-    <Link href={`/problems/${stage.slug}`} className={s.stage}>{content}</Link>
+    <Link href={`/problems/${stage.slug}`} className={cls}>{content}</Link>
   ) : (
-    <div className={s.stage} aria-disabled="true">{content}</div>
+    <div className={cls} aria-disabled="true">{content}</div>
   );
+}
+
+/** Stage đang học của một mục: stage đầu tiên chưa DONE (mở sẵn dòng thời gian chủ đề của nó). */
+function currentStage(item: StudyPlanItem): StudyPlanStage | undefined {
+  return item.stages.find((st) => st.status !== "DONE") ?? item.stages[0];
 }
 
 /** /study-plans/[slug] — mục theo thứ tự, stage mở khoá tuần tự trong mỗi project. */
@@ -147,7 +155,13 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
                     {item.done && <span className={s.done}>Completed</span>}
                     {item.description && <p>{item.description}</p>}
                   </div>
-                  {item.stages.map((stage) => <StageRow key={stage.stageNo} item={item} stage={stage} />)}
+                  {item.stages.map((stage) => (stage.topics?.length ?? 0) > 0 ? (
+                    <StageTimeline key={stage.stageNo} stage={stage} stageCount={item.stages.length} planSlug={slug}
+                      defaultOpen={stage === currentStage(item)} onChanged={() => setAttempt((n) => n + 1)}
+                      stageTask={<StageRow item={item} stage={stage} compact />} />
+                  ) : (
+                    <StageRow key={stage.stageNo} item={item} stage={stage} />
+                  ))}
                 </section>
               ))}
             </div>
