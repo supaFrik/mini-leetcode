@@ -14,7 +14,7 @@ public class Wallet {
     public void pay(long amount) {
         requirePositive(amount);
         if (amount > balance) {
-            throw new IllegalArgumentException("Không đủ tiền");
+            throw new IllegalArgumentException("Insufficient funds");
         }
         balance -= amount;
     }
@@ -29,7 +29,7 @@ public class Wallet {
 
     private static void requirePositive(long amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("Số tiền phải dương");
+            throw new IllegalArgumentException("Amount must be positive");
         }
     }
 }

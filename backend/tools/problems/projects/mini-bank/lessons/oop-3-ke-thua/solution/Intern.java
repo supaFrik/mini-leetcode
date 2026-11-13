@@ -10,6 +10,6 @@ public class Intern extends Employee {
 
     @Override
     public String role() {
-        return "Thực tập";
+        return "Intern";
     }
 }

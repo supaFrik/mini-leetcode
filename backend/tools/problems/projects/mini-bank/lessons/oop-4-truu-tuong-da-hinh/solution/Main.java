@@ -16,11 +16,11 @@ public class Main {
                 case "CIRCLE" -> shapes.add(new Circle(Double.parseDouble(p[1])));
                 case "RECT" -> shapes.add(new Rectangle(Double.parseDouble(p[1]), Double.parseDouble(p[2])));
                 case "SQUARE" -> shapes.add(new Square(Double.parseDouble(p[1])));
-                default -> System.err.println("Hình không hỗ trợ: " + p[0]);
+                default -> System.err.println("Unknown shape: " + p[0]);
             }
         }
         if (shapes.isEmpty()) {
-            System.out.println("Không có hình");
+            System.out.println("No shapes");
             return;
         }
         Shape largest = shapes.get(0);
@@ -30,6 +30,6 @@ public class Main {
                 largest = s;
             }
         }
-        System.out.println("Lớn nhất: " + largest.describe());
+        System.out.println("Largest: " + largest.describe());
     }
 }

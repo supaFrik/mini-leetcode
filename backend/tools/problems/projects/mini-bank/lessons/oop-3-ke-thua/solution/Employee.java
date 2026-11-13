@@ -12,7 +12,7 @@ public class Employee {
     }
 
     public String role() {
-        return "Nhân viên";
+        return "Employee";
     }
 
     public String getName() {

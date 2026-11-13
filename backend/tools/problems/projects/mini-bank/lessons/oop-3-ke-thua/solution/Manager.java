@@ -13,6 +13,6 @@ public class Manager extends Employee {
 
     @Override
     public String role() {
-        return "Quản lý";
+        return "Manager";
     }
 }

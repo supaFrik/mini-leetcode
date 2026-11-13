@@ -82,7 +82,7 @@ python backend\tools\problems\oop_console_cases.py
 
 ## Lộ trình mẫu "OOP với Java" + project Mini Bank 5 stage
 
-Nguồn: `problems/projects/mini-bank/` (`project.json` = plan, stage, testcase; `grading.json` = rule theo `fromStage`; `stages/stage-N.md` = đề; `starters/stage-N/` = file khung). Lời giải tham chiếu dùng chung cho 5 stage là `problems/oop-starters/mini-bank-console/`. Stage N chấm **mọi** testcase và rule của stage 1..N (đặc tả: `specs/study-plan.spec.md`).
+Nguồn: `problems/projects/mini-bank/` (`project.json` = plan, stage, testcase; `grading.json` = rule theo `fromStage`; `stages/stage-N.md` = đề; `starters/stage-N/` = file khung). Lời giải tham chiếu (tiếng Anh) dùng chung cho 5 stage là `problems/projects/mini-bank/reference/` (đề `mini-bank-console` riêng vẫn dùng `oop-starters/mini-bank-console/`). Stage N chấm **mọi** testcase và rule của stage 1..N (đặc tả: `specs/study-plan.spec.md`).
 
 Plan được tổ chức như project trên Hyperskill: mục project có 5 stage, mỗi stage gắn sẵn các **chủ đề học** (đặc tả `specs/topics.spec.md`) hiện thành dòng thời gian Continue / Skip phía trên stage. Mỗi chủ đề gồm lý thuyết chia section (mục lục, Read more), 2 quiz, 1 bài ghép cặp, 1 bài sắp xếp, 1 bài điền chỗ trống và cuối cùng là bài code của bài học (đề OOP chấm bằng rule + testcase). Chủ đề không khoá stage. Đề stage có mục "Học trước" trỏ về các chủ đề tương ứng. INSTRUCTOR / ADMIN sửa chủ đề trên web tại `/admin/topics`.
 

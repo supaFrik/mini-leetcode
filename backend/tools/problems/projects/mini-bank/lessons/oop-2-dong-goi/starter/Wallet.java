@@ -1,24 +1,23 @@
-/** Bài 2 — ví điện tử: số dư chỉ đổi qua deposit / pay. Đề: lesson.md. */
 public class Wallet {
-    // TODO 1: field private final String owner và private long balance. KHÔNG field public, KHÔNG setter.
+    // TODO: private final String owner; private long balance;
 
     public Wallet(String owner) {
-        // TODO 2
+        // TODO
     }
 
     public void deposit(long amount) {
-        // TODO 3: amount <= 0 => throw new IllegalArgumentException("Số tiền phải dương")
+        // TODO: amount <= 0 -> throw new IllegalArgumentException("Amount must be positive")
     }
 
     public void pay(long amount) {
-        // TODO 4: amount <= 0 => "Số tiền phải dương"; amount > balance => "Không đủ tiền"
+        // TODO: amount <= 0 -> "Amount must be positive"; amount > balance -> "Insufficient funds"
     }
 
     public long getBalance() {
-        return 0; // TODO 5
+        return 0; // TODO
     }
 
     public String getOwner() {
-        return ""; // TODO 6
+        return ""; // TODO
     }
 }

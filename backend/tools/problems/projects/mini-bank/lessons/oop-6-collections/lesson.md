@@ -1,27 +1,24 @@
-> Bài code của chủ đề **Collections & đóng gói danh sách** (Stage 4 của plan *OOP với Java: xây Mini Bank*). Học phần lý thuyết và làm các câu luyện tập của chủ đề trước, rồi giải bài này.
+### Task
 
-### Bài tập: thư viện sách
-Viết:
-
-- **`Book`**: `id` và `title` (`private final`), getter, `toString()` trả `<id>: <title>`.
-- **`Library`**: giữ sách trong một collection `private` (gợi ý `LinkedHashMap<String, Book>`), **mọi field `private`**:
-  - `public boolean add(Book book)`: `false` nếu trùng mã.
-  - `public Book find(String id)`: `null` nếu không có.
+- **`Book`**: `private final` `id` and `title`, getters, `toString()` returns `<id>: <title>`.
+- **`Library`** keeps books in a private collection (suggested: `LinkedHashMap<String, Book>`); all fields private:
+  - `public boolean add(Book book)`: `false` if the id exists.
+  - `public Book find(String id)`: `null` if missing.
   - `public boolean remove(String id)`.
-  - `public List<Book> all()`: danh sách theo thứ tự thêm, **không sửa được** từ bên ngoài.
+  - `public List<Book> all()`: insertion order, not modifiable by callers.
   - `public int size()`.
 
-`Main` đọc tới hết input, mỗi dòng một lệnh:
+`Main` reads one command per line until end of input:
 
-| Lệnh | Output |
-|------|--------|
-| `ADD <mã> <tên sách...>` | `Đã thêm <mã>` hoặc `Trùng mã <mã>` |
-| `FIND <mã>` | `<mã>: <tên>` hoặc `Không tìm thấy <mã>` |
-| `REMOVE <mã>` | `Đã xoá <mã>` hoặc `Không tìm thấy <mã>` |
-| `LIST` | mỗi sách một dòng `<mã>: <tên>` theo thứ tự thêm; rỗng thì `(trống)` |
-| `COUNT` | `Số sách: <n>` |
+| Command | Output |
+|---------|--------|
+| `ADD <id> <title...>` | `Added <id>` or `Duplicate id <id>` |
+| `FIND <id>` | `<id>: <title>` or `Not found: <id>` |
+| `REMOVE <id>` | `Removed <id>` or `Not found: <id>` |
+| `LIST` | one `<id>: <title>` per line in insertion order; `(empty)` if none |
+| `COUNT` | `Books: <n>` |
 
-**Ví dụ**
+### Example
 
 Input:
 
@@ -38,16 +35,17 @@ COUNT
 Output:
 
 ```
-Đã thêm B1
-Đã thêm B2
-Trùng mã B1
+Added B1
+Added B2
+Duplicate id B1
 B2: Effective Java
-Không tìm thấy B9
+Not found: B9
 B1: Clean Code
 B2: Effective Java
-Số sách: 2
+Books: 2
 ```
 
-### Cách chấm
-- **Rule cấu trúc**: `Library` đóng gói (mọi field `private`) và có `add(Book)`, `find(String)`, `all()` trả `List`.
-- **Testcase stdin/stdout**: so từng dòng, bỏ qua khoảng trắng thừa.
+### Grading
+
+- Structure: `Library` fields are all private; `add(Book)`, `find(String)`, `all()` returning `List`.
+- Stdout compared line by line, extra spaces ignored.

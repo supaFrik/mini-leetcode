@@ -12,6 +12,6 @@ public class Circle extends Shape {
 
     @Override
     public String name() {
-        return "Hình tròn";
+        return "Circle";
     }
 }

@@ -1,6 +1,5 @@
 import java.util.Scanner;
 
-/** Bài 5 — mỗi dòng "<tên> <tuổi>"; lỗi ở một dòng không được làm dừng chương trình. Đề: lesson.md. */
 public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
@@ -12,9 +11,8 @@ public class Main {
             String[] p = line.split("\\s+");
             String name = p[0];
             String raw = p[p.length - 1];
-            // TODO: try { AgeValidator.validate(raw) => in "<tên>: <tuổi> tuổi" }
-            //       catch (InvalidAgeException e) { in "<tên>: LỖI - " + e.getMessage() }
+            // TODO: try validate -> "<name>: <age>"; catch InvalidAgeException -> "<name>: ERROR - " + message
         }
-        System.out.println("Hợp lệ: " + valid + ", lỗi: " + invalid);
+        System.out.println("Valid: " + valid + ", invalid: " + invalid);
     }
 }

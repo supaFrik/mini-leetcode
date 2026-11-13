@@ -1,15 +1,14 @@
 {
   "slug": "oop-collections",
-  "title": "Collections & đóng gói danh sách",
-  "summary": "List / Set / Map, generics, tìm theo khoá bằng Map và không để lộ collection bên trong ra ngoài.",
-  "estMinutes": 20,
+  "title": "Collections",
+  "summary": "",
+  "estMinutes": 15,
   "steps": [
-    {"type": "THEORY", "title": "Lý thuyết", "theoryFile": "theory.md"},
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
     {
-      "type": "CHOICE", "title": "Chọn collection",
+      "type": "CHOICE", "title": "Pick a collection",
       "content": {
-        "prompt": "Ngân hàng cần **tìm tài khoản theo id thật nhanh** và **in theo thứ tự mở**. Chọn kiểu nào?",
-        "hint": "Cần tra theo khoá và giữ thứ tự thêm vào.",
+        "prompt": "A bank needs fast lookup by id and listing in opening order. Which type?",
         "options": [
           {"id": "a", "text": "ArrayList<Account>"},
           {"id": "b", "text": "HashSet<Account>"},
@@ -17,35 +16,35 @@
           {"id": "d", "text": "HashMap<Integer, Account>"}
         ]
       },
-      "answer": {"correct": ["c"], "explanation": "Map tra theo id; Linked giữ thứ tự thêm. HashMap không giữ thứ tự, ArrayList phải duyệt cả danh sách."}
+      "answer": {"correct": ["c"], "explanation": "A map looks up by id; the linked variant keeps insertion order."}
     },
     {
-      "type": "CHOICE", "title": "Getter an toàn",
+      "type": "CHOICE", "title": "Safe getter",
       "content": {
-        "prompt": "`Bank` giữ `private final List<Account> accounts`. Chọn **tất cả** cách trả danh sách ra ngoài mà nơi gọi **không** sửa được dữ liệu của Bank.",
+        "prompt": "`Bank` has `private final List<Account> accounts`. Select every return statement that callers cannot use to change the bank's data.",
         "multiple": true,
         "options": [
           {"id": "a", "text": "return accounts;"},
           {"id": "b", "text": "return List.copyOf(accounts);"},
           {"id": "c", "text": "return Collections.unmodifiableList(accounts);"},
-          {"id": "d", "text": "Đổi field thành public"}
+          {"id": "d", "text": "Make the field public"}
         ]
       },
-      "answer": {"correct": ["b", "c"], "explanation": "private chỉ giấu field; trả thẳng tham chiếu thì nơi gọi vẫn clear() được."}
+      "answer": {"correct": ["b", "c"]}
     },
     {
-      "type": "MATCHING", "title": "Interface và đặc điểm",
+      "type": "MATCHING", "title": "Interfaces",
       "content": {
-        "prompt": "Ghép mỗi interface với đặc điểm của nó.",
+        "prompt": "Match each type with its property.",
         "left": [{"id": "l1", "text": "List"}, {"id": "l2", "text": "Set"}, {"id": "l3", "text": "Map"}, {"id": "l4", "text": "LinkedHashMap"}],
-        "right": [{"id": "r1", "text": "Có thứ tự, cho phép trùng, truy cập theo chỉ số"}, {"id": "r2", "text": "Không chứa phần tử trùng"}, {"id": "r3", "text": "Cặp khoá → giá trị, khoá không trùng"}, {"id": "r4", "text": "Map giữ thứ tự thêm vào"}]
+        "right": [{"id": "r1", "text": "Ordered, duplicates allowed"}, {"id": "r2", "text": "No duplicates"}, {"id": "r3", "text": "Key to value, unique keys"}, {"id": "r4", "text": "Map that keeps insertion order"}]
       },
       "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
     },
     {
-      "type": "ORDERING", "title": "Thêm sách không trùng",
+      "type": "ORDERING", "title": "Add without duplicates",
       "content": {
-        "prompt": "Sắp xếp lớp `Library` dùng Map và chỉ thêm sách khi chưa có mã.",
+        "prompt": "Order the lines of `Library`.",
         "items": [
           {"id": "a", "text": "public class Library {"},
           {"id": "b", "text": "    private final Map<String, Book> books = new LinkedHashMap<>();"},
@@ -58,17 +57,13 @@
       "answer": {"order": ["a", "b", "c", "d", "e", "f"]}
     },
     {
-      "type": "FILL_BLANK", "title": "Generics và bản chỉ đọc",
+      "type": "FILL_BLANK", "title": "Generics",
       "content": {
-        "prompt": "Điền phần còn thiếu.",
+        "prompt": "Fill in the blanks.",
         "code": "private final Map<Integer, [[1]]> byId = new LinkedHashMap<>();\n\npublic Account find(int id) {\n    return byId.[[2]](id);\n}\n\npublic List<Account> all() {\n    return List.[[3]](byId.values());\n}"
       },
       "answer": {"blanks": {"1": ["Account"], "2": ["get"], "3": ["copyOf"]}, "caseSensitive": true}
     },
-    {
-      "type": "CODE", "title": "Bài tập: thư viện sách",
-      "content": {"intro": "Áp dụng: Library đóng gói LinkedHashMap, all() trả bản không sửa được."},
-      "problem": "oop-6-collections"
-    }
+    {"type": "CODE", "title": "Library", "content": {}, "problem": "oop-6-collections"}
   ]
 }

@@ -15,13 +15,13 @@ public class Main {
             String raw = p[p.length - 1];
             try {
                 int age = AgeValidator.validate(raw);
-                System.out.println(name + ": " + age + " tuổi");
+                System.out.println(name + ": " + age);
                 valid++;
             } catch (InvalidAgeException e) {
-                System.out.println(name + ": LỖI - " + e.getMessage());
+                System.out.println(name + ": ERROR - " + e.getMessage());
                 invalid++;
             }
         }
-        System.out.println("Hợp lệ: " + valid + ", lỗi: " + invalid);
+        System.out.println("Valid: " + valid + ", invalid: " + invalid);
     }
 }

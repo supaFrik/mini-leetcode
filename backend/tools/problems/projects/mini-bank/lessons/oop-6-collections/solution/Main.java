@@ -14,22 +14,22 @@ public class Main {
             switch (p[0]) {
                 case "ADD" -> {
                     String title = p.length > 2 ? p[2].trim().replaceAll("\\s+", " ") : "";
-                    System.out.println(library.add(new Book(p[1], title)) ? "Đã thêm " + p[1] : "Trùng mã " + p[1]);
+                    System.out.println(library.add(new Book(p[1], title)) ? "Added " + p[1] : "Duplicate id " + p[1]);
                 }
                 case "FIND" -> {
                     Book book = library.find(p[1]);
-                    System.out.println(book != null ? book.toString() : "Không tìm thấy " + p[1]);
+                    System.out.println(book != null ? book.toString() : "Not found: " + p[1]);
                 }
-                case "REMOVE" -> System.out.println(library.remove(p[1]) ? "Đã xoá " + p[1] : "Không tìm thấy " + p[1]);
+                case "REMOVE" -> System.out.println(library.remove(p[1]) ? "Removed " + p[1] : "Not found: " + p[1]);
                 case "LIST" -> {
                     List<Book> all = library.all();
                     if (all.isEmpty()) {
-                        System.out.println("(trống)");
+                        System.out.println("(empty)");
                     }
                     all.forEach(System.out::println);
                 }
-                case "COUNT" -> System.out.println("Số sách: " + library.size());
-                default -> System.err.println("Lệnh không hỗ trợ: " + p[0]);
+                case "COUNT" -> System.out.println("Books: " + library.size());
+                default -> System.err.println("Unknown command: " + p[0]);
             }
         }
     }

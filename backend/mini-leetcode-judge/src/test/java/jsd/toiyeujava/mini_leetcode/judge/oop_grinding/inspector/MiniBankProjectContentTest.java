@@ -33,7 +33,7 @@ class MiniBankProjectContentTest {
 
     private static final Path TOOLS = Path.of("..", "tools", "problems");
     private static final Path PROJECT = TOOLS.resolve("projects").resolve("mini-bank");
-    private static final Path REFERENCE = TOOLS.resolve("oop-starters").resolve("mini-bank-console");
+    private static final Path REFERENCE = PROJECT.resolve("reference");
     private final ObjectMapper mapper = new ObjectMapper();
     private final OopGrindingInspector inspector = new OopGrindingInspector(mapper);
 
@@ -105,8 +105,8 @@ class MiniBankProjectContentTest {
         Path folder = PROJECT.resolve("lessons").resolve(slug);
         JsonNode lesson = mapper.readTree(folder.resolve("lesson.json").toFile());
         assertThat(lesson.get("slug").asText()).isEqualTo(slug);
-        assertThat(Files.readString(folder.resolve("lesson.md"))).contains("### Bài tập", "### Cách chấm");
-        assertThat(Files.readString(folder.resolve("theory.md"))).contains("## Mục tiêu", "## Lỗi thường gặp", "## Tóm tắt");
+        assertThat(Files.readString(folder.resolve("lesson.md"))).contains("### Task", "### Example", "### Grading");
+        assertThat(Files.readString(folder.resolve("theory.md"))).contains("## Common mistakes");
         assertThat(lesson.get("cases").size()).as("public sample + at least one hidden case").isGreaterThanOrEqualTo(2);
         assertThat(javaFiles(folder.resolve("starter"))).anyMatch(p -> p.getFileName().toString().equals("Main.java"));
 

@@ -1,61 +1,50 @@
-## Mục tiêu
-- Nắm cây phân cấp `Throwable` và khác biệt **checked / unchecked**.
-- Dùng `throw`, `throws`, `try / catch / finally` đúng chỗ.
-- Tự định nghĩa exception mang ý nghĩa nghiệp vụ.
-- Bọc exception kỹ thuật thành exception nghiệp vụ mà không mất nguyên nhân gốc.
-
-## 1. Cây phân cấp
+## Hierarchy
 
 ```
 Throwable
-├── Error                 lỗi của JVM (OutOfMemoryError...) — đừng bắt
-└── Exception             CHECKED: trình biên dịch bắt bạn xử lý
-    ├── IOException, ... (và exception bạn tự viết extends Exception)
-    └── RuntimeException  UNCHECKED: không bắt buộc xử lý
+├── Error                 JVM problems (OutOfMemoryError) — do not catch
+└── Exception             CHECKED: the compiler requires handling
+    ├── IOException, your own "extends Exception"
+    └── RuntimeException  UNCHECKED
         ├── IllegalArgumentException
         ├── NumberFormatException
-        ├── NullPointerException
-        └── ArrayIndexOutOfBoundsException
+        └── NullPointerException
 ```
 
-- **Checked** (`extends Exception`): tình huống **có thể xảy ra dù code đúng** — file không tồn tại, tài khoản không đủ tiền. Trình biên dịch buộc nơi gọi phải `catch` hoặc khai báo `throws` tiếp.
-- **Unchecked** (`extends RuntimeException`): thường là **lỗi lập trình** hoặc đầu vào vi phạm hợp đồng — tham số âm, `null`, chỉ số vượt mảng.
+- **Checked**: can happen even when the code is correct (missing file, insufficient funds). Callers must `catch` or declare `throws`.
+- **Unchecked**: usually a programming error or a broken contract (negative argument, `null`).
 
-## 2. `throw` và `throws`
+## throw and throws
 
 ```java
-public long withdraw(long amount) throws InsufficientFundsException {   // khai báo: có thể ném
+public long withdraw(long amount) throws InsufficientFundsException {
     if (amount > balance) {
-        throw new InsufficientFundsException("Không đủ tiền");         // ném thật
+        throw new InsufficientFundsException("Insufficient funds");
     }
     balance -= amount;
     return balance;
 }
 ```
 
-- `throw` là **câu lệnh**: dừng method ngay, đẩy exception lên nơi gọi.
-- `throws` là **khai báo** trong chữ ký: báo cho nơi gọi biết phải xử lý.
+`throw` is a statement that leaves the method. `throws` is part of the signature.
 
-## 3. `try / catch / finally`
+## try / catch / finally
 
 ```java
 try {
     account.withdraw(amount);
-    System.out.println("Thành công");
 } catch (InsufficientFundsException e) {
     System.err.println(e.getMessage());
-} catch (NumberFormatException | IllegalArgumentException e) {   // multi-catch
-    System.err.println("Dữ liệu sai: " + e.getMessage());
+} catch (NumberFormatException | IllegalArgumentException e) {
+    System.err.println("Bad input: " + e.getMessage());
 } finally {
-    System.out.println("Luôn chạy, kể cả khi có lỗi");          // dọn dẹp tài nguyên
+    // always runs
 }
 ```
 
-- `catch` khớp theo **thứ tự từ trên xuống**: đặt lớp con trước lớp cha.
-- Không bao giờ "nuốt" lỗi bằng `catch (Exception e) {}` rỗng — lỗi biến mất không dấu vết.
-- Với tài nguyên cần đóng (file, socket), dùng `try (var r = ...) { }` (try-with-resources).
+Catch blocks match top to bottom: subclasses before superclasses. Never leave a `catch` empty.
 
-## 4. Exception tự định nghĩa
+## Custom exceptions
 
 ```java
 public class InsufficientFundsException extends Exception {
@@ -69,37 +58,22 @@ public class InsufficientFundsException extends Exception {
 }
 ```
 
-Tên exception là một phần của API: nơi gọi đọc `throws InsufficientFundsException` là hiểu ngay chuyện gì có thể xảy ra, thay vì một `Exception` chung chung.
+## Wrapping
 
-## 5. Bọc exception (exception chaining)
-
-Đầu vào sai định dạng gây `NumberFormatException` — một lỗi **kỹ thuật**. Ở tầng nghiệp vụ, bạn muốn báo lỗi **nghiệp vụ** nhưng vẫn giữ nguyên nhân gốc để debug:
+Turn a technical error into a business error and keep the cause:
 
 ```java
 try {
     age = Integer.parseInt(raw);
 } catch (NumberFormatException e) {
-    throw new InvalidAgeException("Không phải số: " + raw, e);   // e thành getCause()
+    throw new InvalidAgeException("Not a number: " + raw, e);
 }
 ```
 
-## 6. Chương trình không được "chết" vì input sai
+In a command loop, wrap each command in its own `try / catch` so one bad line does not stop the program.
 
-Với chương trình đọc lệnh, mỗi lệnh nên được bọc trong `try / catch` riêng: lệnh lỗi thì báo và **chạy tiếp lệnh sau**, không để một dòng sai làm dừng cả chương trình.
+## Common mistakes
 
-## Lỗi thường gặp
-| Lỗi | Hậu quả | Sửa |
-|-----|---------|-----|
-| `catch (Exception e) {}` rỗng | Lỗi bị giấu, dữ liệu sai âm thầm | Ít nhất ghi lại `e.getMessage()` |
-| Đặt `catch (Exception)` trước `catch` cụ thể | Lỗi biên dịch "already been caught" | Lớp con trước, lớp cha sau |
-| Dùng exception để điều khiển luồng bình thường | Code khó đọc, chậm | Kiểm tra điều kiện bằng `if` khi có thể |
-| Bọc lỗi mà không truyền `cause` | Mất stack trace gốc | `new XxxException(msg, e)` |
-
-## Trong Mini Bank
-Stage 3 yêu cầu `InsufficientFundsException extends Exception` (checked) và `withdraw` khai báo `throws`. Lệnh `TRANSFER` rút ở tài khoản này rồi nạp vào tài khoản kia. Mọi input sai (số không hợp lệ, sai id, thiếu tham số) phải in ra `System.err` và chương trình chạy tiếp.
-
-## Tóm tắt
-- Checked = tình huống nghiệp vụ có thể xảy ra, phải xử lý; unchecked = lỗi lập trình / vi phạm hợp đồng.
-- `throw` ném, `throws` khai báo; `catch` từ cụ thể tới chung; `finally` luôn chạy.
-- Exception tự định nghĩa làm API rõ nghĩa; bọc lỗi kỹ thuật thì giữ `cause`.
-- Chương trình đọc lệnh: mỗi lệnh một `try / catch`, lỗi thì báo rồi chạy tiếp.
+- `catch (Exception e) {}` hides the error.
+- `catch (Exception e)` before a more specific catch does not compile.
+- Wrapping without passing the cause loses the original stack trace.

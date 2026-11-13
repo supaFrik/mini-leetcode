@@ -1,21 +1,20 @@
-/** Bài 3 — lớp cha của mọi nhân viên. Đề: lesson.md. */
 public class Employee {
-    // TODO 1: field tên (private) và lương cơ bản (protected để lớp con đọc được)
+    // TODO: name (private), base salary (protected)
 
     public Employee(String name, long baseSalary) {
-        // TODO 2
+        // TODO
     }
 
     public long salary() {
-        return 0; // TODO 3: lương cơ bản
+        return 0; // TODO
     }
 
     public String role() {
-        return "Nhân viên";
+        return "Employee";
     }
 
     @Override
     public String toString() {
-        return ""; // TODO 4: "<tên> (<role()>): <salary()>" — viết một lần, đúng cho mọi lớp con
+        return ""; // TODO: "<name> (<role()>): <salary()>"
     }
 }

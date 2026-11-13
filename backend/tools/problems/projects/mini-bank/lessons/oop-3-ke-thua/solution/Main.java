@@ -21,6 +21,6 @@ public class Main {
             System.out.println(e);
             total += e.salary();
         }
-        System.out.println("Tổng lương: " + total);
+        System.out.println("Total salary: " + total);
     }
 }

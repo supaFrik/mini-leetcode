@@ -1,4 +1,4 @@
-/** Tiết kiệm: sau khi rút còn ít nhất 50.000; cuối tháng cộng lãi 0,5% (làm tròn). */
+/** Keeps at least 50,000 after a withdrawal; month-end interest 0.5% (rounded). */
 public class SavingsAccount extends Account {
 
     public SavingsAccount(String owner, long initialBalance) {

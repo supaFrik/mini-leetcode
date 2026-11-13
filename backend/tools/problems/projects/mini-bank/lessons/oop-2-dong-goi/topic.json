@@ -1,74 +1,68 @@
 {
   "slug": "oop-dong-goi",
-  "title": "Đóng gói (Encapsulation)",
-  "summary": "Giấu trạng thái bằng private, chỉ cho đổi qua method có kiểm tra; access modifier và vì sao không nên viết setter.",
-  "estMinutes": 20,
+  "title": "Encapsulation",
+  "summary": "",
+  "estMinutes": 15,
   "steps": [
-    {"type": "THEORY", "title": "Lý thuyết", "theoryFile": "theory.md"},
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
     {
-      "type": "CHOICE", "title": "Field nào nên private?",
+      "type": "CHOICE", "title": "What should be private?",
       "content": {
-        "prompt": "Trong lớp `Account`, chọn **tất cả** thành phần nên để `private`.",
+        "prompt": "In `Account`, select everything that should be `private`.",
         "multiple": true,
-        "hint": "Trạng thái thay đổi theo nghiệp vụ luôn được giấu; method mà lớp khác cần gọi thì public.",
         "options": [
           {"id": "a", "text": "Field balance"},
           {"id": "b", "text": "Field owner"},
           {"id": "c", "text": "Method deposit(long)"},
-          {"id": "d", "text": "Method phụ kiểm tra số tiền chỉ dùng trong lớp"}
+          {"id": "d", "text": "A helper used only inside the class"}
         ]
       },
-      "answer": {"correct": ["a", "b", "d"], "explanation": "Field luôn private; method nội bộ cũng private; deposit là cửa vào nên public."}
+      "answer": {"correct": ["a", "b", "d"], "explanation": "deposit is the entry point other classes call, so it is public."}
     },
     {
-      "type": "CHOICE", "title": "Thay setBalance bằng gì?",
+      "type": "CHOICE", "title": "Replacing setBalance",
       "content": {
-        "prompt": "Lớp `Account` đang có `public void setBalance(long b)`. Cách sửa nào giữ được bất biến \"số dư không âm\"?",
+        "prompt": "`Account` has `public void setBalance(long b)`. Which change keeps \"the balance is never negative\"?",
         "options": [
-          {"id": "a", "text": "Giữ setBalance, nhắc nơi gọi đừng truyền số âm"},
-          {"id": "b", "text": "Bỏ setBalance, thêm deposit / withdraw tự kiểm tra trước khi đổi số dư"},
-          {"id": "c", "text": "Đổi balance thành public cho đơn giản"},
-          {"id": "d", "text": "Kiểm tra số dư ở Main sau mỗi lần gọi setBalance"}
+          {"id": "a", "text": "Keep setBalance and document that callers must not pass negatives"},
+          {"id": "b", "text": "Remove setBalance; add deposit / withdraw that validate before changing the balance"},
+          {"id": "c", "text": "Make balance public"},
+          {"id": "d", "text": "Check the balance in Main after each setBalance call"}
         ]
       },
-      "answer": {"correct": ["b"], "explanation": "Method nghiệp vụ là cửa duy nhất, kiểm tra ở một chỗ — \"tell, don't ask\"."}
+      "answer": {"correct": ["b"]}
     },
     {
-      "type": "MATCHING", "title": "Access modifier",
+      "type": "MATCHING", "title": "Access modifiers",
       "content": {
-        "prompt": "Ghép mỗi modifier với phạm vi truy cập của nó.",
-        "left": [{"id": "l1", "text": "private"}, {"id": "l2", "text": "(không ghi)"}, {"id": "l3", "text": "protected"}, {"id": "l4", "text": "public"}],
-        "right": [{"id": "r1", "text": "Chỉ trong cùng lớp"}, {"id": "r2", "text": "Các lớp cùng package"}, {"id": "r3", "text": "Cùng package + lớp con"}, {"id": "r4", "text": "Mọi nơi"}]
+        "prompt": "Match each modifier with its visibility.",
+        "left": [{"id": "l1", "text": "private"}, {"id": "l2", "text": "(none)"}, {"id": "l3", "text": "protected"}, {"id": "l4", "text": "public"}],
+        "right": [{"id": "r1", "text": "Same class"}, {"id": "r2", "text": "Same package"}, {"id": "r3", "text": "Same package and subclasses"}, {"id": "r4", "text": "Everyone"}]
       },
       "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
     },
     {
-      "type": "ORDERING", "title": "Thứ tự trong withdraw",
+      "type": "ORDERING", "title": "withdraw",
       "content": {
-        "prompt": "Sắp xếp các dòng của `withdraw` để lỗi không làm hỏng dữ liệu.",
-        "hint": "Kiểm tra trước, đổi trạng thái sau.",
+        "prompt": "Order the lines of `withdraw` so that an error never corrupts the balance.",
         "items": [
           {"id": "a", "text": "public void withdraw(long amount) {"},
-          {"id": "b", "text": "    if (amount <= 0) throw new IllegalArgumentException(\"Số tiền phải dương\");"},
-          {"id": "c", "text": "    if (amount > balance) throw new IllegalArgumentException(\"Không đủ tiền\");"},
+          {"id": "b", "text": "    if (amount <= 0) throw new IllegalArgumentException(\"Amount must be positive\");"},
+          {"id": "c", "text": "    if (amount > balance) throw new IllegalArgumentException(\"Insufficient funds\");"},
           {"id": "d", "text": "    balance -= amount;"},
           {"id": "e", "text": "}"}
         ]
       },
-      "answer": {"order": ["a", "b", "c", "d", "e"], "explanation": "Nếu trừ tiền trước rồi mới kiểm tra, lỗi xảy ra khi dữ liệu đã hỏng."}
+      "answer": {"order": ["a", "b", "c", "d", "e"]}
     },
     {
-      "type": "FILL_BLANK", "title": "Hoàn thành lớp Wallet",
+      "type": "FILL_BLANK", "title": "Wallet",
       "content": {
-        "prompt": "Điền từ khoá để `Wallet` được đóng gói đúng cách.",
-        "code": "public class Wallet {\n    [[1]] long balance;\n\n    public void deposit(long amount) {\n        if (amount <= 0) {\n            [[2]] new IllegalArgumentException(\"Số tiền phải dương\");\n        }\n        balance += amount;\n    }\n\n    public long [[3]]() {\n        return balance;\n    }\n}"
+        "prompt": "Fill in the blanks.",
+        "code": "public class Wallet {\n    [[1]] long balance;\n\n    public void deposit(long amount) {\n        if (amount <= 0) {\n            [[2]] new IllegalArgumentException(\"Amount must be positive\");\n        }\n        balance += amount;\n    }\n\n    public long [[3]]() {\n        return balance;\n    }\n}"
       },
       "answer": {"blanks": {"1": ["private"], "2": ["throw"], "3": ["getBalance"]}, "caseSensitive": true}
     },
-    {
-      "type": "CODE", "title": "Bài tập: ví điện tử",
-      "content": {"intro": "Áp dụng: Wallet giấu số dư, deposit / pay từ chối số tiền sai bằng IllegalArgumentException."},
-      "problem": "oop-2-dong-goi"
-    }
+    {"type": "CODE", "title": "Wallet", "content": {}, "problem": "oop-2-dong-goi"}
   ]
 }

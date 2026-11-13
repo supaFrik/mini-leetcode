@@ -1,10 +1,6 @@
-/**
- * Stage 2: Account trở thành lớp abstract. Mỗi loại tài khoản tự quyết định được rút bao nhiêu và
- * làm gì cuối tháng — bỏ field "loại" của stage 1, dùng getType() của lớp con.
- * (Plugin không ghi đè Account.java bạn đã viết; file này chỉ là gợi ý cấu trúc.)
- */
+/** Stage 2: Account is abstract; subclasses decide withdrawals and month-end. Drop the type field. */
 public abstract class Account {
-    // TODO: id tự tăng, chủ tài khoản, số dư (không public)
+    // TODO: id, owner, balance (not public)
 
     protected Account(String owner, long initialBalance) {
         // TODO
@@ -22,7 +18,7 @@ public abstract class Account {
         return 0; // TODO
     }
 
-    /** Rút tiền nếu canWithdraw(amount); không được thì báo lỗi và giữ nguyên số dư. Trả về số dư mới. */
+    /** Withdraws if canWithdraw(amount); otherwise fails and keeps the balance. Returns the new balance. */
     public long withdraw(long amount) {
         return 0; // TODO
     }
@@ -35,6 +31,6 @@ public abstract class Account {
 
     @Override
     public String toString() {
-        return String.format("#%d %-12s %-10s %,15d", getId(), getType(), "?", getBalance()); // TODO: chủ tài khoản
+        return String.format("#%d %-12s %-10s %,15d", getId(), getType(), "?", getBalance()); // TODO: owner
     }
 }

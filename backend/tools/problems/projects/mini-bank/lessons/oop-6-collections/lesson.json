@@ -1,6 +1,6 @@
 {
   "slug": "oop-6-collections",
-  "title": "Bài 6 — Collections & đóng gói danh sách",
+  "title": "Collections: library",
   "difficulty": "MEDIUM",
   "tags": ["OOP", "Collections", "Encapsulation"],
   "forStage": 4,
@@ -15,21 +15,21 @@
         {"name": "find", "returnType": "Book", "parameterTypes": ["String"], "requiredModifiers": ["public"]},
         {"name": "all", "returnType": "List", "requiredModifiers": ["public"]}
       ],
-      "customFailureMessage": "Library phải đóng gói collection (mọi field private) và có public boolean add(Book), public Book find(String), public List<Book> all()"
+      "customFailureMessage": "Library must keep its fields private and have public boolean add(Book), public Book find(String), public List<Book> all()"
     },
     {
       "ruleName": "BOOK_ENCAPSULATION",
       "targetClassName": "Book",
       "expectedType": "CLASS",
       "fields": [{"name": "*", "matchAllFields": true, "forbiddenModifiers": ["public"]}],
-      "customFailureMessage": "Book không được có field public"
+      "customFailureMessage": "Book must have no public fields"
     }
   ],
   "cases": [
-    {"name": "vi-du", "stdin": "ADD B1 Clean Code\nADD B2 Effective Java\nADD B1 Refactoring\nFIND B2\nREMOVE B9\nLIST\nCOUNT\n"},
-    {"name": "rong", "stdin": "LIST\nCOUNT\nFIND X\nREMOVE X\n"},
-    {"name": "xoa-roi-them-lai", "stdin": "ADD A Sách A\nADD B Sách B\nREMOVE A\nADD A Sách A mới\nLIST\nCOUNT\n"},
-    {"name": "ten-nhieu-tu", "stdin": "ADD J1 Java   Concurrency   in Practice\nFIND J1\nLIST\n"},
-    {"name": "xoa-het", "stdin": "ADD X1 Một\nADD X2 Hai\nREMOVE X1\nREMOVE X2\nREMOVE X2\nLIST\nCOUNT\n"}
+    {"name": "example", "stdin": "ADD B1 Clean Code\nADD B2 Effective Java\nADD B1 Refactoring\nFIND B2\nREMOVE B9\nLIST\nCOUNT\n"},
+    {"name": "empty", "stdin": "LIST\nCOUNT\nFIND X\nREMOVE X\n"},
+    {"name": "remove-and-add-again", "stdin": "ADD A Book A\nADD B Book B\nREMOVE A\nADD A New book A\nLIST\nCOUNT\n"},
+    {"name": "multi-word-title", "stdin": "ADD J1 Java   Concurrency   in Practice\nFIND J1\nLIST\n"},
+    {"name": "remove-all", "stdin": "ADD X1 One\nADD X2 Two\nREMOVE X1\nREMOVE X2\nREMOVE X2\nLIST\nCOUNT\n"}
   ]
 }

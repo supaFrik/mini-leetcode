@@ -20,18 +20,18 @@ public class Main {
             String name = p[0];
             String rest = p.length > 1 ? p[1] : "";
             if (name.equals("HELP")) {
-                System.out.println("Lệnh: " + String.join(", ", commands.keySet()));
+                System.out.println("Commands: " + String.join(", ", commands.keySet()));
                 continue;
             }
             Command command = commands.get(name);
             if (command == null) {
-                System.out.println("Lệnh không hỗ trợ: " + name);
+                System.out.println("Unknown command: " + name);
                 continue;
             }
             try {
                 System.out.println(command.run(rest));
             } catch (IllegalArgumentException e) {
-                System.out.println("Lỗi: " + e.getMessage());
+                System.out.println("Error: " + e.getMessage());
             }
         }
     }

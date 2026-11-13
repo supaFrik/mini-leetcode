@@ -1,7 +1,4 @@
-/**
- * Stage 3: checked exception khi rút / chuyển quá hạn mức.
- * Account.withdraw khai báo "throws InsufficientFundsException"; Main bắt lỗi, in ra System.err và chạy tiếp.
- */
+/** Stage 3: Account.withdraw declares "throws InsufficientFundsException". */
 public class InsufficientFundsException extends Exception {
 
     public InsufficientFundsException(String message) {

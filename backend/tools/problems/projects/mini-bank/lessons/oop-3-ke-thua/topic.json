@@ -1,28 +1,28 @@
 {
   "slug": "oop-ke-thua",
-  "title": "Kế thừa & ghi đè (override)",
-  "summary": "Quan hệ \"là một\", extends, gọi super(...), @Override và khi nào nên dùng composition thay cho kế thừa.",
-  "estMinutes": 20,
+  "title": "Inheritance",
+  "summary": "",
+  "estMinutes": 15,
   "steps": [
-    {"type": "THEORY", "title": "Lý thuyết", "theoryFile": "theory.md"},
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
     {
-      "type": "CHOICE", "title": "Is-a hay has-a?",
+      "type": "CHOICE", "title": "Is-a or has-a?",
       "content": {
-        "prompt": "Quan hệ nào phù hợp để dùng `extends`?",
-        "hint": "Đọc to câu \"B là một A\" — có đúng về nghiệp vụ không?",
+        "prompt": "Which relation fits `extends`?",
+        "hint": "Say \"B is an A\" out loud.",
         "options": [
-          {"id": "a", "text": "SavingsAccount là một Account"},
-          {"id": "b", "text": "Bank có danh sách Account"},
-          {"id": "c", "text": "Account có một Customer làm chủ"},
-          {"id": "d", "text": "Main dùng Scanner để đọc lệnh"}
+          {"id": "a", "text": "SavingsAccount is an Account"},
+          {"id": "b", "text": "Bank has a list of Accounts"},
+          {"id": "c", "text": "Account has an owner Customer"},
+          {"id": "d", "text": "Main uses a Scanner"}
         ]
       },
-      "answer": {"correct": ["a"], "explanation": "Chỉ (a) là quan hệ is-a; các câu còn lại là \"có một\" / \"dùng\" nên giải bằng field."}
+      "answer": {"correct": ["a"]}
     },
     {
-      "type": "CHOICE", "title": "Override hay overload?",
+      "type": "CHOICE", "title": "Override or overload?",
       "content": {
-        "prompt": "Lớp cha có `public long salary()`. Trong lớp con, khai báo nào là **ghi đè** (override)?",
+        "prompt": "The parent has `public long salary()`. Which subclass declaration overrides it?",
         "options": [
           {"id": "a", "text": "public long salary(int month)"},
           {"id": "b", "text": "@Override public long salary()"},
@@ -30,22 +30,21 @@
           {"id": "d", "text": "public static long salary()"}
         ]
       },
-      "answer": {"correct": ["b"], "explanation": "Ghi đè phải cùng tên, cùng tham số, không thu hẹp quyền truy cập; (a) là overload, (c) thu hẹp quyền, (d) là static."}
+      "answer": {"correct": ["b"], "explanation": "(a) overloads, (c) narrows access, (d) is static."}
     },
     {
-      "type": "MATCHING", "title": "Từ khoá kế thừa",
+      "type": "MATCHING", "title": "Keywords",
       "content": {
-        "prompt": "Ghép mỗi từ khoá với tác dụng của nó.",
+        "prompt": "Match each keyword with what it does.",
         "left": [{"id": "l1", "text": "extends"}, {"id": "l2", "text": "super(...)"}, {"id": "l3", "text": "super.salary()"}, {"id": "l4", "text": "@Override"}],
-        "right": [{"id": "r1", "text": "Khai báo lớp cha"}, {"id": "r2", "text": "Gọi constructor lớp cha (câu lệnh đầu tiên)"}, {"id": "r3", "text": "Gọi bản method của lớp cha"}, {"id": "r4", "text": "Nhờ trình biên dịch kiểm tra đúng là ghi đè"}]
+        "right": [{"id": "r1", "text": "Declares the parent class"}, {"id": "r2", "text": "Calls the parent constructor"}, {"id": "r3", "text": "Calls the parent's version of a method"}, {"id": "r4", "text": "Makes the compiler check the override"}]
       },
       "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
     },
     {
-      "type": "ORDERING", "title": "Lớp Manager",
+      "type": "ORDERING", "title": "Manager",
       "content": {
-        "prompt": "Sắp xếp để có lớp `Manager` kế thừa `Employee` và cộng thêm thưởng.",
-        "hint": "super(...) phải là câu lệnh đầu tiên của constructor.",
+        "prompt": "Order the lines of `Manager`.",
         "items": [
           {"id": "a", "text": "public class Manager extends Employee {"},
           {"id": "b", "text": "    private final long bonus;"},
@@ -60,17 +59,13 @@
       "answer": {"order": ["a", "b", "c", "d", "e", "f", "g", "h"]}
     },
     {
-      "type": "FILL_BLANK", "title": "Hoàn thành lớp Intern",
+      "type": "FILL_BLANK", "title": "Intern",
       "content": {
-        "prompt": "Thực tập sinh nhận nửa lương cơ bản. Điền phần còn thiếu.",
+        "prompt": "Fill in the blanks. An intern earns half the base salary.",
         "code": "public class Intern [[1]] Employee {\n    public Intern(String name, long base) {\n        [[2]](name, base);\n    }\n\n    [[3]]\n    public long salary() {\n        return baseSalary / 2;\n    }\n}"
       },
       "answer": {"blanks": {"1": ["extends"], "2": ["super"], "3": ["@Override"]}, "caseSensitive": true}
     },
-    {
-      "type": "CODE", "title": "Bài tập: bảng lương",
-      "content": {"intro": "Áp dụng: Employee, Manager, Intern trong một List<Employee>; toString() viết một lần ở lớp cha."},
-      "problem": "oop-3-ke-thua"
-    }
+    {"type": "CODE", "title": "Payroll", "content": {}, "problem": "oop-3-ke-thua"}
   ]
 }

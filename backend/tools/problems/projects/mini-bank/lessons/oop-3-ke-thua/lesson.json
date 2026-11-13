@@ -1,6 +1,6 @@
 {
   "slug": "oop-3-ke-thua",
-  "title": "Bài 3 — Kế thừa & ghi đè (override)",
+  "title": "Inheritance: payroll",
   "difficulty": "EASY",
   "tags": ["OOP", "Inheritance", "Override"],
   "forStage": 2,
@@ -14,7 +14,7 @@
         {"name": "salary", "returnType": "long", "requiredModifiers": ["public"]},
         {"name": "role", "returnType": "String", "requiredModifiers": ["public"]}
       ],
-      "customFailureMessage": "Employee cần constructor Employee(String, long), public long salary() và public String role()"
+      "customFailureMessage": "Employee needs Employee(String, long), public long salary() and public String role()"
     },
     {
       "ruleName": "MANAGER_EXTENDS_EMPLOYEE",
@@ -23,7 +23,7 @@
       "expectedSuperclass": "Employee",
       "constructors": [{"parameterTypes": ["String", "long", "long"]}],
       "methods": [{"name": "salary", "returnType": "long", "requiredModifiers": ["public"]}],
-      "customFailureMessage": "Manager phải kế thừa Employee, có constructor Manager(String, long, long) và ghi đè salary()"
+      "customFailureMessage": "Manager must extend Employee, have Manager(String, long, long) and override salary()"
     },
     {
       "ruleName": "INTERN_EXTENDS_EMPLOYEE",
@@ -31,14 +31,14 @@
       "expectedType": "CLASS",
       "expectedSuperclass": "Employee",
       "methods": [{"name": "salary", "returnType": "long", "requiredModifiers": ["public"]}],
-      "customFailureMessage": "Intern phải kế thừa Employee và ghi đè salary()"
+      "customFailureMessage": "Intern must extend Employee and override salary()"
     }
   ],
   "cases": [
-    {"name": "vi-du", "stdin": "3\nE An 10000000\nM Hà 20000000 5000000\nI Tú 6000000\n"},
-    {"name": "chi-nhan-vien", "stdin": "2\nE Lan 7000000\nE Minh 8000000\n"},
-    {"name": "thuc-tap-le", "stdin": "2\nI Bảo 5000001\nI Chi 1\n"},
-    {"name": "nhieu-quan-ly", "stdin": "4\nM A 30000000 0\nM B 30000000 10000000\nE C 9000000\nI D 4000000\n"},
-    {"name": "khong-ai", "stdin": "0\n"}
+    {"name": "example", "stdin": "3\nE Ann 10000000\nM Ha 20000000 5000000\nI Tu 6000000\n"},
+    {"name": "employees-only", "stdin": "2\nE Lan 7000000\nE Minh 8000000\n"},
+    {"name": "odd-intern-salary", "stdin": "2\nI Bao 5000001\nI Chi 1\n"},
+    {"name": "several-managers", "stdin": "4\nM A 30000000 0\nM B 30000000 10000000\nE C 9000000\nI D 4000000\n"},
+    {"name": "nobody", "stdin": "0\n"}
   ]
 }

@@ -1,4 +1,4 @@
-/** Thanh toán: được thấu chi tới -500.000; cuối tháng trừ phí 10.000. */
+/** Overdraft down to -500,000; month-end fee 10,000. */
 public class CheckingAccount extends Account {
 
     public CheckingAccount(String owner, long initialBalance) {

@@ -12,19 +12,19 @@ public class Main {
             String[] parts = line.split("\\s+");
             try {
                 switch (parts[0]) {
-                    case "NAP" -> {
+                    case "DEPOSIT" -> {
                         wallet.deposit(Long.parseLong(parts[1]));
-                        System.out.println("OK, số dư: " + wallet.getBalance());
+                        System.out.println("OK, balance: " + wallet.getBalance());
                     }
-                    case "TRA" -> {
+                    case "PAY" -> {
                         wallet.pay(Long.parseLong(parts[1]));
-                        System.out.println("OK, số dư: " + wallet.getBalance());
+                        System.out.println("OK, balance: " + wallet.getBalance());
                     }
-                    case "XEM" -> System.out.println(wallet.getOwner() + ": " + wallet.getBalance());
-                    default -> System.err.println("Lệnh không hỗ trợ: " + parts[0]);
+                    case "SHOW" -> System.out.println(wallet.getOwner() + ": " + wallet.getBalance());
+                    default -> System.err.println("Unknown command: " + parts[0]);
                 }
             } catch (IllegalArgumentException e) {
-                System.out.println("Lỗi: " + e.getMessage());
+                System.out.println("Error: " + e.getMessage());
             }
         }
     }

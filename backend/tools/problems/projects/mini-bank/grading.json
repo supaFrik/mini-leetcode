@@ -1,18 +1,44 @@
 {
-  "_comment": "Rule OOP theo stage: stage N dùng mọi rule có fromStage <= N (cộng dồn). Trường fromStage bị bỏ khi ghi vào problems.grading_config. 'output' áp dụng cho mọi stage: normalized = bỏ khoảng trắng / dòng trống thừa, không bắt căn cột đúng từng dấu cách.",
-  "output": {"mode": "normalized", "ignoreCase": false},
+  "_comment": "OOP rules per stage: stage N uses every rule with fromStage <= N. fromStage is dropped when written to problems.grading_config. 'output' applies to every stage (normalized: extra spaces and blank lines ignored).",
+  "output": {
+    "mode": "normalized",
+    "ignoreCase": false
+  },
   "rules": [
     {
       "fromStage": 1,
       "ruleName": "ACCOUNT_ENCAPSULATED",
       "targetClassName": "Account",
       "weight": 1.0,
-      "fields": [{"name": "*", "matchAllFields": true, "forbiddenModifiers": ["public"]}],
-      "methods": [
-        {"name": "deposit", "returnType": "long", "parameterTypes": ["long"], "requiredModifiers": ["public"]},
-        {"name": "getBalance", "returnType": "long", "requiredModifiers": ["public"]}
+      "fields": [
+        {
+          "name": "*",
+          "matchAllFields": true,
+          "forbiddenModifiers": [
+            "public"
+          ]
+        }
       ],
-      "customFailureMessage": "Account không được có field public và phải có public long deposit(long), public long getBalance()"
+      "methods": [
+        {
+          "name": "deposit",
+          "returnType": "long",
+          "parameterTypes": [
+            "long"
+          ],
+          "requiredModifiers": [
+            "public"
+          ]
+        },
+        {
+          "name": "getBalance",
+          "returnType": "long",
+          "requiredModifiers": [
+            "public"
+          ]
+        }
+      ],
+      "customFailureMessage": "Account must have no public fields and public long deposit(long), public long getBalance()"
     },
     {
       "fromStage": 2,
@@ -21,12 +47,42 @@
       "expectedType": "ABSTRACT_CLASS",
       "weight": 2.0,
       "methods": [
-        {"name": "canWithdraw", "returnType": "boolean", "parameterTypes": ["long"], "requiredModifiers": ["abstract"]},
-        {"name": "endOfMonth", "returnType": "void", "requiredModifiers": ["abstract"]},
-        {"name": "getType", "returnType": "String", "requiredModifiers": ["abstract"]},
-        {"name": "withdraw", "returnType": "long", "parameterTypes": ["long"], "requiredModifiers": ["public"]}
+        {
+          "name": "canWithdraw",
+          "returnType": "boolean",
+          "parameterTypes": [
+            "long"
+          ],
+          "requiredModifiers": [
+            "abstract"
+          ]
+        },
+        {
+          "name": "endOfMonth",
+          "returnType": "void",
+          "requiredModifiers": [
+            "abstract"
+          ]
+        },
+        {
+          "name": "getType",
+          "returnType": "String",
+          "requiredModifiers": [
+            "abstract"
+          ]
+        },
+        {
+          "name": "withdraw",
+          "returnType": "long",
+          "parameterTypes": [
+            "long"
+          ],
+          "requiredModifiers": [
+            "public"
+          ]
+        }
       ],
-      "customFailureMessage": "Account phải là lớp abstract với các phương thức abstract canWithdraw(long), endOfMonth(), getType() và public long withdraw(long)"
+      "customFailureMessage": "Account must be abstract with abstract canWithdraw(long), endOfMonth(), getType() and public long withdraw(long)"
     },
     {
       "fromStage": 2,
@@ -35,10 +91,25 @@
       "expectedType": "CLASS",
       "expectedSuperclass": "Account",
       "methods": [
-        {"name": "canWithdraw", "returnType": "boolean", "parameterTypes": ["long"], "forbiddenModifiers": ["abstract"]},
-        {"name": "endOfMonth", "returnType": "void", "forbiddenModifiers": ["abstract"]}
+        {
+          "name": "canWithdraw",
+          "returnType": "boolean",
+          "parameterTypes": [
+            "long"
+          ],
+          "forbiddenModifiers": [
+            "abstract"
+          ]
+        },
+        {
+          "name": "endOfMonth",
+          "returnType": "void",
+          "forbiddenModifiers": [
+            "abstract"
+          ]
+        }
       ],
-      "customFailureMessage": "SavingsAccount phải kế thừa Account và cài đặt canWithdraw(long), endOfMonth()"
+      "customFailureMessage": "SavingsAccount must extend Account and implement canWithdraw(long), endOfMonth()"
     },
     {
       "fromStage": 2,
@@ -47,10 +118,25 @@
       "expectedType": "CLASS",
       "expectedSuperclass": "Account",
       "methods": [
-        {"name": "canWithdraw", "returnType": "boolean", "parameterTypes": ["long"], "forbiddenModifiers": ["abstract"]},
-        {"name": "endOfMonth", "returnType": "void", "forbiddenModifiers": ["abstract"]}
+        {
+          "name": "canWithdraw",
+          "returnType": "boolean",
+          "parameterTypes": [
+            "long"
+          ],
+          "forbiddenModifiers": [
+            "abstract"
+          ]
+        },
+        {
+          "name": "endOfMonth",
+          "returnType": "void",
+          "forbiddenModifiers": [
+            "abstract"
+          ]
+        }
       ],
-      "customFailureMessage": "CheckingAccount phải kế thừa Account và cài đặt canWithdraw(long), endOfMonth()"
+      "customFailureMessage": "CheckingAccount must extend Account and implement canWithdraw(long), endOfMonth()"
     },
     {
       "fromStage": 3,
@@ -58,7 +144,7 @@
       "targetClassName": "InsufficientFundsException",
       "expectedType": "CLASS",
       "expectedSuperclass": "Exception",
-      "customFailureMessage": "InsufficientFundsException phải là checked exception (extends Exception)"
+      "customFailureMessage": "InsufficientFundsException must be a checked exception (extends Exception)"
     },
     {
       "fromStage": 4,
@@ -67,11 +153,42 @@
       "expectedType": "CLASS",
       "enforceEncapsulation": true,
       "methods": [
-        {"name": "open", "returnType": "Account", "parameterTypes": ["String", "String", "long"], "requiredModifiers": ["public"]},
-        {"name": "find", "returnType": "Account", "parameterTypes": ["int"], "requiredModifiers": ["public"]},
-        {"name": "transfer", "returnType": "void", "parameterTypes": ["int", "int", "long"], "requiredModifiers": ["public"]}
+        {
+          "name": "open",
+          "returnType": "Account",
+          "parameterTypes": [
+            "String",
+            "String",
+            "long"
+          ],
+          "requiredModifiers": [
+            "public"
+          ]
+        },
+        {
+          "name": "find",
+          "returnType": "Account",
+          "parameterTypes": [
+            "int"
+          ],
+          "requiredModifiers": [
+            "public"
+          ]
+        },
+        {
+          "name": "transfer",
+          "returnType": "void",
+          "parameterTypes": [
+            "int",
+            "int",
+            "long"
+          ],
+          "requiredModifiers": [
+            "public"
+          ]
+        }
       ],
-      "customFailureMessage": "Bank phải đóng gói danh sách tài khoản (field private) và có public open(String, String, long), find(int), transfer(int, int, long)"
+      "customFailureMessage": "Bank must keep its accounts private and have public open(String, String, long), find(int), transfer(int, int, long)"
     }
   ]
 }

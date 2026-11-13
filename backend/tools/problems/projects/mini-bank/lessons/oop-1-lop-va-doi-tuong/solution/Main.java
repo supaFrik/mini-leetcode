@@ -7,6 +7,6 @@ public class Main {
         for (int i = 0; i < n; i++) {
             System.out.println(new Customer(sc.nextLine().trim()));
         }
-        System.out.println("Tổng số khách hàng: " + Customer.count());
+        System.out.println("Total customers: " + Customer.count());
     }
 }

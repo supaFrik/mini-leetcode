@@ -1,6 +1,6 @@
 {
   "slug": "oop-2-dong-goi",
-  "title": "Bài 2 — Đóng gói (Encapsulation)",
+  "title": "Encapsulation: wallet",
   "difficulty": "EASY",
   "tags": ["OOP", "Encapsulation"],
   "forStage": 1,
@@ -16,14 +16,14 @@
         {"name": "pay", "returnType": "void", "parameterTypes": ["long"], "requiredModifiers": ["public"]},
         {"name": "getBalance", "returnType": "long", "requiredModifiers": ["public"]}
       ],
-      "customFailureMessage": "Wallet không được có field public và phải có public void deposit(long), public void pay(long), public long getBalance()"
+      "customFailureMessage": "Wallet must have no public fields and public void deposit(long), public void pay(long), public long getBalance()"
     }
   ],
   "cases": [
-    {"name": "vi-du", "stdin": "Lan\nNAP 100000\nTRA 30000\nTRA 500000\nNAP 0\nXEM\n"},
-    {"name": "tra-het", "stdin": "Minh\nNAP 50\nTRA 50\nTRA 1\nXEM\n"},
-    {"name": "so-am", "stdin": "Hoa\nNAP -10\nTRA -5\nXEM\nNAP 7\nXEM\n"},
-    {"name": "chi-xem", "stdin": "Trần Văn Nam\nXEM\n"},
-    {"name": "so-lon", "stdin": "Big\nNAP 2000000000\nNAP 2000000000\nTRA 1\nXEM\n"}
+    {"name": "example", "stdin": "Lan\nDEPOSIT 100000\nPAY 30000\nPAY 500000\nDEPOSIT 0\nSHOW\n"},
+    {"name": "pay-everything", "stdin": "Minh\nDEPOSIT 50\nPAY 50\nPAY 1\nSHOW\n"},
+    {"name": "negative-amounts", "stdin": "Hoa\nDEPOSIT -10\nPAY -5\nSHOW\nDEPOSIT 7\nSHOW\n"},
+    {"name": "show-only", "stdin": "Nam Tran\nSHOW\n"},
+    {"name": "large-balance", "stdin": "Big\nDEPOSIT 2000000000\nDEPOSIT 2000000000\nPAY 1\nSHOW\n"}
   ]
 }

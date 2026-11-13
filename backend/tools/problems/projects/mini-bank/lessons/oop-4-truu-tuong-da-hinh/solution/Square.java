@@ -5,6 +5,6 @@ public class Square extends Rectangle {
 
     @Override
     public String name() {
-        return "Hình vuông";
+        return "Square";
     }
 }

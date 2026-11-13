@@ -1,27 +1,22 @@
 import java.util.Scanner;
 
-/**
- * Mini Bank — Stage 1. Đề: stages/stage-1.md.
- * Judge so stdout từng dòng (bỏ qua khoảng trắng thừa và dòng trống, nội dung phải đúng); lỗi in ra System.err không bị so.
- */
 public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         Bank bank = new Bank("Mini Bank");
         System.out.println("=== " + bank.getName() + " ===");
 
-        // TODO 1: in "Số tài khoản cần mở: " rồi đọc n.
-        //         Với mỗi tài khoản i: hỏi chủ, loại (S / C), số dư ban đầu; in "-> Đã mở " + tài khoản.
+        // TODO 1: print "Accounts to open: ", read n. For each account ask owner, type (S / C), initial balance;
+        //         print "-> Opened " + account.
 
         printHelp();
 
-        // TODO 2: lặp: in "> ", đọc một dòng lệnh, xử lý DEPOSIT / BALANCE / LIST / EXIT.
-        //         Hết input (không còn dòng nào) thì in một dòng trống rồi
-        //         "Kết thúc input. Tổng tài sản: <tổng>".
+        // TODO 2: loop: print "> ", read a command, handle DEPOSIT / BALANCE / LIST / EXIT.
+        //         At end of input print an empty line, then "End of input. Total assets: <total>".
     }
 
     static void printHelp() {
-        System.out.println("Lệnh: OPEN <S|C> <số dư> <tên> | DEPOSIT <id> <tiền> | WITHDRAW <id> <tiền>");
-        System.out.println("      TRANSFER <từ> <đến> <tiền> | BALANCE <id> | LIST | MONTH | REPORT <n> | EXIT [mã]");
+        System.out.println("Commands: OPEN <S|C> <balance> <name> | DEPOSIT <id> <amount> | WITHDRAW <id> <amount>");
+        System.out.println("          TRANSFER <from> <to> <amount> | BALANCE <id> | LIST | MONTH | REPORT <n> | EXIT [code]");
     }
 }

@@ -1,74 +1,69 @@
 {
   "slug": "oop-interface",
-  "title": "Interface & tách lệnh (Command)",
-  "summary": "Interface là hợp đồng, so với lớp trừu tượng, method default và bảng lệnh Map<String, Command> thay cho switch.",
-  "estMinutes": 20,
+  "title": "Interfaces",
+  "summary": "",
+  "estMinutes": 15,
   "steps": [
-    {"type": "THEORY", "title": "Lý thuyết", "theoryFile": "theory.md"},
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
     {
-      "type": "CHOICE", "title": "Interface hay lớp trừu tượng?",
+      "type": "CHOICE", "title": "Interface or abstract class?",
       "content": {
-        "prompt": "Các lệnh CLI (`HELP`, `REPORT`, `EXIT`) không có trạng thái chung nào, chỉ cùng có `name()` và `run(args)`. Nên mô tả chúng bằng gì?",
-        "hint": "Lớp trừu tượng dùng khi cần chia sẻ trạng thái + code.",
+        "prompt": "CLI commands (`HELP`, `REPORT`, `EXIT`) share no state, only `name()` and `run(args)`. How should they be modeled?",
         "options": [
           {"id": "a", "text": "interface Command"},
-          {"id": "b", "text": "abstract class Command có field balance"},
-          {"id": "c", "text": "Một lớp Command duy nhất với switch bên trong"},
-          {"id": "d", "text": "enum chứa toàn bộ code của mọi lệnh"}
+          {"id": "b", "text": "abstract class Command with a balance field"},
+          {"id": "c", "text": "One Command class with a switch inside"},
+          {"id": "d", "text": "An enum holding the code of every command"}
         ]
       },
-      "answer": {"correct": ["a"], "explanation": "Interface mô tả khả năng chung mà không ép chia sẻ trạng thái."}
+      "answer": {"correct": ["a"]}
     },
     {
-      "type": "CHOICE", "title": "Về interface",
+      "type": "CHOICE", "title": "Interfaces",
       "content": {
-        "prompt": "Chọn **tất cả** câu đúng.",
+        "prompt": "Select all true statements.",
         "multiple": true,
         "options": [
-          {"id": "a", "text": "Một lớp có thể implements nhiều interface"},
-          {"id": "b", "text": "Method cài từ interface phải là public"},
-          {"id": "c", "text": "Interface có constructor"},
-          {"id": "d", "text": "Method default có thân, lớp cài không bắt buộc ghi đè"}
+          {"id": "a", "text": "A class can implement several interfaces"},
+          {"id": "b", "text": "An implemented interface method must be public"},
+          {"id": "c", "text": "An interface has a constructor"},
+          {"id": "d", "text": "A default method has a body and need not be overridden"}
         ]
       },
-      "answer": {"correct": ["a", "b", "d"], "explanation": "Interface không có constructor và không giữ trạng thái (chỉ có hằng)."}
+      "answer": {"correct": ["a", "b", "d"]}
     },
     {
-      "type": "MATCHING", "title": "So sánh",
+      "type": "MATCHING", "title": "Compare",
       "content": {
-        "prompt": "Ghép mỗi đặc điểm với đúng loại.",
-        "left": [{"id": "l1", "text": "Một lớp dùng được nhiều cái"}, {"id": "l2", "text": "Có field trạng thái và constructor"}, {"id": "l3", "text": "Thêm method mà không làm hỏng lớp đã cài"}, {"id": "l4", "text": "Dùng cho Account trong Mini Bank"}],
-        "right": [{"id": "r1", "text": "Interface"}, {"id": "r2", "text": "Lớp trừu tượng"}, {"id": "r3", "text": "Method default"}, {"id": "r4", "text": "abstract class Account"}]
+        "prompt": "Match each property with the right construct.",
+        "left": [{"id": "l1", "text": "A class can use many of them"}, {"id": "l2", "text": "Has state fields and a constructor"}, {"id": "l3", "text": "Adds a method without breaking implementations"}, {"id": "l4", "text": "Account in Mini Bank"}],
+        "right": [{"id": "r1", "text": "Interface"}, {"id": "r2", "text": "Abstract class"}, {"id": "r3", "text": "default method"}, {"id": "r4", "text": "abstract class Account"}]
       },
       "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
     },
     {
-      "type": "ORDERING", "title": "Vòng lặp tra bảng lệnh",
+      "type": "ORDERING", "title": "Command lookup",
       "content": {
-        "prompt": "Sắp xếp phần xử lý một dòng lệnh bằng `Map<String, Command>`.",
+        "prompt": "Order the lines that handle one command with a `Map<String, Command>`.",
         "items": [
           {"id": "a", "text": "Command command = commands.get(name);"},
           {"id": "b", "text": "if (command == null) {"},
-          {"id": "c", "text": "    System.out.println(\"Lệnh không hỗ trợ: \" + name);"},
+          {"id": "c", "text": "    System.out.println(\"Unknown command: \" + name);"},
           {"id": "d", "text": "} else {"},
           {"id": "e", "text": "    System.out.println(command.run(rest));"},
           {"id": "f", "text": "}"}
         ]
       },
-      "answer": {"order": ["a", "b", "c", "d", "e", "f"], "explanation": "Thêm lệnh mới chỉ cần thêm một lớp và đăng ký; vòng lặp không đổi."}
+      "answer": {"order": ["a", "b", "c", "d", "e", "f"]}
     },
     {
-      "type": "FILL_BLANK", "title": "Cài một lệnh",
+      "type": "FILL_BLANK", "title": "Implementing a command",
       "content": {
-        "prompt": "Điền phần còn thiếu để `EchoCommand` cài hợp đồng `Command`.",
+        "prompt": "Fill in the blanks.",
         "code": "public [[1]] Command {\n    String name();\n    String run(String args);\n}\n\npublic class EchoCommand [[2]] Command {\n    @Override\n    [[3]] String name() { return \"ECHO\"; }\n\n    @Override\n    public String run(String args) { return args; }\n}"
       },
       "answer": {"blanks": {"1": ["interface"], "2": ["implements"], "3": ["public"]}, "caseSensitive": true}
     },
-    {
-      "type": "CODE", "title": "Bài tập: bộ xử lý lệnh",
-      "content": {"intro": "Áp dụng: interface Command, ba lệnh cài nó và bảng lệnh TreeMap."},
-      "problem": "oop-7-interface"
-    }
+    {"type": "CODE", "title": "Command table", "content": {}, "problem": "oop-7-interface"}
   ]
 }

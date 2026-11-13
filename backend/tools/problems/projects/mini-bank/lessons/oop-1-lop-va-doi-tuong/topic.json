@@ -1,47 +1,46 @@
 {
   "slug": "oop-lop-va-doi-tuong",
-  "title": "Lớp, đối tượng & constructor",
-  "summary": "Lớp là bản thiết kế, đối tượng là sản phẩm tạo bằng new. Constructor, this, biến tham chiếu, static và toString().",
-  "estMinutes": 20,
+  "title": "Classes and objects",
+  "summary": "",
+  "estMinutes": 15,
   "steps": [
-    {"type": "THEORY", "title": "Lý thuyết", "theoryFile": "theory.md"},
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
     {
-      "type": "CHOICE", "title": "Hai biến, mấy đối tượng?",
+      "type": "CHOICE", "title": "Two variables",
       "content": {
-        "prompt": "```java\nAccount x = new Account(\"An\", 0);\nAccount y = x;\ny.deposit(50);\nSystem.out.println(x.getBalance());\n```\nĐoạn code in ra gì?",
-        "hint": "Gán biến kiểu đối tượng là sao chép tham chiếu, không sao chép đối tượng.",
-        "options": [{"id": "a", "text": "0"}, {"id": "b", "text": "50"}, {"id": "c", "text": "Lỗi biên dịch"}, {"id": "d", "text": "100"}]
+        "prompt": "```java\nAccount x = new Account(\"Ann\", 0);\nAccount y = x;\ny.deposit(50);\nSystem.out.println(x.getBalance());\n```\nWhat is printed?",
+        "hint": "Assigning an object variable copies the reference.",
+        "options": [{"id": "a", "text": "0"}, {"id": "b", "text": "50"}, {"id": "c", "text": "Compile error"}, {"id": "d", "text": "100"}]
       },
-      "answer": {"correct": ["b"], "explanation": "x và y trỏ tới cùng một đối tượng, nên nạp qua y thì x cũng thấy số dư 50."}
+      "answer": {"correct": ["b"], "explanation": "x and y refer to the same object."}
     },
     {
-      "type": "CHOICE", "title": "Thành viên static",
+      "type": "CHOICE", "title": "static fields",
       "content": {
-        "prompt": "Chọn **tất cả** câu đúng về `private static int nextId` trong lớp `Account`.",
+        "prompt": "Select all true statements about `private static int nextId` in `Account`.",
         "multiple": true,
         "options": [
-          {"id": "a", "text": "Chỉ có một bản dùng chung cho mọi đối tượng Account"},
-          {"id": "b", "text": "Mỗi đối tượng Account có một nextId riêng"},
-          {"id": "c", "text": "Hợp để cấp id tự tăng cho từng tài khoản"},
-          {"id": "d", "text": "Method static đọc được field id (không static) của một đối tượng mà không cần tham chiếu tới nó"}
+          {"id": "a", "text": "There is one copy shared by all Account objects"},
+          {"id": "b", "text": "Each Account object has its own nextId"},
+          {"id": "c", "text": "It works as an id counter"},
+          {"id": "d", "text": "A static method can read the instance field id directly"}
         ]
       },
-      "answer": {"correct": ["a", "c"], "explanation": "Field static thuộc về lớp nên chỉ có một bản. Method static không có this nên không đọc thẳng field của đối tượng."}
+      "answer": {"correct": ["a", "c"], "explanation": "A static method has no this, so it cannot read instance fields directly."}
     },
     {
-      "type": "MATCHING", "title": "Khái niệm và ví dụ",
+      "type": "MATCHING", "title": "Terms",
       "content": {
-        "prompt": "Ghép mỗi khái niệm với dòng code minh hoạ nó.",
-        "left": [{"id": "l1", "text": "Field"}, {"id": "l2", "text": "Constructor"}, {"id": "l3", "text": "Tạo đối tượng"}, {"id": "l4", "text": "Ghi đè toString"}],
-        "right": [{"id": "r1", "text": "private long balance;"}, {"id": "r2", "text": "public Account(String owner) { ... }"}, {"id": "r3", "text": "new Account(\"An\")"}, {"id": "r4", "text": "@Override public String toString()"}]
+        "prompt": "Match each term with an example.",
+        "left": [{"id": "l1", "text": "Field"}, {"id": "l2", "text": "Constructor"}, {"id": "l3", "text": "Creating an object"}, {"id": "l4", "text": "Overriding toString"}],
+        "right": [{"id": "r1", "text": "private long balance;"}, {"id": "r2", "text": "public Account(String owner) { ... }"}, {"id": "r3", "text": "new Account(\"Ann\")"}, {"id": "r4", "text": "@Override public String toString()"}]
       },
       "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
     },
     {
-      "type": "ORDERING", "title": "Viết lớp Customer",
+      "type": "ORDERING", "title": "Customer class",
       "content": {
-        "prompt": "Sắp xếp các dòng để có lớp `Customer` với id tự tăng.",
-        "hint": "Field trước, rồi constructor; câu lệnh trong constructor nằm giữa dấu ngoặc của nó.",
+        "prompt": "Order the lines to get a `Customer` with an auto-increment id.",
         "items": [
           {"id": "a", "text": "public class Customer {"},
           {"id": "b", "text": "    private static int nextId = 1;"},
@@ -55,19 +54,14 @@
       "answer": {"order": ["a", "b", "c", "d", "e", "f", "g"]}
     },
     {
-      "type": "FILL_BLANK", "title": "Hoàn thành constructor",
+      "type": "FILL_BLANK", "title": "Constructor",
       "content": {
-        "prompt": "Điền từ khoá còn thiếu để constructor gán đúng tham số cho field.",
-        "hint": "Tham số trùng tên field: cần chỉ rõ đâu là field của đối tượng hiện tại.",
+        "prompt": "Fill in the blanks.",
+        "hint": "The parameter has the same name as the field.",
         "code": "public class Account {\n    private final String owner;\n\n    public [[1]](String owner) {\n        [[2]].owner = owner;\n    }\n\n    @Override\n    public String [[3]]() {\n        return \"Account of \" + owner;\n    }\n}"
       },
-      "answer": {"blanks": {"1": ["Account"], "2": ["this"], "3": ["toString"]}, "caseSensitive": true,
-        "explanation": "Constructor trùng tên lớp; this.owner là field, owner là tham số; toString() được println gọi tự động."}
+      "answer": {"blanks": {"1": ["Account"], "2": ["this"], "3": ["toString"]}, "caseSensitive": true}
     },
-    {
-      "type": "CODE", "title": "Bài tập: danh sách khách hàng",
-      "content": {"intro": "Áp dụng: lớp Customer có id tự tăng bằng field static và toString()."},
-      "problem": "oop-1-lop-va-doi-tuong"
-    }
+    {"type": "CODE", "title": "Customers", "content": {}, "problem": "oop-1-lop-va-doi-tuong"}
   ]
 }

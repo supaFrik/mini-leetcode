@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
 
-/** Quản lý danh sách tài khoản. */
 public class Bank {
     private final String name;
     private final List<Account> accounts = new ArrayList<>();
@@ -14,12 +13,12 @@ public class Bank {
         return name;
     }
 
-    /** type: "S" = tiết kiệm (SAVINGS), "C" = thanh toán (CHECKING). Loại khác ⇒ IllegalArgumentException. */
+    /** "S" = SAVINGS, "C" = CHECKING; anything else throws IllegalArgumentException. */
     public Account open(String type, String owner, long initialBalance) {
         throw new UnsupportedOperationException("TODO");
     }
 
-    /** Không có tài khoản id ⇒ IllegalArgumentException. */
+    /** Unknown id throws IllegalArgumentException. */
     public Account find(int id) {
         throw new UnsupportedOperationException("TODO");
     }

@@ -1,46 +1,45 @@
 {
   "slug": "oop-truu-tuong-da-hinh",
-  "title": "Lớp trừu tượng & đa hình",
-  "summary": "abstract class, method trừu tượng, kiểu khai báo và kiểu thật, dynamic dispatch, template method.",
-  "estMinutes": 25,
+  "title": "Abstract classes and polymorphism",
+  "summary": "",
+  "estMinutes": 20,
   "steps": [
-    {"type": "THEORY", "title": "Lý thuyết", "theoryFile": "theory.md"},
+    {"type": "THEORY", "title": "Theory", "theoryFile": "theory.md"},
     {
-      "type": "CHOICE", "title": "Method nào chạy?",
+      "type": "CHOICE", "title": "Which method runs?",
       "content": {
-        "prompt": "```java\nShape s = new Circle(1);\nSystem.out.println(s.name());\n```\n`Circle.name()` trả `\"Hình tròn\"`, `Shape.name()` là abstract. Đoạn code in ra gì?",
-        "hint": "Method được chọn theo kiểu thật của đối tượng lúc chạy.",
-        "options": [{"id": "a", "text": "Hình tròn"}, {"id": "b", "text": "Lỗi: không gọi được method abstract"}, {"id": "c", "text": "null"}, {"id": "d", "text": "Shape"}]
+        "prompt": "```java\nShape s = new Circle(1);\nSystem.out.println(s.name());\n```\n`Circle.name()` returns `\"Circle\"`; `Shape.name()` is abstract. What is printed?",
+        "options": [{"id": "a", "text": "Circle"}, {"id": "b", "text": "Error: cannot call an abstract method"}, {"id": "c", "text": "null"}, {"id": "d", "text": "Shape"}]
       },
-      "answer": {"correct": ["a"], "explanation": "Kiểu khai báo Shape cho phép gọi name(); lúc chạy JVM chọn bản của Circle (dynamic dispatch)."}
+      "answer": {"correct": ["a"], "explanation": "The JVM picks Circle's implementation at run time."}
     },
     {
-      "type": "CHOICE", "title": "Về lớp trừu tượng",
+      "type": "CHOICE", "title": "Abstract classes",
       "content": {
-        "prompt": "Chọn **tất cả** câu đúng về `abstract class Shape`.",
+        "prompt": "Select all true statements about `abstract class Shape`.",
         "multiple": true,
         "options": [
-          {"id": "a", "text": "Không thể viết new Shape()"},
-          {"id": "b", "text": "Có thể có field, constructor và method có thân"},
-          {"id": "c", "text": "Lớp con cụ thể phải cài mọi method abstract"},
-          {"id": "d", "text": "Chỉ được chứa method abstract"}
+          {"id": "a", "text": "new Shape() does not compile"},
+          {"id": "b", "text": "It can have fields, constructors and methods with bodies"},
+          {"id": "c", "text": "A concrete subclass must implement every abstract method"},
+          {"id": "d", "text": "It may contain only abstract methods"}
         ]
       },
-      "answer": {"correct": ["a", "b", "c"], "explanation": "Lớp trừu tượng là lớp cha chưa hoàn chỉnh: vẫn có trạng thái và code, chỉ không tạo trực tiếp được."}
+      "answer": {"correct": ["a", "b", "c"]}
     },
     {
-      "type": "MATCHING", "title": "Kiểu khai báo và kiểu thật",
+      "type": "MATCHING", "title": "Declared and actual type",
       "content": {
-        "prompt": "Với `Shape s = new Square(2);`, ghép mỗi câu hỏi với câu trả lời.",
-        "left": [{"id": "l1", "text": "Kiểu khai báo của s"}, {"id": "l2", "text": "Kiểu thật của đối tượng"}, {"id": "l3", "text": "Ai quyết định được gọi method nào"}, {"id": "l4", "text": "Ai quyết định bản nào chạy"}],
-        "right": [{"id": "r1", "text": "Shape"}, {"id": "r2", "text": "Square"}, {"id": "r3", "text": "Trình biên dịch"}, {"id": "r4", "text": "JVM lúc chạy"}]
+        "prompt": "For `Shape s = new Square(2);`, match each question with its answer.",
+        "left": [{"id": "l1", "text": "Declared type of s"}, {"id": "l2", "text": "Actual type of the object"}, {"id": "l3", "text": "Decides which methods may be called"}, {"id": "l4", "text": "Decides which implementation runs"}],
+        "right": [{"id": "r1", "text": "Shape"}, {"id": "r2", "text": "Square"}, {"id": "r3", "text": "The compiler"}, {"id": "r4", "text": "The JVM at run time"}]
       },
       "answer": {"pairs": {"l1": "r1", "l2": "r2", "l3": "r3", "l4": "r4"}}
     },
     {
       "type": "ORDERING", "title": "Template method",
       "content": {
-        "prompt": "Sắp xếp để có lớp trừu tượng `Shape` với template method `describe()`.",
+        "prompt": "Order the lines of `Shape`.",
         "items": [
           {"id": "a", "text": "public abstract class Shape {"},
           {"id": "b", "text": "    public abstract double area();"},
@@ -51,20 +50,16 @@
           {"id": "g", "text": "}"}
         ]
       },
-      "answer": {"order": ["a", "b", "c", "d", "e", "f", "g"], "explanation": "Lớp cha cố định khung (describe), lớp con điền chi tiết (name, area)."}
+      "answer": {"order": ["a", "b", "c", "d", "e", "f", "g"]}
     },
     {
-      "type": "FILL_BLANK", "title": "Hoàn thành Circle",
+      "type": "FILL_BLANK", "title": "Circle",
       "content": {
-        "prompt": "Điền phần còn thiếu để `Circle` là một `Shape` cụ thể.",
-        "code": "public class Circle [[1]] Shape {\n    private final double r;\n\n    public Circle(double r) { this.r = r; }\n\n    @Override\n    public double [[2]]() {\n        return Math.PI * r * r;\n    }\n\n    @Override\n    public String name() { return \"Hình tròn\"; }\n}"
+        "prompt": "Fill in the blanks.",
+        "code": "public class Circle [[1]] Shape {\n    private final double r;\n\n    public Circle(double r) { this.r = r; }\n\n    @Override\n    public double [[2]]() {\n        return Math.PI * r * r;\n    }\n\n    @Override\n    public String name() { return \"Circle\"; }\n}"
       },
       "answer": {"blanks": {"1": ["extends"], "2": ["area"]}, "caseSensitive": true}
     },
-    {
-      "type": "CODE", "title": "Bài tập: diện tích các hình",
-      "content": {"intro": "Áp dụng: Shape trừu tượng, Circle / Rectangle / Square và một vòng lặp đa hình."},
-      "problem": "oop-4-truu-tuong-da-hinh"
-    }
+    {"type": "CODE", "title": "Shapes", "content": {}, "problem": "oop-4-truu-tuong-da-hinh"}
   ]
 }

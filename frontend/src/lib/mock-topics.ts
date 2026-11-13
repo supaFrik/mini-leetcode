@@ -18,39 +18,38 @@ const step = (s: Omit<AuthoringStep, "id">): AuthoringStep => ({ ...s, id: nextS
 
 const TOPICS: AuthoringTopic[] = [
   {
-    id: 1, slug: "oop-dong-goi", title: "Đóng gói (Encapsulation)", estMinutes: 15, status: "PUBLISHED",
-    summary: "Giấu trạng thái bằng private, chỉ cho đổi qua method có kiểm tra.", createdById: 2, createdByUsername: "instructor",
+    id: 1, slug: "oop-dong-goi", title: "Encapsulation", estMinutes: 15, status: "PUBLISHED",
+    summary: null, createdById: 2, createdByUsername: "instructor",
     steps: [
-      step({ type: "THEORY", title: "Lý thuyết", content: { markdown:
-        "## Vấn đề: ai cũng sửa được số dư\nField `public` cho phép gán `account.balance = -1000000`.\n\n"
-        + "## Access modifier\n| Modifier | Phạm vi |\n|---|---|\n| `private` | Trong lớp |\n| `public` | Mọi nơi |\n\n"
-        + "## Method có kiểm tra\n```java\npublic void deposit(long amount) {\n    if (amount <= 0) throw new IllegalArgumentException(\"Số tiền phải dương\");\n    balance += amount;\n}\n```" } }),
-      step({ type: "CHOICE", title: "Field nào nên private?", content: { prompt: "Chọn **tất cả** field nên để `private` trong `Account`.", multiple: true,
-        hint: "Trạng thái thay đổi theo nghiệp vụ luôn được giấu.",
-        options: [{ id: "a", text: "balance" }, { id: "b", text: "owner" }, { id: "c", text: "Không field nào, để public cho tiện" }] },
-        answer: { correct: ["a", "b"], explanation: "Mọi field trạng thái đều private; thay đổi đi qua deposit / withdraw." } }),
-      step({ type: "MATCHING", title: "Modifier và phạm vi", content: { prompt: "Ghép mỗi modifier với phạm vi truy cập của nó.",
-        left: [{ id: "l1", text: "private" }, { id: "l2", text: "(mặc định)" }, { id: "l3", text: "protected" }, { id: "l4", text: "public" }],
-        right: [{ id: "r1", text: "Chỉ trong lớp" }, { id: "r2", text: "Cùng package" }, { id: "r3", text: "Cùng package + lớp con" }, { id: "r4", text: "Mọi nơi" }] },
+      step({ type: "THEORY", title: "Theory", content: { markdown:
+        "## The problem\nA `public` field lets anyone write `account.balance = -1000000`.\n\n"
+        + "## Access modifiers\n| Modifier | Visible to |\n|---|---|\n| `private` | the same class |\n| `public` | everyone |\n\n"
+        + "## Validating methods\n```java\npublic void deposit(long amount) {\n    if (amount <= 0) throw new IllegalArgumentException(\"Amount must be positive\");\n    balance += amount;\n}\n```" } }),
+      step({ type: "CHOICE", title: "What should be private?", content: { prompt: "Select every field of `Account` that should be `private`.", multiple: true,
+        hint: "State that business rules depend on is always hidden.",
+        options: [{ id: "a", text: "balance" }, { id: "b", text: "owner" }, { id: "c", text: "None, public is easier" }] },
+        answer: { correct: ["a", "b"], explanation: "State changes go through deposit / withdraw." } }),
+      step({ type: "MATCHING", title: "Access modifiers", content: { prompt: "Match each modifier with its visibility.",
+        left: [{ id: "l1", text: "private" }, { id: "l2", text: "(none)" }, { id: "l3", text: "protected" }, { id: "l4", text: "public" }],
+        right: [{ id: "r1", text: "Same class" }, { id: "r2", text: "Same package" }, { id: "r3", text: "Same package and subclasses" }, { id: "r4", text: "Everyone" }] },
         answer: { pairs: { l1: "r1", l2: "r2", l3: "r3", l4: "r4" } } }),
-      step({ type: "ORDERING", title: "Thứ tự trong withdraw", content: { prompt: "Sắp xếp các dòng của `withdraw` theo đúng thứ tự.",
-        items: [{ id: "a", text: "public void withdraw(long amount) {" }, { id: "b", text: "    if (amount > balance) throw new IllegalArgumentException(\"Không đủ tiền\");" },
+      step({ type: "ORDERING", title: "withdraw", content: { prompt: "Order the lines of `withdraw`.",
+        items: [{ id: "a", text: "public void withdraw(long amount) {" }, { id: "b", text: "    if (amount > balance) throw new IllegalArgumentException(\"Insufficient funds\");" },
           { id: "c", text: "    balance -= amount;" }, { id: "d", text: "}" }] },
-        answer: { order: ["a", "b", "c", "d"], explanation: "Kiểm tra trước, đổi trạng thái sau." } }),
-      step({ type: "FILL_BLANK", title: "Hoàn thành lớp Wallet", content: { prompt: "Điền từ khoá còn thiếu.",
+        answer: { order: ["a", "b", "c", "d"], explanation: "Check first, change state after." } }),
+      step({ type: "FILL_BLANK", title: "Wallet", content: { prompt: "Fill in the blanks.",
         code: "public class Wallet {\n    [[1]] long balance;\n\n    public long [[2]]() {\n        return balance;\n    }\n}" },
         answer: { blanks: { 1: ["private"], 2: ["getBalance"] }, caseSensitive: true } }),
-      step({ type: "CODE", title: "Bài tập: ví điện tử", content: { intro: "Áp dụng: viết lớp Wallet đóng gói số dư." },
-        problemId: 13, problemSlug: "bank-account-class" }),
+      step({ type: "CODE", title: "Wallet", content: {}, problemId: 13, problemSlug: "bank-account-class" }),
     ],
   },
   {
-    id: 2, slug: "oop-ke-thua", title: "Kế thừa & ghi đè", estMinutes: 12, status: "PUBLISHED",
-    summary: "extends, super(...), @Override.", createdById: 2, createdByUsername: "instructor",
+    id: 2, slug: "oop-ke-thua", title: "Inheritance", estMinutes: 12, status: "PUBLISHED",
+    summary: null, createdById: 2, createdByUsername: "instructor",
     steps: [
-      step({ type: "THEORY", title: "Lý thuyết", content: { markdown: "## Quan hệ is-a\n`Manager extends Employee`.\n\n## super(...)\nConstructor lớp con gọi lớp cha trước tiên." } }),
-      step({ type: "CHOICE", title: "Câu nào là quan hệ is-a?", content: { prompt: "Chọn quan hệ phù hợp với kế thừa.",
-        options: [{ id: "a", text: "SavingsAccount là một Account" }, { id: "b", text: "Bank có danh sách Account" }] },
+      step({ type: "THEORY", title: "Theory", content: { markdown: "## Is-a\n`Manager extends Employee`.\n\n## super(...)\nA subclass constructor calls the parent constructor first." } }),
+      step({ type: "CHOICE", title: "Is-a or has-a?", content: { prompt: "Which relation fits `extends`?",
+        options: [{ id: "a", text: "SavingsAccount is an Account" }, { id: "b", text: "Bank has a list of Accounts" }] },
         answer: { correct: ["a"] } }),
     ],
   },

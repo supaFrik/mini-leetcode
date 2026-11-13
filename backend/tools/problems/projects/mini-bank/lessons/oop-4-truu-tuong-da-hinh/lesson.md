@@ -1,16 +1,13 @@
-> Bài code của chủ đề **Lớp trừu tượng & đa hình** (Stage 2 của plan *OOP với Java: xây Mini Bank*). Học phần lý thuyết và làm các câu luyện tập của chủ đề trước, rồi giải bài này.
+### Task
 
-### Bài tập: diện tích các hình
-Viết:
+- **`abstract class Shape`**: `public abstract double area()`, `public abstract String name()`, `public String describe()` returning `<name>: <area>` (2 decimals, `Locale.ROOT`).
+- **`Circle extends Shape`** (`Circle`, radius `r`).
+- **`Rectangle extends Shape`** (`Rectangle`, `w × h`).
+- **`Square extends Rectangle`** (`Square`, side `a`).
 
-- **`abstract class Shape`** với `public abstract double area()`, `public abstract String name()` và `public String describe()` trả `<name>: <diện tích>` (2 chữ số thập phân, `Locale.ROOT`).
-- **`Circle extends Shape`** (`Hình tròn`, bán kính `r`).
-- **`Rectangle extends Shape`** (`Hình chữ nhật`, `w × h`).
-- **`Square extends Rectangle`** (`Hình vuông`, cạnh `a`).
+`Main` reads one shape per line until end of input: `CIRCLE r`, `RECT w h`, `SQUARE a` (non-negative reals). Store them in one `List<Shape>`, print `describe()` for each, then `Largest: <describe() of the largest>` (ties: the first one). With no shapes, print only `No shapes`.
 
-`Main` đọc tới hết input, mỗi dòng một hình: `CIRCLE r`, `RECT w h`, `SQUARE a` (số thực, `>= 0`). Lưu vào **một** `List<Shape>`, in `describe()` của từng hình, rồi in `Lớn nhất: <describe() của hình có diện tích lớn nhất>` (hoà thì lấy hình xuất hiện trước). Không có hình nào thì chỉ in `Không có hình`.
-
-**Ví dụ**
+### Example
 
 Input:
 
@@ -23,12 +20,13 @@ SQUARE 2.5
 Output:
 
 ```
-Hình tròn: 3.14
-Hình chữ nhật: 6.00
-Hình vuông: 6.25
-Lớn nhất: Hình vuông: 6.25
+Circle: 3.14
+Rectangle: 6.00
+Square: 6.25
+Largest: Square: 6.25
 ```
 
-### Cách chấm
-- **Rule cấu trúc**: `Shape` là lớp trừu tượng với `area()` và `name()` trừu tượng; `Circle`, `Rectangle` kế thừa `Shape`; `Square` kế thừa `Rectangle`.
-- **Testcase stdin/stdout**: so từng dòng, bỏ qua khoảng trắng thừa.
+### Grading
+
+- Structure: `Shape` is abstract with abstract `area()` and `name()`; `Circle`, `Rectangle` extend `Shape`; `Square` extends `Rectangle`.
+- Stdout compared line by line, extra spaces ignored.

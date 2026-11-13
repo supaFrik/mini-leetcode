@@ -1,6 +1,6 @@
 {
   "slug": "oop-4-truu-tuong-da-hinh",
-  "title": "Bài 4 — Lớp trừu tượng & đa hình",
+  "title": "Abstract classes and polymorphism: shapes",
   "difficulty": "EASY",
   "tags": ["OOP", "Abstraction", "Polymorphism"],
   "forStage": 2,
@@ -14,7 +14,7 @@
         {"name": "name", "returnType": "String", "requiredModifiers": ["public", "abstract"]},
         {"name": "describe", "returnType": "String", "requiredModifiers": ["public"], "forbiddenModifiers": ["abstract"]}
       ],
-      "customFailureMessage": "Shape phải là lớp abstract với public abstract double area(), public abstract String name() và public String describe()"
+      "customFailureMessage": "Shape must be abstract with public abstract double area(), public abstract String name() and public String describe()"
     },
     {
       "ruleName": "CIRCLE_EXTENDS_SHAPE",
@@ -22,7 +22,7 @@
       "expectedType": "CLASS",
       "expectedSuperclass": "Shape",
       "methods": [{"name": "area", "returnType": "double", "forbiddenModifiers": ["abstract"]}],
-      "customFailureMessage": "Circle phải kế thừa Shape và cài area()"
+      "customFailureMessage": "Circle must extend Shape and implement area()"
     },
     {
       "ruleName": "RECTANGLE_EXTENDS_SHAPE",
@@ -30,21 +30,21 @@
       "expectedType": "CLASS",
       "expectedSuperclass": "Shape",
       "methods": [{"name": "area", "returnType": "double", "forbiddenModifiers": ["abstract"]}],
-      "customFailureMessage": "Rectangle phải kế thừa Shape và cài area()"
+      "customFailureMessage": "Rectangle must extend Shape and implement area()"
     },
     {
       "ruleName": "SQUARE_EXTENDS_RECTANGLE",
       "targetClassName": "Square",
       "expectedType": "CLASS",
       "expectedSuperclass": "Rectangle",
-      "customFailureMessage": "Square phải kế thừa Rectangle (hình vuông là một hình chữ nhật)"
+      "customFailureMessage": "Square must extend Rectangle"
     }
   ],
   "cases": [
-    {"name": "vi-du", "stdin": "CIRCLE 1\nRECT 2 3\nSQUARE 2.5\n"},
-    {"name": "hoa-lay-truoc", "stdin": "RECT 2 2\nSQUARE 2\nCIRCLE 0.5\n"},
-    {"name": "bang-khong", "stdin": "CIRCLE 0\nRECT 0 5\n"},
-    {"name": "khong-co-hinh", "stdin": "\n"},
-    {"name": "so-lon", "stdin": "CIRCLE 1000\nRECT 1000 1000\nSQUARE 1500\nCIRCLE 10.5\n"}
+    {"name": "example", "stdin": "CIRCLE 1\nRECT 2 3\nSQUARE 2.5\n"},
+    {"name": "tie-keeps-first", "stdin": "RECT 2 2\nSQUARE 2\nCIRCLE 0.5\n"},
+    {"name": "zero-area", "stdin": "CIRCLE 0\nRECT 0 5\n"},
+    {"name": "no-shapes", "stdin": "\n"},
+    {"name": "large-values", "stdin": "CIRCLE 1000\nRECT 1000 1000\nSQUARE 1500\nCIRCLE 10.5\n"}
   ]
 }

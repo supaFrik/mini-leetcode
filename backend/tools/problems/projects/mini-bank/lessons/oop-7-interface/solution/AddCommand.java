@@ -14,7 +14,7 @@ public class AddCommand implements Command {
             try {
                 total += Long.parseLong(token);
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Không phải số: " + token, e);
+                throw new IllegalArgumentException("Not a number: " + token, e);
             }
         }
         return String.valueOf(total);

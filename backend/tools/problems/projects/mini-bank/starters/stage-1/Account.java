@@ -1,9 +1,6 @@
-/**
- * Một tài khoản ngân hàng. Stage 1: chưa cần kế thừa — lưu loại tài khoản ("SAVINGS" / "CHECKING") trong một field.
- * Không field nào được để public (judge kiểm tra).
- */
+/** Stage 1: the type ("SAVINGS" / "CHECKING") is a field. No public fields. */
 public class Account {
-    // TODO: id tự tăng bắt đầu từ 1, loại, chủ tài khoản, số dư
+    // TODO: id (auto-increment from 1), type, owner, balance
 
     public Account(String type, String owner, long initialBalance) {
         // TODO
@@ -17,7 +14,7 @@ public class Account {
         return 0; // TODO
     }
 
-    /** Nạp tiền, trả về số dư mới. Số tiền phải > 0, nếu không ném IllegalArgumentException. */
+    /** Returns the new balance. amount <= 0 throws IllegalArgumentException. */
     public long deposit(long amount) {
         return 0; // TODO
     }
@@ -28,6 +25,6 @@ public class Account {
 
     @Override
     public String toString() {
-        return String.format("#%d %-12s %-10s %,15d", getId(), getType(), "?", getBalance()); // TODO: chủ tài khoản
+        return String.format("#%d %-12s %-10s %,15d", getId(), getType(), "?", getBalance()); // TODO: owner
     }
 }

@@ -1,6 +1,6 @@
 {
   "slug": "oop-1-lop-va-doi-tuong",
-  "title": "Bài 1 — Lớp, đối tượng & constructor",
+  "title": "Classes and objects: customers",
   "difficulty": "EASY",
   "tags": ["OOP", "Class", "Constructor", "Static"],
   "forStage": 1,
@@ -15,13 +15,13 @@
         {"name": "count", "returnType": "int", "requiredModifiers": ["public", "static"]},
         {"name": "toString", "returnType": "String", "requiredModifiers": ["public"]}
       ],
-      "customFailureMessage": "Customer cần constructor public Customer(String), field private static int nextId, public static int count() và toString()"
+      "customFailureMessage": "Customer needs public Customer(String), private static int nextId, public static int count() and toString()"
     }
   ],
   "cases": [
-    {"name": "vi-du", "stdin": "3\nAn\nBình\nNguyễn Văn Cường\n"},
-    {"name": "mot-khach", "stdin": "1\nTrần Thị Dung\n"},
-    {"name": "khong-khach", "stdin": "0\n"},
-    {"name": "nhieu-khach", "stdin": "12\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\n"}
+    {"name": "example", "stdin": "3\nAnn\nBob\nCarol Lee\n"},
+    {"name": "one-customer", "stdin": "1\nDan Brown\n"},
+    {"name": "no-customers", "stdin": "0\n"},
+    {"name": "many-customers", "stdin": "12\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\n"}
   ]
 }

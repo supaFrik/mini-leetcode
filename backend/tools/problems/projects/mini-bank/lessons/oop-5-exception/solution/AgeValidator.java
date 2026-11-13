@@ -7,10 +7,10 @@ public class AgeValidator {
         try {
             age = Integer.parseInt(raw);
         } catch (NumberFormatException e) {
-            throw new InvalidAgeException("Không phải số: " + raw, e);
+            throw new InvalidAgeException("Not a number: " + raw, e);
         }
         if (age < 0 || age > 150) {
-            throw new InvalidAgeException("Tuổi không hợp lệ: " + age);
+            throw new InvalidAgeException("Invalid age: " + age);
         }
         return age;
     }

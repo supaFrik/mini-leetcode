@@ -582,18 +582,13 @@ const bankStage = (n: number, title: string, status: StudyPlanStage["status"]): 
   difficulty: n <= 2 ? "EASY" : "MEDIUM", problemType: "OOP_GRINDING", published: true, status,
 });
 const MOCK_PLAN: StudyPlanDetail = {
-  id: 1, slug: "oop-voi-java", title: "OOP với Java", status: "PUBLISHED", stageCount: 7, doneStages: 2,
-  description: "Từ lớp và đóng gói tới kế thừa, đa hình, exception: hai bài luyện ngắn rồi xây một ngân hàng mini chạy trên console qua 5 stage.",
+  id: 1, slug: "oop-voi-java", title: "OOP in Java: Mini Bank", status: "PUBLISHED", stageCount: 5, doneStages: 1,
+  description: null,
   items: [
-    { id: 1, position: 0, kind: "PROBLEM", title: "Luyện: lớp & đóng gói", done: true, stages: [
-      { stageNo: 1, problemId: 13, slug: "bank-account-class", title: "Bank Account Class", difficulty: "EASY", problemType: "ALGORITHMIC", published: true, status: "DONE" }] },
-    { id: 2, position: 1, kind: "PROBLEM", title: "Luyện: kế thừa & đa hình", done: false, stages: [
-      { stageNo: 1, problemId: 14, slug: "shape-area-hierarchy", title: "Shape Area Hierarchy", difficulty: "EASY", problemType: "ALGORITHMIC", published: true, status: "IN_PROGRESS" }] },
-    { id: 3, position: 2, kind: "PROJECT", title: "Project: Mini Bank Console", done: false,
-      description: "Ngân hàng mini đọc lệnh bằng Scanner. Mỗi stage thêm tính năng; code của stage trước vẫn phải chạy đúng.",
-      stages: [bankStage(1, "Tài khoản & đóng gói", "DONE"), bankStage(2, "Kế thừa & đa hình", "NEVER"),
-        bankStage(3, "Exception & chuyển khoản", "LOCKED"), bankStage(4, "Lớp Bank & mở tài khoản", "LOCKED"),
-        bankStage(5, "Hoàn thiện CLI", "LOCKED")] },
+    { id: 3, position: 0, kind: "PROJECT", title: "Mini Bank Console", done: false, description: null,
+      stages: [bankStage(1, "Accounts", "DONE"), bankStage(2, "Account types", "NEVER"),
+        bankStage(3, "Transfers", "LOCKED"), bankStage(4, "Opening accounts", "LOCKED"),
+        bankStage(5, "Full CLI", "LOCKED")] },
   ],
 };
 MOCK_PLAN.createdById = 2;
