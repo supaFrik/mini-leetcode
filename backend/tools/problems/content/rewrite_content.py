@@ -114,7 +114,7 @@ def apply(api, p, kind, dry):
             "difficulty": p.get("difficulty", current["difficulty"]), "timeLimitMs": p.get("timeLimitMs", current["timeLimitMs"]),
             "problemType": "OOP_GRINDING" if kind == "oop" else "ALGORITHMIC"}
     if "starter" in p:
-        body["starterTemplates"] = json.dumps([{"path": k, "content": v} for k, v in p["starter"].items()])
+        body["starterTemplates"] = json.dumps([{"path": k, "content": v} for k, v in reference_files(p["starter"]).items()])
     api.call("PUT", f"/problems/{pid}", body)
     if kind == "oop":
         api.call("PUT", f"/admin/problems/{pid}/grading-config", {"gradingConfig": oop.OUTPUT_ONLY_CONFIG})
