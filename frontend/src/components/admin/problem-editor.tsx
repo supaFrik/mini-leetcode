@@ -9,8 +9,8 @@ import { useConfirm } from "@/components/ui/confirm";
 import { errorMessage } from "@/lib/api";
 import { fetchAuthoring, fetchProblem, saveProblem, unlockProblem, type ProblemDraft } from "@/lib/services";
 import type { Difficulty, ProblemAuthoring, ProblemFull, ProblemType, SubmissionFile } from "@/types/api";
-import { GradingPanel, ReferencePanel, SourceFilesEditor, TestCasesPanel } from "./problem-authoring";
-import type { SaveState } from "./admin-topics";
+import { GradingPanel, ReferencePanel, SourceFilesEditor, TestCasesPanel, parseSourceFiles } from "./problem-authoring";
+import type { SaveState } from "./save-state";
 
 /*
  * Soạn một đề trên cả trang: đề bài tự lưu 1 s sau lần sửa cuối, các tab Tests / Grading / Reference
@@ -28,18 +28,14 @@ function toDraft(p: ProblemFull): ProblemDraft {
   };
 }
 
+/** Starter template lưu dạng chuỗi JSON; trống hoặc hỏng thì hiện khung mặc định. */
 function starterFiles(value: string | null | undefined): SubmissionFile[] {
-  try {
-    const parsed = value ? JSON.parse(value) : null;
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-  } catch {
-    /* bỏ qua JSON hỏng: hiện khung mặc định */
-  }
-  return DEFAULT_STARTER;
+  const files = parseSourceFiles(value);
+  return files.length > 0 ? files : DEFAULT_STARTER;
 }
 
 /** Cùng luật chuẩn hoá tag với server: bỏ trống, gộp trùng không phân biệt hoa/thường. */
-export function normalizeTags(raw: string): string[] {
+function normalizeTags(raw: string): string[] {
   const seen = new Map<string, string>();
   for (const part of raw.split(",")) {
     const t = part.trim();

@@ -4,7 +4,6 @@ import type {
   Difficulty,
   Language,
   ProblemFull,
-  ProblemSummary,
   ProctoringResult,
   Submission,
   TestCase,

@@ -802,7 +802,8 @@ export function GradingPanel({
  * Reference solution + live console.
  * ------------------------------------------------------------------ */
 
-function parseStarter(raw: string | null | undefined): SubmissionFile[] {
+/** Đọc danh sách file nguồn lưu dạng chuỗi JSON [{path, content}]; trống hoặc hỏng ⇒ []. */
+export function parseSourceFiles(raw: string | null | undefined): SubmissionFile[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -835,7 +836,7 @@ export function ReferencePanel({
   const [busy, setBusy] = useState(false);
   const [runSignal, setRunSignal] = useState(0);
   const [source, setSource] = useState<"reference" | "starter">("reference");
-  const starter = useMemo(() => parseStarter(starterTemplates), [starterTemplates]);
+  const starter = useMemo(() => parseSourceFiles(starterTemplates), [starterTemplates]);
 
   useEffect(() => {
     setFiles(JSON.parse(savedJson));

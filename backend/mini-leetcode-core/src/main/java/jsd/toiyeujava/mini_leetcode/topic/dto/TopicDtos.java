@@ -42,7 +42,7 @@ public final class TopicDtos {
     /** THEORY gửi {@code {}} để đánh dấu đã đọc. CODE không nhận bài gửi (xong khi đề được AC). */
     public record AttemptRequest(@NotNull JsonNode answer) {}
 
-    /** {@code wrongStreak}: số lần sai liên tiếp ở câu này (khoá ở lần thứ {@code LOCK_AFTER}). */
+    /** {@code wrongStreak}: số lần sai liên tiếp ở câu này (khoá ở lần thứ {@code PracticeLockService.LOCK_AFTER}). */
     public record AttemptResult(boolean correct, String message, String explanation, boolean stepPassed,
                                 int attempts, TopicProgressStatus progress, int doneSteps, int stepCount,
                                 int wrongStreak, LocalDateTime lockedUntil, boolean mustReread) {}

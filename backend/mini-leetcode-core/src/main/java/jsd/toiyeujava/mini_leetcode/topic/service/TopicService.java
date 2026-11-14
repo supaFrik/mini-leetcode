@@ -20,12 +20,7 @@ import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
 import jsd.toiyeujava.mini_leetcode.topic.dto.TopicDtos.*;
 import jsd.toiyeujava.mini_leetcode.topic.entity.Topic;
-import jsd.toiyeujava.mini_leetcode.topic.entity.TopicLock;
 import jsd.toiyeujava.mini_leetcode.topic.entity.TopicSkip;
-import jsd.toiyeujava.mini_leetcode.topic.repository.TopicLockRepository;
-import jsd.toiyeujava.mini_leetcode.exception.TopicLockedException;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import jsd.toiyeujava.mini_leetcode.topic.entity.TopicStep;
 import jsd.toiyeujava.mini_leetcode.topic.entity.TopicStepProgress;
 import jsd.toiyeujava.mini_leetcode.topic.repository.TopicRepository;
@@ -60,13 +55,13 @@ public class TopicService {
     private final UserRepository userRepository;
     private final ObjectMapper mapper;
     private final StepGrader grader;
-    private final TopicLockRepository lockRepository;
+    private final PracticeLockService locks;
 
     public TopicService(TopicRepository topicRepository, TopicStepProgressRepository progressRepository,
                         TopicSkipRepository skipRepository, ProblemRepository problemRepository,
                         SubmissionRepository submissionRepository, UserRepository userRepository,
-                        ObjectMapper mapper, TopicLockRepository lockRepository) {
-        this.lockRepository = lockRepository;
+                        ObjectMapper mapper, PracticeLockService locks) {
+        this.locks = locks;
         this.topicRepository = topicRepository;
         this.progressRepository = progressRepository;
         this.skipRepository = skipRepository;
@@ -91,19 +86,14 @@ public class TopicService {
                     learnerContent(step, problems), learner.passed(step), p == null ? 0 : p.getAttempts()));
         }
         int done = (int) steps.stream().filter(LearnerStep::passed).count();
-        TopicLock lock = activeLock(userId, topic.getId());
+        PracticeLockService.LockState lock = locks.state(userId, topic.getId());
         return new LearnerTopic(topic.getId(), topic.getSlug(), topic.getTitle(), topic.getSummary(),
                 topic.getEstMinutes(), topic.getStatus(), learner.status(topic, done), steps.size(), done, steps,
-                lockedUntil(lock), lock != null && lock.isMustReread());
+                lock.lockedUntil(), lock.mustReread());
     }
 
-    /** Sai liên tiếp bao nhiêu lần ở một câu thì khoá, và khoá bao lâu. */
-    public static final int LOCK_AFTER = 3;
-    public static final Duration LOCK_FOR = Duration.ofMinutes(5);
-
     /**
-     * Chấm một step. Luyện tập (không phải THEORY / CODE) bị từ chối khi chủ đề đang khoá hoặc chưa đọc lại lý thuyết.
-     * Sai {@link #LOCK_AFTER} lần liên tiếp ở một câu ⇒ khoá {@link #LOCK_FOR} và đặt lại mọi step lý thuyết về chưa đọc.
+     * Chấm một step. Bài luyện tập bị từ chối khi chủ đề đang khoá; luật khoá ở {@link PracticeLockService}.
      */
     @Transactional
     public AttemptResult attempt(String slug, Long stepId, JsonNode submitted, Long userId, boolean staff) {
@@ -111,16 +101,8 @@ public class TopicService {
         TopicStep step = topic.getSteps().stream().filter(s -> s.getId().equals(stepId)).findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Step not found in topic " + slug + ": " + stepId));
         boolean theory = step.getType() == TopicStepType.THEORY;
-        TopicLock lock = activeLock(userId, topic.getId());
-        LocalDateTime now = LocalDateTime.now();
-        if (!theory && lock != null) {
-            if (lock.getLockedUntil().isAfter(now)) {
-                throw new TopicLockedException("Too many wrong answers. Practice reopens at "
-                        + lock.getLockedUntil().toLocalTime().withNano(0) + "; review the theory meanwhile.");
-            }
-            if (lock.isMustReread()) {
-                throw new TopicLockedException("Read the theory again before you continue practicing.");
-            }
+        if (!theory) {
+            locks.ensureCanPractice(userId, topic.getId());
         }
         StepGrader.Grade grade = grader.grade(step.getType(), read(step.getContent()), read(step.getAnswer()), submitted);
 
@@ -128,65 +110,18 @@ public class TopicService {
                 .orElseGet(() -> TopicStepProgress.builder().userId(userId).stepId(stepId).build());
         progress.setAttempts(progress.getAttempts() + 1);
         progress.setPassed(progress.isPassed() || grade.correct());
-        progress.setWrongStreak(grade.correct() ? 0 : progress.getWrongStreak() + 1);
-        String message = grade.message();
-        if (!theory && progress.getWrongStreak() >= LOCK_AFTER) {
-            progress.setWrongStreak(0);
-            lock = lockTopic(userId, topic, now.plus(LOCK_FOR));
-            message = "Wrong " + LOCK_AFTER + " times in a row. Practice is locked for " + LOCK_FOR.toMinutes()
-                    + " minutes; read the theory again.";
-        }
+        boolean lockedNow = !theory && locks.recordPracticeAnswer(userId, topic, progress, grade.correct());
         progressRepository.save(progress);
-
-        if (theory && lock != null && lock.isMustReread() && allTheoryRead(userId, topic)) {
-            lock.setMustReread(false);
-            lockRepository.save(lock);
+        if (theory) {
+            locks.recordTheoryRead(userId, topic);
         }
 
         Learner learner = learnerOf(userId, List.of(topic));
         int done = (int) topic.getSteps().stream().filter(learner::passed).count();
-        lock = activeLock(userId, topic.getId());
-        return new AttemptResult(grade.correct(), message, grade.explanation(), progress.isPassed(),
-                progress.getAttempts(), learner.status(topic, done), done, topic.getSteps().size(),
-                progress.getWrongStreak(), lockedUntil(lock), lock != null && lock.isMustReread());
-    }
-
-    private TopicLock lockTopic(Long userId, Topic topic, LocalDateTime until) {
-        // Lý thuyết về "chưa đọc": học viên phải đọc lại trước khi luyện tập tiếp.
-        List<Long> theoryIds = topic.getSteps().stream().filter(s -> s.getType() == TopicStepType.THEORY)
-                .map(TopicStep::getId).toList();
-        if (!theoryIds.isEmpty()) {
-            progressRepository.findByUserIdAndStepIdIn(userId, theoryIds).forEach(p -> p.setPassed(false));
-        }
-        TopicLock lock = lockRepository.findById(new TopicLock.Key(userId, topic.getId()))
-                .orElseGet(() -> new TopicLock(userId, topic.getId(), until, true));
-        lock.setLockedUntil(until);
-        lock.setMustReread(!theoryIds.isEmpty());
-        return lockRepository.save(lock);
-    }
-
-    private boolean allTheoryRead(Long userId, Topic topic) {
-        List<Long> theoryIds = topic.getSteps().stream().filter(s -> s.getType() == TopicStepType.THEORY)
-                .map(TopicStep::getId).toList();
-        long read = progressRepository.findByUserIdAndStepIdIn(userId, theoryIds).stream()
-                .filter(TopicStepProgress::isPassed).count();
-        return read == theoryIds.size();
-    }
-
-    /** Khoá còn hiệu lực (đang đếm giờ hoặc chưa đọc lại lý thuyết); khoá đã hết cả hai thì xoá. */
-    private TopicLock activeLock(Long userId, Long topicId) {
-        TopicLock lock = lockRepository.findById(new TopicLock.Key(userId, topicId)).orElse(null);
-        if (lock == null) {
-            return null;
-        }
-        if (!lock.isMustReread() && !lock.getLockedUntil().isAfter(LocalDateTime.now())) {
-            return null;
-        }
-        return lock;
-    }
-
-    private static LocalDateTime lockedUntil(TopicLock lock) {
-        return lock != null && lock.getLockedUntil().isAfter(LocalDateTime.now()) ? lock.getLockedUntil() : null;
+        PracticeLockService.LockState lock = locks.state(userId, topic.getId());
+        return new AttemptResult(grade.correct(), lockedNow ? PracticeLockService.lockedMessage() : grade.message(),
+                grade.explanation(), progress.isPassed(), progress.getAttempts(), learner.status(topic, done), done,
+                topic.getSteps().size(), progress.getWrongStreak(), lock.lockedUntil(), lock.mustReread());
     }
 
     @Transactional

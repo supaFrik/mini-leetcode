@@ -12,30 +12,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useLoad } from "@/hooks/use-load";
-import { useUser } from "@/hooks/use-user";
+import { useCanEdit } from "@/hooks/use-can-edit";
+import { isSlug, slugify } from "@/lib/slug";
 import { deleteTopic, fetchTopicForAuthoring, fetchTopics, saveTopic, transitionTopic } from "@/lib/services";
 import type { AuthoringStep, AuthoringTopic, StudyPlanStatus, TopicStepType, TopicSummary } from "@/types/api";
 import { AdminNav } from "./admin-nav";
-import { ProblemPicker, slugify } from "./admin-study-plans";
+import { ProblemPicker } from "./problem-picker";
+import type { SaveState } from "./save-state";
+import { PLAN_STATUS_VARIANT } from "./status";
 import { useConfirm } from "@/components/ui/confirm";
 
 /* Soạn chủ đề học (specs/topics.spec.md): /admin/topics, /admin/topics/new, /admin/topics/[slug]. */
 
-const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const STATUS_VARIANT: Record<StudyPlanStatus, "success" | "secondary" | "outline"> = {
-  PUBLISHED: "success", DRAFT: "secondary", ARCHIVED: "outline",
-};
 export const STEP_LABEL: Record<TopicStepType, string> = {
   THEORY: "Theory", CHOICE: "Quiz", MATCHING: "Matching", ORDERING: "Ordering", FILL_BLANK: "Fill in the blanks", CODE: "Code exercise",
 };
 const BLANK = /\[\[([A-Za-z0-9_-]{1,20})]]/g;
 const blankIds = (code: string) => Array.from(code.matchAll(BLANK)).map((m) => m[1]);
 const field = "space-y-1 text-body-sm text-mute";
-
-function useCanEdit() {
-  const { user } = useUser();
-  return (createdById?: number) => !!user && (user.role === "ADMIN" || createdById === undefined || createdById === user.id);
-}
 
 function move<T>(list: T[], from: number, to: number): T[] {
   if (to < 0 || to >= list.length) return list;
@@ -88,7 +82,7 @@ export function AdminTopicsView() {
                     <Link href={`/admin/topics/${t.slug}`} className="font-medium text-ink hover:underline">{t.title}</Link>
                     <div className="font-mono text-body-sm text-mute">{t.slug}</div>
                   </td>
-                  <td className="px-4 py-3"><Badge variant={STATUS_VARIANT[t.status]}>{t.status}</Badge></td>
+                  <td className="px-4 py-3"><Badge variant={PLAN_STATUS_VARIANT[t.status]}>{t.status}</Badge></td>
                   <td className="hidden px-4 py-3 text-mute sm:table-cell">{t.stepCount} steps · {t.estMinutes} min</td>
                   <td className="hidden px-4 py-3 text-mute md:table-cell">{t.createdByUsername}</td>
                   <td className="px-4 py-3 text-right">
@@ -362,7 +356,6 @@ const draftJson = (slug: string, title: string, summary: string, estMinutes: num
 // /admin/topics/new  và  /admin/topics/[slug]
 // =====================================================================================
 
-export type SaveState = "idle" | "saving" | "saved" | "error" | "invalid";
 
 /**
  * {@code embedded}: nhúng trong Course Builder — không header / footer riêng, tự lưu 1 s sau lần sửa cuối,
@@ -407,7 +400,7 @@ export function TopicEditor({ slug, embedded = false, onSaved, onSaveState }: {
 
   const validate = (): string | null => {
     if (!title.trim()) return "Give the topic a title.";
-    if (!SLUG_RE.test(topicSlug)) return "The slug may only contain lowercase letters, digits and single hyphens.";
+    if (!isSlug(topicSlug)) return "The slug may only contain lowercase letters, digits and single hyphens.";
     for (let i = 0; i < steps.length; i++) {
       const s = steps[i];
       const where = `Step ${i + 1} (${STEP_LABEL[s.type]})`;
@@ -499,7 +492,7 @@ export function TopicEditor({ slug, embedded = false, onSaved, onSaveState }: {
       <header className="space-y-2">
         <Link href="/admin/topics" className="text-body-sm text-link hover:underline">← Topics</Link>
         <div className="flex flex-wrap items-center gap-3">
-          {status && <Badge variant={STATUS_VARIANT[status]}>{status}</Badge>}
+          {status && <Badge variant={PLAN_STATUS_VARIANT[status]}>{status}</Badge>}
         </div>
         {!canEdit && (
           <p className="rounded-sm border border-border bg-hairline-soft px-3 py-2 text-body-sm text-mute" role="note">

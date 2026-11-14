@@ -10,9 +10,9 @@ Expand-Archive -Path .\frontend-update.zip -DestinationPath .\frontend -Force
 Remove-Item .\frontend\src\app\page.tsx -ErrorAction SilentlyContinue
 Remove-Item .\frontend\src\lib\problems.ts -ErrorAction SilentlyContinue
 
-# 3) Cài thư viện (font tự host thay cho Google Fonts, và khoá phiên bản chia panel)
+# 3) Cài thư viện
 cd frontend
-npm i @fontsource-variable/inter @fontsource-variable/jetbrains-mono react-resizable-panels@^2.1.9
+npm ci
 
 # 4) .env.local cần đủ 4 biến, xem .env.example
 
@@ -76,7 +76,7 @@ hình dạng `GET /problems` và `PUT /problems/{id}`. Spec cũng chưa có hear
 
 ## 6. Lưu ý
 
-- Font tự host qua `@fontsource-variable/*` nên `npm run build` không cần Internet.
+- Font IBM Plex tự host qua `@fontsource/*` nên `npm run build` không cần Internet.
 - Monaco tải từ CDN jsdelivr. Nếu mạng chặn, app tự chuyển sang `<textarea>` dự phòng (vẫn chặn paste ở Exam). Phòng thi thật nên tự host Monaco.
 - Chặn paste, chuột phải, fullscreen chỉ là UX. Server mới là bên phạt (Server-Side Authority).
 - Nếu `tsc` báo thiếu icon (vd `Shield`, `Trophy`), thư viện lucide của bạn cũ hơn bản đã kiểm thử (1.x): đổi sang tên icon tương ứng.

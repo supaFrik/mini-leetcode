@@ -14,7 +14,6 @@ import jsd.toiyeujava.mini_leetcode.entity.SubmissionLanguage;
 import jsd.toiyeujava.mini_leetcode.exception.InvalidSubmissionPathException;
 import jsd.toiyeujava.mini_leetcode.exception.PayloadTooLargeException;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
-import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionArchiveResult;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionFileDto;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionResponse;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionTaskMessage;

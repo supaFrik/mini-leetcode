@@ -2,7 +2,6 @@ package jsd.toiyeujava.mini_leetcode.submission.producer;
 
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionLanguage;
 import jsd.toiyeujava.mini_leetcode.submission.dto.SubmissionTaskMessage;
-import jsd.toiyeujava.mini_leetcode.submission.queue.JudgeProperties;
 import jsd.toiyeujava.mini_leetcode.submission.queue.SubmissionStreamClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 

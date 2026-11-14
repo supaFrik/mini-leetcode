@@ -8,7 +8,6 @@ import jsd.toiyeujava.mini_leetcode.auth.dto.RegisterRequest;
 import jsd.toiyeujava.mini_leetcode.problem.dto.UpdateProblemRequest;
 import jsd.toiyeujava.mini_leetcode.entity.*;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
-import jsd.toiyeujava.mini_leetcode.auth.entity.RefreshToken;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.testcase.entity.TestCase;
 import jsd.toiyeujava.mini_leetcode.exception.InvalidTokenException;
