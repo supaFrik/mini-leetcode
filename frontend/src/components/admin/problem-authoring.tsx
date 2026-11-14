@@ -76,8 +76,7 @@ function FrozenNotice({ what }: { what: string }) {
     <p className="flex items-start gap-2 rounded-sm border border-warning/30 bg-warning/10 px-3 py-2 text-body-sm text-ink">
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
       <span>
-        This problem is <strong>Published</strong>, so its {what} are locked. Move it back to Draft (via Archived) to
-        change them.
+        This problem is <strong>Published</strong>, so its {what} are locked while learners use it. Unlock it to make changes.
       </span>
     </p>
   );

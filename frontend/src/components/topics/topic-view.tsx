@@ -282,7 +282,7 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
             </ol>
           </nav>
           <div>
-            <span className={t.readTime}><Clock size={14} aria-hidden /> {Math.max(1, Math.round(words / 200))} minutes read</span>
+            <span className={t.readTime}><Clock size={14} aria-hidden /> {Math.max(1, Math.round(words / 200))} min read</span>
             <div className={t.prose}>
               {sections.slice(0, revealed).map((s, i) => (
                 <section key={i} ref={(el) => { sectionRefs.current[i] = el; }} aria-label={s.title}>

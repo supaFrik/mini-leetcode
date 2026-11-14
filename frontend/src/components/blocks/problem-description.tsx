@@ -82,7 +82,9 @@ export function ProblemDescription({
             "prose prose-sm max-w-none prose-headings:tracking-tight prose-headings:text-ink prose-p:text-body prose-li:text-body prose-strong:text-ink",
             "prose-code:rounded-sm prose-code:border prose-code:border-border prose-code:bg-hairline-soft prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:text-[#0761d1]",
             "prose-code:before:content-none prose-code:after:content-none",
-            "prose-pre:rounded-sm prose-pre:border prose-pre:border-border prose-pre:bg-card prose-pre:text-ink"
+            "prose-pre:rounded-sm prose-pre:border prose-pre:border-border prose-pre:bg-card prose-pre:text-ink",
+            // Khối code (ví dụ Input/Output) không mang kiểu "chip" của code inline — trước đây hiện như các mẩu xanh 10px.
+            "[&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:font-mono [&_pre_code]:text-[13px] [&_pre_code]:leading-relaxed [&_pre_code]:text-ink"
           )}
         >
           <Markdown>{markdown}</Markdown>

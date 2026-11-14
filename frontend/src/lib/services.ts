@@ -4,7 +4,7 @@
  * - USE_MOCK=false → gọi REST API thật. Endpoint đánh dấu [ĐỀ XUẤT] chưa có trong spec,
  *   cần thống nhất với Kỹ sư 1 (xem README_FRONTEND.md).
  */
-import { api, ApiError, request, USE_MOCK } from "./api";
+import { api, request, USE_MOCK } from "./api";
 import { parseApiDate } from "./datetime";
 import { setTokens } from "./auth";
 import * as mock from "./mock-server";
@@ -309,8 +309,8 @@ export async function fetchSubmissionCode(id: number): Promise<string> {
 // [ĐỀ XUẤT] GET /api/v1/submissions/{id}/results – chi tiết từng testcase công khai. Chưa có → trả null.
 export async function fetchSubmissionResults(id: number): Promise<CaseResult[] | null> {
   if (USE_MOCK) return mock.submissionResults(id);
-  try { return await api<CaseResult[]>(`/api/v1/submissions/${id}/results`); }
-  catch (e) { if (e instanceof ApiError && [404, 405, 501].includes(e.status)) return null; throw e; }
+  // ponytail: backend chưa có endpoint này — gọi chỉ sinh 404 + lỗi console mỗi lần chấm. Bật lại khi có.
+  return null;
 }
 
 // ---------- Contests ----------

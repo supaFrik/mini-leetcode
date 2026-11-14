@@ -45,7 +45,7 @@ test.describe("M1 Infrastructure Smoke Test", () => {
     await page.goto("/register", { waitUntil: "domcontentloaded" });
 
     // Expect the register form to be visible
-    await expect(page.getByRole("heading", { name: "Create New Profile" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
     await expect(page.getByLabel("Username")).toBeVisible();
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByLabel("Password", { exact: true })).toBeVisible();

@@ -242,7 +242,7 @@ PROBLEMS = [
                ("tie keeps first", "2\nRECT A 2 3\nRECT B 3 2\n", False),
                ("zero size", "2\nCIRCLE Dot 0\nRECT Line 5 0\n", False),
                ("many shapes", "4\nCIRCLE C1 1.5\nRECT R1 10 0.5\nCIRCLE C2 2\nRECT R2 3.3 4.4\n", False)]},
-    {"id": 102, "title": "Echo Server (Simulated Clients)",
+    {"id": 102, "title": "Echo Server (Simulated Clients)", "tags": ["OOP", "Collections", "Networking"],
      "problem": "Simulate an echo server that talks to several clients at once. Instead of real sockets, each input line "
                 "is an event from one client, so the server logic can be tested with plain stdin/stdout.\n\n"
                 "- **`ClientHandler`**: one object per connected client; remembers its id and how many messages it echoed. "

@@ -94,7 +94,7 @@ export function SiteHeader() {
                     <span className={s.avatar} aria-hidden="true">
                       {user.username?.[0]?.toUpperCase() ?? "?"}
                     </span>
-                    <span>{user.username}</span>
+                    <span className={s.accountName}>{user.username}</span>
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-44">
