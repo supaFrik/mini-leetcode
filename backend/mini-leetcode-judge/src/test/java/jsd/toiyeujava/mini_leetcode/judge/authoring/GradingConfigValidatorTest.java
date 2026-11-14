@@ -81,6 +81,14 @@ class GradingConfigValidatorTest {
     }
 
     @Test
+    void acceptsOutputOnlyConfig() {
+        // Bài OOP chấm hoàn toàn bằng testcase stdin/stdout: chỉ cần tuỳ chọn so output.
+        var result = validator.validate("{\"output\": {\"mode\": \"normalized\", \"ignoreCase\": false}}");
+        assertThat(result.errors()).isEmpty();
+        assertThat(result.ruleCount()).isZero();
+    }
+
+    @Test
     void acceptsAndChecksOutputPolicy() {
         String rule = "\"rules\": [{\"targetClassName\": \"Account\"}]";
         assertThat(validator.validate("{" + rule + ", \"output\": {\"mode\": \"normalized\", \"ignoreCase\": true}}").errors())

@@ -136,8 +136,9 @@ public class GradingConfigValidator {
                 }
             }
         }
-        if (ruleCount == 0 && scenarioCount == 0 && errors.isEmpty()) {
-            errors.add("Configuration has no rules and no socket scenarios — clear it instead of saving an empty config");
+        // Chỉ có "output": bài chấm hoàn toàn bằng testcase stdin/stdout (mặc định cho bài OOP) — hợp lệ.
+        if (ruleCount == 0 && scenarioCount == 0 && !root.has("output") && errors.isEmpty()) {
+            errors.add("Configuration has no rules, socket scenarios or output settings — clear it instead of saving an empty config");
         }
         return new Result(List.copyOf(errors), ruleCount, scenarioCount, totalWeight);
     }
