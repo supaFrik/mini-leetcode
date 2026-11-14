@@ -64,6 +64,14 @@ public class ProblemService {
         this.contestProblemRepository = contestProblemRepository;
     }
 
+    /** Khoá stage khi mở đề (học viên chưa xong stage trước). Không có trong unit test dựng tay. */
+    private jsd.toiyeujava.mini_leetcode.studyplan.service.StageGate stageGate;
+
+    @Autowired(required = false)
+    public void setStageGate(jsd.toiyeujava.mini_leetcode.studyplan.service.StageGate stageGate) {
+        this.stageGate = stageGate;
+    }
+
     public ProblemService(ProblemRepository problemRepository) {
         this(problemRepository, null, null, null, null);
     }
@@ -237,6 +245,7 @@ public class ProblemService {
         Problem problem = problemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + id));
         assertVisible(problem, staff);
+        assertStageOpen(problem, userId, staff);
         return ProblemResponse.fromEntity(problem, resolveProgress(userId, List.of(problem), solvedIds(userId), attemptedIds(userId)).get(id));
     }
 
@@ -255,6 +264,7 @@ public class ProblemService {
         Problem problem = problemRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with slug: " + slug));
         assertVisible(problem, staff);
+        assertStageOpen(problem, userId, staff);
         return ProblemResponse.fromEntity(problem, resolveProgress(userId, List.of(problem), solvedIds(userId), attemptedIds(userId)).get(problem.getId()));
     }
 
@@ -265,6 +275,13 @@ public class ProblemService {
     private void assertVisible(Problem problem, boolean staff) {
         if (!staff && problem.getStatus() != ProblemStatus.PUBLISHED) {
             throw new ResourceNotFoundException("Problem not found with id: " + problem.getId());
+        }
+    }
+
+    /** Đề thuộc lộ trình: học viên chỉ mở được khi đã xong stage trước (staff luôn mở được). */
+    private void assertStageOpen(Problem problem, Long userId, boolean staff) {
+        if (!staff && stageGate != null) {
+            stageGate.assertUnlocked(problem, userId);
         }
     }
 

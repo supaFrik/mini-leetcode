@@ -110,8 +110,15 @@ class StudyPlanIntegrationTest {
         expectLocked(submitJson(stage2, studentJwt));
         plan(studentJwt).andExpect(jsonPath("$.items[0].stages[0].status").value("NEVER"))
                 .andExpect(jsonPath("$.items[0].stages[1].status").value("LOCKED"));
+        // Mở đề / tải starter của stage bị khoá cũng bị chặn (học viên, khách); stage 1 và staff thì không.
+        expectLocked(mockMvc.perform(get("/api/v1/problems/" + stage2.getSlug()).header("Authorization", studentJwt)));
+        expectLocked(mockMvc.perform(get("/api/v1/problems/" + stage2.getId())));
+        expectLocked(mockMvc.perform(get("/api/v1/problems/" + stage2.getId() + "/starter-template").header("Authorization", studentJwt)));
+        mockMvc.perform(get("/api/v1/problems/" + stage1.getSlug()).header("Authorization", studentJwt)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/problems/" + stage2.getSlug()).header("Authorization", instructorJwt)).andExpect(status().isOk());
 
         save(stage1, SubmissionVerdict.AC, false);
+        mockMvc.perform(get("/api/v1/problems/" + stage2.getSlug()).header("Authorization", studentJwt)).andExpect(status().isOk());
         submitJson(stage2, studentJwt).andExpect(status().isAccepted());
         plan(studentJwt).andExpect(jsonPath("$.items[0].stages[0].status").value("DONE"))
                 .andExpect(jsonPath("$.items[0].stages[1].status").value("IN_PROGRESS"))
@@ -174,8 +181,8 @@ class StudyPlanIntegrationTest {
         mockMvc.perform(get("/api/v1/problems?size=100&scope=COURSE").header("Authorization", instructorJwt))
                 .andExpect(jsonPath("$.content[*].slug", hasItem("sp-bank-2")))
                 .andExpect(jsonPath("$.content[*].slug", hasItem("sp-two-sum")));
-        // Vẫn mở trực tiếp được (plan / plugin cần đề bài).
-        mockMvc.perform(get("/api/v1/problems/sp-bank-2").header("Authorization", studentJwt))
+        // Vẫn mở trực tiếp được stage đã mở khoá (plan / plugin cần đề bài); stage bị khoá thì không (stageOpensAfterAc).
+        mockMvc.perform(get("/api/v1/problems/sp-bank-1").header("Authorization", studentJwt))
                 .andExpect(status().isOk());
     }
 

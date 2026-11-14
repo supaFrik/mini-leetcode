@@ -56,7 +56,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final ContestRepository contestRepository;
     private final ContestParticipantRepository contestParticipantRepository;
     private final SubmissionArchiveService submissionArchiveService;
-    private StudyPlanRepository studyPlanRepository;
+    private jsd.toiyeujava.mini_leetcode.studyplan.service.StageGate stageGate;
     private ContestProblemRepository contestProblemRepository;
 
     @Autowired
@@ -94,9 +94,9 @@ public class SubmissionServiceImpl implements SubmissionService {
      * Unit test dựng tay bằng constructor không gọi setter thì khoá stage bị bỏ qua.
      */
     @Autowired
-    public void setStageLockRepositories(StudyPlanRepository studyPlanRepository,
-                                         ContestProblemRepository contestProblemRepository) {
-        this.studyPlanRepository = studyPlanRepository;
+    public void setStageLock(jsd.toiyeujava.mini_leetcode.studyplan.service.StageGate stageGate,
+                             ContestProblemRepository contestProblemRepository) {
+        this.stageGate = stageGate;
         this.contestProblemRepository = contestProblemRepository;
     }
 
@@ -237,31 +237,14 @@ public class SubmissionServiceImpl implements SubmissionService {
      * kỳ thi khi đề thật sự thuộc kỳ thi đó — gắn contestId của kỳ thi khác không lách được khoá.
      */
     private void assertStageUnlocked(Problem problem, User user, SubmitCodeRequest request) {
-        if (studyPlanRepository == null || user.getRole() != Role.USER) {
+        if (stageGate == null || user.getRole() != Role.USER) {
             return;
         }
         if (request.contestId() != null && contestProblemRepository != null
                 && contestProblemRepository.findByContestIdAndProblemId(request.contestId(), problem.getId()).isPresent()) {
             return;
         }
-        List<Object[]> position = studyPlanRepository.findStagePosition(problem.getId());
-        if (position.isEmpty()) {
-            return;
-        }
-        // Stage đang được giảng viên sửa (Unlock trong Course Builder, hoặc mới thêm chưa publish).
-        if (problem.getStatus() != jsd.toiyeujava.mini_leetcode.entity.ProblemStatus.PUBLISHED) {
-            throw new StageLockedException("This stage is being updated. Try again later.");
-        }
-        long itemId = ((Number) position.get(0)[0]).longValue();
-        int stageNo = ((Number) position.get(0)[1]).intValue();
-        if (stageNo == 0) {
-            return;
-        }
-        List<Number> previous = studyPlanRepository.findStageProblemId(itemId, stageNo - 1);
-        if (!previous.isEmpty() && !submissionRepository.existsByUser_IdAndProblem_IdAndVerdictAndQuickRunFalse(
-                user.getId(), previous.get(0).longValue(), SubmissionVerdict.AC)) {
-            throw new StageLockedException("Complete stage " + stageNo + " before submitting stage " + (stageNo + 1));
-        }
+        stageGate.assertUnlocked(problem, user.getId());
     }
 
     private static boolean isViaPat() {

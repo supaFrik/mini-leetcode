@@ -56,6 +56,10 @@ public class ProblemController {
     private final SubmissionArchiveService submissionArchiveService;
     private final ObjectMapper objectMapper;
 
+    /** Khoá stage cho tải starter (plugin IDE). Tuỳ chọn để constructor dựng tay trong test vẫn chạy. */
+    @Autowired(required = false)
+    private jsd.toiyeujava.mini_leetcode.studyplan.service.StageGate stageGate;
+
     @Autowired
     public ProblemController(
             ProblemService problemService,
@@ -286,6 +290,9 @@ public class ProblemController {
 
         if (!isStaff(currentUser) && problem.getStatus() != ProblemStatus.PUBLISHED) {
             throw new ResourceNotFoundException("Problem not found with id: " + problem.getId());
+        }
+        if (!isStaff(currentUser) && stageGate != null) {
+            stageGate.assertUnlocked(problem, currentUser != null ? currentUser.getId() : null);
         }
 
         List<SubmissionFileDto> templates = parseStarterTemplates(problem.getStarterTemplates());
