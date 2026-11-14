@@ -8,7 +8,7 @@ import { Markdown } from "@/components/ui/markdown";
 import { useJudge } from "@/hooks/use-judge";
 import { errorMessage } from "@/lib/api";
 import { fetchProblem, fetchTestCases } from "@/lib/services";
-import { TEMPLATES } from "@/lib/templates";
+import { starterCodes } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import type { CaseResult, ProblemFull, Submission, TestCase } from "@/types/api";
 import x from "./code-exercise.module.css";
@@ -81,7 +81,7 @@ export function CodeExercise({ problemSlug, passed, onSolved, showStatement = tr
 }
 
 function Editor({ problem, passed, onSolved }: { problem: ProblemFull; passed: boolean; onSolved?: () => void }) {
-  const [code, setCode] = useState(() => readDraft(problem.id) ?? TEMPLATES.JAVA);
+  const [code, setCode] = useState(() => readDraft(problem.id) ?? starterCodes(problem.starterTemplates).JAVA);
   const { result, cases, judging, timedOut, error, submit } = useJudge(problem.id);
   const extensions = useMemo(() => [java(), EditorView.contentAttributes.of({ "aria-label": "Code editor" })], []);
 
@@ -109,7 +109,7 @@ function Editor({ problem, passed, onSolved }: { problem: ProblemFull; passed: b
         <button type="button" className={x.submit} disabled={judging || !code.trim()} onClick={() => submit("JAVA", code)}>
           {judging ? <><Loader2 size={15} className={x.spin} aria-hidden /> Checking…</> : "Submit"}
         </button>
-        <button type="button" className={x.reset} disabled={judging} onClick={() => setCode(TEMPLATES.JAVA)}>Reset code</button>
+        <button type="button" className={x.reset} disabled={judging} onClick={() => setCode(starterCodes(problem.starterTemplates).JAVA)}>Reset code</button>
       </div>
       <Verdict result={result} cases={cases} judging={judging} timedOut={timedOut} error={error?.message ?? null} />
     </div>

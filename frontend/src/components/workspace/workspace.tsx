@@ -32,7 +32,7 @@ import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
 import { fmtDuration } from "@/lib/format";
 import { DRAFT_SYNC, downloadStarterZip, finalizeContestSubmission, loadDraft, RUN_ENABLED, saveDraft, submitCodeMultipart, transitionProblem } from "@/lib/services";
-import { FILE_NAME, LANG_PREF_KEY, LANGUAGES, TEMPLATES } from "@/lib/templates";
+import { FILE_NAME, LANG_PREF_KEY, LANGUAGES, starterCodes } from "@/lib/templates";
 import { formatCode } from "@/lib/format-code";
 import { toast } from "@/lib/toast";
 import { VERDICT } from "@/lib/verdict";
@@ -53,7 +53,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
   const [problem, setProblem] = useState(initialProblem);
   const [cases] = useState(initialCases);
   const [lang, setLang] = useState<Language>("JAVA");
-  const [codes, setCodes] = useState<Record<Language, string>>({ ...TEMPLATES });
+  const [codes, setCodes] = useState<Record<Language, string>>(() => starterCodes(initialProblem.starterTemplates));
   const [lastRun, setLastRun] = useState(false);
   const [maximized, setMaximized] = useState(false);
   const [tab, setTab] = useState("result");
@@ -354,7 +354,7 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
                 setMultiFiles(defaultFiles);
                 setActiveFileIdx(0);
               } else {
-                setCodes((c) => ({ ...c, [lang]: TEMPLATES[lang] }));
+                setCodes((c) => ({ ...c, [lang]: starterCodes(problem.starterTemplates)[lang] }));
               }
             }
           }} className="text-mute transition-colors hover:text-ink disabled:opacity-40">

@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { FILE_NAME, LANGUAGES, TEMPLATES } from "@/lib/templates";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useConfirm } from "@/components/ui/confirm";
@@ -32,6 +34,29 @@ function toDraft(p: ProblemFull): ProblemDraft {
 function starterFiles(value: string | null | undefined): SubmissionFile[] {
   const files = parseSourceFiles(value);
   return files.length > 0 ? files : DEFAULT_STARTER;
+}
+
+/** Code khởi đầu bài DSA: một ô cho mỗi ngôn ngữ; để trống = dùng mẫu mặc định (placeholder). */
+function DsaStarterField({ value, onChange, disabled }: { value: string | null | undefined; onChange: (v: string) => void; disabled?: boolean }) {
+  const files = parseSourceFiles(value);
+  const get = (path: string) => files.find((f) => f.path === path)?.content ?? "";
+  const update = (path: string, content: string) => {
+    const next = LANGUAGES.map((l) => FILE_NAME[l.value])
+      .map((p) => ({ path: p, content: p === path ? content : get(p) }))
+      .filter((f) => f.content.trim());
+    onChange(next.length ? JSON.stringify(next) : "");
+  };
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {LANGUAGES.map((l) => (
+        <label key={l.value} className={field}>
+          Starter code — {l.label} ({FILE_NAME[l.value]}), empty = default
+          <Textarea rows={10} disabled={disabled} value={get(FILE_NAME[l.value])} placeholder={TEMPLATES[l.value]}
+            onChange={(e) => update(FILE_NAME[l.value], e.target.value)} className="font-mono text-xs" />
+        </label>
+      ))}
+    </div>
+  );
 }
 
 /** Cùng luật chuẩn hoá tag với server: bỏ trống, gộp trùng không phân biệt hoa/thường. */
@@ -194,6 +219,9 @@ export function ProblemEditor({ problemId, label, canEdit, learners = 0, current
               </label>
             </div>
             <TagsField value={draft.tags} onChange={(tags) => set("tags", tags)} />
+            {draft.type !== "OOP_GRINDING" && (
+              <DsaStarterField value={draft.starterTemplates} onChange={(v) => set("starterTemplates", v)} disabled={!canEdit} />
+            )}
             {draft.type === "OOP_GRINDING" && (
               <SourceFilesEditor label="Starter files (.java)" files={starterFiles(draft.starterTemplates)}
                 onChange={(files) => set("starterTemplates", JSON.stringify(files))} />

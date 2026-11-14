@@ -41,3 +41,22 @@ if __name__ == '__main__':
 };
 
 export const LANG_PREF_KEY = "pref:lang";
+
+/**
+ * Code khởi đầu bài DSA theo ngôn ngữ. Admin đặt qua `starterTemplates`
+ * (JSON `[{ path, content }]`, path = FILE_NAME[lang]); thiếu hoặc rỗng thì dùng TEMPLATES.
+ */
+export function starterCodes(starterTemplates?: string | null): Record<Language, string> {
+  const out = { ...TEMPLATES };
+  try {
+    const files: unknown = JSON.parse(starterTemplates || "[]");
+    if (!Array.isArray(files)) return out;
+    for (const l of Object.keys(FILE_NAME) as Language[]) {
+      const f = files.find((x) => x?.path === FILE_NAME[l]);
+      if (typeof f?.content === "string" && f.content.trim()) out[l] = f.content;
+    }
+  } catch {
+    /* JSON hỏng → mặc định */
+  }
+  return out;
+}
