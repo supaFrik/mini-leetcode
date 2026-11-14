@@ -252,29 +252,33 @@ public class ApiClient {
     }
 
     private HttpResponse<String> send(HttpRequest request) {
+        return exchange(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    }
+
+    private HttpResponse<byte[]> sendBytes(HttpRequest request) {
+        return exchange(request, HttpResponse.BodyHandlers.ofByteArray());
+    }
+
+    private <T> HttpResponse<T> exchange(HttpRequest request, HttpResponse.BodyHandler<T> handler) {
         try {
-            return httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            return httpClient.send(request, handler);
         } catch (HttpTimeoutException e) {
-            throw new MiniLeetCodeApiException("Connection timed out: " + e.getMessage(), e);
+            throw new MiniLeetCodeApiException("Connection to " + server(request) + " timed out. " + CHECK_URL_HINT, e);
         } catch (IOException e) {
-            throw new MiniLeetCodeApiException("Network error: " + e.getMessage(), e);
+            // ConnectException của java.net.http thường có message null ⇒ luôn nêu server và loại lỗi.
+            String detail = e.getMessage() != null && !e.getMessage().isBlank() ? e.getMessage() : e.getClass().getSimpleName();
+            throw new MiniLeetCodeApiException("Cannot reach " + server(request) + " (" + detail + "). " + CHECK_URL_HINT, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new MiniLeetCodeApiException("Request was interrupted", e);
         }
     }
 
-    private HttpResponse<byte[]> sendBytes(HttpRequest request) {
-        try {
-            return httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
-        } catch (HttpTimeoutException e) {
-            throw new MiniLeetCodeApiException("Connection timed out: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new MiniLeetCodeApiException("Network error: " + e.getMessage(), e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new MiniLeetCodeApiException("Request was interrupted", e);
-        }
+    private static final String CHECK_URL_HINT = "Check the Server URL in Settings › Tools › Mini LeetCode.";
+
+    private static String server(HttpRequest request) {
+        java.net.URI uri = request.uri();
+        return uri.getScheme() + "://" + uri.getAuthority();
     }
 
     private void handleErrorResponse(HttpResponse<String> response) {
