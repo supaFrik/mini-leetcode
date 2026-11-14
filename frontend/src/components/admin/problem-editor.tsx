@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useConfirm } from "@/components/ui/confirm";
 import { errorMessage } from "@/lib/api";
@@ -171,9 +171,9 @@ export function ProblemEditor({ problemId, label, canEdit, learners = 0, current
             <label className={`block ${field}`}>Title
               <Input value={draft.title} onChange={(e) => set("title", e.target.value)} />
             </label>
-            <label className={`block ${field}`}>Statement (Markdown)
-              <Textarea rows={14} className="font-mono" value={draft.description} onChange={(e) => set("description", e.target.value)} />
-            </label>
+            <div className={`block ${field}`}>Statement
+              <RichTextEditor value={draft.description} onChange={(v) => set("description", v)} label="Statement" disabled={!canEdit} className="mt-1" />
+            </div>
             <div className="grid gap-3 sm:grid-cols-4">
               <label className={field}>Difficulty
                 <select className={select} value={draft.difficulty} onChange={(e) => set("difficulty", e.target.value as Difficulty)}>

@@ -79,7 +79,7 @@ test.describe("Admin: topic authoring and stage topics", () => {
 
     // Step 1 (theory) có sẵn
     const theory = page.getByRole("region", { name: "Step 1: Theory" });
-    await theory.getByLabel("Theory markdown").fill("## Vấn đề\nai cũng sửa\n## Modifier\nprivate");
+    await theory.getByRole("textbox", { name: "Theory" }).fill("Field public ai cũng sửa được.");
 
     const add = page.getByRole("group", { name: "Add a step" });
     await add.getByRole("button", { name: "Quiz" }).click();
@@ -158,5 +158,41 @@ test.describe("Admin: topic authoring and stage topics", () => {
     await expect(page.getByRole("alert").filter({ hasText: "Step 2" })).toHaveText("Step 2 (Code exercise): choose the problem.");
     expect(api.writes).toHaveLength(0);
   });
+  test("visual editor: headings, lists, underline and colour are saved as Markdown without typing syntax", async ({ page }) => {
+    const api = await serve(page);
+    await page.goto("/admin/topics/new");
+    await page.getByLabel("Title", { exact: true }).fill("Rich");
+    const theory = page.getByRole("region", { name: "Step 1: Theory" });
+    const box = theory.getByRole("textbox", { name: "Theory" });
+    await box.click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.press("Delete");
+
+    // Dropdown "Text style" ⇒ Heading 2
+    await theory.getByRole("button", { name: "Text style" }).click();
+    await page.getByRole("menuitem", { name: "Heading 2" }).click();
+    await page.keyboard.type("Vấn đề");
+    await page.keyboard.press("Enter");
+
+    // "/" mở menu chèn block, lọc theo chữ gõ
+    await page.keyboard.type("/bul");
+    await expect(theory.getByRole("listbox", { name: "Insert block" })).toContainText("Bulleted list");
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("Một ");
+    await theory.getByRole("button", { name: "Underline" }).click();
+    await page.keyboard.type("gạch");
+    await theory.getByRole("button", { name: "Underline" }).click();
+    await page.keyboard.type(" và ");
+    await theory.getByRole("button", { name: "Text color" }).click();
+    await page.getByRole("menuitem", { name: "Red" }).click();
+    await page.keyboard.type("đỏ");
+
+    await page.getByRole("button", { name: "Create draft" }).click();
+    await expect.poll(() => api.writes.length).toBe(1);
+    const md: string = api.writes[0].body.steps[0].content.markdown;
+    expect(md).toContain("## Vấn đề");
+    expect(md).toMatch(/^- +Một <u>gạch<\/u> và <span style="color:#dc2626">đỏ<\/span>$/m);
+  });
+
   // Gắn topic vào stage: xem admin-study-plans.spec.ts (Course Builder).
 });

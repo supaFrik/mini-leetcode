@@ -349,3 +349,10 @@ a.stage:hover {
 .stageCompact:last-child {
   border-bottom: 1px dashed var(--line);
 }
+
+/* Mô tả soạn bằng trình soạn trực quan (Markdown) */
+.cardText { color: inherit; }
+.cardText p,
+.lead p { margin: 0; }
+.cardText p + p,
+.lead p + p { margin-top: 0.4em; }

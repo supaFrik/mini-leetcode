@@ -87,6 +87,24 @@ async function serve(page: Page) {
   return { attempts, isSkipped: () => skipped, expireLock: () => { if (lock) lock.until = Date.now() - 1; } };
 }
 
+test("theory renders underline and colour from the visual editor but never runs scripts", async ({ page }) => {
+  await installFullscreenMock(page);
+  await setupMockApi(page);
+  await setMockAuthSession(page, { username: "student", role: "USER" });
+  const markdown = '## Rich\nMột <u>gạch</u> và <span style="color:#dc2626">đỏ</span>.'
+    + ' <span style="position:fixed;inset:0">phủ</span> <img src=x onerror="window.__xss=1"><script>window.__xss=2</script>';
+  await page.route(/\/api\/v1\/topics\/rich$/, (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({
+    id: 9, slug: "rich", title: "Rich", estMinutes: 5, status: "PUBLISHED", progress: "NEW", stepCount: 1, doneSteps: 0,
+    steps: [{ id: 1, position: 1, type: "THEORY", title: "Theory", passed: false, attempts: 0, content: { markdown } }],
+  }) }));
+  await page.goto("/topics/rich", { waitUntil: "domcontentloaded" });
+  const theory = page.getByRole("region", { name: "Theory" });
+  await expect(theory.locator("u")).toHaveText("gạch");
+  await expect(theory.locator("span", { hasText: "đỏ" })).toHaveCSS("color", "rgb(220, 38, 38)");
+  await expect(theory.locator("span", { hasText: "phủ" })).not.toHaveAttribute("style", /.+/);
+  expect(await page.evaluate(() => (window as unknown as { __xss?: number }).__xss)).toBeUndefined();
+});
+
 test.describe("Topics: theory, quiz and drag-and-drop steps on project stages", () => {
   test.beforeEach(async ({ page }) => {
     await installFullscreenMock(page);

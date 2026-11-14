@@ -8,6 +8,7 @@ import { useUser } from "@/hooks/use-user";
 import { fetchStudyPlan, fetchStudyPlans } from "@/lib/services";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
 import { StageTimeline } from "@/components/topics/stage-timeline";
+import { Markdown } from "@/components/ui/markdown";
 import theme from "@/components/layout/plex-theme.module.css";
 import p from "@/components/problems/problems.module.css";
 import s from "./study-plans.module.css";
@@ -66,7 +67,7 @@ export function StudyPlanList() {
               <Link key={plan.id} href={`/study-plans/${plan.slug}`} className={s.card}>
                 {plan.status !== "PUBLISHED" && <span className={s.badge}>{plan.status}</span>}
                 <h2>{plan.title}</h2>
-                {plan.description && <p>{plan.description}</p>}
+                {plan.description && <div className={s.cardText}><Markdown>{plan.description}</Markdown></div>}
                 <span className={s.meta}>{plan.itemCount} items · {plan.stageCount} stages</span>
                 <Progress done={plan.doneStages} total={plan.stageCount} />
               </Link>
@@ -137,7 +138,7 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
           <>
             <div className={s.headerBox}>
               <h1 className={s.title}>{load.data.title}</h1>
-              {load.data.description && <p className={s.lead} style={{ margin: 0 }}>{load.data.description}</p>}
+              {load.data.description && <div className={s.lead}><Markdown>{load.data.description}</Markdown></div>}
               <Progress done={load.data.doneStages} total={load.data.stageCount} />
             </div>
 
@@ -153,7 +154,7 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
                     <span className={s.kind}>{item.kind === "PROJECT" ? "Project" : "Practice"}</span>
                     <h2>{item.title}</h2>
                     {item.done && <span className={s.done}>Completed</span>}
-                    {item.description && <p>{item.description}</p>}
+                    {item.description && <Markdown>{item.description}</Markdown>}
                   </div>
                   {item.stages.map((stage) => (stage.topics?.length ?? 0) > 0 ? (
                     <StageTimeline key={stage.stageNo} stage={stage} stageCount={item.stages.length} planSlug={slug}

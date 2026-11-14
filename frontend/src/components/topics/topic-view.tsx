@@ -1,8 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { Markdown } from "@/components/ui/markdown";
 import { ArrowRight, Check, Clock, Lightbulb, Lock, PartyPopper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ApiError, errorMessage, getServerOffset } from "@/lib/api";
@@ -282,7 +281,7 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
               {sections.slice(0, revealed).map((s, i) => (
                 <section key={i} ref={(el) => { sectionRefs.current[i] = el; }} aria-label={s.title}>
                   {s.title !== "Introduction" && <h2>{s.title}</h2>}
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{s.markdown}</ReactMarkdown>
+                  <Markdown>{s.markdown}</Markdown>
                 </section>
               ))}
             </div>
@@ -332,13 +331,13 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
           </div>
           <div className={t.stepHead}><h2>{step.title}</h2></div>
           {"prompt" in step.content && (
-            <div className={t.prose}><ReactMarkdown remarkPlugins={[remarkGfm]}>{(step.content as ChoiceContent).prompt}</ReactMarkdown></div>
+            <div className={t.prose}><Markdown>{(step.content as ChoiceContent).prompt}</Markdown></div>
           )}
           {step.type === "CODE" && (step.content as CodeContent).intro && (
-            <div className={t.prose}><p>{(step.content as CodeContent).intro}</p></div>
+            <div className={t.prose}><Markdown>{(step.content as CodeContent).intro ?? ""}</Markdown></div>
           )}
           {"hint" in step.content && (step.content as ChoiceContent).hint && (
-            hint[step.id] ? <p className={t.hint}><Lightbulb size={14} aria-hidden /> {(step.content as ChoiceContent).hint}</p>
+            hint[step.id] ? <div className={t.hint}><Lightbulb size={14} aria-hidden /> <div><Markdown>{(step.content as ChoiceContent).hint ?? ""}</Markdown></div></div>
               : <button type="button" className={t.secondary} onClick={() => setHint({ ...hint, [step.id]: true })}>
                 <Lightbulb size={14} aria-hidden /> See hint</button>
           )}
@@ -366,7 +365,7 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
               <strong>{fb.correct ? "Correct!" : "Wrong answer"}</strong>
               {!fb.correct && fb.message}
               {!fb.correct && fb.streak === LOCK_AFTER - 1 && <div>One more wrong answer locks practice for 5 minutes.</div>}
-              {fb.correct && fb.explanation && <div>{fb.explanation}</div>}
+              {fb.correct && fb.explanation && <div><Markdown>{fb.explanation}</Markdown></div>}
             </div>
           )}
 

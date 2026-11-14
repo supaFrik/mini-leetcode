@@ -1,7 +1,6 @@
 "use client";
 
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { Markdown } from "@/components/ui/markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -90,7 +89,7 @@ export function ProblemDescription({
             "prose-pre:rounded-sm prose-pre:border prose-pre:border-border prose-pre:bg-card prose-pre:text-ink"
           )}
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+          <Markdown>{markdown}</Markdown>
         </article>
       )}
     </div>
