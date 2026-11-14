@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Markdown } from "@/components/ui/markdown";
 import { ArrowRight, Check, Clock, Lightbulb, Lock, PartyPopper } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,8 @@ import type {
   ChoiceContent, CodeContent, FillBlankContent, LearnerStep, LearnerTopic, MatchingContent, OrderingContent,
   StepAnswer, TheoryContent,
 } from "@/types/api";
-import { ChoiceWidget, CodeWidget, FillBlankWidget, MatchingWidget, OrderingWidget } from "./step-widgets";
+import { ChoiceWidget, FillBlankWidget, MatchingWidget, OrderingWidget } from "./step-widgets";
+import { CodeExercise } from "@/components/code-exercise/code-exercise";
 import t from "./topics.module.css";
 
 type Section = { title: string; markdown: string };
@@ -130,6 +131,8 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
   const [answers, setAnswers] = useState<Record<number, Answers>>({});
   const [feedback, setFeedback] = useState<Record<number, Feedback>>({});
   const [hint, setHint] = useState<Record<number, boolean>>({});
+  /** Step CODE vừa Accepted: giữ màn hình bài (thấy "Correct!") tới khi bấm Continue / Finish. */
+  const [solvedNow, setSolvedNow] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const sectionRefs = useRef<Array<HTMLElement | null>>([]);
   const words = sections.reduce((n, s) => n + s.markdown.split(/\s+/).length, 0);
@@ -145,6 +148,9 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
     return () => clearInterval(id);
   }, [lockedUntil]);
   const blocked = waiting || !!topic.mustReread;
+
+  // Bài code chấm ngay trong trang: Accepted ⇒ tải lại tiến độ để step thành Done.
+  const refresh = useCallback(() => { fetchTopic(topic.slug).then(setTopic).catch(() => undefined); }, [topic.slug, setTopic]);
 
   /** Đọc tới section cuối ⇒ đánh dấu mọi step THEORY đã đọc. */
   const markTheoryRead = async () => {
@@ -316,7 +322,7 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
             <button type="button" className={t.primary} onClick={rereadTheory}>Read the theory <ArrowRight size={15} aria-hidden /></button>
           )}
         </section>
-      ) : allDone && !fb ? (
+      ) : allDone && !fb && solvedNow !== step?.id ? (
         <section className={cn(t.card, t.complete)} aria-label="Topic completed">
           <PartyPopper size={36} aria-hidden />
           <h2>Topic completed</h2>
@@ -358,7 +364,7 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
             <FillBlankWidget content={step.content as FillBlankContent} values={answer.values ?? {}} disabled={busy}
               onChange={(values) => setAnswer({ values })} />
           )}
-          {step.type === "CODE" && <CodeWidget content={step.content as CodeContent} passed={step.passed} />}
+          {step.type === "CODE" && <CodeStep content={step.content as CodeContent} passed={step.passed} onSolved={() => { setSolvedNow(step.id); refresh(); }} />}
 
           {fb && (
             <div className={cn(t.feedback, fb.correct ? t.feedbackOk : t.feedbackBad)} role="status" aria-live="polite">
@@ -376,7 +382,7 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
             )}
             {(fb?.correct || (step.passed && step.type === "CODE")) && (
               allDone ? (
-                <button type="button" className={t.primary} onClick={() => setFeedback({})}>Finish topic <ArrowRight size={15} aria-hidden /></button>
+                <button type="button" className={t.primary} onClick={() => { setFeedback({}); setSolvedNow(null); }}>Finish topic <ArrowRight size={15} aria-hidden /></button>
               ) : (
                 <button type="button" className={t.primary} onClick={nextStep}>Continue <ArrowRight size={15} aria-hidden /></button>
               )
@@ -390,5 +396,21 @@ function TopicBody({ topic, setTopic, crumbs, backHref }: {
         <section className={t.card}><p>This topic has no practice steps yet.</p></section>
       )}
     </div>
+  );
+}
+
+/** Step CODE: bài một file làm ngay trong trang; bài nhiều file (OOP) mở trong IntelliJ hoặc workspace. */
+function CodeStep({ content, passed, onSolved }: { content: CodeContent; passed: boolean; onSolved: () => void }) {
+  if (!content.problemSlug || content.published === false) {
+    return <p className={t.nodeSummary}>This exercise is being updated — try later.</p>;
+  }
+  return (
+    <CodeExercise problemSlug={content.problemSlug} passed={passed} onSolved={onSolved}
+      multiFile={(p) => (
+        <div className={t.codeStep}>
+          <p className={t.nodeSummary}>This exercise has several files. Solve it in IntelliJ or the browser workspace.</p>
+          <Link href={`/problems/${p.slug}`} className={t.primary}>Solve in browser</Link>
+        </div>
+      )} />
   );
 }

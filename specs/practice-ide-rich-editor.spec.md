@@ -53,6 +53,6 @@ Bố cục như Hyperskill: tiêu đề `<Project>. Stage n/N`, link "Project de
 ## Tiến độ
 
 - [x] 1 Trình soạn trực quan: `RichTextEditor` (TipTap 3, marked/turndown), gắn vào lý thuyết, prompt/hint/giải thích, đề bài, mô tả plan/item; học viên dùng `Markdown` (rehype-sanitize + chỉ giữ `color`). E2E: AC-1, AC-2, chặn script
-- [ ] 2 CodeExercise
+- [x] 2 CodeExercise: đề + Sample Input/Output (testcase công khai) + CodeMirror Java + Submit/kết quả ngay trong bài (dùng lại `useJudge`); step CODE của topic dùng nó. E2E AC-3
 - [ ] 3 Trang stage
 - [ ] 4 Open in IntelliJ (plugin + web)
