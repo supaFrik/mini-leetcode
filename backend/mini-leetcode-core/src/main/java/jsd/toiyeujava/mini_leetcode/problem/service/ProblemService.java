@@ -65,10 +65,10 @@ public class ProblemService {
     }
 
     /** Khoá stage khi mở đề (học viên chưa xong stage trước). Không có trong unit test dựng tay. */
-    private jsd.toiyeujava.mini_leetcode.studyplan.service.StageGate stageGate;
+    private jsd.toiyeujava.mini_leetcode.submission.service.StageGate stageGate;
 
     @Autowired(required = false)
-    public void setStageGate(jsd.toiyeujava.mini_leetcode.studyplan.service.StageGate stageGate) {
+    public void setStageGate(jsd.toiyeujava.mini_leetcode.submission.service.StageGate stageGate) {
         this.stageGate = stageGate;
     }
 

@@ -58,7 +58,7 @@ public class ProblemController {
 
     /** Khoá stage cho tải starter (plugin IDE). Tuỳ chọn để constructor dựng tay trong test vẫn chạy. */
     @Autowired(required = false)
-    private jsd.toiyeujava.mini_leetcode.studyplan.service.StageGate stageGate;
+    private jsd.toiyeujava.mini_leetcode.submission.service.StageGate stageGate;
 
     @Autowired
     public ProblemController(

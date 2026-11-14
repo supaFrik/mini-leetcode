@@ -56,7 +56,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final ContestRepository contestRepository;
     private final ContestParticipantRepository contestParticipantRepository;
     private final SubmissionArchiveService submissionArchiveService;
-    private jsd.toiyeujava.mini_leetcode.studyplan.service.StageGate stageGate;
+    private jsd.toiyeujava.mini_leetcode.submission.service.StageGate stageGate;
     private ContestProblemRepository contestProblemRepository;
 
     @Autowired
@@ -94,7 +94,7 @@ public class SubmissionServiceImpl implements SubmissionService {
      * Unit test dựng tay bằng constructor không gọi setter thì khoá stage bị bỏ qua.
      */
     @Autowired
-    public void setStageLock(jsd.toiyeujava.mini_leetcode.studyplan.service.StageGate stageGate,
+    public void setStageLock(jsd.toiyeujava.mini_leetcode.submission.service.StageGate stageGate,
                              ContestProblemRepository contestProblemRepository) {
         this.stageGate = stageGate;
         this.contestProblemRepository = contestProblemRepository;

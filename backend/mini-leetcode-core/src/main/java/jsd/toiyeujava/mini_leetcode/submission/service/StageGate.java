@@ -1,4 +1,4 @@
-package jsd.toiyeujava.mini_leetcode.studyplan.service;
+package jsd.toiyeujava.mini_leetcode.submission.service;
 
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
