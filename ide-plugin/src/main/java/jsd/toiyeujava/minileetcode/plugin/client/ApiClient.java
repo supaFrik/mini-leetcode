@@ -339,6 +339,9 @@ public class ApiClient {
 
     private static HttpClient createDefaultHttpClient(Duration connectTimeout) {
         return HttpClient.newBuilder()
+                // HTTP/1.1: mặc định HTTP/2 gửi "Upgrade: h2c" trên http://, server Next.js (proxy /api) đóng kết nối
+                // không trả byte nào ("header parser received no bytes").
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(connectTimeout != null ? connectTimeout : DEFAULT_TIMEOUT)
                 // Backend không redirect; không theo redirect để header Authorization (PAT) không bị gửi sang host khác.
                 .followRedirects(HttpClient.Redirect.NEVER)

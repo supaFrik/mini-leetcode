@@ -49,7 +49,7 @@ export function IdeButton({ planSlug, itemId, stageNo, className }: {
     setState({ kind: "busy", ide, label: "Opening…" });
     try {
       await openInIde(ide.port, { planSlug, itemId, stageNo });
-      toast("Opening the stage in IntelliJ — switch to the IDE.", "info");
+      toast("IntelliJ is opening the project in a new window, ready to code.", "info");
     } catch (e) {
       toast(`IntelliJ did not open the stage: ${errorMessage(e)}`, "error");
     } finally {

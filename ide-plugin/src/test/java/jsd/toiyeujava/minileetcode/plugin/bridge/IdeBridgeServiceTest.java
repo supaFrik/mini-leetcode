@@ -22,6 +22,14 @@ class IdeBridgeServiceTest {
     }
 
     @Test
+    void projectFolderNamesAreReadableAscii() {
+        assertEquals("project-mini-bank-console", IdeBridgeService.slug("Project: Mini Bank Console"));
+        assertEquals("oop-voi-java", IdeBridgeService.slug("OOP với Java"));
+        assertEquals("dong-goi", IdeBridgeService.slug("Đóng gói"));
+        assertEquals("", IdeBridgeService.slug("  ::  "));
+    }
+
+    @Test
     void rejectsNonHttpOrMalformedUrls() {
         assertNull(IdeBridgeService.originOf("file:///etc/passwd"));
         assertNull(IdeBridgeService.originOf("javascript:alert(1)"));

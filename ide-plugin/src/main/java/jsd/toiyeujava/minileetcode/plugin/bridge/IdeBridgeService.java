@@ -27,12 +27,14 @@ import jsd.toiyeujava.minileetcode.plugin.ui.ItemTreeNode;
 import jsd.toiyeujava.minileetcode.plugin.ui.PlanTreeNode;
 import jsd.toiyeujava.minileetcode.plugin.ui.StageTreeNode;
 import jsd.toiyeujava.minileetcode.plugin.ui.StudyPlanTreeModel;
+import jsd.toiyeujava.minileetcode.plugin.workspace.NewWindowProjectOpener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.ide.RestService;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 /**
@@ -125,14 +127,28 @@ public final class IdeBridgeService extends RestService {
                 notifyUser("Stage " + stageNo + " was not found in " + planSlug + ". Refresh and try again.", NotificationType.WARNING);
                 return;
             }
-            ApplicationManager.getApplication().invokeLater(() -> {
-                activateLastFocusedFrame();
-                new OpenStageAction().openSelectedNode(getLastFocusedOrOpenedProject(), stage);
-            });
+            // Mỗi project một thư mục cố định ⇒ không hỏi thư mục; mở lại chỉ thêm file của stage mới, không ghi đè code.
+            Path dir = projectDirectory(planSlug, item);
+            OpenStageAction action = new OpenStageAction(null, (project, suggested) -> dir, null,
+                    new NewWindowProjectOpener(), null, null);
+            ApplicationManager.getApplication().invokeLater(() -> action.openSelectedNode(null, stage));
         } catch (RuntimeException e) {
             notifyUser("Could not open the stage: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()),
                     NotificationType.ERROR);
         }
+    }
+
+    /** {@code ~/MiniLeetCode/<plan>/<project>}: mỗi project của plan một thư mục, các stage nối tiếp trong đó. */
+    static Path projectDirectory(String planSlug, ItemTreeNode item) {
+        String folder = slug(item.getTitle());
+        return Path.of(System.getProperty("user.home"), "MiniLeetCode", slug(planSlug),
+                folder.isEmpty() ? "item-" + item.getId() : folder);
+    }
+
+    static String slug(@Nullable String s) {
+        String ascii = java.text.Normalizer.normalize(s == null ? "" : s, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").replace('đ', 'd').replace('Đ', 'D');
+        return ascii.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
     }
 
     private static boolean isConnectedTo(@Nullable String origin) {
