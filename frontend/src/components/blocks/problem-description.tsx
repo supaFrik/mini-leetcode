@@ -3,7 +3,7 @@
 import { Markdown } from "@/components/ui/markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { cn } from "@/lib/utils";
 
 export interface ProblemDescriptionProps {
@@ -31,8 +31,8 @@ export interface ProblemDescriptionProps {
  *
  * Uses `prose` from `@tailwindcss/typography` for the body and shadcn
  * `Badge` for the limit chips. When an `editor` is supplied the statement is
- * replaced by an editable markdown textarea, which is how instructors revise
- * a problem from the same surface.
+ * replaced by the visual rich-text editor (Markdown in/out), which is how
+ * instructors revise a problem from the same surface.
  */
 export function ProblemDescription({
   markdown,
@@ -60,12 +60,8 @@ export function ProblemDescription({
       ) : null}
       {editor?.editing ? (
         <div className="space-y-2">
-          <Textarea
-            value={editor.value}
-            onChange={(e) => editor.onChange(e.target.value)}
-            aria-label="Markdown content"
-            className="min-h-56 font-mono text-xs"
-          />
+          {/* Soạn trực quan (kiểu Notion), vẫn lưu Markdown — giáo viên không phải gõ cú pháp. */}
+          <RichTextEditor value={editor.value} onChange={editor.onChange} label="Statement" className="min-h-56" />
           {editor.error ? (
             <p role="alert" className="text-xs text-destructive">
               {editor.error}

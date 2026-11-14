@@ -649,6 +649,8 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
             <>
               <Button variant="outline" size="sm" className="h-8" onClick={onSave}>Save</Button>
               <Button variant="outline" size="sm" className="h-8" onClick={() => router.push(`/problems/${problem.slug}?as=student`)}>Preview</Button>
+              {/* Test case, starter code, chấm điểm: sửa ở trình soạn đầy đủ, không phải gõ Markdown. */}
+              <Button variant="outline" size="sm" className="h-8" onClick={() => router.push(`/admin/problems/${problem.id}`)}>Open full editor</Button>
               <Button size="sm" className="h-8" onClick={publish} disabled={busy || problem.status === "PUBLISHED"}>
                 {problem.status === "PUBLISHED" ? "Published" : "Publish Problem"}
               </Button>
