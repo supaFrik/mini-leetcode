@@ -46,6 +46,7 @@ public class ProblemService {
     private static final Pattern NON_LATIN = Pattern.compile("[^\\w-]");
     private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
     private static final Pattern MULTI_HYPHEN = Pattern.compile("-+");
+    private static final com.fasterxml.jackson.databind.ObjectMapper JSON = new com.fasterxml.jackson.databind.ObjectMapper();
 
     private final ProblemRepository problemRepository;
     private final TestCaseRepository testCaseRepository;
@@ -84,6 +85,9 @@ public class ProblemService {
                 .memoryLimitMb(request.getMemoryLimitMbOrDefault())
                 .status(ProblemStatus.DRAFT)
                 .tags(TagNormalizer.normalize(request.tags()))
+                .problemType(request.problemType() != null ? request.problemType() : ProblemType.ALGORITHMIC)
+                .starterTemplates(jsonOrNull(request.starterTemplates(), "starterTemplates"))
+                .gradingConfig(jsonOrNull(request.gradingConfig(), "gradingConfig"))
                 .createdBy(creator)
                 .build();
 
@@ -123,6 +127,16 @@ public class ProblemService {
         if (request.tags() != null) {
             problem.setTags(TagNormalizer.normalize(request.tags()));
         }
+        if (request.problemType() != null) {
+            problem.setProblemType(request.problemType());
+        }
+        // null = giữ nguyên; chuỗi rỗng = xoá.
+        if (request.starterTemplates() != null) {
+            problem.setStarterTemplates(jsonOrNull(request.starterTemplates(), "starterTemplates"));
+        }
+        if (request.gradingConfig() != null) {
+            problem.setGradingConfig(jsonOrNull(request.gradingConfig(), "gradingConfig"));
+        }
 
         problem = problemRepository.save(problem);
         return ProblemResponse.fromEntity(problem, countOfTestCases(problem.getId()), null);
@@ -161,6 +175,27 @@ public class ProblemService {
         problem.setStatus(target);
         problem = problemRepository.save(problem);
         return ProblemResponse.fromEntity(problem, countOfTestCases(problem.getId()), null);
+    }
+
+    /** Cấu hình chấm OOP — chỉ dành cho staff, không nằm trong DTO công khai. */
+    @Transactional(readOnly = true)
+    public String getGradingConfig(Long id) {
+        return problemRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + id))
+                .getGradingConfig();
+    }
+
+    /** Cột JSON của MySQL từ chối chuỗi sai cú pháp bằng lỗi 500 — chặn sớm thành 400. */
+    private static String jsonOrNull(String raw, String field) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            JSON.readTree(raw);
+            return raw;
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalArgumentException(field + " is not valid JSON: " + e.getOriginalMessage());
+        }
     }
 
     /** Số testcase của một bài (một truy vấn COUNT, không N+1). */

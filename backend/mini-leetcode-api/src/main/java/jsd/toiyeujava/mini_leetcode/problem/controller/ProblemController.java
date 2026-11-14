@@ -225,6 +225,17 @@ public class ProblemController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{id}/grading-config")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @Operation(summary = "Get OOP grading config (staff only)",
+            description = "Raw JSON rules/socket scenarios used by the judge. Hidden from the public problem DTO.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<java.util.Map<String, String>> getGradingConfig(@PathVariable Long id) {
+        java.util.Map<String, String> body = new java.util.HashMap<>();
+        body.put("gradingConfig", problemService.getGradingConfig(id));
+        return ResponseEntity.ok(body);
+    }
+
     @PostMapping("/{id}/transitions")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Transition problem lifecycle status",

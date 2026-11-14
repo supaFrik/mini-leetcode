@@ -11,7 +11,7 @@ import * as mock from "./mock-server";
 import type { PollFetch } from "./polling";
 import type {
   PlagiarismRow, ProctorReportRow, CaseResult, ContestInfo, Draft, Language, LeaderboardRow, Page, ProblemFull, ProblemLifecycle, ProblemSummary, ProblemType,
-  ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty,
+  ProctoringEventType, ProctoringResult, Submission, SubmitBody, TestCase, Difficulty, Role,
 } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
@@ -144,6 +144,8 @@ export interface ProblemDraft {
   tags: string[];
   type?: ProblemType;
   starterTemplates?: string | null;
+  /** JSON rule chấm OOP; `undefined` = giữ nguyên. */
+  gradingConfig?: string | null;
 }
 
 /** Tạo bài mới. Luôn bắt đầu ở trạng thái DRAFT. */
@@ -180,6 +182,55 @@ export async function addTestCase(problemId: number, c: { input: string; expecte
   fd.append("outputFile", new Blob([c.expectedOutput], { type: "text/plain" }), "output.txt");
   fd.append("isHidden", String(c.isHidden));
   return normCase(await api<Raw>(`/api/v1/problems/${problemId}/test-cases`, { method: "POST", body: fd }));
+}
+
+// ---------- Admin: nội dung khác (chỉ backend thật) ----------
+/** Sửa testcase: file mới (tuỳ chọn), cờ ẩn, thứ tự. */
+export async function updateTestCase(problemId: number, id: number, c: { input?: string; expectedOutput?: string; isHidden?: boolean; orderIndex?: number }): Promise<TestCase> {
+  const fd = new FormData();
+  if (c.input !== undefined) fd.append("inputFile", new Blob([c.input], { type: "text/plain" }), "input.txt");
+  if (c.expectedOutput !== undefined) fd.append("outputFile", new Blob([c.expectedOutput], { type: "text/plain" }), "output.txt");
+  const qs = new URLSearchParams();
+  if (c.isHidden !== undefined) qs.set("isHidden", String(c.isHidden));
+  if (c.orderIndex !== undefined) qs.set("orderIndex", String(c.orderIndex));
+  return normCase(await api<Raw>(`/api/v1/problems/${problemId}/test-cases/${id}?${qs}`, { method: "PUT", body: fd }));
+}
+export async function deleteTestCase(problemId: number, id: number): Promise<void> {
+  await api(`/api/v1/problems/${problemId}/test-cases/${id}`, { method: "DELETE" });
+}
+/** Cấu hình chấm OOP (rule + socket scenario) — chỉ staff đọc được. */
+export async function fetchGradingConfig(problemId: number): Promise<string | null> {
+  if (USE_MOCK) return null;
+  return (await api<Raw>(`/api/v1/problems/${problemId}/grading-config`))?.gradingConfig ?? null;
+}
+
+export interface ContestDraft {
+  title: string;
+  startTime: string; // ISO UTC, không kèm Z
+  endTime: string;
+  status: ContestInfo["status"];
+  scoringPolicy: ContestInfo["scoringPolicy"];
+  maxViolationsAllowed: number;
+  problemIds: number[];
+}
+export async function createContest(d: ContestDraft): Promise<ContestInfo> {
+  return api<ContestInfo>("/api/v1/contests", { method: "POST", body: JSON.stringify(d) });
+}
+export async function updateContest(id: number, d: ContestDraft): Promise<ContestInfo> {
+  return api<ContestInfo>(`/api/v1/contests/${id}`, { method: "PUT", body: JSON.stringify(d) });
+}
+export async function deleteContest(id: number): Promise<void> {
+  await api(`/api/v1/contests/${id}`, { method: "DELETE" });
+}
+
+export interface AdminUser { id: number; username: string; email: string; role: Role; status: "ACTIVE" | "BLOCKED" }
+export async function fetchAdminUsers(page: number, search: string): Promise<Page<AdminUser>> {
+  const qs = new URLSearchParams({ page: String(page - 1), size: "20" });
+  if (search) qs.set("search", search);
+  return normPage<AdminUser>(await api<Raw>(`/api/v1/admin/users?${qs}`));
+}
+export async function updateAdminUser(id: number, patch: Partial<Omit<AdminUser, "id">> & { password?: string }): Promise<AdminUser> {
+  return api<AdminUser>(`/api/v1/admin/users/${id}`, { method: "PUT", body: JSON.stringify(patch) });
 }
 
 // ---------- Submissions ----------

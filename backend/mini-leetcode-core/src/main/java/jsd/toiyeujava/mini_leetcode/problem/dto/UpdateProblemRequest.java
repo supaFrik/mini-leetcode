@@ -31,7 +31,9 @@ public record UpdateProblemRequest(
         List<@Size(max = 50, message = "Tag must not exceed 50 characters") String> tags,
 
         ProblemType problemType,
-        String starterTemplates
+        String starterTemplates,
+        /** JSON cấu hình chấm OOP. {@code null} = giữ nguyên, chuỗi rỗng = xoá. */
+        String gradingConfig
 ) {
     public UpdateProblemRequest(
             String title,
@@ -41,6 +43,6 @@ public record UpdateProblemRequest(
             Integer memoryLimitMb,
             List<String> tags
     ) {
-        this(title, description, difficulty, timeLimitMs, memoryLimitMb, tags, null, null);
+        this(title, description, difficulty, timeLimitMs, memoryLimitMb, tags, null, null, null);
     }
 }

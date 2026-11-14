@@ -4,12 +4,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jsd.toiyeujava.mini_leetcode.auth.security.UserPrincipal;
+import jakarta.validation.Valid;
+import jsd.toiyeujava.mini_leetcode.contest.dto.ContestRequest;
 import jsd.toiyeujava.mini_leetcode.contest.dto.ContestResponse;
 import jsd.toiyeujava.mini_leetcode.contest.dto.LeaderboardRowResponse;
 import jsd.toiyeujava.mini_leetcode.contest.dto.PlagiarismResponse;
 import jsd.toiyeujava.mini_leetcode.contest.dto.ProctorReportRowResponse;
 import jsd.toiyeujava.mini_leetcode.contest.service.ContestService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -35,6 +38,35 @@ public class ContestController {
     @Operation(summary = "List contests", description = "Returns all contests with the current user's registration status")
     public ResponseEntity<List<ContestResponse>> getContests(@AuthenticationPrincipal UserPrincipal currentUser) {
         return ResponseEntity.ok(contestService.getContests(currentUser.getId()));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @Operation(summary = "Create a contest", description = "Staff only. problemIds are ordered; labels A, B, C... are assigned automatically.")
+    public ResponseEntity<ContestResponse> createContest(
+            @Valid @RequestBody ContestRequest request,
+            @AuthenticationPrincipal UserPrincipal currentUser
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(contestService.createContest(request, currentUser.getId()));
+    }
+
+    @PutMapping("/{contestId}")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @Operation(summary = "Update a contest", description = "Staff only. Replaces every field; problemIds = null keeps the current problem set.")
+    public ResponseEntity<ContestResponse> updateContest(
+            @PathVariable Long contestId,
+            @Valid @RequestBody ContestRequest request,
+            @AuthenticationPrincipal UserPrincipal currentUser
+    ) {
+        return ResponseEntity.ok(contestService.updateContest(contestId, request, currentUser.getId()));
+    }
+
+    @DeleteMapping("/{contestId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete a contest", description = "Admin only. Rejected with 409 when the contest already has submissions.")
+    public ResponseEntity<Void> deleteContest(@PathVariable Long contestId) {
+        contestService.deleteContest(contestId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{contestId}")

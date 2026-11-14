@@ -1,6 +1,7 @@
 package jsd.toiyeujava.mini_leetcode.contest.service;
 
 import jsd.toiyeujava.mini_leetcode.contest.dto.ContestProblemResponse;
+import jsd.toiyeujava.mini_leetcode.contest.dto.ContestRequest;
 import jsd.toiyeujava.mini_leetcode.contest.dto.ContestResponse;
 import jsd.toiyeujava.mini_leetcode.contest.dto.LeaderboardCellResponse;
 import jsd.toiyeujava.mini_leetcode.contest.dto.LeaderboardRowResponse;
@@ -20,6 +21,9 @@ import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
 import jsd.toiyeujava.mini_leetcode.entity.ParticipantStatus;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
+import jsd.toiyeujava.mini_leetcode.exception.StateConflictException;
+import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
+import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.storage.service.StorageService;
 import jsd.toiyeujava.mini_leetcode.submission.entity.Submission;
 import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
@@ -54,6 +58,7 @@ public class ContestService {
     private final SubmissionRepository submissionRepository;
     private final UserRepository userRepository;
     private final StorageService storageService;
+    private final ProblemRepository problemRepository;
 
     // ---------------- Contests ----------------
 
@@ -71,6 +76,93 @@ public class ContestService {
         Contest contest = contestRepository.findById(contestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contest not found with id: " + contestId));
         return toResponses(List.of(contest), userId).get(0);
+    }
+
+    // ---------------- Admin CRUD ----------------
+
+    @Transactional
+    public ContestResponse createContest(ContestRequest request, Long creatorId) {
+        User creator = userRepository.findById(creatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + creatorId));
+        Contest contest = new Contest();
+        contest.setCreatedBy(creator);
+        return saveContest(contest, request, creatorId);
+    }
+
+    @Transactional
+    public ContestResponse updateContest(Long contestId, ContestRequest request, Long userId) {
+        Contest contest = contestRepository.findById(contestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Contest not found with id: " + contestId));
+        return saveContest(contest, request, userId);
+    }
+
+    /** Kỳ thi đã có bài nộp thì không xoá cứng được (bài nộp trỏ tới kỳ thi). */
+    @Transactional
+    public void deleteContest(Long contestId) {
+        Contest contest = contestRepository.findById(contestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Contest not found with id: " + contestId));
+        if (submissionRepository.countByContestId(contestId) > 0) {
+            throw new StateConflictException("Cannot delete contest " + contestId + ": it has submissions");
+        }
+        // Xoá con tường minh thay vì dựa vào ON DELETE CASCADE (không phụ thuộc DB / thứ tự flush).
+        proctoringEventRepository.deleteAll(proctoringEventRepository.findByContestIdOrderByCreatedAtDesc(contestId));
+        participantRepository.deleteAll(participantRepository.findByContestId(contestId));
+        contestProblemRepository.deleteAll(contestProblemRepository.findByContestIdOrderByOrderIndexAsc(contestId));
+        contestProblemRepository.flush();
+        contestRepository.delete(contest);
+    }
+
+    private ContestResponse saveContest(Contest contest, ContestRequest req, Long userId) {
+        if (!req.endTime().isAfter(req.startTime())) {
+            throw new IllegalArgumentException("endTime must be after startTime");
+        }
+        String title = req.title().trim();
+        if (contest.getSlug() == null || !title.equals(contest.getTitle())) {
+            contest.setSlug(uniqueContestSlug(title, contest.getId()));
+        }
+        contest.setTitle(title);
+        contest.setStartTime(req.startTime());
+        contest.setEndTime(req.endTime());
+        if (req.status() != null) contest.setStatus(req.status());
+        if (req.scoringPolicy() != null) contest.setScoringPolicy(req.scoringPolicy());
+        if (req.maxViolationsAllowed() != null) contest.setMaxViolationsAllowed(req.maxViolationsAllowed());
+        if (contest.getStatus() == null) contest.setStatus(ContestStatus.SCHEDULED);
+        if (contest.getScoringPolicy() == null) contest.setScoringPolicy(jsd.toiyeujava.mini_leetcode.entity.ScoringPolicy.ACM_ICPC);
+        if (contest.getMaxViolationsAllowed() == null) contest.setMaxViolationsAllowed(3);
+        contest = contestRepository.save(contest);
+
+        if (req.problemIds() != null) {
+            List<Long> ids = req.problemIds().stream().distinct().toList();
+            List<Problem> problems = problemRepository.findAllById(ids);
+            if (problems.size() != ids.size()) {
+                throw new ResourceNotFoundException("One or more problems do not exist: " + ids);
+            }
+            Map<Long, Problem> byId = problems.stream().collect(Collectors.toMap(Problem::getId, p -> p));
+            contestProblemRepository.deleteAll(contestProblemRepository.findByContestIdOrderByOrderIndexAsc(contest.getId()));
+            // Xoá trước khi chèn, nếu không Hibernate chèn trước và đụng unique (contest_id, problem_id).
+            contestProblemRepository.flush();
+            for (int i = 0; i < ids.size(); i++) {
+                contestProblemRepository.save(ContestProblem.builder()
+                        .contest(contest)
+                        .problem(byId.get(ids.get(i)))
+                        .label(i < 26 ? String.valueOf((char) ('A' + i)) : "P" + (i + 1))
+                        .orderIndex(i)
+                        .build());
+            }
+        }
+        return toResponses(List.of(contest), userId).get(0);
+    }
+
+    private String uniqueContestSlug(String title, Long selfId) {
+        String base = jsd.toiyeujava.mini_leetcode.problem.service.ProblemService.toSlug(title);
+        String candidate = base;
+        for (int n = 1; ; n++) {
+            var existing = contestRepository.findBySlug(candidate);
+            if (existing.isEmpty() || existing.get().getId().equals(selfId)) {
+                return candidate;
+            }
+            candidate = base + "-" + n;
+        }
     }
 
     @Transactional

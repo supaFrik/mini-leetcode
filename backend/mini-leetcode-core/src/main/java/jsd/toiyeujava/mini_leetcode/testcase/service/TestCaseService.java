@@ -38,6 +38,20 @@ public class TestCaseService {
         this.storageService = storageService;
     }
 
+    /**
+     * Testcase của bài PUBLISHED bị khoá với giảng viên; ADMIN được phép sửa
+     * trực tiếp (chịu trách nhiệm về việc chấm lại nếu cần).
+     */
+    private static boolean isFrozenForCaller(jsd.toiyeujava.mini_leetcode.entity.ProblemStatus status) {
+        if (!ProblemLifecycle.isTestCaseFrozen(status)) {
+            return false;
+        }
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean admin = auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        return !admin;
+    }
+
     @Transactional
     public TestCaseResponse addTestCase(
             Long problemId,
@@ -49,7 +63,7 @@ public class TestCaseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + problemId));
 
         // Testcase của bài đang PUBLISHED bị khoá: không thêm được testcase mới.
-        if (ProblemLifecycle.isTestCaseFrozen(problem.getStatus())) {
+        if (isFrozenForCaller(problem.getStatus())) {
             throw new StateConflictException("Test cases of a PUBLISHED problem are frozen and cannot be added");
         }
 
@@ -134,7 +148,7 @@ public class TestCaseService {
 
         // Testcase của bài đang PUBLISHED bị khoá: bài đã được chấm, không được
         // đổi bộ testcase giữa chừng.
-        if (ProblemLifecycle.isTestCaseFrozen(testCase.getProblem().getStatus())) {
+        if (isFrozenForCaller(testCase.getProblem().getStatus())) {
             throw new StateConflictException("Test cases of a PUBLISHED problem are frozen and cannot be modified");
         }
 
@@ -286,7 +300,7 @@ public class TestCaseService {
         }
 
         // Testcase của bài đang PUBLISHED bị khoá: không được xoá giữa kỳ chấm.
-        if (ProblemLifecycle.isTestCaseFrozen(testCase.getProblem().getStatus())) {
+        if (isFrozenForCaller(testCase.getProblem().getStatus())) {
             throw new StateConflictException("Test cases of a PUBLISHED problem are frozen and cannot be deleted");
         }
 

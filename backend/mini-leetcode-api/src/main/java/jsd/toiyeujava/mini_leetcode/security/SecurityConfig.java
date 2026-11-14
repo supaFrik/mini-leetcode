@@ -80,6 +80,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/problems").hasAnyRole("INSTRUCTOR", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/problems/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/problems/**").hasRole("ADMIN")
+                        // Quản trị người dùng
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )

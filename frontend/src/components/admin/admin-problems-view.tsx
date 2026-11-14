@@ -22,10 +22,13 @@ import { Pagination } from "@/components/problems/pagination";
 import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
+import { TestCaseManager } from "@/components/admin/admin-test-cases";
+import { AdminTabs } from "@/components/admin/admin-tabs";
 import {
   createProblem,
   deleteProblem,
   fetchAdminProblems,
+  fetchGradingConfig,
   saveProblem,
   transitionProblem,
   type ProblemDraft,
@@ -304,6 +307,14 @@ function Editor({
       type: problem.type ?? "ALGORITHMIC",
       starterTemplates: problem.starterTemplates ?? null,
     });
+    // Rule chấm OOP không có trong DTO công khai — tải riêng cho staff.
+    let alive = true;
+    fetchGradingConfig(problem.id)
+      .then((g) => alive && setDraft((d) => ({ ...d, gradingConfig: g ?? "" })))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
   }, [problem]);
 
   const set = <K extends keyof ProblemDraft>(k: K, v: ProblemDraft[K]) =>
@@ -436,6 +447,25 @@ function Editor({
             />
           )}
 
+          {draft.type === "OOP_GRINDING" && (
+            <div className="space-y-2">
+              <label htmlFor="admin-grading" className="eyebrow block text-mute">
+                Grading config (JSON, hidden from students)
+              </label>
+              <Textarea
+                id="admin-grading"
+                value={draft.gradingConfig ?? ""}
+                onChange={(e) => set("gradingConfig", e.target.value)}
+                rows={8}
+                placeholder={'{ "rules": [], "socketScenarios": [] }'}
+                className="rounded-sm bg-card font-mono text-xs text-ink"
+              />
+              <p className="text-body-sm text-mute">Leave empty to remove. Must be valid JSON.</p>
+            </div>
+          )}
+
+          {problem && <TestCaseManager problemId={problem.id} />}
+
           {error && (
             <p role="alert" className="rounded-sm border border-destructive/25 bg-destructive/5 px-3 py-2 text-body-md text-destructive">
               {error}
@@ -445,7 +475,7 @@ function Editor({
 
         <footer className="flex items-center justify-between gap-3 border-t border-border px-5 py-3">
           <p className="text-body-sm text-mute">
-            {problem ? "Changes apply to metadata only." : "New problems start as Draft."}
+            {problem ? "Test cases save individually; Save applies the fields above." : "New problems start as Draft. Add test cases after creating."}
           </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={onClose}>
@@ -545,7 +575,7 @@ export function AdminProblemsView() {
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">Admin</p>
+          <AdminTabs current="problems" />
           <h1 className="mt-1 text-heading-lg text-ink">Problems</h1>
           <p className="mt-1 text-body-md text-mute">
             Create, edit and move problems through their lifecycle.

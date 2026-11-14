@@ -30,7 +30,9 @@ public record CreateProblemRequest(
         List<@Size(max = 50, message = "Tag must not exceed 50 characters") String> tags,
 
         ProblemType problemType,
-        String starterTemplates
+        String starterTemplates,
+        /** JSON cấu hình chấm OOP (rules/socketScenarios). Chỉ staff gửi/đọc. */
+        String gradingConfig
 ) {
     public CreateProblemRequest(
             String title,
@@ -40,7 +42,7 @@ public record CreateProblemRequest(
             Integer memoryLimitMb,
             List<String> tags
     ) {
-        this(title, description, difficulty, timeLimitMs, memoryLimitMb, tags, ProblemType.ALGORITHMIC, null);
+        this(title, description, difficulty, timeLimitMs, memoryLimitMb, tags, ProblemType.ALGORITHMIC, null, null);
     }
 
     public Integer getTimeLimitMsOrDefault() {
