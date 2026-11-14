@@ -96,7 +96,6 @@ class ProblemServiceTest {
                 .build();
 
         when(problemRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(problemRepository.existsBySlug("new-title")).thenReturn(false);
         when(problemRepository.save(any(Problem.class))).thenAnswer(i -> i.getArgument(0));
 
         UpdateProblemRequest updateReq = new UpdateProblemRequest(
@@ -111,7 +110,7 @@ class ProblemServiceTest {
         ProblemResponse updated = problemService.updateProblem(1L, updateReq);
 
         assertThat(updated.title()).isEqualTo("New Title");
-        assertThat(updated.slug()).isEqualTo("new-title");
+        assertThat(updated.slug()).isEqualTo("old-title"); // slug cố định khi đổi tiêu đề (link không gãy)
         assertThat(updated.description()).isEqualTo("New Desc");
         assertThat(updated.difficulty()).isEqualTo(Difficulty.HARD);
         // Metadata update must NOT touch the lifecycle status.

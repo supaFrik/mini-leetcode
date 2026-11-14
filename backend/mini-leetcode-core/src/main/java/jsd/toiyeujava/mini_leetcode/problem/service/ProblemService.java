@@ -121,10 +121,8 @@ public class ProblemService {
             if (request.title().isBlank()) {
                 throw new IllegalArgumentException("Problem title cannot be blank");
             }
-            if (!request.title().trim().equals(problem.getTitle())) {
-                problem.setTitle(request.title().trim());
-                problem.setSlug(generateUniqueSlug(request.title().trim()));
-            }
+            // Slug cố định từ lúc tạo: đổi tiêu đề không được làm hỏng link /problems/<slug>, bookmark, plugin IDE.
+            problem.setTitle(request.title().trim());
         }
         if (request.description() != null) {
             if (request.description().isBlank()) {
