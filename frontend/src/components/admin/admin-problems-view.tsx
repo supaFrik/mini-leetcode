@@ -713,20 +713,20 @@ export function AdminProblemsView() {
                 >
                   {p.title}
                   {p.type === "OOP_GRINDING" ? (
-                    <span className="ml-2 inline-flex items-center rounded border border-purple-500/25 bg-purple-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-purple-600 dark:text-purple-400">
+                    <Badge variant="outline" className="ml-2 border-purple-500/25 bg-purple-500/10 font-mono text-purple-600">
                       OOP
-                    </span>
+                    </Badge>
                   ) : (
-                    <span className="ml-2 inline-flex items-center rounded border border-cyan-500/25 bg-cyan-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-cyan-600 dark:text-cyan-400">
+                    <Badge variant="outline" className="ml-2 border-cyan-500/25 bg-cyan-500/10 font-mono text-cyan-600">
                       DSA
-                    </span>
+                    </Badge>
                   )}
                 </button>
                 <span className="mt-1 flex flex-wrap gap-1">
                   {p.tags.slice(0, 4).map((t) => (
-                    <span key={t} className="rounded-full bg-hairline-soft px-2 py-px font-mono text-[10px] text-mute">
+                    <Badge key={t} variant="secondary" className="font-mono font-normal">
                       {t}
-                    </span>
+                    </Badge>
                   ))}
                 </span>
               </span>

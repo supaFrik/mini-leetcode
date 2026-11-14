@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Difficulty } from "@/types/api";
 
@@ -15,14 +16,8 @@ const LABEL: Record<Difficulty, string> = { EASY: "Easy", MEDIUM: "Medium", HARD
 
 export function DifficultyBadge({ value, className }: { value: Difficulty; className?: string }) {
   return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center rounded-full border px-2.5 py-0.5 font-mono text-body-sm font-medium",
-        STYLE[value],
-        className
-      )}
-    >
+    <Badge variant="outline" className={cn("font-mono", STYLE[value], className)}>
       {LABEL[value]}
-    </span>
+    </Badge>
   );
 }

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { errorMessage } from "@/lib/api";
 import { fmtDateTime } from "@/lib/format";
 import { fetchPlagiarism, fetchProctoringReport, unlockParticipant } from "@/lib/services";
@@ -85,9 +86,9 @@ export function ContestReport({ contestId, role }: { contestId: number; role: Ro
                   <tr key={r.userId} className="border-b border-border last:border-b-0">
                     <td className="px-5 py-2.5 font-medium text-ink">{r.username}</td>
                     <td className="px-2">
-                      <span className={cn("rounded-full px-2 py-0.5 text-body-sm", STATUS[r.status].cls)}>
+                      <Badge className={STATUS[r.status].cls}>
                         {STATUS[r.status].label}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="px-2 text-center font-mono">{r.violationCount}</td>
                     <td className="px-2 text-body-sm text-mute">{r.lastEventAt ? fmtDateTime(r.lastEventAt) : "—"}</td>
@@ -135,9 +136,9 @@ export function ContestReport({ contestId, role }: { contestId: number; role: Ro
                         {Math.round(p.similarity * 100)}%
                       </span>
                       {p.similarity >= THRESHOLD && (
-                        <span className="ml-2 rounded-full bg-destructive/10 px-2 py-0.5 text-body-sm text-destructive">
+                        <Badge variant="destructive" className="ml-2">
                           Review required
-                        </span>
+                        </Badge>
                       )}
                     </td>
                   </tr>

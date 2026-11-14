@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
 import { useCountdown } from "@/hooks/use-countdown";
 import { USE_MOCK, errorMessage } from "@/lib/api";
@@ -22,9 +23,9 @@ const STATUS_STYLE: Record<ContestStatus, string> = {
 };
 const STATUS_LABEL: Record<ContestStatus, string> = { RUNNING: "Live", SCHEDULED: "Upcoming", COMPLETED: "Ended" };
 const StatusPill = ({ s }: { s: ContestStatus }) => (
-  <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-body-sm", STATUS_STYLE[s])}>
+  <Badge variant="outline" className={cn("font-mono", STATUS_STYLE[s])}>
     {STATUS_LABEL[s]}
-  </span>
+  </Badge>
 );
 const Note = ({ children, error }: { children: React.ReactNode; error?: boolean }) => (
   <p role={error ? "alert" : undefined} className={cn("p-10 text-center text-body-md", error ? "text-destructive" : "text-mute")}>
@@ -254,9 +255,9 @@ export function LeaderboardView({ contestId }: { contestId: number }) {
                   {r.username}
                   {r.username === user?.username && <span className="ml-2 text-body-sm text-link">(you)</span>}
                   {r.disqualified && (
-                    <span className="ml-2 rounded-full bg-destructive/10 px-2 py-0.5 text-body-sm text-destructive">
+                    <Badge variant="destructive" className="ml-2">
                       Disqualified
-                    </span>
+                    </Badge>
                   )}
                 </td>
                 <td className="px-2 py-3 text-center font-medium">{r.solved}</td>
