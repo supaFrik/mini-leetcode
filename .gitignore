@@ -137,3 +137,6 @@ backend/tools/seed-mini-bank-project.sql
 
 # ZIP plugin IntelliJ chép bằng `npm run plugin:copy` (bản build, không commit)
 frontend/public/downloads/*.zip
+
+# Python bytecode
+__pycache__/
