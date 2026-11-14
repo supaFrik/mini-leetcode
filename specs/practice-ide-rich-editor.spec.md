@@ -54,5 +54,5 @@ Bố cục như Hyperskill: tiêu đề `<Project>. Stage n/N`, link "Project de
 
 - [x] 1 Trình soạn trực quan: `RichTextEditor` (TipTap 3, marked/turndown), gắn vào lý thuyết, prompt/hint/giải thích, đề bài, mô tả plan/item; học viên dùng `Markdown` (rehype-sanitize + chỉ giữ `color`). E2E: AC-1, AC-2, chặn script
 - [x] 2 CodeExercise: đề + Sample Input/Output (testcase công khai) + CodeMirror Java + Submit/kết quả ngay trong bài (dùng lại `useJudge`); step CODE của topic dùng nó. E2E AC-3
-- [ ] 3 Trang stage
-- [ ] 4 Open in IntelliJ (plugin + web)
+- [x] 3 Trang stage `/study-plans/[slug]/[itemId]/[stageNo]`: tiêu đề `Project. Stage n/N`, Project description, đề + khu làm bài (CodeExercise hoặc Open in IntelliJ + Solve in browser), Topics in stage, chuyển stage. Trang plan dẫn tới đây. E2E AC-4 + stage khoá
+- [x] 4 Open in IntelliJ: plugin `IdeBridgeService` (RestService `/api/mini-leetcode` ping/connect/open; serverUrl phải trùng Origin; chỉ site đã kết nối mới mở được stage) + `IdeButton` trên web (dò cổng 63342–63351, Install → Connect → Open). Test plugin cho quy tắc origin

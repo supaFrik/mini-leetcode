@@ -90,7 +90,7 @@ function StageIcon({ stage }: { stage: StudyPlanStage }) {
 }
 
 /** {@code compact}: nút cuối dòng thời gian chủ đề — biểu tượng trạng thái đã do dòng thời gian vẽ. */
-function StageRow({ item, stage, compact }: { item: StudyPlanItem; stage: StudyPlanStage; compact?: boolean }) {
+function StageRow({ planSlug, item, stage, compact }: { planSlug: string; item: StudyPlanItem; stage: StudyPlanStage; compact?: boolean }) {
   const label = item.kind === "PROJECT" ? `Stage ${stage.stageNo}` : "Practice";
   const title = stage.title ?? `Problem #${stage.problemId}`;
   const content = (
@@ -112,7 +112,7 @@ function StageRow({ item, stage, compact }: { item: StudyPlanItem; stage: StudyP
   const open = stage.published && stage.status !== "LOCKED" && stage.slug;
   const cls = cn(s.stage, compact && s.stageCompact);
   return open ? (
-    <Link href={`/problems/${stage.slug}`} className={cls}>{content}</Link>
+    <Link href={`/study-plans/${planSlug}/${item.id}/${stage.stageNo}`} className={cls}>{content}</Link>
   ) : (
     <div className={cls} aria-disabled="true">{content}</div>
   );
@@ -143,7 +143,7 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
             </div>
 
             <div className={s.ide}>
-              <span>Prefer your IDE? Open stages and check them from IntelliJ IDEA with the Mini LeetCode plugin.</span>
+              <span>Project stages open in IntelliJ IDEA with one click from the stage page.</span>
               <Link href="/ide">Set up the plugin →</Link>
             </div>
 
@@ -159,9 +159,9 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
                   {item.stages.map((stage) => (stage.topics?.length ?? 0) > 0 ? (
                     <StageTimeline key={stage.stageNo} stage={stage} stageCount={item.stages.length} planSlug={slug}
                       defaultOpen={stage === currentStage(item)} onChanged={() => setAttempt((n) => n + 1)}
-                      stageTask={<StageRow item={item} stage={stage} compact />} />
+                      stageTask={<StageRow planSlug={slug} item={item} stage={stage} compact />} />
                   ) : (
-                    <StageRow key={stage.stageNo} item={item} stage={stage} />
+                    <StageRow key={stage.stageNo} planSlug={slug} item={item} stage={stage} />
                   ))}
                 </section>
               ))}

@@ -1,0 +1,22 @@
+.box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 6px;
+  background: #111827;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.primary:hover:not(:disabled) { background: #000; }
+.primary:disabled { opacity: 0.7; }
+.note { display: inline-flex; align-items: center; gap: 6px; color: #6b7280; font-size: 13px; }
+.link { color: #4f46e5; text-decoration: underline; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; }
+.dotOn { background: #16a34a; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

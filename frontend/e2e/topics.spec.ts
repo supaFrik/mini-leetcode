@@ -120,7 +120,7 @@ test.describe("Topics: theory, quiz and drag-and-drop steps on project stages", 
     const timeline = page.getByRole("list", { name: "Stage 1 topics" });
     await expect(timeline.getByRole("link", { name: "Start" })).toHaveAttribute("href", "/topics/oop-dong-goi?plan=oop&stage=1");
     await expect(timeline).toContainText("private + method có kiểm tra");
-    await expect(timeline.getByRole("link", { name: /Stage 1/ })).toHaveAttribute("href", "/problems/mini-bank-stage-1");
+    await expect(timeline.getByRole("link", { name: /Stage 1/ })).toHaveAttribute("href", "/study-plans/oop/1/1");
 
     await timeline.getByRole("button", { name: "Skip" }).click();
     await expect.poll(api.isSkipped).toBe(true);
