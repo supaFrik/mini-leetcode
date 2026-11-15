@@ -150,7 +150,8 @@ def apply(api, p, kind, dry):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--base", default="http://localhost:8088/api/v1")
+    # The web app proxies /api to the backend, so this works whatever host port the API uses.
+    ap.add_argument("--base", default="http://localhost:3100/api/v1")
     ap.add_argument("--user", default="admin")
     ap.add_argument("--password", required=True)
     ap.add_argument("--only", nargs="*", type=int)
