@@ -61,13 +61,16 @@ export function ProblemDescription({
       {editor?.editing ? (
         <div className="space-y-2">
           {/* Soạn trực quan (kiểu Notion), vẫn lưu Markdown — giáo viên không phải gõ cú pháp. */}
-          <RichTextEditor value={editor.value} onChange={editor.onChange} label="Statement" className="min-h-56" />
+          {/* Thanh định dạng dính ngay dưới tab "Description" (sticky top-0, z-10) thay vì nằm khuất sau nó. */}
+          <RichTextEditor value={editor.value} onChange={editor.onChange} label="Statement"
+            className="min-h-56 [&_[role=toolbar]]:top-[41px]" />
           {editor.error ? (
             <p role="alert" className="text-xs text-destructive">
               {editor.error}
             </p>
           ) : null}
-          <div className="flex gap-2">
+          {/* Save / Cancel luôn thấy khi cuộn đề dài. */}
+          <div className="sticky bottom-0 z-10 -mx-6 flex gap-2 border-t bg-card px-6 py-2">
             <Button size="sm" onClick={editor.onSave} disabled={editor.busy}>
               Save changes
             </Button>
