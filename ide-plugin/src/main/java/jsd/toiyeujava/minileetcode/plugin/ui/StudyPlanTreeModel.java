@@ -82,26 +82,30 @@ public class StudyPlanTreeModel extends DefaultTreeModel {
             } else {
                 for (PlanDetail plan : plans) {
                     if (plan == null) continue;
-                    PlanTreeNode planNode = new PlanTreeNode(plan);
-                    if (plan.items() != null) {
-                        for (ItemDto item : plan.items()) {
-                            if (item == null) continue;
-                            ItemTreeNode itemNode = new ItemTreeNode(item);
-                            if (item.stages() != null) {
-                                for (StageDto stage : item.stages()) {
-                                    if (stage == null) continue;
-                                    StageTreeNode stageNode = new StageTreeNode(stage);
-                                    itemNode.add(stageNode);
-                                }
-                            }
-                            planNode.add(itemNode);
-                        }
-                    }
-                    rootNode.add(planNode);
+                    rootNode.add(buildPlanNode(plan));
                 }
             }
             nodeStructureChanged(rootNode);
         }
+    }
+
+    /** Cây plan › item › stage của một plan (dùng cho tool window và cho lệnh mở stage từ web). */
+    @NotNull
+    public static PlanTreeNode buildPlanNode(@NotNull PlanDetail plan) {
+        PlanTreeNode planNode = new PlanTreeNode(plan);
+        if (plan.items() != null) {
+            for (ItemDto item : plan.items()) {
+                if (item == null) continue;
+                ItemTreeNode itemNode = new ItemTreeNode(item);
+                if (item.stages() != null) {
+                    for (StageDto stage : item.stages()) {
+                        if (stage != null) itemNode.add(new StageTreeNode(stage));
+                    }
+                }
+                planNode.add(itemNode);
+            }
+        }
+        return planNode;
     }
 
     /**

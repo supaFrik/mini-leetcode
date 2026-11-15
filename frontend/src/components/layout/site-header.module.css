@@ -71,6 +71,34 @@ a.navItem:hover {
   gap: 8px;
 }
 
+/* Điện thoại: logo + tài khoản ở hàng 1, menu một hàng cuộn ngang (trước đây vỡ thành 3 hàng ~1/3 màn hình). */
+@media (max-width: 767px) {
+  .bar {
+    padding: 6px 16px;
+    justify-content: space-between;
+  }
+  .nav {
+    order: 3;
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -16px;
+    padding: 0 12px;
+  }
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+  .navItem {
+    min-height: 40px;
+    padding: 0 10px;
+  }
+  /* Chỉ hiện avatar: tên dài đẩy cụm tài khoản xuống một hàng riêng. Tên vẫn có trong aria-label. */
+  .accountName {
+    display: none;
+  }
+}
+
 .ghost {
   height: 44px;
   min-width: 44px;

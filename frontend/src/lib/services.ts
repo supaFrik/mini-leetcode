@@ -309,6 +309,7 @@ export async function fetchSubmissionCode(id: number): Promise<string> {
 // [ĐỀ XUẤT] GET /api/v1/submissions/{id}/results – chi tiết từng testcase công khai. Chưa có → trả null.
 export async function fetchSubmissionResults(id: number): Promise<CaseResult[] | null> {
   if (USE_MOCK) return mock.submissionResults(id);
+  // Backend chưa có endpoint này (404 → null, UI ẩn chi tiết từng testcase); giữ lời gọi để tự hiện khi backend bổ sung.
   try { return await api<CaseResult[]>(`/api/v1/submissions/${id}/results`); }
   catch (e) { if (e instanceof ApiError && [404, 405, 501].includes(e.status)) return null; throw e; }
 }

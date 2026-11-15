@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jsd.toiyeujava.mini_leetcode.problem.dto.CreateProblemRequest;
 import jsd.toiyeujava.mini_leetcode.auth.dto.LoginRequest;
 import jsd.toiyeujava.mini_leetcode.auth.dto.RegisterRequest;
-import jsd.toiyeujava.mini_leetcode.problem.dto.UpdateProblemRequest;
 import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.entity.Role;

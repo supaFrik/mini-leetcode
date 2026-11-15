@@ -10,25 +10,12 @@ import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/hooks/use-user";
 import { createProblem, deleteProblem, transitionProblem } from "@/lib/services";
+import { PROBLEM_EDGES } from "@/lib/problem-lifecycle";
 import type { ProblemFull, ProblemLifecycle } from "@/types/api";
 import { AdminNav } from "./admin-nav";
 import { ProblemEditor } from "./problem-editor";
-import type { SaveState } from "./admin-topics";
-
-/** Cạnh hợp lệ của vòng đời — mirror đúng luật server. */
-export const EDGES: Record<ProblemLifecycle, ProblemLifecycle[]> = {
-  DRAFT: ["REVIEWING", "ARCHIVED"],
-  REVIEWING: ["DRAFT", "PUBLISHED"],
-  PUBLISHED: ["ARCHIVED"],
-  ARCHIVED: ["DRAFT"],
-};
-
-export const STATUS_TONE: Record<ProblemLifecycle, "default" | "secondary" | "success" | "warning" | "outline"> = {
-  DRAFT: "secondary",
-  REVIEWING: "warning",
-  PUBLISHED: "success",
-  ARCHIVED: "outline",
-};
+import type { SaveState } from "./save-state";
+import { PROBLEM_STATUS_TONE } from "./status";
 
 const MOVE_LABEL: Record<ProblemLifecycle, string> = {
   DRAFT: "Back to draft", REVIEWING: "Send to review", PUBLISHED: "Publish", ARCHIVED: "Archive",
@@ -94,13 +81,13 @@ export function AdminProblemPage({ id }: { id: number }) {
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
       <AdminNav />
       <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Problem actions">
-        {problem && <Badge variant={STATUS_TONE[status]} className="font-mono text-[11px]">{status}</Badge>}
+        {problem && <Badge variant={PROBLEM_STATUS_TONE[status]} className="font-mono text-[11px]">{status}</Badge>}
         <span className="text-body-sm text-mute" role="status" aria-live="polite">
           {saveState === "saving" && <Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" aria-hidden />}
           <span className={saveState === "error" || saveState === "invalid" ? "text-destructive" : undefined}>{SAVE_TEXT[saveState]}</span>
         </span>
         <span className="ml-auto flex flex-wrap items-center gap-1.5">
-          {problem && EDGES[status].map((t) => (
+          {problem && PROBLEM_EDGES[status].map((t) => (
             <Button key={t} size="sm" variant={t === "PUBLISHED" ? "default" : "outline"} disabled={busy} onClick={() => move(t)}>
               {t === "PUBLISHED" ? <Check className="h-3.5 w-3.5" /> : t === "ARCHIVED" ? <Archive className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
               {MOVE_LABEL[t]}

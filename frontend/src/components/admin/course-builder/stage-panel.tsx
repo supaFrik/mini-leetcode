@@ -8,8 +8,8 @@ import { errorMessage } from "@/lib/api";
 import { fetchTopics, saveTopic } from "@/lib/services";
 import type { ProblemFull, TopicSummary } from "@/types/api";
 import { ProblemEditor } from "../problem-editor";
-import { slugify } from "../admin-study-plans";
-import type { SaveState } from "../admin-topics";
+import { slugify } from "@/lib/slug";
+import type { SaveState } from "../save-state";
 import type { StageNode, TopicNode } from "./model";
 
 /* Cột phải khi chọn một stage: soạn đề (tự lưu) + các chủ đề trước stage (specs/course-builder.spec.md). */

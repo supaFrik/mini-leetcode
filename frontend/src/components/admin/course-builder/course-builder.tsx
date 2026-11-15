@@ -6,17 +6,20 @@ import { ChevronDown, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
-import { useUser } from "@/hooks/use-user";
+import { useCanEdit } from "@/hooks/use-can-edit";
+import { slugify } from "@/lib/slug";
 import {
   cloneProblem, createProblem, fetchStudyPlan, publishStudyPlan, transitionStudyPlan, updateStudyPlan,
 } from "@/lib/services";
 import type { ProblemFull, PublishIssue, StudyPlanDetail, StudyPlanStatus } from "@/types/api";
 import { AdminNav } from "../admin-nav";
-import { ProblemPicker, slugify } from "../admin-study-plans";
-import { TopicEditor, type SaveState } from "../admin-topics";
+import { ProblemPicker } from "../problem-picker";
+import { TopicEditor } from "../admin-topics";
+import type { SaveState } from "../save-state";
+import { PLAN_STATUS_VARIANT } from "../status";
 import {
   findStage, fromDetail, newKey, parseNode, signature, toDraft,
   type ItemNode, type NodeId, type PlanModel, type StageNode, type TopicNode,
@@ -29,7 +32,6 @@ import { useConfirm } from "@/components/ui/confirm";
 /* /admin/study-plans/[slug] — Course Builder (specs/course-builder.spec.md). */
 
 const field = "space-y-1 text-body-sm text-mute";
-const STATUS_VARIANT: Record<StudyPlanStatus, "success" | "secondary" | "outline"> = { PUBLISHED: "success", DRAFT: "secondary", ARCHIVED: "outline" };
 
 function ago(t: number | null, now: number) {
   if (!t) return "";
@@ -58,7 +60,7 @@ function mergeStatuses(model: PlanModel, detail: StudyPlanDetail): PlanModel {
 
 export function CourseBuilder({ slug }: { slug: string }) {
   const params = useSearchParams();
-  const { user } = useUser();
+  const canEditBy = useCanEdit();
   const [detail, setDetail] = useState<StudyPlanDetail | null>(null);
   const ask = useConfirm();
   const [model, setModel] = useState<PlanModel | null>(null);
@@ -102,7 +104,7 @@ export function CourseBuilder({ slug }: { slug: string }) {
 
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 5000); return () => clearInterval(t); }, []);
 
-  const canEdit = !!detail && !!user && (user.role === "ADMIN" || detail.createdById === user.id);
+  const canEdit = !!detail && canEditBy(detail.createdById);
   const dirty = !!model && signature(model) !== savedSig.current;
   const live = detail?.status === "PUBLISHED";
 
@@ -310,9 +312,10 @@ export function CourseBuilder({ slug }: { slug: string }) {
             <Input value={model.slug} className="font-mono" onChange={(e) => { setSlugTouched(true); update({ ...model, slug: e.target.value }); }} />
           </label>
         </div>
-        <label className={`block ${field}`}>Description
-          <Textarea rows={3} value={model.description} onChange={(e) => update({ ...model, description: e.target.value })} />
-        </label>
+        <div className={`block ${field}`}>Description
+          <RichTextEditor variant="compact" label="Description" disabled={!canEdit} className="mt-1"
+            value={model.description} onChange={(description) => update({ ...model, description })} />
+        </div>
       </fieldset>
     );
   } else if (node.kind === "item") {
@@ -324,9 +327,10 @@ export function CourseBuilder({ slug }: { slug: string }) {
           <label className={`block ${field}`}>Title
             <Input value={item.title} onChange={(e) => patchItem(item.key, { title: e.target.value })} />
           </label>
-          <label className={`block ${field}`}>Description
-            <Textarea rows={2} value={item.description} onChange={(e) => patchItem(item.key, { description: e.target.value })} />
-          </label>
+          <div className={`block ${field}`}>Description
+            <RichTextEditor variant="compact" label="Description" disabled={!canEdit} className="mt-1"
+              value={item.description} onChange={(description) => patchItem(item.key, { description })} />
+          </div>
           {item.stages.length === 0 && (
             <section className="space-y-2 rounded-sm border border-border p-3" aria-label="First stage">
               <p className="text-body-sm text-ink">{item.kind === "PROJECT" ? "Add the first stage" : "Choose the problem"}</p>
@@ -378,7 +382,7 @@ export function CourseBuilder({ slug }: { slug: string }) {
       <AdminNav />
       <header className="flex flex-wrap items-center gap-3">
         <Link href="/admin/study-plans" className="text-body-sm text-link hover:underline">← Study plans</Link>
-        <Badge variant={STATUS_VARIANT[detail.status]}>{detail.status}</Badge>
+        <Badge variant={PLAN_STATUS_VARIANT[detail.status]}>{detail.status}</Badge>
       </header>
       {!canEdit && (
         <p role="note" className="rounded-sm border border-border bg-hairline-soft px-3 py-2 text-body-sm text-mute">

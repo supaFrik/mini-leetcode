@@ -8,6 +8,7 @@ import { useUser } from "@/hooks/use-user";
 import { fetchStudyPlan, fetchStudyPlans } from "@/lib/services";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
 import { StageTimeline } from "@/components/topics/stage-timeline";
+import { Markdown } from "@/components/ui/markdown";
 import theme from "@/components/layout/plex-theme.module.css";
 import p from "@/components/problems/problems.module.css";
 import s from "./study-plans.module.css";
@@ -66,7 +67,7 @@ export function StudyPlanList() {
               <Link key={plan.id} href={`/study-plans/${plan.slug}`} className={s.card}>
                 {plan.status !== "PUBLISHED" && <span className={s.badge}>{plan.status}</span>}
                 <h2>{plan.title}</h2>
-                {plan.description && <p>{plan.description}</p>}
+                {plan.description && <div className={s.cardText}><Markdown>{plan.description}</Markdown></div>}
                 <span className={s.meta}>{plan.itemCount} items · {plan.stageCount} stages</span>
                 <Progress done={plan.doneStages} total={plan.stageCount} />
               </Link>
@@ -89,7 +90,7 @@ function StageIcon({ stage }: { stage: StudyPlanStage }) {
 }
 
 /** {@code compact}: nút cuối dòng thời gian chủ đề — biểu tượng trạng thái đã do dòng thời gian vẽ. */
-function StageRow({ item, stage, compact }: { item: StudyPlanItem; stage: StudyPlanStage; compact?: boolean }) {
+function StageRow({ planSlug, item, stage, compact }: { planSlug: string; item: StudyPlanItem; stage: StudyPlanStage; compact?: boolean }) {
   const label = item.kind === "PROJECT" ? `Stage ${stage.stageNo}` : "Practice";
   const title = stage.title ?? `Problem #${stage.problemId}`;
   const content = (
@@ -111,7 +112,7 @@ function StageRow({ item, stage, compact }: { item: StudyPlanItem; stage: StudyP
   const open = stage.published && stage.status !== "LOCKED" && stage.slug;
   const cls = cn(s.stage, compact && s.stageCompact);
   return open ? (
-    <Link href={`/problems/${stage.slug}`} className={cls}>{content}</Link>
+    <Link href={`/study-plans/${planSlug}/${item.id}/${stage.stageNo}`} className={cls}>{content}</Link>
   ) : (
     <div className={cls} aria-disabled="true">{content}</div>
   );
@@ -137,12 +138,12 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
           <>
             <div className={s.headerBox}>
               <h1 className={s.title}>{load.data.title}</h1>
-              {load.data.description && <p className={s.lead} style={{ margin: 0 }}>{load.data.description}</p>}
+              {load.data.description && <div className={s.lead}><Markdown>{load.data.description}</Markdown></div>}
               <Progress done={load.data.doneStages} total={load.data.stageCount} />
             </div>
 
             <div className={s.ide}>
-              <span>Prefer your IDE? Open stages and check them from IntelliJ IDEA with the Mini LeetCode plugin.</span>
+              <span>Project stages open in IntelliJ IDEA with one click from the stage page.</span>
               <Link href="/ide">Set up the plugin →</Link>
             </div>
 
@@ -153,14 +154,14 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
                     <span className={s.kind}>{item.kind === "PROJECT" ? "Project" : "Practice"}</span>
                     <h2>{item.title}</h2>
                     {item.done && <span className={s.done}>Completed</span>}
-                    {item.description && <p>{item.description}</p>}
+                    {item.description && <Markdown>{item.description}</Markdown>}
                   </div>
                   {item.stages.map((stage) => (stage.topics?.length ?? 0) > 0 ? (
                     <StageTimeline key={stage.stageNo} stage={stage} stageCount={item.stages.length} planSlug={slug}
                       defaultOpen={stage === currentStage(item)} onChanged={() => setAttempt((n) => n + 1)}
-                      stageTask={<StageRow item={item} stage={stage} compact />} />
+                      stageTask={<StageRow planSlug={slug} item={item} stage={stage} compact />} />
                   ) : (
-                    <StageRow key={stage.stageNo} item={item} stage={stage} />
+                    <StageRow key={stage.stageNo} planSlug={slug} item={item} stage={stage} />
                   ))}
                 </section>
               ))}

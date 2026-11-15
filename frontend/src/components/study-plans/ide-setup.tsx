@@ -94,7 +94,10 @@ export function IdeSetup() {
 
           <li className={s.step}>
             <h2>3. Create a personal access token</h2>
-            <p>The plugin signs in with this token instead of your password. It is shown <b>once</b> — copy it now.</p>
+            <p>
+              Easiest: start IntelliJ, open any project stage and press <b>Connect IntelliJ</b> — the token is created and sent to the
+              plugin for you. To set it up by hand, create a token here; it is shown <b>once</b>, copy it now.
+            </p>
             <div className={s.form}>
               <label>
                 Name

@@ -50,16 +50,28 @@ function useLoaded<T>(load: () => Promise<T>, deps: unknown[]) {
 
 export function PracticeLoader({ slug }: { slug: string }) {
   const sp = useSearchParams();
-  const { user } = useUser();
+  const { user, ready } = useUser();
   const { data, error, retry } = useLoaded(async () => {
     const problem = await fetchProblem(slug);
     return { problem, cases: await fetchTestCases(problem.id) };
   }, [slug]);
 
-  if (error) return <Message title={error}><Button onClick={retry} variant="outline">Try Again</Button></Message>;
-  if (!data || !user) return <Message title="Loading problem…" />;
-  const mode = user.role !== "USER" && sp.get("as") !== "student" ? "instructor" : "student";
-  return <Workspace key={`${data.problem.id}-${mode}`} problem={data.problem} testCases={data.cases} mode={mode} role={user.role} />;
+  if (error) {
+    // Stage khoá (STAGE_LOCKED): "Try again" vô nghĩa — chỉ đường quay lại lộ trình / đăng nhập.
+    if (/stage/i.test(error)) {
+      return (
+        <Message title={error}>
+          <Button asChild><Link href="/study-plans">Back to study plans</Link></Button>
+          {!user && <Button asChild variant="outline"><Link href={`/login?next=${encodeURIComponent(`/problems/${slug}`)}`}>Log in</Link></Button>}
+        </Message>
+      );
+    }
+    return <Message title={error}><Button onClick={retry} variant="outline">Try Again</Button></Message>;
+  }
+  // Khách cũng xem được đề (trước đây kẹt "Loading…" mãi vì chờ user); nộp bài sẽ yêu cầu đăng nhập.
+  if (!data || !ready) return <Message title="Loading problem…" />;
+  const mode = user && user.role !== "USER" && sp.get("as") !== "student" ? "instructor" : "student";
+  return <Workspace key={`${data.problem.id}-${mode}`} problem={data.problem} testCases={data.cases} mode={mode} role={user?.role ?? "USER"} />;
 }
 
 export function ExamLoader({ contestId, problemId }: { contestId: number; problemId: string }) {

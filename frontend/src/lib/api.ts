@@ -114,7 +114,8 @@ export async function request<T>(path: string, init: RequestInit = {}, canRetry 
       clearTokens();
       if (!redirectingToLogin) {
         redirectingToLogin = true;
-        window.location.href = "/login";
+        // Quay lại đúng trang sau khi đăng nhập (vd. khách bấm Submit trên một bài).
+        window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
       }
     }
     throw new ApiError(res.status, body as ProblemDetail | null);

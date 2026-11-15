@@ -11,6 +11,7 @@
  *   - còn lại ............................ AC
  */
 import { ApiError } from "./api";
+import { PROBLEM_EDGES } from "./problem-lifecycle";
 import { decodeUser, getToken } from "./auth";
 import { TEMPLATES } from "./templates";
 import { MOCK_STAGE_TOPICS, stageTopicRefs, topicById, topicProblemIds, transitionTopic } from "./mock-topics";
@@ -144,18 +145,6 @@ export async function updateProblem(id: number, patch: Partial<ProblemFull>): Pr
  * - PUBLISHED đòi hỏi ít nhất một testcase công khai,
  * - chuyển sai trạng thái trả về 409 Conflict.
  */
-const LIFECYCLE_EDGES: Record<string, string[]> = {
-  DRAFT: ["REVIEWING", "ARCHIVED"],
-  REVIEWING: ["DRAFT", "PUBLISHED"],
-  PUBLISHED: ["ARCHIVED"],
-  ARCHIVED: ["DRAFT"],
-};
-
-/** Các trạng thái hợp lệ có thể chuyển tới từ trạng thái hiện tại. */
-export function allowedTransitions(from: string): string[] {
-  return LIFECYCLE_EDGES[from] ?? [];
-}
-
 export async function transitionProblem(id: number, target: ProblemLifecycle): Promise<ProblemFull> {
   await sleep(); ensureOnline();
   const p = PROBLEMS.find((x) => x.id === id);
@@ -164,10 +153,10 @@ export async function transitionProblem(id: number, target: ProblemLifecycle): P
   if (current === target) {
     throw new ApiError(409, { title: "Resource Conflict", status: 409, detail: `Problem is already in status ${target}` });
   }
-  if (!(LIFECYCLE_EDGES[current] ?? []).includes(target)) {
+  if (!PROBLEM_EDGES[current].includes(target)) {
     throw new ApiError(409, {
       title: "Resource Conflict", status: 409,
-      detail: `Cannot transition problem from ${current} to ${target}. Allowed targets: ${(LIFECYCLE_EDGES[current] ?? []).join(", ")}`,
+      detail: `Cannot transition problem from ${current} to ${target}. Allowed targets: ${PROBLEM_EDGES[current].join(", ")}`,
     });
   }
   if (target === "PUBLISHED" && !casesFor(id).some((c) => !c.isHidden)) {

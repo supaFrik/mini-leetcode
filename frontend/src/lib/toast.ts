@@ -22,7 +22,3 @@ export function toast(
 ) {
   return toastManager.add({ title: message, type: kind, timeout: ms });
 }
-
-export function dismissToast(id: string) {
-  toastManager.close(id);
-}

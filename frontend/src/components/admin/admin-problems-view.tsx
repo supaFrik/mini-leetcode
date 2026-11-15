@@ -13,7 +13,7 @@ import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/hooks/use-user";
 import { AdminNav } from "./admin-nav";
-import { STATUS_TONE } from "./admin-problem-page";
+import { PROBLEM_STATUS_TONE } from "./status";
 import { deleteProblem, fetchAdminProblems } from "@/lib/services";
 import type { Difficulty, Page, ProblemFull, ProblemLifecycle, ProblemScope, ProblemType } from "@/types/api";
 
@@ -158,7 +158,7 @@ export function AdminProblemsView() {
                 </span>
                 {p.tags.length > 0 && <span className="mt-0.5 block truncate text-body-sm text-mute">{p.tags.slice(0, 4).join(" · ")}</span>}
               </span>
-              <span><Badge variant={STATUS_TONE[s]} className="font-mono text-[11px]">{s}</Badge></span>
+              <span><Badge variant={PROBLEM_STATUS_TONE[s]} className="font-mono text-[11px]">{s}</Badge></span>
               <span><DifficultyBadge value={p.difficulty} /></span>
               <span className="font-mono text-body-sm text-mute">{p.testCaseCount ?? 0}</span>
               <span className="flex items-center gap-1 md:justify-end">

@@ -1,11 +1,9 @@
 "use client";
-import Link from "next/link";
 import { Fragment } from "react";
 import { Reorder } from "framer-motion";
-import { ArrowDown, ArrowRight, ArrowUp, Check, GripVertical } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DifficultyBadge } from "@/components/problems/difficulty-badge";
-import type { ChoiceContent, CodeContent, FillBlankContent, IdText } from "@/types/api";
+import type { ChoiceContent, FillBlankContent, IdText } from "@/types/api";
 import t from "./topics.module.css";
 
 /* Widget luyện tập của chủ đề học (specs/topics.spec.md). Widget không tự chấm: trả giá trị qua onChange,
@@ -141,22 +139,4 @@ export function FillBlankWidget({ content, values, onChange, disabled }: {
 
 // ── Bài code ────────────────────────────────────────────────────────────────
 
-export function CodeWidget({ content, passed }: { content: CodeContent; passed: boolean }) {
-  const open = content.problemSlug && content.published !== false;
-  return (
-    <div className={t.codeStep}>
-      <div>
-        <strong>{content.problemTitle ?? content.problemSlug ?? "Coding exercise"}</strong>
-        {content.difficulty && <DifficultyBadge value={content.difficulty} />}
-        <p className={t.nodeSummary}>Solve it in the workspace or IntelliJ. This step is done once a submission is accepted.</p>
-      </div>
-      {passed ? (
-        <span className={t.solved}><Check size={16} aria-hidden /> Accepted</span>
-      ) : open ? (
-        <Link href={`/problems/${content.problemSlug}`} className={t.primary}>Open the exercise <ArrowRight size={15} aria-hidden /></Link>
-      ) : (
-        <span className={t.nodeSummary}>Being updated — try later</span>
-      )}
-    </div>
-  );
-}
+

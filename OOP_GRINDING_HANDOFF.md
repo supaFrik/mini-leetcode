@@ -67,7 +67,7 @@ Hệ thống đã giải quyết triệt để 3 bài toán kỹ thuật cốt l
 * [OopScoreCalculator.java](file:///c:/Users/aDMIN/Documents/JSD/Mini%20Leetcode/backend/mini-leetcode-judge/src/main/java/jsd/toiyeujava/mini_leetcode/judge/oop_grinding/scoring/OopScoreCalculator.java): Tính toán điểm toán học động theo công thức chuẩn hóa và làm tròn 1 chữ số thập phân (`RoundingMode.HALF_UP`).
 
 #### F. Bộ Mô hình DTO & Ràng buộc (`model/`)
-* `OopConstraintRule.java`, `OopFieldConstraint.java`, `OopMethodConstraint.java`, `OopConstructorConstraint.java`, `ExpectedClassType.java`, `OopInspectionReport.java`, `OopRuleResult.java`, `ExecutionReport.java`, `HarnessConfig.java`, `SocketAssessmentMode.java`, `SocketVerdict.java`, `SocketScenarioConfig.java`, `SocketScenarioDefinition.java`, `SocketStep.java`, `SocketPhaseReport.java`.
+* `OopConstraintRule.java`, `OopFieldConstraint.java`, `OopMethodConstraint.java`, `OopConstructorConstraint.java`, `ExpectedClassType.java`, `OopInspectionReport.java`, `OopRuleResult.java`, `ExecutionReport.java`, `HarnessConfig.java`, `SocketAssessmentMode.java`, `SocketVerdict.java`, `SocketScenarioConfig.java`, `SocketStep.java`.
 
 ---
 

@@ -4,13 +4,15 @@ import { Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FILE_NAME, LANGUAGES, TEMPLATES } from "@/lib/templates";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useConfirm } from "@/components/ui/confirm";
 import { errorMessage } from "@/lib/api";
 import { fetchAuthoring, fetchProblem, saveProblem, unlockProblem, type ProblemDraft } from "@/lib/services";
 import type { Difficulty, ProblemAuthoring, ProblemFull, ProblemType, SubmissionFile } from "@/types/api";
-import { GradingPanel, ReferencePanel, SourceFilesEditor, TestCasesPanel } from "./problem-authoring";
-import type { SaveState } from "./admin-topics";
+import { GradingPanel, ReferencePanel, SourceFilesEditor, TestCasesPanel, parseSourceFiles } from "./problem-authoring";
+import type { SaveState } from "./save-state";
 
 /*
  * Soạn một đề trên cả trang: đề bài tự lưu 1 s sau lần sửa cuối, các tab Tests / Grading / Reference
@@ -28,18 +30,37 @@ function toDraft(p: ProblemFull): ProblemDraft {
   };
 }
 
+/** Starter template lưu dạng chuỗi JSON; trống hoặc hỏng thì hiện khung mặc định. */
 function starterFiles(value: string | null | undefined): SubmissionFile[] {
-  try {
-    const parsed = value ? JSON.parse(value) : null;
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-  } catch {
-    /* bỏ qua JSON hỏng: hiện khung mặc định */
-  }
-  return DEFAULT_STARTER;
+  const files = parseSourceFiles(value);
+  return files.length > 0 ? files : DEFAULT_STARTER;
+}
+
+/** Code khởi đầu bài DSA: một ô cho mỗi ngôn ngữ; để trống = dùng mẫu mặc định (placeholder). */
+function DsaStarterField({ value, onChange, disabled }: { value: string | null | undefined; onChange: (v: string) => void; disabled?: boolean }) {
+  const files = parseSourceFiles(value);
+  const get = (path: string) => files.find((f) => f.path === path)?.content ?? "";
+  const update = (path: string, content: string) => {
+    const next = LANGUAGES.map((l) => FILE_NAME[l.value])
+      .map((p) => ({ path: p, content: p === path ? content : get(p) }))
+      .filter((f) => f.content.trim());
+    onChange(next.length ? JSON.stringify(next) : "");
+  };
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {LANGUAGES.map((l) => (
+        <label key={l.value} className={field}>
+          Starter code — {l.label} ({FILE_NAME[l.value]}), empty = default
+          <Textarea rows={10} disabled={disabled} value={get(FILE_NAME[l.value])} placeholder={TEMPLATES[l.value]}
+            onChange={(e) => update(FILE_NAME[l.value], e.target.value)} className="font-mono text-xs" />
+        </label>
+      ))}
+    </div>
+  );
 }
 
 /** Cùng luật chuẩn hoá tag với server: bỏ trống, gộp trùng không phân biệt hoa/thường. */
-export function normalizeTags(raw: string): string[] {
+function normalizeTags(raw: string): string[] {
   const seen = new Map<string, string>();
   for (const part of raw.split(",")) {
     const t = part.trim();
@@ -175,9 +196,9 @@ export function ProblemEditor({ problemId, label, canEdit, learners = 0, current
             <label className={`block ${field}`}>Title
               <Input value={draft.title} onChange={(e) => set("title", e.target.value)} />
             </label>
-            <label className={`block ${field}`}>Statement (Markdown)
-              <Textarea rows={14} className="font-mono" value={draft.description} onChange={(e) => set("description", e.target.value)} />
-            </label>
+            <div className={`block ${field}`}>Statement
+              <RichTextEditor value={draft.description} onChange={(v) => set("description", v)} label="Statement" disabled={!canEdit} className="mt-1" />
+            </div>
             <div className="grid gap-3 sm:grid-cols-4">
               <label className={field}>Difficulty
                 <select className={select} value={draft.difficulty} onChange={(e) => set("difficulty", e.target.value as Difficulty)}>
@@ -198,6 +219,9 @@ export function ProblemEditor({ problemId, label, canEdit, learners = 0, current
               </label>
             </div>
             <TagsField value={draft.tags} onChange={(tags) => set("tags", tags)} />
+            {draft.type !== "OOP_GRINDING" && (
+              <DsaStarterField value={draft.starterTemplates} onChange={(v) => set("starterTemplates", v)} disabled={!canEdit} />
+            )}
             {draft.type === "OOP_GRINDING" && (
               <SourceFilesEditor label="Starter files (.java)" files={starterFiles(draft.starterTemplates)}
                 onChange={(files) => set("starterTemplates", JSON.stringify(files))} />

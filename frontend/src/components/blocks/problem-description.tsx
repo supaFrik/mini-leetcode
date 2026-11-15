@@ -1,10 +1,9 @@
 "use client";
 
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { Markdown } from "@/components/ui/markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { cn } from "@/lib/utils";
 
 export interface ProblemDescriptionProps {
@@ -32,8 +31,8 @@ export interface ProblemDescriptionProps {
  *
  * Uses `prose` from `@tailwindcss/typography` for the body and shadcn
  * `Badge` for the limit chips. When an `editor` is supplied the statement is
- * replaced by an editable markdown textarea, which is how instructors revise
- * a problem from the same surface.
+ * replaced by the visual rich-text editor (Markdown in/out), which is how
+ * instructors revise a problem from the same surface.
  */
 export function ProblemDescription({
   markdown,
@@ -61,12 +60,8 @@ export function ProblemDescription({
       ) : null}
       {editor?.editing ? (
         <div className="space-y-2">
-          <Textarea
-            value={editor.value}
-            onChange={(e) => editor.onChange(e.target.value)}
-            aria-label="Markdown content"
-            className="min-h-56 font-mono text-xs"
-          />
+          {/* Soạn trực quan (kiểu Notion), vẫn lưu Markdown — giáo viên không phải gõ cú pháp. */}
+          <RichTextEditor value={editor.value} onChange={editor.onChange} label="Statement" className="min-h-56" />
           {editor.error ? (
             <p role="alert" className="text-xs text-destructive">
               {editor.error}
@@ -87,10 +82,12 @@ export function ProblemDescription({
             "prose prose-sm max-w-none prose-headings:tracking-tight prose-headings:text-ink prose-p:text-body prose-li:text-body prose-strong:text-ink",
             "prose-code:rounded-sm prose-code:border prose-code:border-border prose-code:bg-hairline-soft prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:text-[#0761d1]",
             "prose-code:before:content-none prose-code:after:content-none",
-            "prose-pre:rounded-sm prose-pre:border prose-pre:border-border prose-pre:bg-card prose-pre:text-ink"
+            "prose-pre:rounded-sm prose-pre:border prose-pre:border-border prose-pre:bg-card prose-pre:text-ink",
+            // Khối code (ví dụ Input/Output) không mang kiểu "chip" của code inline — trước đây hiện như các mẩu xanh 10px.
+            "[&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:font-mono [&_pre_code]:text-[13px] [&_pre_code]:leading-relaxed [&_pre_code]:text-ink"
           )}
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+          <Markdown>{markdown}</Markdown>
         </article>
       )}
     </div>

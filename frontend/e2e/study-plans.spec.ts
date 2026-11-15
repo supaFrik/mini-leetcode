@@ -56,7 +56,9 @@ async function serveTokens(page: Page) {
 test.describe("/study-plans", () => {
   test.beforeEach(async ({ page }) => {
     await installFullscreenMock(page);
-    await setupMockApi(page);
+    const mock = await setupMockApi(page);
+    mock.addProblem({ id: 101, slug: "mini-bank-stage-1", title: "Mini Bank 1/5", difficulty: "EASY", tags: [], type: "OOP_GRINDING",
+      description: "Create the **Account** class.", timeLimitMs: 2000, memoryLimitMb: 256, status: "PUBLISHED" });
     await setMockAuthSession(page, { username: "student", role: "USER" });
     await serveStudyPlans(page);
   });
@@ -72,11 +74,11 @@ test.describe("/study-plans", () => {
     await expect(page.getByRole("heading", { name: "OOP với Java", level: 1 })).toBeVisible();
   });
 
-  test("open stages link to the workspace; locked and maintenance stages do not", async ({ page }) => {
+  test("open stages link to their stage page; locked and maintenance stages do not", async ({ page }) => {
     await page.goto("/study-plans/oop-voi-java");
 
     const project = page.getByRole("region", { name: "Project: Mini Bank Console" });
-    await expect(project.getByRole("link", { name: /Stage 1/ })).toHaveAttribute("href", "/problems/mini-bank-stage-1");
+    await expect(project.getByRole("link", { name: /Stage 1/ })).toHaveAttribute("href", "/study-plans/oop-voi-java/2/1");
     await expect(project.getByText("Finish stage 1 first")).toBeVisible();
     await expect(project.getByText("Being updated — try later")).toBeVisible();
     await expect(project.getByRole("link")).toHaveCount(1);
@@ -84,6 +86,44 @@ test.describe("/study-plans", () => {
     const practice = page.getByRole("region", { name: "Luyện: lớp & đóng gói" });
     await expect(practice.getByText("Completed")).toBeVisible();
     await expect(page.getByRole("link", { name: "Set up the plugin →" })).toHaveAttribute("href", "/ide");
+  });
+
+  test("AC-4: a project stage page opens in IntelliJ — install, connect once, then open", async ({ page }) => {
+    await serveTokens(page);
+    const ide = { up: false, connected: false, connects: [] as Record<string, string>[], opens: [] as Record<string, unknown>[] };
+    await page.route(/^http:\/\/127\.0\.0\.1:633\d\d\/api\/mini-leetcode/, (route) => {
+      const url = new URL(route.request().url());
+      if (!ide.up || url.port !== "63342") return route.abort("connectionrefused");
+      const action = url.searchParams.get("action");
+      const body = route.request().postData() ? JSON.parse(route.request().postData()!) : {};
+      const reply = (data: unknown, status = 200) => route.fulfill({ status, contentType: "application/json",
+        headers: { "Access-Control-Allow-Origin": route.request().headers()["origin"] ?? "*" }, body: JSON.stringify(data) });
+      if (action === "ping") return reply({ version: "0.1.0", connected: ide.connected });
+      if (action === "connect") { ide.connects.push(body); ide.connected = true; return reply({ connected: true }); }
+      if (action === "open") { ide.opens.push(body); return reply({ accepted: true }, 202); }
+      return reply({ error: "unknown" }, 400);
+    });
+
+    await page.goto("/study-plans/oop-voi-java/2/1");
+    await expect(page.getByRole("heading", { name: "Project: Mini Bank Console. Stage 1/3", level: 1 })).toBeVisible();
+    const stage = page.getByRole("region", { name: "Stage" });
+    await expect(stage.getByRole("link", { name: "Install the IntelliJ plugin" })).toHaveAttribute("href", "/ide");
+
+    ide.up = true;
+    await stage.getByRole("button", { name: "check again" }).click();
+    await stage.getByRole("button", { name: "Connect IntelliJ" }).click();
+    await expect(stage.getByText("IntelliJ connected")).toBeVisible();
+    expect(ide.connects).toEqual([{ serverUrl: new URL(page.url()).origin, token: "mlc_pat_e2eSecretValue" }]);
+
+    await stage.getByRole("button", { name: "Open in IntelliJ" }).click();
+    await expect.poll(() => ide.opens).toEqual([{ planSlug: "oop-voi-java", itemId: 2, stageNo: 1 }]);
+    await expect(stage.getByRole("link", { name: /Solve it in the web workspace/ })).toHaveAttribute("href", "/problems/mini-bank-stage-1");
+  });
+
+  test("a locked stage page explains what to finish first", async ({ page }) => {
+    await page.goto("/study-plans/oop-voi-java/2/2");
+    await expect(page.getByRole("region", { name: "Stage" })).toContainText("Finish stage 1 first.");
+    await expect(page.getByRole("button", { name: /IntelliJ/ })).toHaveCount(0);
   });
 
   test("unknown plan shows an error with retry", async ({ page }) => {

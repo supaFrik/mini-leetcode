@@ -76,8 +76,7 @@ function FrozenNotice({ what }: { what: string }) {
     <p className="flex items-start gap-2 rounded-sm border border-warning/30 bg-warning/10 px-3 py-2 text-body-sm text-ink">
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
       <span>
-        This problem is <strong>Published</strong>, so its {what} are locked. Move it back to Draft (via Archived) to
-        change them.
+        This problem is <strong>Published</strong>, so its {what} are locked while learners use it. Unlock it to make changes.
       </span>
     </p>
   );
@@ -802,7 +801,8 @@ export function GradingPanel({
  * Reference solution + live console.
  * ------------------------------------------------------------------ */
 
-function parseStarter(raw: string | null | undefined): SubmissionFile[] {
+/** Đọc danh sách file nguồn lưu dạng chuỗi JSON [{path, content}]; trống hoặc hỏng ⇒ []. */
+export function parseSourceFiles(raw: string | null | undefined): SubmissionFile[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -835,7 +835,7 @@ export function ReferencePanel({
   const [busy, setBusy] = useState(false);
   const [runSignal, setRunSignal] = useState(0);
   const [source, setSource] = useState<"reference" | "starter">("reference");
-  const starter = useMemo(() => parseStarter(starterTemplates), [starterTemplates]);
+  const starter = useMemo(() => parseSourceFiles(starterTemplates), [starterTemplates]);
 
   useEffect(() => {
     setFiles(JSON.parse(savedJson));

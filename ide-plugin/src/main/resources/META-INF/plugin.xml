@@ -49,6 +49,9 @@
         <!-- Milestone 3: Notification Group for balloon feedback -->
         <notificationGroup id="Mini LeetCode" displayType="BALLOON"/>
 
+        <!-- "Open in IntelliJ" từ trang web: http://localhost:63342/api/mini-leetcode -->
+        <httpRequestHandler implementation="jsd.toiyeujava.minileetcode.plugin.bridge.IdeBridgeService"/>
+
         <!-- Milestone 3: Tool Window (PL-2) -->
         <toolWindow
             id="Mini LeetCode"
