@@ -9,7 +9,7 @@
 
 ## 1. TỔNG QUAN DỰ ÁN & KẾT QUẢ NGHIỆM THU (EXECUTIVE SUMMARY)
 
-Phân hệ **OOP Grinding (`oop_grinding`)** đã được tích hợp hoàn chỉnh vào nền tảng **Mini LeetCode Monorepo** theo đúng tài liệu đặc tả kiến trúc [PROJECT.md](file:///c:/Users/aDMIN/Documents/JSD/Mini%20Leetcode/PROJECT.md) v3.7.0.
+Phân hệ **OOP Grinding (`oop_grinding`)** đã được tích hợp hoàn chỉnh vào nền tảng **Mini LeetCode Monorepo** theo đúng tài liệu đặc tả kiến trúc [PROJECT.md](./PROJECT.md) v3.7.0.
 
 Hệ thống đã giải quyết triệt để 3 bài toán kỹ thuật cốt lõi:
 1. **Kiểm tra cấu trúc OOP qua Bytecode Reflection (`OopGrindingInspector`):** Xác minh tính trừu tượng (`abstract`/`interface`), tính đóng gói (`private` fields), chữ ký phương thức và phân cấp lớp theo quy chuẩn `OopConstraintRule` JSON.
@@ -135,6 +135,6 @@ java -jar mini-leetcode-api/target/mini-leetcode-api-0.0.1-SNAPSHOT.jar
 
 ## 6. KẾT LUẬN & BÀN GIAO
 
-Toàn bộ 5 lát cắt kỹ thuật theo đặc tả [PROJECT.md](file:///c:/Users/aDMIN/Documents/JSD/Mini%20Leetcode/PROJECT.md) v3.7.0 đã được xây dựng hoàn tất, sạch sẽ, không có mã thừa, không có hardcode kết quả và vượt qua 100% các tiêu chuẩn an toàn sandbox và kiểm định chất lượng phần mềm. 
+Toàn bộ 5 lát cắt kỹ thuật theo đặc tả [PROJECT.md](./PROJECT.md) v3.7.0 đã được xây dựng hoàn tất, sạch sẽ, không có mã thừa, không có hardcode kết quả và vượt qua 100% các tiêu chuẩn an toàn sandbox và kiểm định chất lượng phần mềm. 
 
 Dự án đã sẵn sàng đưa vào vận hành hoặc tích hợp giao diện người dùng.

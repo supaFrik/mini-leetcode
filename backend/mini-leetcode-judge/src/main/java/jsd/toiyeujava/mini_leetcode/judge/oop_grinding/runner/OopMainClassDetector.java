@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -60,6 +62,16 @@ public final class OopMainClassDetector {
             "__ConsoleProbe",
             "__OopMetricsProbe",
             "__ExprEval");
+
+    public static boolean isHarnessClass(String className) {
+        if (className == null) {
+            return false;
+        }
+        String simple = className.contains(".")
+                ? className.substring(className.lastIndexOf('.') + 1)
+                : className;
+        return simple.startsWith("__") || GENERATED_HARNESS_CLASSES.contains(simple);
+    }
 
     private OopMainClassDetector() {
     }
@@ -204,5 +216,71 @@ public final class OopMainClassDetector {
             return null;
         }
         return internalName.replace('/', '.');
+    }
+
+    /**
+     * Trích xuất tập hợp tất cả các lớp được tham chiếu trong constant pool của file {@code .class}.
+     *
+     * @param classFile đường dẫn tới file {@code .class}
+     * @return tập hợp tên các lớp (dạng FQCN có dấu chấm)
+     */
+    public static Set<String> getReferencedClasses(Path classFile) {
+        if (classFile == null || !Files.isRegularFile(classFile)) {
+            return Collections.emptySet();
+        }
+        try (InputStream in = Files.newInputStream(classFile)) {
+            return getReferencedClasses(new DataInputStream(in));
+        } catch (IOException | RuntimeException e) {
+            log.debug("Cannot parse class file {} for references: {}", classFile, e.getMessage());
+            return Collections.emptySet();
+        }
+    }
+
+    static Set<String> getReferencedClasses(DataInputStream in) throws IOException {
+        int magic = in.readInt();
+        if (magic != 0xCAFEBABE) {
+            return Collections.emptySet();
+        }
+        in.readUnsignedShort(); // minor version
+        in.readUnsignedShort(); // major version
+
+        int constantPoolCount = in.readUnsignedShort();
+        String[] utf8 = new String[constantPoolCount];
+        List<Integer> classRefIndices = new ArrayList<>();
+
+        for (int i = 1; i < constantPoolCount; i++) {
+            int tag = in.readUnsignedByte();
+            switch (tag) {
+                case CONSTANT_UTF8 -> utf8[i] = in.readUTF();
+                case CONSTANT_INTEGER, CONSTANT_FLOAT -> in.skipBytes(4);
+                case CONSTANT_LONG, CONSTANT_DOUBLE -> {
+                    in.skipBytes(8);
+                    i++; // long/double chiếm 2 slot
+                }
+                case CONSTANT_CLASS -> classRefIndices.add(in.readUnsignedShort());
+                case CONSTANT_STRING -> in.skipBytes(2);
+                case CONSTANT_FIELDREF, CONSTANT_METHODREF, CONSTANT_INTERFACE_METHODREF -> in.skipBytes(4);
+                case CONSTANT_NAME_AND_TYPE -> in.skipBytes(4);
+                case CONSTANT_METHOD_HANDLE -> in.skipBytes(3);
+                case CONSTANT_METHOD_TYPE -> in.skipBytes(2);
+                case CONSTANT_DYNAMIC, CONSTANT_INVOKE_DYNAMIC -> in.skipBytes(4);
+                default -> throw new IOException("Unsupported constant pool tag: " + tag);
+            }
+        }
+
+        Set<String> referenced = new HashSet<>();
+        for (int classIdx : classRefIndices) {
+            if (classIdx > 0 && classIdx < constantPoolCount && utf8[classIdx] != null) {
+                String internal = utf8[classIdx];
+                if (internal.startsWith("[")) {
+                    int lIndex = internal.indexOf('L');
+                    if (lIndex >= 0 && internal.endsWith(";")) {
+                        internal = internal.substring(lIndex + 1, internal.length() - 1);
+                    }
+                }
+                referenced.add(internalNameToClassName(internal));
+            }
+        }
+        return referenced;
     }
 }

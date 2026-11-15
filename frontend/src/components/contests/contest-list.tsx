@@ -209,9 +209,11 @@ export function ContestList() {
                       <Link key={c.id} href={`/exam/${c.id}/leaderboard`} className={s.pastRow}>
                         <span className={s.name}>{c.title}</span>
                         <span className={cn(s.muted, s.hideSm)}>{fmtDate(c.startTime)}</span>
-                        <span className={cn(s.num, s.hideSm)}>{c.myRank != null ? `#${c.myRank}` : "—"}</span>
                         <span className={cn(s.num, s.hideSm)}>
-                          {c.mySolved != null ? `${c.mySolved}/${c.problems.length}` : "—"}
+                          {c.myRank != null ? `#${c.myRank}` : <span className="text-zinc-600 dark:text-zinc-400 font-normal text-xs">Unranked</span>}
+                        </span>
+                        <span className={cn(s.num, s.hideSm)}>
+                          {c.mySolved != null ? `${c.mySolved}/${c.problems.length}` : <span className="text-zinc-600 dark:text-zinc-400 font-normal text-xs">Unsolved</span>}
                         </span>
                         <span className={s.results}>Results</span>
                       </Link>
@@ -230,7 +232,7 @@ export function ContestList() {
                     <p className={s.muted}>Contests joined</p>
                   </div>
                   <div>
-                    <p className={s.big}>{bestRank != null ? `#${bestRank}` : "—"}</p>
+                    <p className={s.big}>{bestRank != null ? `#${bestRank}` : <span className="text-zinc-600 dark:text-zinc-400 font-normal text-lg">None</span>}</p>
                     <p className={s.muted}>Best rank</p>
                   </div>
                 </div>

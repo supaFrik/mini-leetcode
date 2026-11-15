@@ -216,9 +216,10 @@ npm run dev
 
 ## 9. API documentation & observability
 
-- **Swagger UI:** <http://localhost:8080/swagger-ui.html>
-- **OpenAPI 3.1 JSON:** <http://localhost:8080/v3/api-docs>
-- **Health probe:** <http://localhost:8080/actuator/health>
+- **Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- **OpenAPI 3.1 JSON spec:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+- **Health check probe:** [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+- **MinIO console:** [http://localhost:9001](http://localhost:9001) (`minioadmin` / `minioadminpassword`)
 
 (Use your remapped host port if you changed it in `docker-compose.override.yml`.)
 
@@ -226,9 +227,12 @@ npm run dev
 
 ## 10. Further documentation
 
+- [Developer onboarding guide](docs/ONBOARDING.md)
+- [Project architecture & plan](docs/PROJECT.md)
 - [Business requirements](docs/BUSINESS_REQUIREMENTS.md) · [Technical & business documentation](docs/TECHNICAL_AND_BUSINESS_DOCUMENTATION.md)
 - [Exam anti-cheat specification](docs/EXAM_ANTI_CHEAT_SPECIFICATION.md) · [Hybrid submission specification](docs/HYBRID_SUBMISSION_SPECIFICATION.md)
-- Study plans & plugin: [study-plan](specs/study-plan.spec.md), [topics](specs/topics.spec.md), [course builder](specs/course-builder.spec.md), [plugin in-IDE solving (draft)](specs/plugin-in-ide-solving.spec.md)
+- [OOP grinding engine handoff](docs/OOP_GRINDING_HANDOFF.md) · [Test infrastructure](docs/TEST_INFRA.md)
+- Study plans & plugin: [study-plan](specs/study-plan.spec.md), [topics](specs/topics.spec.md), [course builder](specs/course-builder.spec.md), [plugin in-IDE solving](specs/plugin-in-ide-solving.spec.md)
 - Admin: [roadmap](specs/admin-roadmap.md), [contests](specs/admin-contest-management.spec.md), [user management](specs/admin-user-management.spec.md)
 - Judge: [live terminal console](specs/live-terminal-console.spec.md), [OOP runtime metrics](specs/oop-console-runtime-metrics.spec.md)
 - [Authoring problems, testcases and OOP grading](backend/tools/README.md) · [Frontend design system](frontend/DESIGN.md)

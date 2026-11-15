@@ -181,8 +181,8 @@ class SocketFaultInjectionAdversarialTest {
         assertThat(result.getError())
                 .contains("Server process exited prematurely with code 1")
                 .contains("database initialization failed");
-        // Must fail fast via polling check (!serverProcess.isAlive()), not waiting full 2000ms
-        assertThat(duration).isLessThan(1500);
+        // Must fail fast via polling check (!serverProcess.isAlive()), not waiting full scenario timeout
+        assertThat(duration).isLessThan(4500);
     }
 
     @Test

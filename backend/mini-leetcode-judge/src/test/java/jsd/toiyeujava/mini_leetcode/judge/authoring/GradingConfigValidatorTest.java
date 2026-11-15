@@ -111,4 +111,39 @@ class GradingConfigValidatorTest {
                 "socketScenarios[0].targetClass: required (or targetMainClass)",
                 "socketScenarios[0]: needs steps[] or requestPayload/expectedResponsePayload");
     }
+
+    @Test
+    void acceptsPresetRulesWithWildcardAndNewProperties() {
+        var result = validator.validate("""
+                {
+                  "rules": [
+                    {
+                      "ruleId": "preset-encapsulation",
+                      "ruleName": "Encapsulation",
+                      "targetClassName": "*",
+                      "enforceEncapsulation": true,
+                      "weight": 1.0
+                    },
+                    {
+                      "ruleId": "preset-polymorphism",
+                      "ruleName": "Polymorphism",
+                      "targetClassName": "*",
+                      "expectedType": "ABSTRACT_CLASS_OR_INTERFACE",
+                      "weight": 1.0
+                    },
+                    {
+                      "ruleId": "preset-anti-monolithic",
+                      "ruleName": "Anti-Monolithic",
+                      "targetClassName": "*",
+                      "minClassCount": 2,
+                      "disallowMonolithicMain": true,
+                      "weight": 1.0
+                    }
+                  ]
+                }
+                """);
+        assertThat(result.valid()).isTrue();
+        assertThat(result.errors()).isEmpty();
+        assertThat(result.ruleCount()).isEqualTo(3);
+    }
 }

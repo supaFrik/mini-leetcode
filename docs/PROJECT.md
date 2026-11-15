@@ -245,7 +245,7 @@ ALTER TABLE submissions ADD COLUMN score_breakdown JSON DEFAULT NULL;
 ```
 
 ### 4.5. Cơ chế Nộp bài Đa hình thức & Starter Scaffolding (Hybrid Ingestion & Fast Run)
-*(Chi tiết đặc tả xem tại [HYBRID_SUBMISSION_SPECIFICATION.md](file:///c:/Users/aDMIN/Documents/JSD/Mini%20Leetcode/docs/HYBRID_SUBMISSION_SPECIFICATION.md))*:
+*(Chi tiết đặc tả xem tại [HYBRID_SUBMISSION_SPECIFICATION.md](./HYBRID_SUBMISSION_SPECIFICATION.md))*:
 1. **Không chỉ nộp file ZIP:** Hệ thống hỗ trợ đa kênh tiếp nhận mã nguồn thông qua `MultiFileSourceExtractor`:
    * **Web Multi-tab Editor:** Sinh viên code trực tiếp trên nhiều tab của Monaco Editor (gửi payload JSON `{"files": [{"path": "...", "content": "..."}]}`).
    * **Kéo thả / Upload:** Kéo thả trực tiếp file `.zip` hoặc chọn đồng thời nhiều file `.java`.

@@ -10,7 +10,8 @@
 
 .lead {
   margin: 0 0 24px;
-  max-width: 720px;
+  max-width: 60ch;
+  line-height: 1.6;
   color: var(--muted);
 }
 

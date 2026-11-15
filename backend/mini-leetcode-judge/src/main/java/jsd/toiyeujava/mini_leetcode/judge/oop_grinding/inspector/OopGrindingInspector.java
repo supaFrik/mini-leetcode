@@ -3,6 +3,7 @@ package jsd.toiyeujava.mini_leetcode.judge.oop_grinding.inspector;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.*;
+import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner.OopMainClassDetector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -90,6 +91,10 @@ public class OopGrindingInspector {
             return OopRuleResult.failed(ruleName, "UNKNOWN", "Rule missing targetClassName", rule.getWeight());
         }
 
+        if ("*".equals(targetName.trim())) {
+            return evaluateWildcardRule(rule, classLoader, classesDir);
+        }
+
         try {
             Class<?> clazz = loadTargetClass(targetName, classLoader, classesDir);
             List<String> violations = new ArrayList<>();
@@ -139,6 +144,31 @@ public class OopGrindingInspector {
             if (rule.getConstructors() != null) {
                 for (OopConstructorConstraint ctorRule : rule.getConstructors()) {
                     verifyConstructorConstraint(clazz, ctorRule, violations);
+                }
+            }
+
+            // 9. Anti-monolithic constraints (if specified on concrete rule)
+            if (rule.getMinClassCount() != null) {
+                List<Class<?>> allUserClasses = findAllUserClasses(classesDir, classLoader);
+                if (allUserClasses.size() < rule.getMinClassCount()) {
+                    violations.add("Anti-monolithic violation: expected at least " + rule.getMinClassCount()
+                            + " classes, but found " + allUserClasses.size());
+                }
+            }
+
+            if (Boolean.TRUE.equals(rule.getDisallowMonolithicMain())) {
+                List<Class<?>> allUserClasses = findAllUserClasses(classesDir, classLoader);
+                verifyAntiMonolithicMain(classesDir, allUserClasses, violations);
+            }
+
+            if (Boolean.TRUE.equals(rule.getRequirePolymorphism())) {
+                boolean hasPolymorphism = clazz.isInterface()
+                        || Modifier.isAbstract(clazz.getModifiers())
+                        || clazz.getInterfaces().length > 0
+                        || (clazz.getSuperclass() != null && !clazz.getSuperclass().equals(Object.class) && !clazz.isEnum() && !clazz.isRecord());
+                if (!hasPolymorphism) {
+                    violations.add("Polymorphism violation: class " + clazz.getSimpleName()
+                            + " must implement an interface or extend a polymorphic type");
                 }
             }
 
@@ -234,6 +264,11 @@ public class OopGrindingInspector {
                     violations.add("Expected RECORD, but found " + getActualTypeDesc(clazz));
                 }
             }
+            case ABSTRACT_CLASS_OR_INTERFACE -> {
+                if (!clazz.isInterface() && !Modifier.isAbstract(clazz.getModifiers())) {
+                    violations.add("Expected ABSTRACT_CLASS_OR_INTERFACE, but found " + getActualTypeDesc(clazz));
+                }
+            }
         }
     }
 
@@ -272,10 +307,13 @@ public class OopGrindingInspector {
     private void verifyEncapsulation(Class<?> clazz, List<String> violations) {
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isSynthetic() || field.getName().startsWith("$")) continue;
-            if (Modifier.isStatic(field.getModifiers())) continue;
-            if (!Modifier.isPrivate(field.getModifiers())) {
+            boolean isEncapsulated = Modifier.isPrivate(field.getModifiers())
+                    || Modifier.isProtected(field.getModifiers())
+                    || (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers()));
+            if (!isEncapsulated) {
+                String modStr = field.getModifiers() == 0 ? "package-private" : Modifier.toString(field.getModifiers());
                 violations.add("Field '" + field.getName() + "' is not private (encapsulation violation: "
-                        + Modifier.toString(field.getModifiers()) + ")");
+                        + modStr + ")");
             }
         }
     }
@@ -454,5 +492,244 @@ public class OopGrindingInspector {
             }
         }
         return Collections.emptyList();
+    }
+
+    private OopRuleResult evaluateWildcardRule(OopConstraintRule rule, ClassLoader classLoader, Path classesDir) {
+        String ruleName = rule.getRuleName() != null ? rule.getRuleName() : "*";
+        List<Class<?>> userClasses = findAllUserClasses(classesDir, classLoader);
+        if (userClasses.isEmpty()) {
+            return OopRuleResult.failed(ruleName, "*", "No user classes found in compiled bytecode", rule.getWeight());
+        }
+
+        List<String> violations = new ArrayList<>();
+
+        // 1. Min class count (Anti-monolithic)
+        if (rule.getMinClassCount() != null) {
+            if (userClasses.size() < rule.getMinClassCount()) {
+                violations.add("Anti-monolithic violation: expected at least " + rule.getMinClassCount()
+                        + " classes, but found " + userClasses.size());
+            }
+        }
+
+        // 2. Disallow monolithic main (Anti-monolithic)
+        if (Boolean.TRUE.equals(rule.getDisallowMonolithicMain())) {
+            verifyAntiMonolithicMain(classesDir, userClasses, violations);
+        }
+
+        // 3. Polymorphism / Abstraction
+        if (rule.getExpectedType() == ExpectedClassType.ABSTRACT_CLASS_OR_INTERFACE
+                || Boolean.TRUE.equals(rule.getRequirePolymorphism())) {
+            verifyPolymorphismExistential(userClasses, violations);
+        } else if (rule.getExpectedType() != null && rule.getExpectedType() != ExpectedClassType.ANY) {
+            boolean anyMatched = userClasses.stream().anyMatch(c -> matchesExpectedType(c, rule.getExpectedType()));
+            if (!anyMatched) {
+                violations.add("Expected at least one " + rule.getExpectedType() + ", but none found");
+            }
+        }
+
+        // 4. Encapsulation across all user classes
+        if (Boolean.TRUE.equals(rule.getEnforceEncapsulation())) {
+            for (Class<?> clazz : userClasses) {
+                List<String> classViolations = new ArrayList<>();
+                verifyEncapsulation(clazz, classViolations);
+                for (String v : classViolations) {
+                    violations.add("Class " + clazz.getSimpleName() + ": " + v);
+                }
+            }
+        }
+
+        // 5. Modifiers across all user classes if configured
+        if ((rule.getRequiredModifiers() != null && !rule.getRequiredModifiers().isEmpty())
+                || (rule.getForbiddenModifiers() != null && !rule.getForbiddenModifiers().isEmpty())) {
+            for (Class<?> clazz : userClasses) {
+                List<String> modViolations = ModifierHelper.checkModifiers(
+                        clazz.getModifiers(),
+                        rule.getRequiredModifiers(),
+                        rule.getForbiddenModifiers(),
+                        "Class " + clazz.getSimpleName()
+                );
+                violations.addAll(modViolations);
+            }
+        }
+
+        // 6. Field constraints across all classes if configured
+        if (rule.getFields() != null && !rule.getFields().isEmpty()) {
+            for (Class<?> clazz : userClasses) {
+                for (OopFieldConstraint fieldRule : rule.getFields()) {
+                    verifyFieldConstraint(clazz, fieldRule, violations);
+                }
+            }
+        }
+
+        // 7. Method constraints across all classes if configured
+        if (rule.getMethods() != null && !rule.getMethods().isEmpty()) {
+            for (OopMethodConstraint methodRule : rule.getMethods()) {
+                boolean foundInAnyClass = false;
+                List<String> lastViolations = new ArrayList<>();
+                for (Class<?> clazz : userClasses) {
+                    List<String> methodViolations = new ArrayList<>();
+                    verifyMethodConstraint(clazz, methodRule, methodViolations);
+                    if (methodViolations.isEmpty()) {
+                        foundInAnyClass = true;
+                        break;
+                    }
+                    lastViolations = methodViolations;
+                }
+                if (!foundInAnyClass) {
+                    violations.addAll(lastViolations);
+                }
+            }
+        }
+
+        if (violations.isEmpty()) {
+            String successMsg = rule.getCustomSuccessMessage() != null && !rule.getCustomSuccessMessage().isBlank()
+                    ? rule.getCustomSuccessMessage()
+                    : "All classes meet specified OOP constraints";
+            return OopRuleResult.success(ruleName, "*", successMsg, rule.getWeight());
+        } else {
+            String failMsg = rule.getCustomFailureMessage() != null && !rule.getCustomFailureMessage().isBlank()
+                    ? rule.getCustomFailureMessage() + ": " + String.join("; ", violations)
+                    : String.join("; ", violations);
+            OopRuleResult res = OopRuleResult.failed(ruleName, "*", failMsg, rule.getWeight());
+            res.setDetails(violations);
+            return res;
+        }
+    }
+
+    public List<Class<?>> findAllUserClasses(Path classesDir, ClassLoader classLoader) {
+        if (classesDir == null || !Files.exists(classesDir)) {
+            return Collections.emptyList();
+        }
+        List<Path> classFiles = OopMainClassDetector.listClassFiles(classesDir);
+        List<Class<?>> userClasses = new ArrayList<>();
+
+        for (Path classFile : classFiles) {
+            String fileName = classFile.getFileName().toString();
+            if (!fileName.endsWith(".class")) continue;
+            String baseName = fileName.substring(0, fileName.length() - 6);
+
+            // Filter out synthetic harness classes
+            if (OopMainClassDetector.isHarnessClass(baseName)) {
+                continue;
+            }
+
+            // Filter out anonymous classes (e.g., Foo$1, Foo$2)
+            if (baseName.matches(".*\\$[0-9]+.*")) {
+                continue;
+            }
+
+            Path rel = classesDir.relativize(classFile);
+            String fqcn = rel.toString()
+                    .replace('/', '.')
+                    .replace('\\', '.');
+            if (fqcn.endsWith(".class")) {
+                fqcn = fqcn.substring(0, fqcn.length() - 6);
+            }
+
+            try {
+                Class<?> clazz = Class.forName(fqcn, false, classLoader);
+                if (!clazz.isSynthetic()) {
+                    userClasses.add(clazz);
+                }
+            } catch (Throwable t) {
+                log.debug("Could not load class {} during user class discovery: {}", fqcn, t.getMessage());
+            }
+        }
+        return userClasses;
+    }
+
+    private boolean matchesExpectedType(Class<?> clazz, ExpectedClassType expected) {
+        if (expected == null || expected == ExpectedClassType.ANY) return true;
+        return switch (expected) {
+            case ABSTRACT_CLASS -> !clazz.isInterface() && Modifier.isAbstract(clazz.getModifiers());
+            case INTERFACE -> clazz.isInterface();
+            case CLASS -> !clazz.isInterface() && !clazz.isEnum() && !clazz.isRecord() && !Modifier.isAbstract(clazz.getModifiers());
+            case ENUM -> clazz.isEnum();
+            case RECORD -> clazz.isRecord();
+            case ABSTRACT_CLASS_OR_INTERFACE -> clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers());
+            default -> true;
+        };
+    }
+
+    private void verifyPolymorphismExistential(List<Class<?>> userClasses, List<String> violations) {
+        boolean hasPolymorphism = false;
+        for (Class<?> clazz : userClasses) {
+            if (clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
+                hasPolymorphism = true;
+                break;
+            }
+            if (clazz.getInterfaces().length > 0) {
+                hasPolymorphism = true;
+                break;
+            }
+            Class<?> superclass = clazz.getSuperclass();
+            if (superclass != null && !superclass.equals(Object.class) && !clazz.isEnum() && !clazz.isRecord()) {
+                hasPolymorphism = true;
+                break;
+            }
+        }
+
+        if (!hasPolymorphism) {
+            violations.add("Polymorphism violation: submission must declare at least one interface or abstract class, or implement/extend a polymorphic type");
+        }
+    }
+
+    private void verifyAntiMonolithicMain(Path classesDir, List<Class<?>> userClasses, List<String> violations) {
+        if (userClasses.size() < 2) {
+            violations.add("Anti-monolithic violation: main method contains entire program logic without delegating to domain classes");
+            return;
+        }
+
+        Optional<String> mainClassOpt = OopMainClassDetector.detectMainClass(classesDir);
+        if (mainClassOpt.isEmpty()) {
+            return;
+        }
+
+        String mainClassFqcn = mainClassOpt.get();
+        Path mainClassFile = findClassFile(classesDir, mainClassFqcn);
+        if (mainClassFile == null) {
+            return;
+        }
+
+        Set<String> referencedClasses = OopMainClassDetector.getReferencedClasses(mainClassFile);
+        boolean referencesOtherUserClass = false;
+
+        for (Class<?> clazz : userClasses) {
+            if (clazz.getName().equals(mainClassFqcn)) {
+                continue;
+            }
+            String fqcn = clazz.getName();
+            String simple = clazz.getSimpleName();
+            String internal = fqcn.replace('.', '/');
+            if (referencedClasses.contains(fqcn) || referencedClasses.contains(simple) || referencedClasses.contains(internal)) {
+                referencesOtherUserClass = true;
+                break;
+            }
+        }
+
+        if (!referencesOtherUserClass) {
+            violations.add("Anti-monolithic violation: main method contains entire program logic without delegating to domain classes");
+        }
+    }
+
+    private Path findClassFile(Path classesDir, String fqcn) {
+        String expectedRel1 = fqcn.replace('.', '/') + ".class";
+        String expectedRel2 = fqcn.replace('.', '\\') + ".class";
+        String simpleName = fqcn.contains(".") ? fqcn.substring(fqcn.lastIndexOf('.') + 1) : fqcn;
+
+        try (Stream<Path> stream = Files.walk(classesDir)) {
+            return stream.filter(Files::isRegularFile)
+                    .filter(p -> {
+                        Path rel = classesDir.relativize(p);
+                        String relStr = rel.toString();
+                        return relStr.equals(expectedRel1) || relStr.equals(expectedRel2)
+                                || p.getFileName().toString().equals(simpleName + ".class");
+                    })
+                    .findFirst()
+                    .orElse(null);
+        } catch (IOException e) {
+            log.debug("Error finding class file for {}: {}", fqcn, e.getMessage());
+            return null;
+        }
     }
 }

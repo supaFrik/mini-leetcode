@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { PROBLEM_DIFFICULTY_META, type ProblemDifficulty } from "./problem-types";
+import { DifficultyBadge } from "@/components/problems/difficulty-badge";
+import { type ProblemDifficulty } from "./problem-types";
 
 export interface ProblemHeaderEditor {
   /** Current draft title. */
@@ -47,8 +48,6 @@ export function ProblemHeader({
   actions,
   className,
 }: ProblemHeaderProps) {
-  const diff = PROBLEM_DIFFICULTY_META[difficulty];
-
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -74,9 +73,7 @@ export function ProblemHeader({
               {status}
             </Badge>
           ) : null}
-          <Badge variant="outline" className={cn("font-normal", diff.className)}>
-            {diff.label}
-          </Badge>
+          <DifficultyBadge value={difficulty} />
         </div>
       </div>
 

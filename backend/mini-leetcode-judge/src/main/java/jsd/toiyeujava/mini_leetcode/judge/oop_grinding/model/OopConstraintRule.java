@@ -38,6 +38,9 @@ public class OopConstraintRule {
     private List<OopMethodConstraint> methods = new ArrayList<>();
     @Builder.Default
     private List<OopConstructorConstraint> constructors = new ArrayList<>();
+    private Integer minClassCount;
+    private Boolean disallowMonolithicMain;
+    private Boolean requirePolymorphism;
     private String customSuccessMessage;
     private String customFailureMessage;
 }

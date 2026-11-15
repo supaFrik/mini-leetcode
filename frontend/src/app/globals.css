@@ -23,8 +23,8 @@
     /* ---- Text ladder ---- */
     --ink: 0 0% 9.4%;                  /* #171717  highest emphasis */
     --body: 0 0% 30.2%;               /* #4d4d4d  paragraphs, nav */
-    --mute: 0 0% 56.1%;               /* #8f8f8f  captions, metadata */
-    --faint: 0 0% 63.1%;              /* #a1a1a1  placeholders, disabled */
+    --mute: 0 0% 38%;                 /* #616161  captions, metadata, WCAG AA compliant */
+    --faint: 0 0% 48%;                /* #7a7a7a  placeholders, disabled */
 
     /* ---- Structure ---- */
     --border: 0 0% 92.2%;             /* #ebebeb  hairline */
@@ -36,7 +36,7 @@
     --secondary: 0 0% 94.9%;
     --secondary-foreground: 0 0% 9.4%;
     --muted: 0 0% 94.9%;
-    --muted-foreground: 0 0% 56.1%;
+    --muted-foreground: 0 0% 38%;
 
     /* ---- Accent (single chromatic voice) ---- */
     --primary: 142 71% 40%;           /* leetcode emerald green */

@@ -11,6 +11,7 @@ import { countProblems, fetchProblems, fetchProblemTags } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import { LANG_PREF_KEY, LANGUAGES } from "@/lib/templates";
 import { Pagination } from "./pagination";
+import { DifficultyBadge } from "./difficulty-badge";
 import theme from "@/components/layout/plex-theme.module.css";
 import s from "./problems.module.css";
 import type { Difficulty, Page, ProblemSummary, ProblemType, UserProgress } from "@/types/api";
@@ -64,12 +65,7 @@ function ProblemRow({ p }: { p: ProblemSummary }) {
       <span className={s.name}>{p.title}</span>
       <span className={cn(s.tags, s.colTags)}>{p.tags.join(" · ")}</span>
       <span className={s.level}>
-        <span className={s.meter} aria-hidden="true">
-          <i className={s.on} />
-          <i className={level.rank >= 2 ? s.on : undefined} />
-          <i className={level.rank >= 3 ? s.on : undefined} />
-        </span>
-        {level.label}
+        <DifficultyBadge value={p.difficulty} />
       </span>
     </Link>
   );

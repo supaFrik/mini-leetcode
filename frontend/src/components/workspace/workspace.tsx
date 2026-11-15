@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { DifficultyBadge } from "@/components/problems/difficulty-badge";
 import {
   Combobox,
   ComboboxContent,
@@ -560,7 +559,6 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
           </nav>
         )}
         <span className="font-medium text-ink">#{problem.id} {problem.title}</span>
-        <DifficultyBadge value={problem.difficulty} />
         <Combobox
           items={LANGUAGES}
           value={LANGUAGES.find((l) => l.value === lang)}

@@ -1,11 +1,14 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Lock } from "lucide-react";
 import { CodeExercise } from "@/components/code-exercise/code-exercise";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
 import { topicHref } from "@/components/topics/stage-timeline";
 import { Markdown } from "@/components/ui/markdown";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 import { useLoad } from "@/hooks/use-load";
 import { fetchStudyPlan } from "@/lib/services";
 import { cn } from "@/lib/utils";
@@ -18,10 +21,28 @@ import v from "./stage-view.module.css";
  * đề + khu làm bài (bài một file ngay trong trang; project nhiều file mở bằng IntelliJ) + chủ đề của stage.
  */
 export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: number; stageNo: number }) {
+  const router = useRouter();
   const [attempt, setAttempt] = useState(0);
   const load = useLoad(() => fetchStudyPlan(slug), [slug, attempt]);
   const [showProject, setShowProject] = useState(false);
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
+
+  const plan = load.state === "ok" ? load.data : null;
+  const item = plan?.items.find((it) => it.id === itemId);
+  const stage = item?.stages.find((st) => st.stageNo === stageNo);
+  const planHref = plan ? `/study-plans/${plan.slug}` : "/study-plans";
+
+  useEffect(() => {
+    if (stage?.status === "LOCKED" && plan && item) {
+      const active = item.stages.find((st) => st.status !== "DONE" && st.status !== "LOCKED") ?? item.stages[0];
+      toast(`Please complete stage ${stage.stageNo - 1} first.`, "error");
+      if (active && active.stageNo !== stageNo) {
+        router.replace(`/study-plans/${plan.slug}/${item.id}/${active.stageNo}`);
+      } else {
+        router.replace(`/study-plans/${plan.slug}`);
+      }
+    }
+  }, [stage?.status, stage?.stageNo, stageNo, item, plan, router]);
 
   if (load.state === "loading") return <div className={cn(theme.theme, v.page)} aria-busy="true"><p className={v.muted}>Loading stage…</p></div>;
   if (load.state === "error") {
@@ -32,15 +53,40 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
       </div>
     );
   }
-  const plan = load.data;
-  const item = plan.items.find((it) => it.id === itemId);
-  const stage = item?.stages.find((st) => st.stageNo === stageNo);
-  const planHref = `/study-plans/${plan.slug}`;
-  if (!item || !stage) {
+  if (!plan || !item || !stage) {
     return (
       <div className={cn(theme.theme, v.page)}>
         <p role="alert" className={v.error}>This stage does not exist any more.</p>
-        <Link href={planHref} className={v.secondary}>Back to {plan.title}</Link>
+        <Link href={planHref} className={v.secondary}>Back to {plan?.title ?? "Study plans"}</Link>
+      </div>
+    );
+  }
+
+  if (stage.status === "LOCKED") {
+    const active = item.stages.find((st) => st.status !== "DONE" && st.status !== "LOCKED") ?? item.stages[0];
+    return (
+      <div className={cn(theme.theme, v.page)}>
+        <nav className={v.crumbs} aria-label="Breadcrumb">
+          <Link href="/study-plans">Study plans</Link> → <Link href={planHref}>{plan.title}</Link>
+        </nav>
+        <section className={v.card} aria-label="Locked stage">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-3 rounded-full bg-amber-500/10 p-3 text-amber-600 dark:text-amber-500">
+              <Lock size={24} aria-hidden />
+            </div>
+            <h2 className="text-lg font-semibold text-ink">Stage {stage.stageNo} is locked</h2>
+            <p className="mt-1 max-w-md text-sm text-mute">
+              You must complete stage {stage.stageNo - 1} before proceeding to this stage.
+            </p>
+            {active && (
+              <Button asChild className="mt-4">
+                <Link href={`/study-plans/${plan.slug}/${item.id}/${active.stageNo}`}>
+                  Go to Stage {active.stageNo}
+                </Link>
+              </Button>
+            )}
+          </div>
+        </section>
       </div>
     );
   }
@@ -76,8 +122,6 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
         </div>
         {!stage.published || !stage.slug ? (
           <p className={v.muted}>This stage is being updated. Try again later.</p>
-        ) : stage.status === "LOCKED" ? (
-          <p className={v.locked}><Lock size={16} aria-hidden /> Finish stage {stage.stageNo - 1} first.</p>
         ) : (
           <CodeExercise problemSlug={stage.slug} passed={stage.status === "DONE"} onSolved={reload}
             multiFile={(p) => (

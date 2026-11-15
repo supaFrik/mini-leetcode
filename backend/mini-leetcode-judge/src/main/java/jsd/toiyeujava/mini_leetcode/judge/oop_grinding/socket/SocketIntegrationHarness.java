@@ -1,5 +1,6 @@
 package jsd.toiyeujava.mini_leetcode.judge.oop_grinding.socket;
 
+import jakarta.annotation.PreDestroy;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.model.*;
 import jsd.toiyeujava.mini_leetcode.judge.oop_grinding.runner.ProcessLauncher;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,18 @@ public class SocketIntegrationHarness {
         t.setDaemon(true);
         return t;
     });
+
+    @PreDestroy
+    public void shutdown() {
+        ioExecutor.shutdownNow();
+        try {
+            if (!ioExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                log.warn("ioExecutor did not terminate within 1s");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
     public SocketIntegrationHarness() {
         this(ProcessBuilder::start);
@@ -114,7 +127,7 @@ public class SocketIntegrationHarness {
         ServerSocket serverSocket = null;
         Process clientProcess = null;
         try {
-            serverSocket = new ServerSocket(0, 50, InetAddress.getByName(LOOPBACK_HOST));
+            serverSocket = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
             int assignedPort = serverSocket.getLocalPort();
             serverSocket.setSoTimeout(connectTimeout);
 
@@ -127,7 +140,7 @@ public class SocketIntegrationHarness {
                 }
             }, ioExecutor);
 
-            List<String> clientArgs = List.of(LOOPBACK_HOST, String.valueOf(assignedPort));
+            List<String> clientArgs = List.of(InetAddress.getLoopbackAddress().getHostAddress(), String.valueOf(assignedPort));
             clientProcess = launchJavaProcess(
                     classesDir,
                     scenario.getEffectiveTargetClass(),
@@ -137,10 +150,46 @@ public class SocketIntegrationHarness {
             ProcessOutputCapture outputCapture = new ProcessOutputCapture(clientProcess, ioExecutor);
 
             long startNano = System.nanoTime();
-            Socket clientSocket;
-            try {
-                clientSocket = acceptFuture.get(connectTimeout, TimeUnit.MILLISECONDS);
-            } catch (Exception e) {
+            long deadlineNano = startNano + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+            Socket clientSocket = null;
+            long connectDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(connectTimeout);
+            while (System.nanoTime() < connectDeadline) {
+                if (acceptFuture.isDone()) {
+                    try {
+                        clientSocket = acceptFuture.get();
+                        break;
+                    } catch (Exception e) {
+                        break;
+                    }
+                }
+                if (!clientProcess.isAlive()) {
+                    int exit = clientProcess.exitValue();
+                    return ExecutionReport.SocketScenarioResult.failure(
+                            scenario.getScenarioName(),
+                            SocketVerdict.CONNECTION_FAILURE,
+                            "Client process exited prematurely with code " + exit + ": " + outputCapture.getCombinedOutput()
+                    );
+                }
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            if (clientSocket == null && acceptFuture.isDone()) {
+                try {
+                    clientSocket = acceptFuture.getNow(null);
+                } catch (Exception ignored) {
+                }
+            }
+            if (clientSocket == null) {
+                long remainingMs = TimeUnit.NANOSECONDS.toMillis(deadlineNano - System.nanoTime());
+                try {
+                    clientProcess.waitFor(Math.max(200, Math.min(1000, remainingMs)), TimeUnit.MILLISECONDS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
                 if (!clientProcess.isAlive()) {
                     int exit = clientProcess.exitValue();
                     return ExecutionReport.SocketScenarioResult.failure(
@@ -156,14 +205,16 @@ public class SocketIntegrationHarness {
                 );
             }
 
-            try (clientSocket;
-                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), StandardCharsets.UTF_8));
-                 PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_8), true)) {
-
-                clientSocket.setSoTimeout(timeoutMs);
+            final Socket activeClientSocket = clientSocket;
+            try (activeClientSocket;
+                 BufferedReader in = new BufferedReader(new InputStreamReader(activeClientSocket.getInputStream(), StandardCharsets.UTF_8));
+                 PrintWriter out = new PrintWriter(new OutputStreamWriter(activeClientSocket.getOutputStream(), StandardCharsets.UTF_8), true)) {
 
                 List<SocketStep> steps = scenario.resolveSteps();
                 for (SocketStep step : steps) {
+                    int remainingMs = (int) Math.min(timeoutMs, Math.max(1, TimeUnit.NANOSECONDS.toMillis(deadlineNano - System.nanoTime())));
+                    activeClientSocket.setSoTimeout(remainingMs);
+
                     boolean receiveFirst = step.getReceiveFirst() != null ? step.getReceiveFirst() : true;
                     if (receiveFirst) {
                         if (step.getExpectedPayload() != null) {
@@ -209,21 +260,26 @@ public class SocketIntegrationHarness {
                 boolean leakDetected = false;
                 if (scenario.isExpectResourceCleanup()) {
                     try {
-                        clientSocket.shutdownOutput();
-                        clientSocket.setSoTimeout(1000);
-                        int b = clientSocket.getInputStream().read();
-                        if (b != -1) {
-                            leakDetected = true;
-                        }
-                    } catch (SocketTimeoutException ste) {
-                        leakDetected = true;
+                        activeClientSocket.shutdownOutput();
                     } catch (IOException ignored) {
                     }
 
                     try {
-                        boolean exited = clientProcess.waitFor(2000, TimeUnit.MILLISECONDS);
+                        long remainingMs = Math.max(1000, TimeUnit.NANOSECONDS.toMillis(deadlineNano - System.nanoTime()));
+                        boolean exited = clientProcess.waitFor(remainingMs, TimeUnit.MILLISECONDS);
                         if (!exited) {
                             leakDetected = true;
+                        } else {
+                            try {
+                                activeClientSocket.setSoTimeout(500);
+                                int b = activeClientSocket.getInputStream().read();
+                                if (b != -1) {
+                                    leakDetected = true;
+                                }
+                            } catch (SocketTimeoutException ste) {
+                                leakDetected = true;
+                            } catch (IOException ignored) {
+                            }
                         }
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
@@ -270,16 +326,34 @@ public class SocketIntegrationHarness {
         }
     }
 
+    public int allocateSafeEphemeralPort() throws IOException {
+        IOException lastException = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try (ServerSocket probe = new ServerSocket()) {
+                probe.setReuseAddress(true);
+                probe.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 50);
+                int port = probe.getLocalPort();
+                if (port >= 1024 && port <= 65535) {
+                    return port;
+                }
+            } catch (IOException e) {
+                lastException = e;
+            }
+        }
+        if (lastException != null) {
+            throw new IOException("Failed to allocate safe ephemeral port after 3 attempts", lastException);
+        }
+        throw new IOException("Failed to allocate safe ephemeral port in range [1024, 65535] after 3 attempts");
+    }
+
     public ExecutionReport.SocketScenarioResult runServerAssessment(
             Path classesDir,
             SocketScenarioConfig scenario,
             int timeoutMs) {
 
         int assignedPort;
-        try (ServerSocket probe = new ServerSocket()) {
-            probe.setReuseAddress(true);
-            probe.bind(new InetSocketAddress(InetAddress.getByName(LOOPBACK_HOST), 0), 50);
-            assignedPort = probe.getLocalPort();
+        try {
+            assignedPort = allocateSafeEphemeralPort();
         } catch (IOException e) {
             return ExecutionReport.SocketScenarioResult.failure(
                     scenario.getScenarioName(),
@@ -304,9 +378,9 @@ public class SocketIntegrationHarness {
             );
             ProcessOutputCapture outputCapture = new ProcessOutputCapture(serverProcess, ioExecutor);
 
-            // Readiness polling: 10 attempts x 200ms
+            // Readiness polling: 80 attempts x 25ms = 2000ms
             boolean ready = false;
-            for (int attempt = 0; attempt < 10; attempt++) {
+            for (int attempt = 0; attempt < 80; attempt++) {
                 if (!serverProcess.isAlive()) {
                     int exit = serverProcess.exitValue();
                     return ExecutionReport.SocketScenarioResult.failure(
@@ -316,12 +390,20 @@ public class SocketIntegrationHarness {
                     );
                 }
                 try (Socket probeSocket = new Socket()) {
-                    probeSocket.connect(new InetSocketAddress(LOOPBACK_HOST, assignedPort), 100);
+                    probeSocket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), assignedPort), 50);
                     ready = true;
                     break;
                 } catch (IOException ignored) {
+                    if (!serverProcess.isAlive()) {
+                        int exit = serverProcess.exitValue();
+                        return ExecutionReport.SocketScenarioResult.failure(
+                                scenario.getScenarioName(),
+                                SocketVerdict.CONNECTION_FAILURE,
+                                "Server process exited prematurely with code " + exit + ": " + outputCapture.getCombinedOutput()
+                        );
+                    }
                     try {
-                        Thread.sleep(200);
+                        Thread.sleep(25);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break;
@@ -330,10 +412,23 @@ public class SocketIntegrationHarness {
             }
 
             if (!ready) {
+                try {
+                    serverProcess.waitFor(100, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+                if (!serverProcess.isAlive()) {
+                    int exit = serverProcess.exitValue();
+                    return ExecutionReport.SocketScenarioResult.failure(
+                            scenario.getScenarioName(),
+                            SocketVerdict.CONNECTION_FAILURE,
+                            "Server process exited prematurely with code " + exit + ": " + outputCapture.getCombinedOutput()
+                    );
+                }
                 return ExecutionReport.SocketScenarioResult.failure(
                         scenario.getScenarioName(),
                         SocketVerdict.CONNECTION_FAILURE,
-                        "Server failed to accept connections on " + LOOPBACK_HOST + ":" + assignedPort + " after 2000ms"
+                        "Server failed to accept connections on " + InetAddress.getLoopbackAddress().getHostAddress() + ":" + assignedPort + " after 2000ms"
                 );
             }
 
@@ -364,15 +459,17 @@ public class SocketIntegrationHarness {
             int timeoutMs) {
 
         long startNano = System.nanoTime();
+        long deadlineNano = startNano + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
         try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(LOOPBACK_HOST, port), DEFAULT_CONNECT_TIMEOUT_MS);
-            socket.setSoTimeout(timeoutMs);
+            socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), DEFAULT_CONNECT_TIMEOUT_MS);
 
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
 
             List<SocketStep> steps = scenario.resolveSteps();
             for (SocketStep step : steps) {
+                int remainingMs = (int) Math.min(timeoutMs, Math.max(1, TimeUnit.NANOSECONDS.toMillis(deadlineNano - System.nanoTime())));
+                socket.setSoTimeout(remainingMs);
                 boolean receiveFirst = step.getReceiveFirst() != null ? step.getReceiveFirst() : false;
                 if (receiveFirst) {
                     if (step.getExpectedPayload() != null) {
@@ -559,7 +656,7 @@ public class SocketIntegrationHarness {
 
         long startNano = 0;
         try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(LOOPBACK_HOST, port), DEFAULT_CONNECT_TIMEOUT_MS);
+            socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), DEFAULT_CONNECT_TIMEOUT_MS);
             socket.setSoTimeout(timeoutMs);
 
             connectedLatch.countDown();
@@ -569,11 +666,14 @@ public class SocketIntegrationHarness {
             }
 
             startNano = System.nanoTime();
+            long deadlineNano = startNano + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             PrintWriter out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
 
             List<SocketStep> steps = scenario.resolveSteps();
             if (steps.isEmpty()) {
+                int remainingMs = (int) Math.min(timeoutMs, Math.max(1, TimeUnit.NANOSECONDS.toMillis(deadlineNano - System.nanoTime())));
+                socket.setSoTimeout(remainingMs);
                 String req = "CLIENT_" + clientId + "_REQ";
                 out.println(req);
                 String resp = in.readLine();
@@ -584,6 +684,8 @@ public class SocketIntegrationHarness {
                 }
             } else {
                 for (SocketStep step : steps) {
+                    int remainingMs = (int) Math.min(timeoutMs, Math.max(1, TimeUnit.NANOSECONDS.toMillis(deadlineNano - System.nanoTime())));
+                    socket.setSoTimeout(remainingMs);
                     String send = step.getSendPayload();
                     if (send != null) {
                         send = send.replace("{clientId}", String.valueOf(clientId));
@@ -634,7 +736,7 @@ public class SocketIntegrationHarness {
 
     private void sendShutdownSignal(int port, String shutdownPayload) {
         try (Socket s = new Socket()) {
-            s.connect(new InetSocketAddress(LOOPBACK_HOST, port), 500);
+            s.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 500);
             PrintWriter out = new PrintWriter(new OutputStreamWriter(s.getOutputStream(), StandardCharsets.UTF_8), true);
             out.println(shutdownPayload);
             try {
@@ -654,6 +756,9 @@ public class SocketIntegrationHarness {
 
         if (targetClass == null || targetClass.isBlank()) {
             throw new IllegalArgumentException("targetClass must not be null or blank");
+        }
+        if (targetClass.startsWith("-") || !targetClass.matches("^[a-zA-Z0-9_.$]+$")) {
+            throw new IllegalArgumentException("Invalid target class name: " + targetClass);
         }
 
         String javaBin = ProcessHandle.current().info().command().orElseGet(() -> {
@@ -682,6 +787,9 @@ public class SocketIntegrationHarness {
 
         List<String> cmd = new ArrayList<>();
         cmd.add(javaBin);
+        cmd.add("-Djava.awt.headless=true");
+        cmd.add("-Djava.net.preferIPv4Stack=true");
+        cmd.add("-Dserver.host=127.0.0.1");
         cmd.add("-cp");
         cmd.add(cp.toString());
         cmd.add(targetClass);
@@ -700,16 +808,19 @@ public class SocketIntegrationHarness {
         if (process == null) {
             return;
         }
+
+        List<ProcessHandle> descendants = Collections.emptyList();
+        try {
+            descendants = process.descendants().toList();
+        } catch (Throwable ignored) {
+        }
+
         try {
             process.destroy();
             boolean exited = process.waitFor(500, TimeUnit.MILLISECONDS);
             if (!exited) {
                 process.destroyForcibly();
                 process.waitFor(500, TimeUnit.MILLISECONDS);
-            }
-            try {
-                process.descendants().forEach(ProcessHandle::destroyForcibly);
-            } catch (Throwable ignored) {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -719,34 +830,92 @@ public class SocketIntegrationHarness {
             }
         } catch (Throwable ignored) {
         }
+
+        for (ProcessHandle ph : descendants) {
+            try {
+                if (ph.isAlive()) {
+                    ph.destroyForcibly();
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+
+        try {
+            process.descendants().forEach(ph -> {
+                try {
+                    if (ph.isAlive()) {
+                        ph.destroyForcibly();
+                    }
+                } catch (Throwable ignored) {
+                }
+            });
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            if (process.getInputStream() != null) {
+                process.getInputStream().close();
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (process.getOutputStream() != null) {
+                process.getOutputStream().close();
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (process.getErrorStream() != null) {
+                process.getErrorStream().close();
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     private static class ProcessOutputCapture {
         private final CompletableFuture<String> stdoutFuture;
         private final CompletableFuture<String> stderrFuture;
+        private final ByteArrayOutputStream stdoutBuffer = new ByteArrayOutputStream();
+        private final ByteArrayOutputStream stderrBuffer = new ByteArrayOutputStream();
 
         ProcessOutputCapture(Process process, ExecutorService executor) {
-            this.stdoutFuture = CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream()), executor);
-            this.stderrFuture = CompletableFuture.supplyAsync(() -> readLimited(process.getErrorStream()), executor);
+            this.stdoutFuture = CompletableFuture.supplyAsync(() -> readLimited(process.getInputStream(), stdoutBuffer), executor);
+            this.stderrFuture = CompletableFuture.supplyAsync(() -> readLimited(process.getErrorStream(), stderrBuffer), executor);
         }
 
         String getStdout() {
-            try {
-                return stdoutFuture.getNow("");
-            } catch (Exception e) {
-                return "";
+            if (stdoutFuture.isDone()) {
+                try {
+                    return stdoutFuture.get();
+                } catch (Exception ignored) {
+                }
+            }
+            synchronized (stdoutBuffer) {
+                return stdoutBuffer.toString(StandardCharsets.UTF_8);
             }
         }
 
         String getStderr() {
-            try {
-                return stderrFuture.getNow("");
-            } catch (Exception e) {
-                return "";
+            if (stderrFuture.isDone()) {
+                try {
+                    return stderrFuture.get();
+                } catch (Exception ignored) {
+                }
+            }
+            synchronized (stderrBuffer) {
+                return stderrBuffer.toString(StandardCharsets.UTF_8);
             }
         }
 
         String getCombinedOutput() {
+            try {
+                stderrFuture.get(300, TimeUnit.MILLISECONDS);
+            } catch (Exception ignored) {
+            }
+            try {
+                stdoutFuture.get(300, TimeUnit.MILLISECONDS);
+            } catch (Exception ignored) {
+            }
             String out = getStdout();
             String err = getStderr();
             if (err.isBlank()) return out;
@@ -754,20 +923,23 @@ public class SocketIntegrationHarness {
             return out + "\n" + err;
         }
 
-        private static String readLimited(InputStream in) {
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        private static String readLimited(InputStream in, ByteArrayOutputStream buffer) {
             byte[] chunk = new byte[4096];
             try {
                 int n;
                 while ((n = in.read(chunk)) != -1) {
-                    int room = MAX_OUTPUT_CAPTURE_BYTES - buffer.size();
-                    if (room > 0) {
-                        buffer.write(chunk, 0, Math.min(n, room));
+                    synchronized (buffer) {
+                        int room = MAX_OUTPUT_CAPTURE_BYTES - buffer.size();
+                        if (room > 0) {
+                            buffer.write(chunk, 0, Math.min(n, room));
+                        }
                     }
                 }
             } catch (IOException ignored) {
             }
-            return buffer.toString(StandardCharsets.UTF_8);
+            synchronized (buffer) {
+                return buffer.toString(StandardCharsets.UTF_8);
+            }
         }
     }
 

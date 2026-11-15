@@ -15,7 +15,7 @@ import { useUser } from "@/hooks/use-user";
 import { AdminNav } from "./admin-nav";
 import { PROBLEM_STATUS_TONE } from "./status";
 import { deleteProblem, fetchAdminProblems } from "@/lib/services";
-import type { Difficulty, Page, ProblemFull, ProblemLifecycle, ProblemScope, ProblemType } from "@/types/api";
+import type { Difficulty, Page, ProblemFull, ProblemLifecycle, ProblemType } from "@/types/api";
 
 const LIFECYCLES: { value: ProblemLifecycle; label: string }[] = [
   { value: "DRAFT", label: "Draft" },
@@ -24,15 +24,11 @@ const LIFECYCLES: { value: ProblemLifecycle; label: string }[] = [
   { value: "ARCHIVED", label: "Archived" },
 ];
 const DIFFICULTIES: Difficulty[] = ["EASY", "MEDIUM", "HARD"];
-const SCOPES: { value: Exclude<ProblemScope, "ALL">; label: string }[] = [
-  { value: "STANDALONE", label: "Standalone" },
-  { value: "COURSE", label: "In courses" },
-];
 const selectClass = "h-10 rounded-sm border border-border bg-card px-2.5 text-body-md text-ink";
 
 /**
- * /admin/problems: danh sách đề. Mặc định chỉ đề lẻ; đề nằm trong study plan / chủ đề xem ở "In courses"
- * và soạn ngay trong Course Builder. Bấm một dòng để mở trang soạn /admin/problems/[id].
+ * /admin/problems: standalone problems catalog. Course problems are authored
+ * directly within the Course Builder (/admin/study-plans/[slug]).
  */
 export function AdminProblemsView() {
   const ask = useConfirm();
@@ -46,26 +42,25 @@ export function AdminProblemsView() {
     const t = setTimeout(() => { setQ(text.trim()); setPage(1); }, 250);
     return () => clearTimeout(t);
   }, [text]);
-  const [scope, setScope] = useState<Exclude<ProblemScope, "ALL">>("STANDALONE");
   const [status, setStatus] = useState("");
   const [difficulty, setDifficulty] = useState("");
   const [type, setType] = useState<ProblemType | "">("");
   const [pending, setPending] = useState<number | null>(null);
   const { user } = useUser();
-  // Server chỉ cho ADMIN xoá (DELETE /api/v1/problems/** hasRole ADMIN) — INSTRUCTOR không thấy nút.
+  // Server only allows ADMIN to delete (DELETE /api/v1/problems/** hasRole ADMIN)
   const canDelete = user?.role === "ADMIN";
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setRes(await fetchAdminProblems({ page, q, status, difficulty, tags: [], type: type || undefined, scope }));
+      setRes(await fetchAdminProblems({ page, q, status, difficulty, tags: [], type: type || undefined, scope: "STANDALONE" }));
     } catch (e) {
       setError(errorMessage(e));
     } finally {
       setLoading(false);
     }
-  }, [page, q, status, difficulty, type, scope]);
+  }, [page, q, status, difficulty, type]);
 
   useEffect(() => {
     load();
@@ -96,16 +91,7 @@ export function AdminProblemsView() {
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
       <AdminNav />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-sm border border-border bg-card p-0.5" role="group" aria-label="Problem scope">
-          {SCOPES.map((s) => (
-            <button key={s.value} type="button" aria-pressed={scope === s.value} onClick={() => filter(setScope)(s.value)}
-              className={cn("h-8 rounded-[5px] px-3 text-body-sm text-mute transition-colors hover:text-ink",
-                scope === s.value && "bg-ink text-white hover:text-white")}>
-              {s.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative min-w-0 flex-1 basis-56">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
           <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Search" aria-label="Search problems"
@@ -134,7 +120,7 @@ export function AdminProblemsView() {
       )}
 
       <section aria-label="Problem administration" className="overflow-hidden rounded-xl border border-border bg-card">
-        <div className="hidden items-center gap-3 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-mute md:grid md:grid-cols-[56px_minmax(0,1fr)_104px_96px_56px_72px]">
+        <div className="hidden items-center gap-3 border-b border-border bg-muted/30 px-5 py-3 font-sans text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 md:grid md:grid-cols-[56px_minmax(0,1fr)_104px_110px_60px_72px]">
           <span>ID</span><span>Title</span><span>Status</span><span>Difficulty</span><span>Tests</span><span />
         </div>
 
@@ -148,26 +134,38 @@ export function AdminProblemsView() {
           const s = (p.status ?? "DRAFT") as ProblemLifecycle;
           return (
             <div key={p.id}
-              className="grid grid-cols-1 items-center gap-2 border-t border-border px-5 py-3 transition-colors hover:bg-hairline-soft/60 md:grid-cols-[56px_minmax(0,1fr)_104px_96px_56px_72px] md:gap-3">
-              <span className="font-mono text-body-sm text-mute">{p.id}</span>
+              className="grid grid-cols-1 items-center gap-2 border-t border-border px-5 py-3.5 transition-colors hover:bg-hairline-soft/60 md:grid-cols-[56px_minmax(0,1fr)_104px_110px_60px_72px] md:gap-3">
+              <span className="font-sans text-sm font-medium text-zinc-500">{p.id}</span>
               <span className="min-w-0">
-                <span className="flex min-w-0 items-baseline gap-2">
-                <Link href={`/admin/problems/${p.id}`} className="min-w-0 truncate text-body-md text-ink hover:text-link">
-                  {p.title}</Link>
-                  <span className="shrink-0 font-mono text-[10px] font-semibold text-mute">{p.type === "OOP_GRINDING" ? "OOP" : "DSA"}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <Link href={`/admin/problems/${p.id}`} className="min-w-0 truncate font-sans text-sm font-medium text-ink hover:text-link">
+                    {p.title}
+                  </Link>
+                  <span className={cn(
+                    "inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-xs font-medium border",
+                    p.type === "OOP_GRINDING"
+                      ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-400"
+                      : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800/40 dark:bg-blue-950/30 dark:text-blue-400"
+                  )}>
+                    {p.type === "OOP_GRINDING" ? "OOP" : "DSA"}
+                  </span>
                 </span>
-                {p.tags.length > 0 && <span className="mt-0.5 block truncate text-body-sm text-mute">{p.tags.slice(0, 4).join(" · ")}</span>}
+                {p.tags.length > 0 && (
+                  <span className="mt-1 block truncate font-sans text-xs text-zinc-500 dark:text-zinc-400">
+                    {p.tags.slice(0, 4).join(" · ")}
+                  </span>
+                )}
               </span>
-              <span><Badge variant={PROBLEM_STATUS_TONE[s]} className="font-mono text-[11px]">{s}</Badge></span>
+              <span><Badge variant={PROBLEM_STATUS_TONE[s]} className="font-sans text-xs font-medium">{s}</Badge></span>
               <span><DifficultyBadge value={p.difficulty} /></span>
-              <span className="font-mono text-body-sm text-mute">{p.testCaseCount ?? 0}</span>
+              <span className="font-sans text-sm text-zinc-600 dark:text-zinc-400">{p.testCaseCount ?? 0}</span>
               <span className="flex items-center gap-1 md:justify-end">
                 <Button size="icon-sm" variant="ghost" asChild>
                   <Link href={`/problems/${p.slug}`} target="_blank" aria-label={`View ${p.title}`} title="View"><ExternalLink className="h-3.5 w-3.5" /></Link>
                 </Button>
                 {canDelete && (
                   <Button size="icon-sm" variant="ghost" disabled={pending === p.id} onClick={() => remove(p)}
-                    aria-label={`Delete ${p.title}`} title="Delete" className="text-mute hover:text-destructive">
+                    aria-label={`Delete ${p.title}`} title="Delete" className="text-zinc-400 hover:text-destructive">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}

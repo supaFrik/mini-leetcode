@@ -100,6 +100,11 @@ coverage/
 .nyc_output/
 *.lcov
 
+# AI agent temporary workspaces and caches
+.claude/
+**/.claude/
+/.agents/
+
 # Playwright (e2e) artifacts
 **/playwright-report/
 **/test-results/
@@ -113,13 +118,13 @@ coverage/
 /b*.log
 
 temp-submissions/
+**/temp-submissions/
 # Workspace của các phiên console OOP (judge worker bind-mount ra host).
 temp-console/
+**/temp-console/
 runner-tmp/
 *.tmp
 *.temp
-/docs/history/
-/.agents/
 docs/generate_docx.py
 
 # local scratch/utility scripts (not tracked)
@@ -132,8 +137,7 @@ graphify-out/
 backend/tools/*/cases/
 
 # seed sinh bằng backend/tools/problems/seed_sql.py từ problems.json và statements/*.md
-backend/tools/seed-problems.sql
-backend/tools/seed-mini-bank-project.sql
+backend/tools/seed-*.sql
 
 # ZIP plugin IntelliJ chép bằng `npm run plugin:copy` (bản build, không commit)
 frontend/public/downloads/*.zip

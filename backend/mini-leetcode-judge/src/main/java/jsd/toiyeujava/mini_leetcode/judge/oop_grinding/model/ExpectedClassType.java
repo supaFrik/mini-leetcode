@@ -6,5 +6,6 @@ public enum ExpectedClassType {
     ABSTRACT_CLASS,
     INTERFACE,
     ENUM,
-    RECORD
+    RECORD,
+    ABSTRACT_CLASS_OR_INTERFACE
 }

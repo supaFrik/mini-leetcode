@@ -150,6 +150,9 @@ public class GradingConfigValidator {
         if (rule.getWeight() < 0) {
             errors.add(path + ".weight: must not be negative");
         }
+        if (rule.getMinClassCount() != null && rule.getMinClassCount() < 1) {
+            errors.add(path + ".minClassCount: must be at least 1");
+        }
         checkModifiers(rule.getRequiredModifiers(), path + ".requiredModifiers", errors);
         checkModifiers(rule.getForbiddenModifiers(), path + ".forbiddenModifiers", errors);
         checkChildren(node.get("fields"), path + ".fields", OopFieldConstraint.class, errors);

@@ -1,28 +1,75 @@
 import { cn } from "@/lib/utils";
 import type { Difficulty } from "@/types/api";
 
-/**
- * Difficulty keeps its semantic colours — a learner reads green/amber/red
- * instantly, and folding it into the ink ladder would cost that signal. The
- * colours are desaturated to sit on the near-white canvas without shouting.
- */
-const STYLE: Record<Difficulty, string> = {
-  EASY: "border-easy/25 bg-easy/10 text-easy",
-  MEDIUM: "border-medium/25 bg-medium/10 text-[#8a5a00]",
-  HARD: "border-hard/25 bg-hard/10 text-hard",
+const RANK: Record<Difficulty, number> = {
+  EASY: 1,
+  MEDIUM: 2,
+  HARD: 3,
 };
-const LABEL: Record<Difficulty, string> = { EASY: "Easy", MEDIUM: "Medium", HARD: "Hard" };
 
-export function DifficultyBadge({ value, className }: { value: Difficulty; className?: string }) {
+const LABEL: Record<Difficulty, string> = {
+  EASY: "Easy",
+  MEDIUM: "Medium",
+  HARD: "Hard",
+};
+
+/**
+ * Text color for each difficulty level:
+ * Easy -> Emerald / Green
+ * Medium -> Amber / Orange (matches the screenshot text)
+ * Hard -> Red / Rose
+ */
+const TEXT_COLOR: Record<Difficulty, string> = {
+  EASY: "text-emerald-600 dark:text-emerald-500",
+  MEDIUM: "text-amber-600 dark:text-amber-500",
+  HARD: "text-red-600 dark:text-red-500",
+};
+
+export function DifficultyBadge({
+  value,
+  className,
+}: {
+  value: Difficulty | string;
+  className?: string;
+}) {
+  const normalized = (value ? String(value).toUpperCase() : "EASY") as Difficulty;
+  const rank = RANK[normalized] ?? 1;
+  const label = LABEL[normalized] ?? value;
+  const textColor = TEXT_COLOR[normalized] ?? "text-muted-foreground";
+
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-full border px-2.5 py-0.5 font-mono text-body-sm font-medium",
-        STYLE[value],
+        "inline-flex shrink-0 items-center gap-1.5 font-sans text-[13px] font-medium leading-none select-none",
+        textColor,
         className
       )}
+      aria-label={`Difficulty: ${label}`}
     >
-      {LABEL[value]}
+      <span className="flex items-end gap-[2px] h-[14px]" aria-hidden="true">
+        <span
+          className={cn(
+            "inline-block w-1 rounded-[1px] transition-colors",
+            "h-[6px]",
+            rank >= 1 ? "bg-current" : "bg-[#cdd2d8] dark:bg-neutral-700"
+          )}
+        />
+        <span
+          className={cn(
+            "inline-block w-1 rounded-[1px] transition-colors",
+            "h-[10px]",
+            rank >= 2 ? "bg-current" : "bg-[#cdd2d8] dark:bg-neutral-700"
+          )}
+        />
+        <span
+          className={cn(
+            "inline-block w-1 rounded-[1px] transition-colors",
+            "h-[14px]",
+            rank >= 3 ? "bg-current" : "bg-[#cdd2d8] dark:bg-neutral-700"
+          )}
+        />
+      </span>
+      <span>{label}</span>
     </span>
   );
 }

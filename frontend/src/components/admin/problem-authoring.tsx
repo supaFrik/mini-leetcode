@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ConsolePanel } from "@/components/workspace/console-panel";
 import { ApiError, errorMessage } from "@/lib/api";
@@ -633,6 +635,138 @@ const EXAMPLE_CONFIG = `{
 }
 `;
 
+export const PRESET_RULE_IDS = {
+  ENCAPSULATION: "preset-encapsulation",
+  POLYMORPHISM: "preset-polymorphism",
+  ANTI_MONOLITHIC: "preset-anti-monolithic",
+} as const;
+
+export interface QuickPresetsState {
+  encapsulation: boolean;
+  polymorphism: boolean;
+  antiMonolithic: boolean;
+  targetClassName: string;
+}
+
+export function parsePresetsFromJson(rawJson: string): QuickPresetsState {
+  if (!rawJson || !rawJson.trim()) {
+    return { encapsulation: false, polymorphism: false, antiMonolithic: false, targetClassName: "" };
+  }
+  try {
+    const data = JSON.parse(rawJson);
+    const rules: Array<Record<string, unknown>> = Array.isArray(data?.rules) ? data.rules : [];
+
+    const encRule = rules.find(
+      (r) =>
+        r?.ruleId === PRESET_RULE_IDS.ENCAPSULATION ||
+        (r?.enforceEncapsulation === true && (r?.targetClassName === "*" || (typeof r?.ruleId === "string" && r.ruleId.includes("encapsulation"))))
+    );
+    const polyRule = rules.find(
+      (r) =>
+        r?.ruleId === PRESET_RULE_IDS.POLYMORPHISM ||
+        r?.ruleId === "preset-polymorphism-abstraction" ||
+        (typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("polymorphism") || r.ruleName.toLowerCase().includes("đa hình")))
+    );
+    const antiMonoRule = rules.find(
+      (r) =>
+        r?.ruleId === PRESET_RULE_IDS.ANTI_MONOLITHIC ||
+        (typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("monolithic") || r.ruleName.toLowerCase().includes("monolith")))
+    );
+
+    let target = "";
+    if (typeof encRule?.targetClassName === "string" && encRule.targetClassName !== "*") {
+      target = encRule.targetClassName;
+    } else if (typeof polyRule?.targetClassName === "string" && polyRule.targetClassName !== "*") {
+      target = polyRule.targetClassName;
+    }
+
+    return {
+      encapsulation: !!encRule,
+      polymorphism: !!polyRule,
+      antiMonolithic: !!antiMonoRule,
+      targetClassName: target,
+    };
+  } catch {
+    return { encapsulation: false, polymorphism: false, antiMonolithic: false, targetClassName: "" };
+  }
+}
+
+export function buildJsonFromPresets(presets: QuickPresetsState, currentJson: string): string {
+  let existingData: { rules?: Array<Record<string, unknown>>; socketScenarios?: unknown[]; output?: unknown } = {};
+  if (currentJson && currentJson.trim()) {
+    try {
+      const parsed = JSON.parse(currentJson);
+      if (typeof parsed === "object" && parsed !== null) existingData = parsed;
+    } catch {
+      existingData = {};
+    }
+  }
+
+  // Preserve non-preset custom rules
+  const existingRules = Array.isArray(existingData.rules)
+    ? existingData.rules.filter(
+        (r) =>
+          r?.ruleId !== PRESET_RULE_IDS.ENCAPSULATION &&
+          r?.ruleId !== PRESET_RULE_IDS.POLYMORPHISM &&
+          r?.ruleId !== "preset-polymorphism-abstraction" &&
+          r?.ruleId !== PRESET_RULE_IDS.ANTI_MONOLITHIC &&
+          !(r?.enforceEncapsulation === true && (r?.targetClassName === "*" || (typeof r?.ruleId === "string" && r.ruleId.includes("encapsulation")))) &&
+          !(typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("polymorphism") || r.ruleName.toLowerCase().includes("đa hình"))) &&
+          !(typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("monolithic") || r.ruleName.toLowerCase().includes("monolith")))
+      )
+    : [];
+
+  const target = presets.targetClassName.trim() || "*";
+  const newPresetRules: Array<Record<string, unknown>> = [];
+
+  if (presets.encapsulation) {
+    newPresetRules.push({
+      ruleId: PRESET_RULE_IDS.ENCAPSULATION,
+      ruleName: "Enforce Encapsulation",
+      description: "All fields must be declared private or protected, except static constants.",
+      targetClassName: target,
+      expectedType: "ANY",
+      enforceEncapsulation: true,
+      weight: 1.0,
+    });
+  }
+
+  if (presets.polymorphism) {
+    newPresetRules.push({
+      ruleId: PRESET_RULE_IDS.POLYMORPHISM,
+      ruleName: "Require Polymorphism / Abstraction",
+      description: "Solution design must declare at least one Interface or Abstract Class.",
+      targetClassName: target,
+      expectedType: "ANY",
+      weight: 1.0,
+    });
+  }
+
+  if (presets.antiMonolithic) {
+    newPresetRules.push({
+      ruleId: PRESET_RULE_IDS.ANTI_MONOLITHIC,
+      ruleName: "Decouple Logic from main()",
+      description: "Program must have at least 2 classes; main method must not hold all business logic.",
+      targetClassName: "*",
+      weight: 1.0,
+    });
+  }
+
+  const combinedRules = [...existingRules, ...newPresetRules];
+  const hasScenarios = Array.isArray(existingData.socketScenarios) && existingData.socketScenarios.length > 0;
+  const hasOutput = existingData.output && typeof existingData.output === "object" && Object.keys(existingData.output).length > 0;
+
+  if (combinedRules.length === 0 && !hasScenarios && !hasOutput) {
+    return "";
+  }
+
+  const resultObj: Record<string, unknown> = { rules: combinedRules };
+  if (hasScenarios) resultObj.socketScenarios = existingData.socketScenarios;
+  if (hasOutput) resultObj.output = existingData.output;
+
+  return JSON.stringify(resultObj, null, 2);
+}
+
 export function GradingPanel({
   problemId,
   authoring,
@@ -652,12 +786,15 @@ export function GradingPanel({
     }
   }, [saved]);
   const [text, setText] = useState(pretty);
+  const [presets, setPresets] = useState<QuickPresetsState>(() => parsePresetsFromJson(pretty));
+  const [mode, setMode] = useState<"presets" | "raw">("presets");
   const [validation, setValidation] = useState<GradingValidation | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState<"validate" | "save" | null>(null);
 
   useEffect(() => {
     setText(pretty);
+    setPresets(parsePresetsFromJson(pretty));
     setValidation(null);
     setErrors([]);
   }, [pretty]);
@@ -665,13 +802,38 @@ export function GradingPanel({
   const dirty = text.trim() !== pretty.trim();
   const readOnly = authoring.gradingFrozen;
 
+  const updatePresets = (patch: Partial<QuickPresetsState>) => {
+    const next: QuickPresetsState = { ...presets, ...patch };
+    setPresets(next);
+    const nextJson = buildJsonFromPresets(next, text);
+    setText(nextJson);
+    setValidation(null);
+    setErrors([]);
+  };
+
+  const handleJsonChange = (val: string) => {
+    setText(val);
+    setPresets(parsePresetsFromJson(val));
+    setValidation(null);
+    setErrors([]);
+  };
+
   const format = () => {
     try {
-      setText(JSON.stringify(JSON.parse(text), null, 2));
+      const formatted = JSON.stringify(JSON.parse(text), null, 2);
+      setText(formatted);
+      setPresets(parsePresetsFromJson(formatted));
       setErrors([]);
     } catch (e) {
       setErrors([`Not valid JSON: ${(e as Error).message}`]);
     }
+  };
+
+  const insertExample = () => {
+    setText(EXAMPLE_CONFIG);
+    setPresets(parsePresetsFromJson(EXAMPLE_CONFIG));
+    setValidation(null);
+    setErrors([]);
   };
 
   const validate = async () => {
@@ -704,18 +866,142 @@ export function GradingPanel({
     }
   };
 
+  const activePresetCount =
+    (presets.encapsulation ? 1 : 0) +
+    (presets.polymorphism ? 1 : 0) +
+    (presets.antiMonolithic ? 1 : 0);
+
   return (
     <div className="space-y-4">
       {readOnly && <FrozenNotice what="grading rules" />}
-      <div className="space-y-1 text-body-sm text-mute">
-        <p>
-          Structural rules are checked by reflection on the compiled classes (the student&apos;s code is not run for
-          this). Score weights: rules <strong className="text-ink">40%</strong> + stdin/stdout test cases{" "}
-          <strong className="text-ink">60%</strong>; with socket scenarios 30 / 40 / 30. A part that has nothing configured
-          is skipped.
-        </p>
-        <p>Students never see this configuration.</p>
+      <p className="max-w-[70ch] text-body-xs text-mute">
+        Structural reflection rules (40%) and test cases (60%). Evaluated securely in judge sandbox.
+      </p>
+
+      <div className="border-b border-border pb-1">
+        <Tabs value={mode} onValueChange={(v) => setMode(v as "presets" | "raw")} className="w-full">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <TabsList className="border-0">
+              <TabsTrigger value="presets" className="gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" />
+                Quick Presets
+                {activePresetCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px] font-normal">
+                    {activePresetCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="raw" className="gap-1.5">
+                <FileCode className="h-3.5 w-3.5" />
+                Raw JSON (Advanced)
+              </TabsTrigger>
+            </TabsList>
+            <div className="flex items-center gap-1.5 text-body-xs text-mute">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-success/80" />
+              <span>Two-way JSON sync</span>
+            </div>
+          </div>
+        </Tabs>
       </div>
+
+      {mode === "presets" && (
+        <div className="space-y-4 rounded-sm border border-border bg-card p-4 shadow-hairline">
+          <div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-body-md font-medium text-ink">OOP Presets</h3>
+              <Badge variant="outline" className="text-body-xs text-mute">
+                {activePresetCount} of 3 active
+              </Badge>
+            </div>
+            <p className="mt-0.5 text-body-xs text-mute">
+              Toggle common OOP structural constraints. The JSON configuration updates in real time.
+            </p>
+          </div>
+
+          <div className="space-y-3 pt-1">
+            {/* Encapsulation */}
+            <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-border/60 bg-background/50 p-3 transition-colors hover:border-border">
+              <input
+                type="checkbox"
+                aria-label="Preset Encapsulation"
+                checked={presets.encapsulation}
+                disabled={readOnly}
+                onChange={(e) => updatePresets({ encapsulation: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+              />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-body-sm font-medium text-ink">Enforce Encapsulation</span>
+                  <Badge variant="secondary" className="font-mono text-xs">preset-encapsulation</Badge>
+                </div>
+                <p className="text-body-xs text-mute">
+                  All fields must be <code>private</code> or <code>protected</code>. No <code>public</code> fields allowed (except <code>static final</code> constants).
+                </p>
+              </div>
+            </label>
+
+            {/* Polymorphism / Abstraction */}
+            <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-border/60 bg-background/50 p-3 transition-colors hover:border-border">
+              <input
+                type="checkbox"
+                aria-label="Preset Polymorphism"
+                checked={presets.polymorphism}
+                disabled={readOnly}
+                onChange={(e) => updatePresets({ polymorphism: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+              />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-body-sm font-medium text-ink">Require Polymorphism / Abstraction</span>
+                  <Badge variant="secondary" className="font-mono text-xs">preset-polymorphism</Badge>
+                </div>
+                <p className="text-body-xs text-mute">
+                  Requires at least one <code>interface</code> or <code>abstract class</code> in the solution.
+                </p>
+              </div>
+            </label>
+
+            {/* Anti-Monolithic */}
+            <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-border/60 bg-background/50 p-3 transition-colors hover:border-border">
+              <input
+                type="checkbox"
+                aria-label="Preset Anti-Monolithic"
+                checked={presets.antiMonolithic}
+                disabled={readOnly}
+                onChange={(e) => updatePresets({ antiMonolithic: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+              />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-body-sm font-medium text-ink">Decouple Logic from main()</span>
+                  <Badge variant="secondary" className="font-mono text-xs">preset-anti-monolithic</Badge>
+                </div>
+                <p className="text-body-xs text-mute">
+                  Requires at least 2 classes. The <code>main</code> method must delegate business logic to domain classes.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {/* Target class input */}
+          <div className="space-y-1.5 border-t border-border/60 pt-2">
+            <label htmlFor="target-class-input" className="block text-body-sm font-medium text-ink">
+              Target Class / Interface (Optional)
+            </label>
+            <Input
+              id="target-class-input"
+              value={presets.targetClassName}
+              disabled={readOnly}
+              placeholder="e.g. Account (leave blank for wildcard *)"
+              onChange={(e) => updatePresets({ targetClassName: e.target.value })}
+              className="max-w-md font-mono text-xs"
+            />
+            <p className="text-body-xs text-mute">
+              Applies to Encapsulation &amp; Polymorphism rules. If blank, applies to all classes (wildcard <code>*</code>).
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -725,7 +1011,7 @@ export function GradingPanel({
           {!readOnly && (
             <div className="flex flex-wrap items-center gap-1">
               {!text.trim() && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setText(EXAMPLE_CONFIG)}>
+                <Button type="button" variant="ghost" size="sm" onClick={insertExample}>
                   <Copy className="h-4 w-4" />
                   Insert example
                 </Button>
@@ -740,11 +1026,8 @@ export function GradingPanel({
           id="grading-json"
           value={text}
           readOnly={readOnly}
-          onChange={(e) => {
-            setText(e.target.value);
-            setValidation(null);
-          }}
-          rows={20}
+          onChange={(e) => handleJsonChange(e.target.value)}
+          rows={mode === "presets" ? 12 : 20}
           spellCheck={false}
           placeholder='{ "rules": [ { "targetClassName": "Account", "expectedType": "CLASS" } ] }'
           className="rounded-sm bg-card font-mono text-xs text-ink"
@@ -859,10 +1142,8 @@ export function ReferencePanel({
 
   return (
     <div className="space-y-4">
-      <p className="text-body-sm text-mute">
-        The reference solution is your own working program. It generates expected outputs for test cases (in the judge
-        sandbox, with this problem&apos;s {authoring.timeLimitMs} ms / {authoring.memoryLimitMb} MB limits) and is never
-        shown to students.
+      <p className="max-w-[70ch] text-body-xs text-mute">
+        Working reference program used to generate expected outputs in the judge sandbox ({authoring.timeLimitMs} ms / {authoring.memoryLimitMb} MB).
       </p>
 
       {files.length === 0 ? (
