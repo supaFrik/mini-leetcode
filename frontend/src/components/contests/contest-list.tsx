@@ -119,7 +119,7 @@ export function ContestList() {
     if (!pastIds) return;
     let off = false;
     // shortcut: one leaderboard request per past contest; add participantCount to the contest API if the list grows.
-    Promise.all(pastIds.split(",").map((id) => fetchLeaderboard(Number(id)).then((rows) => [Number(id), rows.length] as const).catch(() => null)))
+    void Promise.all(pastIds.split(",").map((id) => fetchLeaderboard(Number(id)).then((rows) => [Number(id), rows.length] as const).catch(() => null)))
       .then((pairs) => !off && setParticipants(Object.fromEntries(pairs.filter((x) => x !== null))));
     return () => {
       off = true;

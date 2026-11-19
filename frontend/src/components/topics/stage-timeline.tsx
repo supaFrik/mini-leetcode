@@ -22,11 +22,15 @@ export function topicHref(slug: string, planSlug: string, stageNo: number) {
 
 /** "Mini Bank 2/5 — Kế thừa & đa hình" ⇒ "Kế thừa & đa hình" (tiêu đề đề thường lặp lại số stage; bỏ mọi dấu ngăn sau "N/M"). */
 // RegExp constructor: tsconfig target does not allow the `u` flag in a regex literal.
-const STAGE_PREFIX = new RegExp("^.*?\\d+\\s*/\\s*\\d+[^\\p{L}\\p{N}]*", "u");
+// Matches from the last digit before "/" (no lazy ".*?" + "\d+" overlap), so the search is linear.
+const STAGE_NUMBER = new RegExp("\\d\\s*/\\s*\\d+[^\\p{L}\\p{N}]*", "u");
 
 export function stageName(stage: Pick<StudyPlanStage, "title" | "problemId">) {
   const title = stage.title ?? `Problem #${stage.problemId}`;
-  return title.replace(STAGE_PREFIX, "") || title;
+  const m = STAGE_NUMBER.exec(title);
+  // Prefix must sit on the first line, as the old "^.*?" required.
+  const ok = m && /^.*$/.test(title.slice(0, m.index));
+  return (ok ? title.slice(m.index + m[0].length) : title) || title;
 }
 
 // SKIPPED đã có nhãn "Skipped" + Undo cạnh tên chủ đề.
