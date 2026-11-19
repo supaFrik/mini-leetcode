@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jsd.toiyeujava.mini_leetcode.problem.service.TagService;
 import jsd.toiyeujava.mini_leetcode.problem.service.TagService.AdminTag;
 import org.springframework.http.HttpStatus;
@@ -25,10 +24,10 @@ public class AdminTagController {
         this.tagService = tagService;
     }
 
-    public record CreateTagRequest(@NotBlank String name, @NotNull jsd.toiyeujava.mini_leetcode.problem.entity.Tag.Category category) {
+    public record CreateTagRequest(@NotBlank String name, @NotBlank String category) {
     }
 
-    public record UpdateTagRequest(@NotNull jsd.toiyeujava.mini_leetcode.problem.entity.Tag.Category category) {
+    public record UpdateTagRequest(@NotBlank String category) {
     }
 
     @GetMapping

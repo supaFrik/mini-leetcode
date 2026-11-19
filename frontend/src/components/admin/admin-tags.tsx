@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConfirm } from "@/components/ui/confirm";
 import { errorMessage } from "@/lib/api";
-import { createTag, deleteTag, fetchAdminTags, updateTagCategory } from "@/lib/services";
+import {
+  createTag, createTagCategory, deleteTag, deleteTagCategory, fetchAdminTags, fetchTagCategories, updateTagCategory,
+  updateTagCategoryInfo,
+} from "@/lib/services";
 import { toast } from "@/lib/toast";
-import { TAG_CATEGORIES, type AdminTag, type TagCategory } from "@/types/api";
+import type { AdminTag, TagCategory, TagCategoryInfo } from "@/types/api";
 
 const selectClass = "h-9 rounded-sm border border-border bg-card px-2 text-body-md text-ink";
 
@@ -16,14 +19,41 @@ export function AdminTagsView() {
   const [tags, setTags] = useState<AdminTag[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<TagCategory>("DSA");
+  const [category, setCategory] = useState<TagCategory>("Other");
+  const [cats, setCats] = useState<TagCategoryInfo[]>([]);
+  const [catName, setCatName] = useState("");
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
 
   const reload = () =>
-    fetchAdminTags()
-      .then((data) => { setTags(data); setError(null); })
+    Promise.all([fetchAdminTags(), fetchTagCategories()])
+      .then(([data, c]) => { setTags(data); setCats(c); setError(null); })
       .catch((e) => setError(errorMessage(e)));
+
+  // Thao tác nhóm: lỗi thì báo, luôn tải lại cả nhóm lẫn chủ đề (đổi tên/xoá nhóm ảnh hưởng chủ đề).
+  const catAction = async (run: () => Promise<unknown>, done?: string) => {
+    try {
+      await run();
+      if (done) toast(done, "success");
+    } catch (err) {
+      toast(errorMessage(err), "error");
+    }
+    await reload();
+  };
+  const addCat = (e: React.FormEvent) => {
+    e.preventDefault();
+    const n = catName.trim();
+    if (!n) return;
+    setCatName("");
+    catAction(() => createTagCategory({ name: n }), `Category "${n}" added.`);
+  };
+  const removeCat = async (c: TagCategoryInfo) => {
+    const ok = await confirm({
+      title: `Delete category "${c.name}"?`, action: "Delete", destructive: true,
+      description: "Its tags move to Other.",
+    });
+    if (ok) catAction(() => deleteTagCategory(c.id), `Category "${c.name}" deleted.`);
+  };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { reload(); }, []);
 
@@ -71,11 +101,49 @@ export function AdminTagsView() {
         <form onSubmit={add} className="flex items-center gap-2" aria-label="Add tag">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="New tag name" maxLength={50} aria-label="Tag name" className="w-56" />
           <select value={category} onChange={(e) => setCategory(e.target.value as TagCategory)} aria-label="Category for new tag" className={selectClass}>
-            {TAG_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            {cats.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
           </select>
           <Button type="submit" disabled={busy || !name.trim()}><Plus className="h-4 w-4" />Add tag</Button>
         </form>
       </div>
+
+      <section className="rounded-sm border border-border bg-card p-4" aria-label="Categories">
+        <div className="flex flex-wrap items-center gap-2">
+          {cats.map((c) => (
+            <div key={c.id} className="flex items-center gap-1.5 rounded-sm border border-border px-2 py-1">
+              <input
+                type="color" value={c.color} aria-label={`Color for ${c.name}`}
+                onChange={(e) => setCats((l) => l.map((x) => (x.id === c.id ? { ...x, color: e.target.value } : x)))}
+                onBlur={(e) => catAction(() => updateTagCategoryInfo(c.id, { color: e.target.value }))}
+                className="h-5 w-5 cursor-pointer rounded-sm border-0 bg-transparent p-0"
+              />
+              {c.name === "Other" ? (
+                <span className="px-1 text-body-md text-ink">{c.name}</span>
+              ) : (
+                <input
+                  defaultValue={c.name} aria-label={`Rename ${c.name}`} maxLength={50}
+                  onBlur={(e) => {
+                    const n = e.target.value.trim();
+                    if (n && n !== c.name) catAction(() => updateTagCategoryInfo(c.id, { name: n }));
+                    else e.target.value = c.name;
+                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                  className="w-28 bg-transparent px-1 text-body-md text-ink outline-none focus:underline"
+                />
+              )}
+              {c.name !== "Other" && (
+                <button type="button" onClick={() => removeCat(c)} aria-label={`Delete category ${c.name}`} className="text-mute hover:text-destructive">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+          <form onSubmit={addCat} className="flex items-center gap-1" aria-label="Add category">
+            <Input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="New category" maxLength={50} aria-label="Category name" className="h-8 w-36" />
+            <Button type="submit" variant="ghost" size="icon" disabled={!catName.trim()} aria-label="Add category"><Plus className="h-4 w-4" /></Button>
+          </form>
+        </div>
+      </section>
 
       <div className="overflow-hidden rounded-sm border border-border bg-card" role="region" aria-label="Tags">
         {error && <p className="p-6 text-body-md text-destructive" role="alert">{error}</p>}
@@ -97,7 +165,7 @@ export function AdminTagsView() {
                   <td className="px-4 py-2 font-medium text-ink">{t.name}</td>
                   <td className="px-4 py-2">
                     <select value={t.category} onChange={(e) => regroup(t, e.target.value as TagCategory)} aria-label={`Category for ${t.name}`} className={selectClass}>
-                      {TAG_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                      {cats.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                     </select>
                   </td>
                   <td className="px-4 py-2 text-right font-mono text-mute">{t.problemCount}</td>

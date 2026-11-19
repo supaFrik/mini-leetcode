@@ -70,10 +70,10 @@ class TagsRankingPagesIntegrationTest {
     @DisplayName("V17 pre-registers seed tags with their group, so a fresh DB does not show them as OTHER")
     void seedTagCatalog() {
         // Not in any migration's problem_tags, only in backend/tools seed data.
-        assertThat(tagRepository.findByNameIgnoreCase("Socket")).get().extracting(Tag::getCategory).isEqualTo(Tag.Category.JAVA_CORE);
-        assertThat(tagRepository.findByNameIgnoreCase("Networking")).get().extracting(Tag::getCategory).isEqualTo(Tag.Category.JAVA_CORE);
-        assertThat(tagRepository.findByNameIgnoreCase("Design Patterns")).get().extracting(Tag::getCategory).isEqualTo(Tag.Category.OOP);
-        assertThat(tagRepository.findByNameIgnoreCase("Sliding Window")).get().extracting(Tag::getCategory).isEqualTo(Tag.Category.DSA);
+        assertThat(tagRepository.findByNameIgnoreCase("Socket")).get().extracting(Tag::getCategory).isEqualTo("Java Core");
+        assertThat(tagRepository.findByNameIgnoreCase("Networking")).get().extracting(Tag::getCategory).isEqualTo("Java Core");
+        assertThat(tagRepository.findByNameIgnoreCase("Design Patterns")).get().extracting(Tag::getCategory).isEqualTo("OOP");
+        assertThat(tagRepository.findByNameIgnoreCase("Sliding Window")).get().extracting(Tag::getCategory).isEqualTo("DSA");
         // Already inserted by V15 from V3's problem_tags: V17 must not duplicate it.
         assertThat(tagRepository.findAll().stream().filter(t -> t.getName().equals("Array")).count()).isEqualTo(1);
     }
@@ -91,15 +91,15 @@ class TagsRankingPagesIntegrationTest {
         // Tag only used by a problem: listed as OTHER, can be regrouped.
         mockMvc.perform(get("/api/v1/admin/tags").header("Authorization", token(admin)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.name == 'Zeta Topic')].category").value("OTHER"))
+                .andExpect(jsonPath("$[?(@.name == 'Zeta Topic')].category").value("Other"))
                 .andExpect(jsonPath("$[?(@.name == 'Zeta Topic')].problemCount").value(1));
         mockMvc.perform(put("/api/v1/admin/tags/{name}", "Zeta Topic").header("Authorization", token(admin))
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"category\":\"SPRING_BOOT\"}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"category\":\"spring boot\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.category").value("SPRING_BOOT"));
+                .andExpect(jsonPath("$.category").value("Spring Boot"));
         mockMvc.perform(get("/api/v1/problems/tags"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.tag == 'Zeta Topic')].category").value("SPRING_BOOT"));
+                .andExpect(jsonPath("$[?(@.tag == 'Zeta Topic')].category").value("Spring Boot"));
 
         // Create, duplicate, delete.
         mockMvc.perform(post("/api/v1/admin/tags").header("Authorization", token(admin))
@@ -110,10 +110,63 @@ class TagsRankingPagesIntegrationTest {
         mockMvc.perform(post("/api/v1/admin/tags").header("Authorization", token(admin))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"fresh tag\",\"category\":\"OOP\"}"))
                 .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/v1/admin/tags").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Odd\",\"category\":\"Nope\"}"))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(delete("/api/v1/admin/tags/{name}", "Zeta Topic").header("Authorization", token(admin)))
                 .andExpect(status().isConflict());
         mockMvc.perform(delete("/api/v1/admin/tags/{name}", "Fresh Tag").header("Authorization", token(admin)))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Tag categories: public list, ADMIN CRUD, rename cascades to tags, delete falls back to Other")
+    void categoryCrud() throws Exception {
+        User admin = user("cat_admin", Role.ADMIN);
+        User instructor = user("cat_instructor", Role.INSTRUCTOR);
+        problem("cat-p1", admin, List.of("Cat Topic"));
+
+        mockMvc.perform(get("/api/v1/tag-categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.name == 'Testing')].color").value("#db2777"))
+                .andExpect(jsonPath("$[-1].name").value("Other"));
+        mockMvc.perform(post("/api/v1/admin/tag-categories").header("Authorization", token(instructor))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Cloud\"}"))
+                .andExpect(status().isForbidden());
+
+        String body = mockMvc.perform(post("/api/v1/admin/tag-categories").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\" Cloud \",\"color\":\"#00AAFF\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Cloud"))
+                .andExpect(jsonPath("$.color").value("#00aaff"))
+                .andReturn().getResponse().getContentAsString();
+        long id = ((Number) com.jayway.jsonpath.JsonPath.read(body, "$.id")).longValue();
+        mockMvc.perform(post("/api/v1/admin/tag-categories").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"cloud\"}"))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/v1/admin/tag-categories").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Bad\",\"color\":\"red\"}"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(put("/api/v1/admin/tags/{name}", "Cat Topic").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"category\":\"Cloud\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/api/v1/admin/tag-categories/{id}", id).header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Cloud Native\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/admin/tags").header("Authorization", token(admin)))
+                .andExpect(jsonPath("$[?(@.name == 'Cat Topic')].category").value("Cloud Native"));
+
+        mockMvc.perform(delete("/api/v1/admin/tag-categories/{id}", id).header("Authorization", token(admin)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/admin/tags").header("Authorization", token(admin)))
+                .andExpect(jsonPath("$[?(@.name == 'Cat Topic')].category").value("Other"));
+
+        List<Integer> otherIds = com.jayway.jsonpath.JsonPath.read(mockMvc.perform(get("/api/v1/tag-categories"))
+                .andReturn().getResponse().getContentAsString(), "$[?(@.name == 'Other')].id");
+        long otherId = otherIds.get(0);
+        mockMvc.perform(delete("/api/v1/admin/tag-categories/{id}", otherId).header("Authorization", token(admin)))
+                .andExpect(status().isConflict());
     }
 
     @Test

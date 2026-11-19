@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useUrlState } from "@/hooks/use-url-state";
 import { useUser } from "@/hooks/use-user";
 import { errorMessage } from "@/lib/api";
-import { countProblems, fetchProblems, fetchProblemTags } from "@/lib/services";
+import { countProblems, fetchProblems, fetchProblemTags, fetchTagCategories } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import { LANG_PREF_KEY, LANGUAGES } from "@/lib/templates";
 import { Pagination } from "./pagination";
@@ -15,7 +15,7 @@ import { DifficultyBadge } from "./difficulty-badge";
 import { DIFFICULTY_LEVELS, difficultyMeta } from "./difficulty";
 import theme from "@/components/layout/plex-theme.module.css";
 import s from "./problems.module.css";
-import { TAG_CATEGORIES, type Page, type ProblemSummary, type ProblemType, type TagCount, type UserProgress } from "@/types/api";
+import { type Page, type ProblemSummary, type ProblemType, type TagCount, type UserProgress } from "@/types/api";
 
 const PAGE_SIZE = 20;
 
@@ -65,6 +65,13 @@ function ProblemRow({ p }: { p: ProblemSummary }) {
       </span>
     </Link>
   );
+}
+
+/** Nhóm có chủ đề, theo thứ tự ADMIN đặt; nhóm lạ (chưa tải được danh sách) xếp sau theo tên. */
+function groupOrder(order: string[], data: TagCount[]): string[] {
+  const present = new Set(data.map((t) => t.category));
+  const known = order.filter((n) => present.has(n));
+  return [...known, ...Array.from(present).filter((n) => !order.includes(n)).sort()];
 }
 
 function SkeletonRows() {
@@ -174,6 +181,11 @@ export function ProblemsView() {
   /* ---- Chủ đề (đếm theo loại đang chọn) ---- */
   const [topics, setTopics] = useState<Load<TagCount[]>>({ state: "loading" });
   const [topicsTry, setTopicsTry] = useState(0);
+  const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
+  // Thứ tự nhóm do ADMIN đặt; lỗi thì vẫn hiện, xếp theo tên.
+  useEffect(() => {
+    fetchTagCategories().then((c) => setCategoryOrder(c.map((x) => x.name))).catch(() => {});
+  }, []);
   useEffect(() => {
     let ignore = false;
     setTopics({ state: "loading" });
@@ -462,12 +474,11 @@ export function ProblemsView() {
                 <p className={s.note}>No topics yet.</p>
               ) : (
                 <div>
-                  {TAG_CATEGORIES.map(({ value, label }) => {
+                  {groupOrder(categoryOrder, topics.data).map((value, gi) => {
                     const group = topics.data.filter((t) => t.category === value);
-                    if (group.length === 0) return null;
                     return (
-                      <div key={value} role="group" aria-labelledby={`topic-group-${value}`} className={s.topicGroup}>
-                        <h3 id={`topic-group-${value}`} className={s.topicGroupTitle}>{label}</h3>
+                      <div key={value} role="group" aria-labelledby={`topic-group-${gi}`} className={s.topicGroup}>
+                        <h3 id={`topic-group-${gi}`} className={s.topicGroupTitle}>{value}</h3>
                         {group.map(({ tag, count }) => (
                           <button
                             key={tag}

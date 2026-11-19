@@ -671,6 +671,14 @@ const quickRunIds = new Set<number>();
       return json({ success: true, statusCode: 200, data: pagePayload, ...pagePayload });
     }
 
+    // GET /api/v1/tag-categories
+    if (path === "/api/v1/tag-categories" && method === "GET") {
+      return json([
+        { id: 1, name: "DSA", color: "#2563eb", sortOrder: 10 },
+        { id: 9, name: "Other", color: "#64748b", sortOrder: 1000 },
+      ]);
+    }
+
     // GET /api/v1/problems/tags
     if (path === "/api/v1/problems/tags" && method === "GET") {
       const counts = new Map<string, number>();

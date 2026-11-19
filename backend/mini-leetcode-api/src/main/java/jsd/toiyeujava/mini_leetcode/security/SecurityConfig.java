@@ -75,11 +75,11 @@ public class SecurityConfig {
                         // Xoá kỳ thi: chỉ ADMIN (gỡ thí sinh /contests/{id}/participants/{uid} thì giảng viên vẫn làm được).
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/contests/*").hasRole("ADMIN")
                         // Nhóm chủ đề, trang chính sách, tổng quan và người dùng: chỉ ADMIN.
-                        .requestMatchers("/api/v1/admin/tags/**", "/api/v1/admin/pages/**",
+                        .requestMatchers("/api/v1/admin/tags/**", "/api/v1/admin/tag-categories/**", "/api/v1/admin/pages/**",
                                 "/api/v1/admin/stats", "/api/v1/admin/users/**", "/api/v1/admin/settings/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/**", "/api/v1/teaching/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                         // Bảng xếp hạng và trang chính sách: đọc công khai.
-                        .requestMatchers(HttpMethod.GET, "/api/v1/ranking", "/api/v1/pages/**", "/api/v1/settings/public").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/ranking", "/api/v1/pages/**", "/api/v1/settings/public", "/api/v1/tag-categories").permitAll()
                         // Problems public reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/problems/**").permitAll()
                         // Testcase management (more specific paths must come before general problem routes)

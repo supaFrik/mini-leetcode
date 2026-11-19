@@ -13,8 +13,6 @@ import lombok.*;
 @Builder
 public class Tag {
 
-    public enum Category { DSA, JAVA_CORE, SPRING_BOOT, OOP, OTHER }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,8 +20,7 @@ public class Tag {
     @Column(nullable = false, unique = true, length = 50)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Builder.Default
-    private Category category = Category.OTHER;
+    /** Tên nhóm trong {@code tag_categories}; null = "Other". */
+    @Column(name = "category_name", length = 50)
+    private String category;
 }

@@ -16,11 +16,10 @@ import type {
   AttemptResult, AuthoringTopic, LearnerTopic, StepAnswer, TopicDraft, TopicSummary,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
-  AdminTag, RankingRow, SitePage, TagCategory, TagCount,
+  AdminTag, RankingRow, SitePage, TagCategory, TagCategoryInfo, TagCount,
   AdminStats, AdminUserList, AdminUserRow, Role, UserStatus,
   Announcement, PlanProgress, PublicSettings, SiteSettings, TeachingDashboard,
 } from "@/types/api";
-import { TAG_CATEGORIES } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
 export const DRAFT_SYNC = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_DRAFT_SYNC === "true";
@@ -102,7 +101,7 @@ export async function fetchProblemTags(type?: ProblemType): Promise<TagCount[]> 
 }
 
 function toTagCategory(v: unknown): TagCategory {
-  return TAG_CATEGORIES.some((c) => c.value === v) ? (v as TagCategory) : "OTHER";
+  return typeof v === "string" && v ? v : "Other";
 }
 
 // â”€â”€ NhÃ³m chá»§ Ä‘á» (chá»‰ ADMIN). Chá»§ Ä‘á» nháº­n diá»‡n báº±ng tÃªn. â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -593,4 +592,18 @@ export async function addContestParticipants(id: number, entries: string): Promi
 }
 export async function removeContestParticipant(id: number, userId: number): Promise<void> {
   await api(`/api/v1/admin/contests/${id}/participants/${userId}`, { method: "DELETE" });
+}
+
+// ===== Nhóm chủ đề =====
+export async function fetchTagCategories(): Promise<TagCategoryInfo[]> {
+  return (await api<TagCategoryInfo[]>("/api/v1/tag-categories")) ?? [];
+}
+export async function createTagCategory(body: { name: string; color?: string }): Promise<TagCategoryInfo> {
+  return api<TagCategoryInfo>("/api/v1/admin/tag-categories", { method: "POST", body: JSON.stringify(body) });
+}
+export async function updateTagCategoryInfo(id: number, body: Partial<Omit<TagCategoryInfo, "id">>): Promise<TagCategoryInfo> {
+  return api<TagCategoryInfo>(`/api/v1/admin/tag-categories/${id}`, { method: "PUT", body: JSON.stringify(body) });
+}
+export async function deleteTagCategory(id: number): Promise<void> {
+  await api<void>(`/api/v1/admin/tag-categories/${id}`, { method: "DELETE" });
 }
