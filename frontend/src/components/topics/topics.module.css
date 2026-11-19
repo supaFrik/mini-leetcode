@@ -101,8 +101,9 @@
   background: linear-gradient(90deg, var(--link) 50%, #fff 50%);
 }
 
-.dotStage {
-  border-radius: 5px;
+/* Nút cuối (bài code của stage): dùng chung biểu tượng trạng thái với StageRow */
+.dotIcon {
+  border: 0;
 }
 
 .nodeTitle {

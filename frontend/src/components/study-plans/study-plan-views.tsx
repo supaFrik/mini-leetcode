@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Check, CircleDot, Circle, Lock, Wrench } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLoad } from "@/hooks/use-load";
 import { useUser } from "@/hooks/use-user";
 import { fetchStudyPlan, fetchStudyPlans } from "@/lib/services";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
-import { StageTimeline } from "@/components/topics/stage-timeline";
+import { StageTimeline, stageName } from "@/components/topics/stage-timeline";
+import { StageIcon } from "./stage-status-icon";
 import { Markdown } from "@/components/ui/markdown";
 import theme from "@/components/layout/plex-theme.module.css";
 import p from "@/components/problems/problems.module.css";
@@ -79,20 +80,13 @@ export function StudyPlanList() {
   );
 }
 
-function StageIcon({ stage }: { stage: StudyPlanStage }) {
-  if (!stage.published) return <Wrench size={18} className={s.locked} aria-label="Under maintenance" />;
-  switch (stage.status) {
-    case "DONE": return <Check size={18} strokeWidth={2.4} className={s.iconDone} aria-label="Done" />;
-    case "IN_PROGRESS": return <CircleDot size={18} className={s.iconProgress} aria-label="In progress" />;
-    case "LOCKED": return <Lock size={16} className={s.locked} aria-label="Locked" />;
-    default: return <Circle size={18} className={s.locked} aria-label="Not started" />;
-  }
-}
-
-/** {@code compact}: nút cuối dòng thời gian chủ đề — biểu tượng trạng thái đã do dòng thời gian vẽ. */
+/**
+ * {@code compact}: nút cuối dòng thời gian chủ đề — biểu tượng, tên stage và độ khó đã nằm ở tiêu đề dòng thời gian,
+ * nên chỉ còn lời mời mở bài code.
+ */
 function StageRow({ planSlug, item, stage, compact }: { planSlug: string; item: StudyPlanItem; stage: StudyPlanStage; compact?: boolean }) {
-  const label = item.kind === "PROJECT" ? `Stage ${stage.stageNo}` : "Practice";
-  const title = stage.title ?? `Problem #${stage.problemId}`;
+  const label = compact ? "Code task" : item.kind === "PROJECT" ? `Stage ${stage.stageNo}` : "Practice";
+  const title = compact ? `Open stage ${stage.stageNo}` : stageName(stage);
   const content = (
     <>
       {!compact && <StageIcon stage={stage} />}
@@ -103,6 +97,8 @@ function StageRow({ planSlug, item, stage, compact }: { planSlug: string; item: 
           <span className={s.hint}>Being updated — try later</span>
         ) : stage.status === "LOCKED" ? (
           <span className={s.hint}>Finish stage {stage.stageNo - 1} first</span>
+        ) : compact ? (
+          <ArrowRight size={16} className={s.locked} aria-hidden />
         ) : (
           stage.difficulty && <DifficultyBadge value={stage.difficulty} />
         )}

@@ -115,12 +115,12 @@ test.describe("Topics: theory, quiz and drag-and-drop steps on project stages", 
   test("the current stage shows a topic timeline with Start and Skip; skip is reversible", async ({ page }) => {
     const api = await serve(page);
     await page.goto("/study-plans/oop", { waitUntil: "domcontentloaded" });
-    const toggle = page.getByRole("button", { name: /Stage 1\/2: Stage 1/ });
+    const toggle = page.getByRole("button", { name: /Stage 1\/2 · Stage 1/ });
     await expect(toggle).toHaveAttribute("aria-expanded", "true");
     const timeline = page.getByRole("list", { name: "Stage 1 topics" });
     await expect(timeline.getByRole("link", { name: "Start" })).toHaveAttribute("href", "/topics/oop-dong-goi?plan=oop&stage=1");
     await expect(timeline).toContainText("private + method có kiểm tra");
-    await expect(timeline.getByRole("link", { name: /Stage 1/ })).toHaveAttribute("href", "/study-plans/oop/1/1");
+    await expect(timeline.getByRole("link", { name: /Open stage 1/ })).toHaveAttribute("href", "/study-plans/oop/1/1");
 
     await timeline.getByRole("button", { name: "Skip" }).click();
     await expect.poll(api.isSkipped).toBe(true);

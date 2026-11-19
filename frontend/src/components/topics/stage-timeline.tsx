@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { setTopicSkipped } from "@/lib/services";
+import { DifficultyBadge } from "@/components/problems/difficulty-badge";
+import { StageIcon } from "@/components/study-plans/stage-status-icon";
 import type { StudyPlanStage, TopicRef } from "@/types/api";
 import t from "./topics.module.css";
 
@@ -18,10 +20,13 @@ export function topicHref(slug: string, planSlug: string, stageNo: number) {
   return `/topics/${slug}?plan=${encodeURIComponent(planSlug)}&stage=${stageNo}`;
 }
 
-/** "Mini Bank 2/5 — Kế thừa & đa hình" ⇒ "Kế thừa & đa hình" (tiêu đề đề thường lặp lại số stage). */
-function stageName(stage: StudyPlanStage) {
+/** "Mini Bank 2/5 — Kế thừa & đa hình" ⇒ "Kế thừa & đa hình" (tiêu đề đề thường lặp lại số stage; bỏ mọi dấu ngăn sau "N/M"). */
+// RegExp constructor: tsconfig target does not allow the `u` flag in a regex literal.
+const STAGE_PREFIX = new RegExp("^.*?\\d+\\s*/\\s*\\d+[^\\p{L}\\p{N}]*", "u");
+
+export function stageName(stage: Pick<StudyPlanStage, "title" | "problemId">) {
   const title = stage.title ?? `Problem #${stage.problemId}`;
-  return title.replace(/^.*?\d+\s*\/\s*\d+\s*[—–-]\s*/, "") || title;
+  return title.replace(STAGE_PREFIX, "") || title;
 }
 
 function Dot({ topic, current }: { topic: TopicRef; current: boolean }) {
@@ -71,8 +76,10 @@ export function StageTimeline({
     <div className={t.stageBlock}>
       <button type="button" className={t.stageToggle} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         <ChevronRight size={16} className={cn(t.chevron, open && t.chevronOpen)} aria-hidden />
-        <span>Stage {stage.stageNo}/{stageCount}: {stageName(stage)}</span>
-        <span className={t.stageMeta}>{finished}/{topics.length} topics{stage.status === "DONE" ? " · stage done" : ""}</span>
+        <StageIcon stage={stage} />
+        <span>Stage {stage.stageNo}/{stageCount} · {stageName(stage)}</span>
+        <span className={t.stageMeta}>{finished}/{topics.length} topics</span>
+        {stage.difficulty && <DifficultyBadge value={stage.difficulty} />}
       </button>
       {open && (
         <ol className={t.timeline} aria-label={`Stage ${stage.stageNo} topics`}>
@@ -110,8 +117,7 @@ export function StageTimeline({
             );
           })}
           <li className={t.node}>
-            <span className={cn(t.dot, t.dotStage, stage.status === "DONE" && t.dotDone, !current && stage.status !== "DONE" && t.dotCurrent)}
-              aria-hidden>{stage.status === "DONE" && <Check size={12} strokeWidth={3} />}</span>
+            <span className={cn(t.dot, t.dotIcon)}><StageIcon stage={stage} /></span>
             {stageTask}
           </li>
         </ol>

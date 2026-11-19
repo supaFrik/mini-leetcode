@@ -4,10 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Lock } from "lucide-react";
 import { CodeExercise } from "@/components/code-exercise/code-exercise";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
-import { topicHref } from "@/components/topics/stage-timeline";
+import { stageName, topicHref } from "@/components/topics/stage-timeline";
 import { Markdown } from "@/components/ui/markdown";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
 import { useLoad } from "@/hooks/use-load";
 import { fetchStudyPlan } from "@/lib/services";
 import { cn } from "@/lib/utils";
@@ -34,12 +33,6 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
   const item = plan?.items.find((it) => it.id === itemId);
   const stage = item?.stages.find((st) => st.stageNo === stageNo);
   const planHref = plan ? `/study-plans/${plan.slug}` : "/study-plans";
-
-  useEffect(() => {
-    if (stage?.status === "LOCKED" && plan && item) {
-      toast(`Please complete stage ${stage.stageNo - 1} first.`, "error");
-    }
-  }, [stage?.status, stage?.stageNo, item, plan]);
 
   if (load.state === "loading" && !plan) return <div className={cn(theme.theme, v.page)} aria-busy="true"><p className={v.muted}>Loading stage…</p></div>;
   if (load.state === "error") {
@@ -73,7 +66,7 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
             </div>
             <h2 className="text-lg font-semibold text-ink">Stage {stage.stageNo} is locked</h2>
             <p className="mt-1 max-w-md text-sm text-mute">
-              Finish stage {stage.stageNo - 1} first. You must complete stage {stage.stageNo - 1} before proceeding to this stage.
+              Finish stage {stage.stageNo - 1} to unlock it.
             </p>
             {active && (
               <Button asChild className="mt-4">
@@ -90,7 +83,7 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
 
   const project = item.kind === "PROJECT";
   const count = item.stages.length;
-  const title = project ? `${item.title}. Stage ${stage.stageNo}/${count}` : stage.title ?? item.title;
+  const title = project ? `Stage ${stage.stageNo}/${count} · ${stageName(stage)}` : stage.title ?? item.title;
   const stageHref = (n: number) => `/study-plans/${plan.slug}/${item.id}/${n}`;
   const prev = item.stages.find((st) => st.stageNo === stage.stageNo - 1);
   const next = item.stages.find((st) => st.stageNo === stage.stageNo + 1);
@@ -100,8 +93,13 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
     <div className={cn(theme.theme, v.page)}>
       <nav className={v.crumbs} aria-label="Breadcrumb">
         <Link href="/study-plans">Study plans</Link> → <Link href={planHref}>{plan.title}</Link>
+        {project && <> → {item.title}</>}
       </nav>
-      <h1 className={v.title}>{title}</h1>
+      <div className={v.cardHead}>
+        <h1 className={v.title}>{title}</h1>
+        {stage.difficulty && <DifficultyBadge value={stage.difficulty} />}
+        {stage.status === "DONE" && <span className={v.done}><Check size={15} aria-hidden /> Done</span>}
+      </div>
       {project && item.description && (
         <>
           <button type="button" className={v.linkButton} aria-expanded={showProject} onClick={() => setShowProject((o) => !o)}>
@@ -110,24 +108,6 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
           {showProject && <div className={cn(v.card, v.prose)}><Markdown>{item.description}</Markdown></div>}
         </>
       )}
-
-      <section className={v.card} aria-label="Stage">
-        <div className={v.cardHead}>
-          <h2>{project ? stage.title ?? `Stage ${stage.stageNo}` : "Task"}</h2>
-          {stage.difficulty && <DifficultyBadge value={stage.difficulty} />}
-          {stage.status === "DONE" && <span className={v.done}><Check size={15} aria-hidden /> Done</span>}
-        </div>
-        {!stage.published || !stage.slug ? (
-          <p className={v.muted}>This stage is being updated. Try again later.</p>
-        ) : (
-          <CodeExercise
-            problemSlug={stage.slug}
-            passed={stage.status === "DONE"}
-            onSolved={reload}
-            ideAction={<IdeButton planSlug={plan.slug} itemId={item.id} stageNo={stage.stageNo} />}
-          />
-        )}
-      </section>
 
       {topics.length > 0 && (
         <section className={v.card} aria-label="Topics in stage">
@@ -143,6 +123,19 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
           </ul>
         </section>
       )}
+
+      <section className={v.card} aria-label="Stage">
+        {!stage.published || !stage.slug ? (
+          <p className={v.muted}>This stage is being updated. Try again later.</p>
+        ) : (
+          <CodeExercise
+            problemSlug={stage.slug}
+            passed={stage.status === "DONE"}
+            onSolved={reload}
+            ideAction={<IdeButton planSlug={plan.slug} itemId={item.id} stageNo={stage.stageNo} />}
+          />
+        )}
+      </section>
 
       {project && (prev || next) && (
         <nav className={v.pager} aria-label="Stages">
