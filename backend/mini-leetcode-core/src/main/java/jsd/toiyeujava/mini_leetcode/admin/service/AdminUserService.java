@@ -13,8 +13,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 
 /** Trang quản trị: số liệu tổng quan và quản lý người dùng. Chỉ ADMIN (SecurityConfig). */
 @Service
@@ -43,8 +44,19 @@ public class AdminUserService {
                                    String status, String verdict, LocalDateTime createdAt) {
     }
 
+    public record DayCount(LocalDate date, long total, long accepted) {
+    }
+
+    public record ProblemRate(String slug, String title, long submissions, double acRate) {
+    }
+
+    public record UpcomingContest(Long id, String title, LocalDateTime startTime) {
+    }
+
     public record Stats(long users, long problems, long submissions, long contests,
-                        List<RecentSubmission> recentSubmissions, List<UserRow> recentUsers) {
+                        List<RecentSubmission> recentSubmissions, List<UserRow> recentUsers,
+                        List<DayCount> daily, double acRate, long activeUsers7d, Map<String, Long> byDifficulty,
+                        List<ProblemRate> lowestAc, List<UpcomingContest> upcomingContests) {
     }
 
     @Transactional(readOnly = true)
@@ -62,8 +74,78 @@ public class AdminUserService {
                 (String) r[4], (String) r[5], toDateTime(r[6]))).toList();
         List<UserRow> newUsers = userRepository.findAll(PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "id")))
                 .map(UserRow::of).getContent();
+        LocalDate today = LocalDate.now();
         return new Stats(userRepository.count(), count("problems"), count("submissions where is_quick_run = false"),
-                count("contests"), recent, newUsers);
+                count("contests"), recent, newUsers, daily(today), acRate(),
+                ((Number) entityManager.createNativeQuery("select count(distinct user_id) from submissions"
+                                + " where is_quick_run = false and created_at >= :since")
+                        .setParameter("since", today.minusDays(6).atStartOfDay()).getSingleResult()).longValue(),
+                byDifficulty(), lowestAc(), upcoming());
+    }
+
+    /** 14 ngày gần nhất (kể cả hôm nay), ngày không có bài nộp vẫn có mặt với số 0. */
+    @SuppressWarnings("unchecked")
+    private List<DayCount> daily(LocalDate today) {
+        LocalDate from = today.minusDays(13);
+        Map<LocalDate, long[]> byDay = new HashMap<>();
+        List<Object[]> rows = entityManager.createNativeQuery(
+                        "select cast(created_at as date), count(*), sum(case when verdict = 'AC' then 1 else 0 end)"
+                                + " from submissions where is_quick_run = false and created_at >= :from"
+                                + " group by cast(created_at as date)")
+                .setParameter("from", from.atStartOfDay()).getResultList();
+        for (Object[] r : rows) {
+            LocalDate d = r[0] instanceof java.sql.Date sd ? sd.toLocalDate() : (LocalDate) r[0];
+            byDay.put(d, new long[]{((Number) r[1]).longValue(), r[2] == null ? 0 : ((Number) r[2]).longValue()});
+        }
+        List<DayCount> out = new ArrayList<>();
+        for (LocalDate d = from; !d.isAfter(today); d = d.plusDays(1)) {
+            long[] v = byDay.getOrDefault(d, new long[2]);
+            out.add(new DayCount(d, v[0], v[1]));
+        }
+        return out;
+    }
+
+    /** Tỉ lệ AC trên các bài đã chấm xong (0..1). */
+    private double acRate() {
+        Object[] r = (Object[]) entityManager.createNativeQuery(
+                "select count(*), sum(case when verdict = 'AC' then 1 else 0 end) from submissions"
+                        + " where is_quick_run = false and verdict is not null").getSingleResult();
+        long total = ((Number) r[0]).longValue();
+        return total == 0 ? 0 : (r[1] == null ? 0 : ((Number) r[1]).doubleValue()) / total;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Long> byDifficulty() {
+        Map<String, Long> out = new LinkedHashMap<>();
+        for (String d : List.of("EASY", "MEDIUM", "HARD")) out.put(d, 0L);
+        List<Object[]> rows = entityManager.createNativeQuery("select difficulty, count(*) from problems group by difficulty")
+                .getResultList();
+        for (Object[] r : rows) out.put(String.valueOf(r[0]), ((Number) r[1]).longValue());
+        return out;
+    }
+
+    /** 5 bài có tỉ lệ AC thấp nhất, chỉ tính bài đã có ít nhất 1 lần chấm. */
+    @SuppressWarnings("unchecked")
+    private List<ProblemRate> lowestAc() {
+        List<Object[]> rows = entityManager.createNativeQuery(
+                        "select p.slug, p.title, count(*) n, sum(case when s.verdict = 'AC' then 1 else 0 end) ac"
+                                + " from submissions s join problems p on p.id = s.problem_id"
+                                + " where s.is_quick_run = false and s.verdict is not null"
+                                + " group by p.id, p.slug, p.title"
+                                + " order by sum(case when s.verdict = 'AC' then 1 else 0 end) * 1.0 / count(*), count(*) desc")
+                .setMaxResults(5).getResultList();
+        return rows.stream().map(r -> {
+            long n = ((Number) r[2]).longValue();
+            return new ProblemRate((String) r[0], (String) r[1], n, n == 0 ? 0 : ((Number) r[3]).doubleValue() / n);
+        }).toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<UpcomingContest> upcoming() {
+        List<Object[]> rows = entityManager.createNativeQuery(
+                        "select id, title, start_time from contests where status = 'SCHEDULED' and start_time > :now order by start_time")
+                .setParameter("now", LocalDateTime.now()).setMaxResults(5).getResultList();
+        return rows.stream().map(r -> new UpcomingContest(((Number) r[0]).longValue(), (String) r[1], toDateTime(r[2]))).toList();
     }
 
     @Transactional(readOnly = true)

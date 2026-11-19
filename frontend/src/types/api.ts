@@ -80,6 +80,14 @@ export interface AdminRecentSubmission {
 export interface AdminStats {
   users: number; problems: number; submissions: number; contests: number;
   recentSubmissions: AdminRecentSubmission[]; recentUsers: AdminUserRow[];
+  /** 14 ngày gần nhất, cũ → mới. */
+  daily: { date: string; total: number; accepted: number }[];
+  /** 0..1 */
+  acRate: number;
+  activeUsers7d: number;
+  byDifficulty: Record<string, number>;
+  lowestAc: { slug: string; title: string; submissions: number; acRate: number }[];
+  upcomingContests: { id: number; title: string; startTime: string }[];
 }
 
 // ===== Đề bài =====

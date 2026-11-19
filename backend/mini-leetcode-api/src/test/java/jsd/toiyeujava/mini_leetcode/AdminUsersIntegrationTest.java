@@ -59,7 +59,13 @@ class AdminUsersIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.users").isNumber())
                 .andExpect(jsonPath("$.recentSubmissions").isArray())
-                .andExpect(jsonPath("$.recentUsers[0].username").value("au_admin"));
+                .andExpect(jsonPath("$.recentUsers[0].username").value("au_admin"))
+                .andExpect(jsonPath("$.daily.length()").value(14))
+                .andExpect(jsonPath("$.acRate").isNumber())
+                .andExpect(jsonPath("$.activeUsers7d").isNumber())
+                .andExpect(jsonPath("$.byDifficulty.EASY").isNumber())
+                .andExpect(jsonPath("$.lowestAc").isArray())
+                .andExpect(jsonPath("$.upcomingContests").isArray());
     }
 
     @Test
