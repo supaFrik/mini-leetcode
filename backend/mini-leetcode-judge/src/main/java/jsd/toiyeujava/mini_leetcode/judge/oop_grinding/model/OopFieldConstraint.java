@@ -27,4 +27,8 @@ public class OopFieldConstraint {
     private boolean ignoreStatic = true;
     @Builder.Default
     private boolean ignoreSynthetic = true;
+    @Builder.Default
+    private boolean disallowSetter = false;
+    @Builder.Default
+    private boolean forbidSetter = false;
 }

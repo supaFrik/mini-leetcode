@@ -41,6 +41,17 @@ public class OopConstraintRule {
     private Integer minClassCount;
     private Boolean disallowMonolithicMain;
     private Boolean requirePolymorphism;
+    @Builder.Default
+    private Boolean requireFinalFields = false;
+    private Integer maxMethodsPerClass;
+    private Integer maxLinesPerMethod;
+    @Builder.Default
+    private Boolean requireOverrideAnnotation = false;
+    @Builder.Default
+    private List<String> requireAnnotations = new ArrayList<>();
+    @Builder.Default
+    private Boolean antiAnemic = false;
+    private Integer maxCbo;
     private String customSuccessMessage;
     private String customFailureMessage;
 }

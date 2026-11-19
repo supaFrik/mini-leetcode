@@ -207,10 +207,7 @@ class GradingPanelPO {
   }
 
   get targetClassInput() {
-    return this.editor.getByLabel(/target class|lớp mục tiêu|class mục tiêu/i)
-      .or(this.editor.getByPlaceholder(/account|\*|target class|class name/i))
-      .or(this.editor.locator("input#preset-target-class"))
-      .or(this.editor.locator('input[placeholder*="Account"]'));
+    return this.editor.locator("input#target-class-input");
   }
 
   get rawJsonEditor() {

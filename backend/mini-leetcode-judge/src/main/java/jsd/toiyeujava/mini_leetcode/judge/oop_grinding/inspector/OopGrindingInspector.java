@@ -172,6 +172,37 @@ public class OopGrindingInspector {
                 }
             }
 
+            // 10. Strict OOP Rule 1: Immutability & Finality
+            if (Boolean.TRUE.equals(rule.getRequireFinalFields())) {
+                verifyImmutability(clazz, violations);
+            }
+
+            // 11. Strict OOP Rule 2A: Max Methods Per Class
+            if (rule.getMaxMethodsPerClass() != null) {
+                verifyMaxMethods(clazz, rule.getMaxMethodsPerClass(), violations);
+            }
+
+            // 12. Strict OOP Rule 2B: Max Lines Per Method
+            if (rule.getMaxLinesPerMethod() != null) {
+                verifyMaxLinesPerMethod(classesDir, clazz, rule.getMaxLinesPerMethod(), violations);
+            }
+
+            // 13. Strict OOP Rule 3: Mandatory @Override Annotation
+            if (Boolean.TRUE.equals(rule.getRequireOverrideAnnotation())
+                    || (rule.getRequireAnnotations() != null && !rule.getRequireAnnotations().isEmpty())) {
+                verifyAnnotations(classesDir, clazz, rule, violations);
+            }
+
+            // 14. Strict OOP Rule 4: Anti-Anemic Domain Model
+            if (Boolean.TRUE.equals(rule.getAntiAnemic())) {
+                verifyAntiAnemic(clazz, violations);
+            }
+
+            // 15. Strict OOP Rule 5: Coupling Between Objects (CBO)
+            if (rule.getMaxCbo() != null) {
+                verifyCbo(classesDir, clazz, rule.getMaxCbo(), violations);
+            }
+
             if (violations.isEmpty()) {
                 String successMsg = rule.getCustomSuccessMessage() != null && !rule.getCustomSuccessMessage().isBlank()
                         ? rule.getCustomSuccessMessage()
@@ -581,6 +612,52 @@ public class OopGrindingInspector {
             }
         }
 
+        // 8. Strict OOP Rules across all user classes
+        if (Boolean.TRUE.equals(rule.getRequireFinalFields())) {
+            for (Class<?> clazz : userClasses) {
+                if (!clazz.isInterface() && !clazz.isEnum()) {
+                    verifyImmutability(clazz, violations);
+                }
+            }
+        }
+
+        if (rule.getMaxMethodsPerClass() != null) {
+            for (Class<?> clazz : userClasses) {
+                verifyMaxMethods(clazz, rule.getMaxMethodsPerClass(), violations);
+            }
+        }
+
+        if (rule.getMaxLinesPerMethod() != null) {
+            for (Class<?> clazz : userClasses) {
+                verifyMaxLinesPerMethod(classesDir, clazz, rule.getMaxLinesPerMethod(), violations);
+            }
+        }
+
+        if (Boolean.TRUE.equals(rule.getRequireOverrideAnnotation())
+                || (rule.getRequireAnnotations() != null && !rule.getRequireAnnotations().isEmpty())) {
+            for (Class<?> clazz : userClasses) {
+                verifyAnnotations(classesDir, clazz, rule, violations);
+            }
+        }
+
+        if (Boolean.TRUE.equals(rule.getAntiAnemic())) {
+            for (Class<?> clazz : userClasses) {
+                if (!clazz.isInterface() && !clazz.isEnum() && !clazz.isRecord()) {
+                    boolean hasFields = Arrays.stream(clazz.getDeclaredFields())
+                            .anyMatch(f -> !Modifier.isStatic(f.getModifiers()) && !f.isSynthetic() && !f.getName().startsWith("$"));
+                    if (hasFields) {
+                        verifyAntiAnemic(clazz, violations);
+                    }
+                }
+            }
+        }
+
+        if (rule.getMaxCbo() != null) {
+            for (Class<?> clazz : userClasses) {
+                verifyCbo(classesDir, clazz, rule.getMaxCbo(), violations);
+            }
+        }
+
         if (violations.isEmpty()) {
             String successMsg = rule.getCustomSuccessMessage() != null && !rule.getCustomSuccessMessage().isBlank()
                     ? rule.getCustomSuccessMessage()
@@ -730,6 +807,148 @@ public class OopGrindingInspector {
         } catch (IOException e) {
             log.debug("Error finding class file for {}: {}", fqcn, e.getMessage());
             return null;
+        }
+    }
+
+    private void verifyImmutability(Class<?> clazz, List<String> violations) {
+        Field[] fields = clazz.getDeclaredFields();
+        for (Field f : fields) {
+            if (f.isSynthetic() || f.getName().startsWith("$") || Modifier.isStatic(f.getModifiers())) {
+                continue;
+            }
+            if (!Modifier.isFinal(f.getModifiers())) {
+                violations.add("Field '" + f.getName() + "' in class " + clazz.getSimpleName()
+                        + " must be final (immutability violation)");
+            }
+            String expectedSetter = "set" + f.getName();
+            for (Method m : clazz.getDeclaredMethods()) {
+                if (m.isSynthetic() || m.isBridge() || m.getName().startsWith("$")) {
+                    continue;
+                }
+                if (m.getName().equalsIgnoreCase(expectedSetter) && m.getParameterCount() == 1) {
+                    violations.add("Class " + clazz.getSimpleName()
+                            + " must not declare setter for immutable field '" + f.getName()
+                            + "' ('" + m.getName() + "' found)");
+                    break;
+                }
+            }
+        }
+    }
+
+    private void verifyMaxMethods(Class<?> clazz, int maxMethods, List<String> violations) {
+        long count = Arrays.stream(clazz.getDeclaredMethods())
+                .filter(m -> !m.isSynthetic() && !m.isBridge() && !m.getName().startsWith("$"))
+                .count();
+        if (count > maxMethods) {
+            violations.add("Class " + clazz.getSimpleName() + " has " + count
+                    + " methods, exceeding maximum allowed limit (" + maxMethods + ")");
+        }
+    }
+
+    private void verifyMaxLinesPerMethod(Path classesDir, Class<?> clazz, int maxLines, List<String> violations) {
+        Path classFile = findClassFile(classesDir, clazz.getName());
+        Map<String, Integer> lineCounts = OopBytecodeMetricReader.getMethodLineCounts(classFile);
+        Path sourceFile = OopBytecodeMetricReader.findSourceFile(classesDir, clazz);
+
+        for (Method m : clazz.getDeclaredMethods()) {
+            if (m.isSynthetic() || m.isBridge() || m.getName().startsWith("$") || Modifier.isAbstract(m.getModifiers())) {
+                continue;
+            }
+            String descKey = m.getName() + OopBytecodeMetricReader.getMethodDescriptor(m);
+            Integer lines = lineCounts.get(descKey);
+            if (lines == null) {
+                lines = lineCounts.get(m.getName());
+            }
+            if (lines == null && sourceFile != null) {
+                int srcLines = OopBytecodeMetricReader.countMethodLinesFromSource(sourceFile, m);
+                if (srcLines <= 0) {
+                    srcLines = OopBytecodeMetricReader.countMethodLinesFromSource(sourceFile, m.getName());
+                }
+                if (srcLines > 0) {
+                    lines = srcLines;
+                }
+            }
+            if (lines != null && lines > maxLines) {
+                violations.add("Method '" + m.getName() + "' in class " + clazz.getSimpleName()
+                        + " has " + lines + " lines, exceeding maximum allowed limit (" + maxLines + ")");
+            }
+        }
+    }
+
+    private void verifyAnnotations(Path classesDir, Class<?> clazz, OopConstraintRule rule, List<String> violations) {
+        boolean checkOverride = Boolean.TRUE.equals(rule.getRequireOverrideAnnotation())
+                || (rule.getRequireAnnotations() != null && rule.getRequireAnnotations().stream().anyMatch(a -> a.equalsIgnoreCase("@Override") || a.equalsIgnoreCase("Override")));
+
+        if (!checkOverride) {
+            return;
+        }
+
+        Path sourceFile = OopBytecodeMetricReader.findSourceFile(classesDir, clazz);
+        for (Method m : clazz.getDeclaredMethods()) {
+            if (m.isSynthetic() || m.isBridge() || m.getName().startsWith("$") || Modifier.isStatic(m.getModifiers()) || Modifier.isPrivate(m.getModifiers())) {
+                continue;
+            }
+            Class<?> superType = OopBytecodeMetricReader.findOverriddenSuperType(clazz, m);
+            if (superType != null) {
+                boolean hasOverride = sourceFile != null && OopBytecodeMetricReader.hasOverrideAnnotationInSource(sourceFile, m);
+                if (!hasOverride) {
+                    violations.add("Method '" + m.getName() + "' in class " + clazz.getSimpleName()
+                            + " overrides a method from " + superType.getSimpleName()
+                            + " but is missing @Override annotation");
+                }
+            }
+        }
+    }
+
+    private void verifyAntiAnemic(Class<?> clazz, List<String> violations) {
+        if (clazz.isInterface() || clazz.isEnum()) {
+            return;
+        }
+        boolean hasInstanceFields = Arrays.stream(clazz.getDeclaredFields())
+                .anyMatch(f -> !Modifier.isStatic(f.getModifiers()) && !f.isSynthetic() && !f.getName().startsWith("$"));
+        if (!hasInstanceFields) {
+            return;
+        }
+
+        boolean hasBehavioralMethods = false;
+        for (Method m : clazz.getDeclaredMethods()) {
+            if (m.isSynthetic() || m.isBridge() || m.getName().startsWith("$")
+                    || Modifier.isStatic(m.getModifiers()) || Modifier.isPrivate(m.getModifiers())) {
+                continue;
+            }
+            String name = m.getName();
+            Class<?>[] params = m.getParameterTypes();
+            Class<?> ret = m.getReturnType();
+
+            boolean isGetter = (name.startsWith("get") && name.length() > 3 && params.length == 0 && ret != void.class)
+                    || (name.startsWith("is") && name.length() > 2 && params.length == 0 && (ret == boolean.class || ret == Boolean.class));
+            boolean isSetter = name.startsWith("set") && name.length() > 3 && params.length == 1;
+            boolean isObjectMethod = (name.equals("toString") && params.length == 0)
+                    || (name.equals("hashCode") && params.length == 0)
+                    || (name.equals("equals") && params.length == 1 && params[0].equals(Object.class))
+                    || (name.equals("clone") && params.length == 0)
+                    || (name.equals("finalize") && params.length == 0);
+
+            if (!isGetter && !isSetter && !isObjectMethod) {
+                hasBehavioralMethods = true;
+                break;
+            }
+        }
+
+        if (!hasBehavioralMethods) {
+            violations.add("Class " + clazz.getSimpleName()
+                    + " is an anemic domain model with only getters/setters/constructors; it must define behavioral domain methods");
+        }
+    }
+
+    private void verifyCbo(Path classesDir, Class<?> clazz, int maxCbo, List<String> violations) {
+        Path classFile = findClassFile(classesDir, clazz.getName());
+        Set<String> coupled = OopBytecodeMetricReader.getCoupledClasses(classFile, clazz);
+        int cbo = coupled.size();
+        if (cbo > maxCbo) {
+            violations.add("Class " + clazz.getSimpleName()
+                    + " has Coupling Between Objects (CBO) of " + cbo
+                    + ", exceeding maximum allowed limit (" + maxCbo + ")");
         }
     }
 }

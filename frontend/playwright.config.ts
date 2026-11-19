@@ -63,7 +63,8 @@ export default defineConfig({
     ? {
         command: useDevServer
           ? `npm run dev -- -p ${port}`
-          : `npm run build && npm run start -- -p ${port}`,
+          : `npm run start -- -p ${port}`,
+        cwd: __dirname,
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 300000,

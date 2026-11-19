@@ -153,13 +153,22 @@ public class GradingConfigValidator {
         if (rule.getMinClassCount() != null && rule.getMinClassCount() < 1) {
             errors.add(path + ".minClassCount: must be at least 1");
         }
+        if (rule.getMaxMethodsPerClass() != null && rule.getMaxMethodsPerClass() < 1) {
+            errors.add(path + ".maxMethodsPerClass: must be at least 1");
+        }
+        if (rule.getMaxLinesPerMethod() != null && rule.getMaxLinesPerMethod() < 1) {
+            errors.add(path + ".maxLinesPerMethod: must be at least 1");
+        }
+        if (rule.getMaxCbo() != null && rule.getMaxCbo() < 0) {
+            errors.add(path + ".maxCbo: must not be negative");
+        }
         checkModifiers(rule.getRequiredModifiers(), path + ".requiredModifiers", errors);
         checkModifiers(rule.getForbiddenModifiers(), path + ".forbiddenModifiers", errors);
         checkChildren(node.get("fields"), path + ".fields", OopFieldConstraint.class, errors);
         checkChildren(node.get("methods"), path + ".methods", OopMethodConstraint.class, errors);
         checkChildren(node.get("constructors"), path + ".constructors", OopConstructorConstraint.class, errors);
         for (String list : List.of("fields", "methods", "constructors", "requiredModifiers", "forbiddenModifiers",
-                "expectedInterfaces")) {
+                "expectedInterfaces", "requireAnnotations")) {
             if (node.has(list) && node.get(list).isNull()) {
                 errors.add(path + "." + list + ": must be an array (use [] instead of null)");
             }

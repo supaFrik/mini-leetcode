@@ -1,4 +1,4 @@
-import type { Language } from "@/types/api";
+import type { Language, SubmissionFile } from "@/types/api";
 
 export const LANGUAGES: { value: Language; label: string; dot: string }[] = [
   { value: "JAVA", label: "Java", dot: "bg-cyan-400" },
@@ -59,4 +59,29 @@ export function starterCodes(starterTemplates?: string | null): Record<Language,
     /* JSON hỏng → mặc định */
   }
   return out;
+}
+
+/**
+ * Parse danh sách file khởi tạo cho bài OOP đa file từ `starterTemplates`.
+ */
+export function parseStarterFiles(starterTemplates?: string | null): SubmissionFile[] {
+  if (starterTemplates) {
+    try {
+      const parsed = JSON.parse(starterTemplates);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const list = parsed
+          .filter((f): f is SubmissionFile => Boolean(f && typeof f.path === "string" && typeof f.content === "string"))
+          .map((f) => ({ path: f.path, content: f.content }));
+        if (list.length > 0) return list;
+      }
+    } catch {
+      /* JSON hỏng → dùng mặc định */
+    }
+  }
+  return [
+    {
+      path: "Main.java",
+      content: "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        \n    }\n}\n",
+    },
+  ];
 }

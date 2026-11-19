@@ -456,10 +456,7 @@ export function TestCasesPanel({
     <div className="space-y-4">
       {frozen && <FrozenNotice what="test cases" />}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-body-sm text-mute">
-          Run uses public cases; Submit uses all of them. Output is compared ignoring trailing spaces and blank lines.
-        </p>
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
@@ -639,18 +636,39 @@ export const PRESET_RULE_IDS = {
   ENCAPSULATION: "preset-encapsulation",
   POLYMORPHISM: "preset-polymorphism",
   ANTI_MONOLITHIC: "preset-anti-monolithic",
+  STRICT_IMMUTABILITY: "preset-strict-immutability",
+  CLEAN_CODE_LIMITS: "preset-clean-code-limits",
+  FULL_STRICT_OOP: "preset-full-strict-oop",
+  REQUIRE_OVERRIDE: "preset-require-override",
+  ANTI_ANEMIC: "preset-anti-anemic",
+  LOOSE_COUPLING: "preset-loose-coupling",
 } as const;
 
 export interface QuickPresetsState {
   encapsulation: boolean;
   polymorphism: boolean;
   antiMonolithic: boolean;
+  strictImmutability: boolean;
+  cleanCodeLimits: boolean;
+  requireOverride: boolean;
+  antiAnemic: boolean;
+  looseCoupling: boolean;
   targetClassName: string;
 }
 
 export function parsePresetsFromJson(rawJson: string): QuickPresetsState {
   if (!rawJson || !rawJson.trim()) {
-    return { encapsulation: false, polymorphism: false, antiMonolithic: false, targetClassName: "" };
+    return {
+      encapsulation: false,
+      polymorphism: false,
+      antiMonolithic: false,
+      strictImmutability: false,
+      cleanCodeLimits: false,
+      requireOverride: false,
+      antiAnemic: false,
+      looseCoupling: false,
+      targetClassName: "",
+    };
   }
   try {
     const data = JSON.parse(rawJson);
@@ -672,22 +690,70 @@ export function parsePresetsFromJson(rawJson: string): QuickPresetsState {
         r?.ruleId === PRESET_RULE_IDS.ANTI_MONOLITHIC ||
         (typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("monolithic") || r.ruleName.toLowerCase().includes("monolith")))
     );
+    const immutRule = rules.find(
+      (r) =>
+        r?.ruleId === PRESET_RULE_IDS.STRICT_IMMUTABILITY ||
+        r?.requireFinalFields === true ||
+        (typeof r?.ruleName === "string" && r.ruleName.toLowerCase().includes("immutab"))
+    );
+    const cleanCodeRule = rules.find(
+      (r) =>
+        r?.ruleId === PRESET_RULE_IDS.CLEAN_CODE_LIMITS ||
+        r?.maxMethodsPerClass != null ||
+        r?.maxLinesPerMethod != null ||
+        (typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("clean code") || r.ruleName.toLowerCase().includes("size limits")))
+    );
+    const overrideRule = rules.find(
+      (r) =>
+        r?.ruleId === PRESET_RULE_IDS.REQUIRE_OVERRIDE ||
+        r?.requireOverrideAnnotation === true ||
+        (Array.isArray(r?.requireAnnotations) && r.requireAnnotations.includes("@Override")) ||
+        (typeof r?.ruleName === "string" && r.ruleName.toLowerCase().includes("override"))
+    );
+    const anemicRule = rules.find(
+      (r) =>
+        r?.ruleId === PRESET_RULE_IDS.ANTI_ANEMIC ||
+        r?.antiAnemic === true ||
+        (typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("anemic") || r.ruleName.toLowerCase().includes("rich domain")))
+    );
+    const couplingRule = rules.find(
+      (r) =>
+        r?.ruleId === PRESET_RULE_IDS.LOOSE_COUPLING ||
+        r?.maxCbo != null ||
+        (typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("coupling") || r.ruleName.toLowerCase().includes("cbo")))
+    );
 
     let target = "";
-    if (typeof encRule?.targetClassName === "string" && encRule.targetClassName !== "*") {
-      target = encRule.targetClassName;
-    } else if (typeof polyRule?.targetClassName === "string" && polyRule.targetClassName !== "*") {
-      target = polyRule.targetClassName;
+    for (const r of [encRule, polyRule, immutRule, cleanCodeRule, overrideRule, anemicRule, couplingRule]) {
+      if (typeof r?.targetClassName === "string" && r.targetClassName !== "*") {
+        target = r.targetClassName;
+        break;
+      }
     }
 
     return {
       encapsulation: !!encRule,
       polymorphism: !!polyRule,
       antiMonolithic: !!antiMonoRule,
+      strictImmutability: !!immutRule,
+      cleanCodeLimits: !!cleanCodeRule,
+      requireOverride: !!overrideRule,
+      antiAnemic: !!anemicRule,
+      looseCoupling: !!couplingRule,
       targetClassName: target,
     };
   } catch {
-    return { encapsulation: false, polymorphism: false, antiMonolithic: false, targetClassName: "" };
+    return {
+      encapsulation: false,
+      polymorphism: false,
+      antiMonolithic: false,
+      strictImmutability: false,
+      cleanCodeLimits: false,
+      requireOverride: false,
+      antiAnemic: false,
+      looseCoupling: false,
+      targetClassName: "",
+    };
   }
 }
 
@@ -710,9 +776,20 @@ export function buildJsonFromPresets(presets: QuickPresetsState, currentJson: st
           r?.ruleId !== PRESET_RULE_IDS.POLYMORPHISM &&
           r?.ruleId !== "preset-polymorphism-abstraction" &&
           r?.ruleId !== PRESET_RULE_IDS.ANTI_MONOLITHIC &&
+          r?.ruleId !== PRESET_RULE_IDS.STRICT_IMMUTABILITY &&
+          r?.ruleId !== PRESET_RULE_IDS.CLEAN_CODE_LIMITS &&
+          r?.ruleId !== PRESET_RULE_IDS.REQUIRE_OVERRIDE &&
+          r?.ruleId !== PRESET_RULE_IDS.ANTI_ANEMIC &&
+          r?.ruleId !== PRESET_RULE_IDS.LOOSE_COUPLING &&
+          r?.ruleId !== PRESET_RULE_IDS.FULL_STRICT_OOP &&
           !(r?.enforceEncapsulation === true && (r?.targetClassName === "*" || (typeof r?.ruleId === "string" && r.ruleId.includes("encapsulation")))) &&
           !(typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("polymorphism") || r.ruleName.toLowerCase().includes("đa hình"))) &&
-          !(typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("monolithic") || r.ruleName.toLowerCase().includes("monolith")))
+          !(typeof r?.ruleName === "string" && (r.ruleName.toLowerCase().includes("monolithic") || r.ruleName.toLowerCase().includes("monolith"))) &&
+          !(r?.requireFinalFields === true || (typeof r?.ruleName === "string" && r.ruleName.toLowerCase().includes("immutab"))) &&
+          !(r?.maxMethodsPerClass != null || r?.maxLinesPerMethod != null || (typeof r?.ruleName === "string" && r.ruleName.toLowerCase().includes("size limits"))) &&
+          !(r?.requireOverrideAnnotation === true || (typeof r?.ruleName === "string" && r.ruleName.toLowerCase().includes("override"))) &&
+          !(r?.antiAnemic === true || (typeof r?.ruleName === "string" && r.ruleName.toLowerCase().includes("anemic"))) &&
+          !(r?.maxCbo != null || (typeof r?.ruleName === "string" && r.ruleName.toLowerCase().includes("coupling")))
       )
     : [];
 
@@ -748,6 +825,63 @@ export function buildJsonFromPresets(presets: QuickPresetsState, currentJson: st
       ruleName: "Decouple Logic from main()",
       description: "Program must have at least 2 classes; main method must not hold all business logic.",
       targetClassName: "*",
+      weight: 1.0,
+    });
+  }
+
+  if (presets.strictImmutability) {
+    newPresetRules.push({
+      ruleId: PRESET_RULE_IDS.STRICT_IMMUTABILITY,
+      ruleName: "Strict Immutability & Finality",
+      description: "All fields must be final; setter methods are forbidden.",
+      targetClassName: target,
+      requireFinalFields: true,
+      weight: 1.0,
+    });
+  }
+
+  if (presets.cleanCodeLimits) {
+    newPresetRules.push({
+      ruleId: PRESET_RULE_IDS.CLEAN_CODE_LIMITS,
+      ruleName: "Clean Code / Size Limits",
+      description: "Limits maximum methods per class and source lines per method.",
+      targetClassName: target,
+      maxMethodsPerClass: 10,
+      maxLinesPerMethod: 30,
+      weight: 1.0,
+    });
+  }
+
+  if (presets.requireOverride) {
+    newPresetRules.push({
+      ruleId: PRESET_RULE_IDS.REQUIRE_OVERRIDE,
+      ruleName: "Mandatory @Override Annotation",
+      description: "All overridden or implemented methods must carry @Override.",
+      targetClassName: target,
+      requireOverrideAnnotation: true,
+      requireAnnotations: ["@Override"],
+      weight: 1.0,
+    });
+  }
+
+  if (presets.antiAnemic) {
+    newPresetRules.push({
+      ruleId: PRESET_RULE_IDS.ANTI_ANEMIC,
+      ruleName: "Anti-Anemic Domain Model",
+      description: "Domain classes must define behavioral methods beyond getters/setters.",
+      targetClassName: target,
+      antiAnemic: true,
+      weight: 1.0,
+    });
+  }
+
+  if (presets.looseCoupling) {
+    newPresetRules.push({
+      ruleId: PRESET_RULE_IDS.LOOSE_COUPLING,
+      ruleName: "Loose Coupling (CBO Limit)",
+      description: "Classes must maintain loose coupling by limiting external class references.",
+      targetClassName: target,
+      maxCbo: 6,
       weight: 1.0,
     });
   }
@@ -869,14 +1003,16 @@ export function GradingPanel({
   const activePresetCount =
     (presets.encapsulation ? 1 : 0) +
     (presets.polymorphism ? 1 : 0) +
-    (presets.antiMonolithic ? 1 : 0);
+    (presets.antiMonolithic ? 1 : 0) +
+    (presets.strictImmutability ? 1 : 0) +
+    (presets.cleanCodeLimits ? 1 : 0) +
+    (presets.requireOverride ? 1 : 0) +
+    (presets.antiAnemic ? 1 : 0) +
+    (presets.looseCoupling ? 1 : 0);
 
   return (
     <div className="space-y-4">
       {readOnly && <FrozenNotice what="grading rules" />}
-      <p className="max-w-[70ch] text-body-xs text-mute">
-        Structural reflection rules (40%) and test cases (60%). Evaluated securely in judge sandbox.
-      </p>
 
       <div className="border-b border-border pb-1">
         <Tabs value={mode} onValueChange={(v) => setMode(v as "presets" | "raw")} className="w-full">
@@ -906,85 +1042,159 @@ export function GradingPanel({
 
       {mode === "presets" && (
         <div className="space-y-4 rounded-sm border border-border bg-card p-4 shadow-hairline">
-          <div>
-            <div className="flex items-center justify-between">
-              <h3 className="text-body-md font-medium text-ink">OOP Presets</h3>
-              <Badge variant="outline" className="text-body-xs text-mute">
-                {activePresetCount} of 3 active
-              </Badge>
-            </div>
-            <p className="mt-0.5 text-body-xs text-mute">
-              Toggle common OOP structural constraints. The JSON configuration updates in real time.
-            </p>
+          {/* Quick Presets Standard Bundles */}
+          <div className="flex flex-wrap items-center gap-2 border-b border-border/60 pb-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={readOnly}
+              onClick={() => updatePresets({ strictImmutability: true, encapsulation: true })}
+              className="h-7 text-xs"
+            >
+              Strict Immutability
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={readOnly}
+              onClick={() => updatePresets({ cleanCodeLimits: true, antiMonolithic: true })}
+              className="h-7 text-xs"
+            >
+              Clean Code / Size Limits
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={readOnly}
+              onClick={() =>
+                updatePresets({
+                  encapsulation: true,
+                  polymorphism: true,
+                  antiMonolithic: true,
+                  strictImmutability: true,
+                  cleanCodeLimits: true,
+                  requireOverride: true,
+                  antiAnemic: true,
+                  looseCoupling: true,
+                })
+              }
+              className="h-7 border-primary/40 bg-primary/5 text-xs text-primary hover:bg-primary/10"
+            >
+              Full Strict OOP
+            </Button>
           </div>
 
-          <div className="space-y-3 pt-1">
+          <div className="grid grid-cols-1 gap-2 pt-1 md:grid-cols-2">
             {/* Encapsulation */}
-            <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-border/60 bg-background/50 p-3 transition-colors hover:border-border">
+            <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-border/60 bg-background/50 px-3 py-2.5 transition-colors hover:border-border">
               <input
                 type="checkbox"
                 aria-label="Preset Encapsulation"
                 checked={presets.encapsulation}
                 disabled={readOnly}
                 onChange={(e) => updatePresets({ encapsulation: e.target.checked })}
-                className="mt-0.5 h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+                className="h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
               />
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-body-sm font-medium text-ink">Enforce Encapsulation</span>
-                  <Badge variant="secondary" className="font-mono text-xs">preset-encapsulation</Badge>
-                </div>
-                <p className="text-body-xs text-mute">
-                  All fields must be <code>private</code> or <code>protected</code>. No <code>public</code> fields allowed (except <code>static final</code> constants).
-                </p>
-              </div>
+              <span className="text-body-sm font-medium text-ink">Enforce Encapsulation</span>
             </label>
 
             {/* Polymorphism / Abstraction */}
-            <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-border/60 bg-background/50 p-3 transition-colors hover:border-border">
+            <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-border/60 bg-background/50 px-3 py-2.5 transition-colors hover:border-border">
               <input
                 type="checkbox"
                 aria-label="Preset Polymorphism"
                 checked={presets.polymorphism}
                 disabled={readOnly}
                 onChange={(e) => updatePresets({ polymorphism: e.target.checked })}
-                className="mt-0.5 h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+                className="h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
               />
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-body-sm font-medium text-ink">Require Polymorphism / Abstraction</span>
-                  <Badge variant="secondary" className="font-mono text-xs">preset-polymorphism</Badge>
-                </div>
-                <p className="text-body-xs text-mute">
-                  Requires at least one <code>interface</code> or <code>abstract class</code> in the solution.
-                </p>
-              </div>
+              <span className="text-body-sm font-medium text-ink">Require Polymorphism</span>
             </label>
 
             {/* Anti-Monolithic */}
-            <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-border/60 bg-background/50 p-3 transition-colors hover:border-border">
+            <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-border/60 bg-background/50 px-3 py-2.5 transition-colors hover:border-border">
               <input
                 type="checkbox"
                 aria-label="Preset Anti-Monolithic"
                 checked={presets.antiMonolithic}
                 disabled={readOnly}
                 onChange={(e) => updatePresets({ antiMonolithic: e.target.checked })}
-                className="mt-0.5 h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+                className="h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
               />
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-body-sm font-medium text-ink">Decouple Logic from main()</span>
-                  <Badge variant="secondary" className="font-mono text-xs">preset-anti-monolithic</Badge>
-                </div>
-                <p className="text-body-xs text-mute">
-                  Requires at least 2 classes. The <code>main</code> method must delegate business logic to domain classes.
-                </p>
-              </div>
+              <span className="text-body-sm font-medium text-ink">Decouple main()</span>
+            </label>
+
+            {/* Strict Immutability */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-border/60 bg-background/50 px-3 py-2.5 transition-colors hover:border-border">
+              <input
+                type="checkbox"
+                aria-label="Preset Strict Immutability"
+                checked={presets.strictImmutability}
+                disabled={readOnly}
+                onChange={(e) => updatePresets({ strictImmutability: e.target.checked })}
+                className="h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+              />
+              <span className="text-body-sm font-medium text-ink">Strict Immutability</span>
+            </label>
+
+            {/* Clean Code / Size Limits */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-border/60 bg-background/50 px-3 py-2.5 transition-colors hover:border-border">
+              <input
+                type="checkbox"
+                aria-label="Preset Clean Code / Size Limits"
+                checked={presets.cleanCodeLimits}
+                disabled={readOnly}
+                onChange={(e) => updatePresets({ cleanCodeLimits: e.target.checked })}
+                className="h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+              />
+              <span className="text-body-sm font-medium text-ink">Clean Code / Limits</span>
+            </label>
+
+            {/* Require Override */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-border/60 bg-background/50 px-3 py-2.5 transition-colors hover:border-border">
+              <input
+                type="checkbox"
+                aria-label="Preset Require Override"
+                checked={presets.requireOverride}
+                disabled={readOnly}
+                onChange={(e) => updatePresets({ requireOverride: e.target.checked })}
+                className="h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+              />
+              <span className="text-body-sm font-medium text-ink">Require @Override</span>
+            </label>
+
+            {/* Anti-Anemic Domain */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-border/60 bg-background/50 px-3 py-2.5 transition-colors hover:border-border">
+              <input
+                type="checkbox"
+                aria-label="Preset Anti-Anemic Domain"
+                checked={presets.antiAnemic}
+                disabled={readOnly}
+                onChange={(e) => updatePresets({ antiAnemic: e.target.checked })}
+                className="h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+              />
+              <span className="text-body-sm font-medium text-ink">Anti-Anemic Domain</span>
+            </label>
+
+            {/* Loose Coupling */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-border/60 bg-background/50 px-3 py-2.5 transition-colors hover:border-border">
+              <input
+                type="checkbox"
+                aria-label="Preset Loose Coupling"
+                checked={presets.looseCoupling}
+                disabled={readOnly}
+                onChange={(e) => updatePresets({ looseCoupling: e.target.checked })}
+                className="h-4 w-4 rounded-sm border-border text-ink focus:ring-1 focus:ring-ring"
+              />
+              <span className="text-body-sm font-medium text-ink">Loose Coupling (CBO)</span>
             </label>
           </div>
 
           {/* Target class input */}
-          <div className="space-y-1.5 border-t border-border/60 pt-2">
+          <div className="space-y-1.5 border-t border-border/60 pt-3">
             <label htmlFor="target-class-input" className="block text-body-sm font-medium text-ink">
               Target Class / Interface (Optional)
             </label>
@@ -992,13 +1202,10 @@ export function GradingPanel({
               id="target-class-input"
               value={presets.targetClassName}
               disabled={readOnly}
-              placeholder="e.g. Account (leave blank for wildcard *)"
+              placeholder="e.g. Account (blank for all classes)"
               onChange={(e) => updatePresets({ targetClassName: e.target.value })}
               className="max-w-md font-mono text-xs"
             />
-            <p className="text-body-xs text-mute">
-              Applies to Encapsulation &amp; Polymorphism rules. If blank, applies to all classes (wildcard <code>*</code>).
-            </p>
           </div>
         </div>
       )}
@@ -1142,10 +1349,6 @@ export function ReferencePanel({
 
   return (
     <div className="space-y-4">
-      <p className="max-w-[70ch] text-body-xs text-mute">
-        Working reference program used to generate expected outputs in the judge sandbox ({authoring.timeLimitMs} ms / {authoring.memoryLimitMb} MB).
-      </p>
-
       {files.length === 0 ? (
         <div className="flex flex-wrap items-center gap-2 rounded-sm border border-dashed border-border px-4 py-5">
           <p className="mr-auto text-body-md text-ink">No reference solution yet</p>
@@ -1201,10 +1404,6 @@ export function ReferencePanel({
         <div className="h-64 overflow-hidden rounded-sm border border-border">
           <ConsolePanel problemId={problemId} language="JAVA" files={consoleFiles} runSignal={runSignal} />
         </div>
-        <p className="text-body-sm text-mute">
-          Type a line and press Enter to send it to stdin · Ctrl+D closes stdin · Ctrl+C stops. Runs the code in the editor
-          above, saved or not.
-        </p>
       </section>
     </div>
   );

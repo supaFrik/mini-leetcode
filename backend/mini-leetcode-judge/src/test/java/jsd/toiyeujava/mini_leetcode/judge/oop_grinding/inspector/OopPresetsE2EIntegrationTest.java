@@ -100,6 +100,67 @@ public class OopPresetsE2EIntegrationTest {
                 """, targetClassName, minClasses, disallowMonolithicMain));
     }
 
+    private OopConstraintRule createStrictImmutabilityPreset(String targetClassName) {
+        return ruleFromJson(String.format("""
+                {
+                    "ruleId": "preset-strict-immutability",
+                    "ruleName": "Strict Immutability & Finality",
+                    "targetClassName": "%s",
+                    "requireFinalFields": true,
+                    "weight": 1.0
+                }
+                """, targetClassName));
+    }
+
+    private OopConstraintRule createCleanCodeLimitsPreset(String targetClassName, int maxMethods, int maxLines) {
+        return ruleFromJson(String.format("""
+                {
+                    "ruleId": "preset-clean-code-limits",
+                    "ruleName": "Clean Code / Size Limits",
+                    "targetClassName": "%s",
+                    "maxMethodsPerClass": %d,
+                    "maxLinesPerMethod": %d,
+                    "weight": 1.0
+                }
+                """, targetClassName, maxMethods, maxLines));
+    }
+
+    private OopConstraintRule createRequireOverridePreset(String targetClassName) {
+        return ruleFromJson(String.format("""
+                {
+                    "ruleId": "preset-require-override",
+                    "ruleName": "Mandatory @Override Annotation",
+                    "targetClassName": "%s",
+                    "requireOverrideAnnotation": true,
+                    "weight": 1.0
+                }
+                """, targetClassName));
+    }
+
+    private OopConstraintRule createAntiAnemicPreset(String targetClassName) {
+        return ruleFromJson(String.format("""
+                {
+                    "ruleId": "preset-anti-anemic",
+                    "ruleName": "Anti-Anemic Domain Model",
+                    "targetClassName": "%s",
+                    "antiAnemic": true,
+                    "weight": 1.0
+                }
+                """, targetClassName));
+    }
+
+    private OopConstraintRule createLooseCouplingPreset(String targetClassName, int maxCbo) {
+        return ruleFromJson(String.format("""
+                {
+                    "ruleId": "preset-loose-coupling",
+                    "ruleName": "Loose Coupling (CBO Limit)",
+                    "targetClassName": "%s",
+                    "maxCbo": %d,
+                    "weight": 1.0
+                }
+                """, targetClassName, maxCbo));
+    }
+
     // =========================================================================
     // TIER 1: FEATURE COVERAGE (Wildcard, Encapsulation, Polymorphism, Anti-Monolithic, Scoping)
     // =========================================================================
@@ -512,6 +573,100 @@ public class OopPresetsE2EIntegrationTest {
             assertThat(report.isPassed()).isFalse();
             assertThat(report.getRules().get(0).getMessage()).contains("at least 3 classes");
         }
+
+        @Test
+        @DisplayName("T1.19: Strict Immutability preset passes for compliant immutable class")
+        void strictImmutability_CompliantClass_Passes(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = Map.of(
+                    "Price.java", """
+                            public class Price {
+                                private final long amount;
+                                private final String currency;
+                                public Price(long amount, String currency) {
+                                    this.amount = amount;
+                                    this.currency = currency;
+                                }
+                                public long getAmount() { return amount; }
+                                public String getCurrency() { return currency; }
+                            }
+                            """
+            );
+            compileJavaSources(classesDir, sources);
+            OopConstraintRule rule = createStrictImmutabilityPreset("*");
+            OopInspectionReport report = inspector.inspect(classesDir, List.of(rule), 1.0);
+            assertThat(report.isPassed()).isTrue();
+        }
+
+        @Test
+        @DisplayName("T1.20: Clean Code limits preset passes within method count and line count")
+        void cleanCodeLimits_WithinBounds_Passes(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = Map.of(
+                    "MathHelper.java", """
+                            public class MathHelper {
+                                public int add(int a, int b) { return a + b; }
+                                public int sub(int a, int b) { return a - b; }
+                            }
+                            """
+            );
+            compileJavaSources(classesDir, sources);
+            OopConstraintRule rule = createCleanCodeLimitsPreset("*", 5, 20);
+            OopInspectionReport report = inspector.inspect(classesDir, List.of(rule), 1.0);
+            assertThat(report.isPassed()).isTrue();
+        }
+
+        @Test
+        @DisplayName("T1.21: Mandatory @Override preset passes when all overrides have annotation")
+        void requireOverride_CompliantOverrides_Passes(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = Map.of(
+                    "Printable.java", "public interface Printable { void print(); }",
+                    "Doc.java", """
+                            public class Doc implements Printable {
+                                @Override
+                                public void print() { System.out.println("doc"); }
+                            }
+                            """
+            );
+            compileJavaSources(classesDir, sources);
+            OopConstraintRule rule = createRequireOverridePreset("*");
+            OopInspectionReport report = inspector.inspect(classesDir, List.of(rule), 1.0);
+            assertThat(report.isPassed()).isTrue();
+        }
+
+        @Test
+        @DisplayName("T1.22: Anti-Anemic domain model preset passes for rich model with behavior")
+        void antiAnemic_RichDomainModel_Passes(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = Map.of(
+                    "Account.java", """
+                            public class Account {
+                                private double balance;
+                                public Account(double b) { this.balance = b; }
+                                public double getBalance() { return balance; }
+                                public void deposit(double a) { if (a > 0) balance += a; }
+                            }
+                            """
+            );
+            compileJavaSources(classesDir, sources);
+            OopConstraintRule rule = createAntiAnemicPreset("*");
+            OopInspectionReport report = inspector.inspect(classesDir, List.of(rule), 1.0);
+            assertThat(report.isPassed()).isTrue();
+        }
+
+        @Test
+        @DisplayName("T1.23: Loose Coupling preset passes when CBO is within threshold")
+        void looseCoupling_WithinCboThreshold_Passes(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = Map.of(
+                    "Dep1.java", "public class Dep1 {}",
+                    "Client.java", """
+                            public class Client {
+                                private Dep1 dep = new Dep1();
+                            }
+                            """
+            );
+            compileJavaSources(classesDir, sources);
+            OopConstraintRule rule = createLooseCouplingPreset("*", 2);
+            OopInspectionReport report = inspector.inspect(classesDir, List.of(rule), 1.0);
+            assertThat(report.isPassed()).isTrue();
+        }
     }
 
     // =========================================================================
@@ -624,6 +779,116 @@ public class OopPresetsE2EIntegrationTest {
                             msg -> assertThat(msg).contains("No user classes found"),
                             msg -> assertThat(msg).contains("expected at least 2 classes, but found 0")
                     );
+        }
+
+        @Test
+        @DisplayName("B6: Strict Immutability flags non-final field and setter violations")
+        void boundary_StrictImmutability_FlagsNonFinalFieldAndSetter(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = Map.of(
+                    "Mutable.java", """
+                            public class Mutable {
+                                private int x;
+                                public void setX(int val) { this.x = val; }
+                            }
+                            """
+            );
+            compileJavaSources(classesDir, sources);
+            OopConstraintRule rule = createStrictImmutabilityPreset("*");
+            OopInspectionReport report = inspector.inspect(classesDir, List.of(rule), 1.0);
+            assertThat(report.isPassed()).isFalse();
+            assertThat(report.getRules().get(0).getMessage())
+                    .contains("Field 'x' in class Mutable must be final (immutability violation)")
+                    .contains("must not declare setter for immutable field 'x'");
+        }
+
+        @Test
+        @DisplayName("B7: Clean Code limits flags method count and lines per method violations")
+        void boundary_CleanCodeLimits_FlagsMethodCountAndLines(@TempDir Path classesDir) throws Exception {
+            StringBuilder sb = new StringBuilder();
+            sb.append("public class BigModule {\n");
+            for (int m = 1; m <= 5; m++) {
+                sb.append("    public void m").append(m).append("() {\n");
+                sb.append("        int x = 0;\n");
+                for (int l = 0; l < 15; l++) {
+                    sb.append("        x += ").append(l).append(";\n");
+                }
+                sb.append("    }\n");
+            }
+            sb.append("}\n");
+            compileJavaSources(classesDir, Map.of("BigModule.java", sb.toString()));
+
+            OopConstraintRule rule = createCleanCodeLimitsPreset("*", 3, 10);
+            OopInspectionReport report = inspector.inspect(classesDir, List.of(rule), 1.0);
+            assertThat(report.isPassed()).isFalse();
+            assertThat(report.getRules().get(0).getMessage())
+                    .contains("exceeding maximum allowed limit (3)")
+                    .contains("exceeding maximum allowed limit (10)");
+        }
+
+        @Test
+        @DisplayName("B8: Missing @Override annotation fails check with exact supertype info")
+        void boundary_RequireOverride_MissingAnnotationFails(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = Map.of(
+                    "Action.java", "public interface Action { void execute(); }",
+                    "RunAction.java", """
+                            public class RunAction implements Action {
+                                public void execute() {} // missing @Override
+                            }
+                            """
+            );
+            compileJavaSources(classesDir, sources);
+            OopConstraintRule rule = createRequireOverridePreset("*");
+            OopInspectionReport report = inspector.inspect(classesDir, List.of(rule), 1.0);
+            assertThat(report.isPassed()).isFalse();
+            assertThat(report.getRules().get(0).getMessage())
+                    .contains("Method 'execute' in class RunAction overrides a method from Action but is missing @Override annotation");
+        }
+
+        @Test
+        @DisplayName("B9: Anemic domain model fails check with descriptive message")
+        void boundary_AntiAnemic_FailsAnemicDomainModel(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = Map.of(
+                    "ProductDto.java", """
+                            public class ProductDto {
+                                private String sku;
+                                private double price;
+                                public ProductDto(String s, double p) { this.sku = s; this.price = p; }
+                                public String getSku() { return sku; }
+                                public void setSku(String s) { this.sku = s; }
+                                public double getPrice() { return price; }
+                                public void setPrice(double p) { this.price = p; }
+                            }
+                            """
+            );
+            compileJavaSources(classesDir, sources);
+            OopConstraintRule rule = createAntiAnemicPreset("*");
+            OopInspectionReport report = inspector.inspect(classesDir, List.of(rule), 1.0);
+            assertThat(report.isPassed()).isFalse();
+            assertThat(report.getRules().get(0).getMessage())
+                    .contains("Class ProductDto is an anemic domain model with only getters/setters/constructors; it must define behavioral domain methods");
+        }
+
+        @Test
+        @DisplayName("B10: High CBO coupling fails check with exact count")
+        void boundary_LooseCoupling_HighCboFails(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = Map.of(
+                    "A.java", "public class A {}",
+                    "B.java", "public class B {}",
+                    "C.java", "public class C {}",
+                    "HighCbo.java", """
+                            public class HighCbo {
+                                private A a = new A();
+                                private B b = new B();
+                                private C c = new C();
+                            }
+                            """
+            );
+            compileJavaSources(classesDir, sources);
+            OopConstraintRule rule = createLooseCouplingPreset("HighCbo", 2);
+            OopInspectionReport report = inspector.inspect(classesDir, List.of(rule), 1.0);
+            assertThat(report.isPassed()).isFalse();
+            assertThat(report.getRules().get(0).getMessage())
+                    .contains("Class HighCbo has Coupling Between Objects (CBO) of 3, exceeding maximum allowed limit (2)");
         }
     }
 
@@ -791,6 +1056,85 @@ public class OopPresetsE2EIntegrationTest {
 
             assertThat(report.isPassed()).isTrue();
             assertThat(report.getRules()).allMatch(OopRuleResult::isPassed);
+        }
+
+        @Test
+        @DisplayName("C5: Full Strict OOP composite preset passes fully compliant architecture")
+        void crossFeature_FullStrictOop_CompliantArchitecture_Passes(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = new LinkedHashMap<>();
+            sources.put("Payment.java", """
+                    public interface Payment {
+                        long process(long amount);
+                    }
+                    """);
+            sources.put("CreditPayment.java", """
+                    public class CreditPayment implements Payment {
+                        private final String cardToken;
+                        public CreditPayment(String cardToken) { this.cardToken = cardToken; }
+                        public String getCardToken() { return cardToken; }
+                        @Override
+                        public long process(long amount) {
+                            return amount > 0 ? amount : 0;
+                        }
+                    }
+                    """);
+            sources.put("PaymentApp.java", """
+                    public class PaymentApp {
+                        public static void main(String[] args) {
+                            Payment p = new CreditPayment("tok_123");
+                            System.out.println(p.process(100));
+                        }
+                    }
+                    """);
+
+            compileJavaSources(classesDir, sources);
+
+            List<OopConstraintRule> rules = List.of(
+                    createEncapsulationPreset("*"),
+                    createPolymorphismPreset("*"),
+                    createAntiMonolithicPreset("*", 2, true),
+                    createStrictImmutabilityPreset("CreditPayment"),
+                    createCleanCodeLimitsPreset("*", 10, 30),
+                    createRequireOverridePreset("*"),
+                    createAntiAnemicPreset("CreditPayment"),
+                    createLooseCouplingPreset("PaymentApp", 4)
+            );
+
+            OopInspectionReport report = inspector.inspect(classesDir, rules, 1.0);
+
+            assertThat(report.isPassed()).isTrue();
+            assertThat(report.getScore()).isEqualTo(100.0);
+            assertThat(report.getRules()).hasSize(8);
+            assertThat(report.getRules()).allMatch(OopRuleResult::isPassed);
+        }
+
+        @Test
+        @DisplayName("C6: Multi-preset with Strict Immutability and Size Limits isolates failing rules")
+        void crossFeature_MultiPreset_IsolatesImmutabilityAndSizeViolations(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = new LinkedHashMap<>();
+            sources.put("Order.java", """
+                    public class Order {
+                        private long amount; // mutable -> violation
+                        public Order(long amt) { this.amount = amt; }
+                        public long getAmount() { return amount; }
+                        public void setAmount(long amt) { this.amount = amt; } // setter -> violation
+                        public void extra1() {}
+                        public void extra2() {}
+                        public void extra3() {}
+                    }
+                    """);
+            compileJavaSources(classesDir, sources);
+
+            List<OopConstraintRule> rules = List.of(
+                    createStrictImmutabilityPreset("Order"),
+                    createCleanCodeLimitsPreset("Order", 3, 20) // has 5 methods -> violation
+            );
+
+            OopInspectionReport report = inspector.inspect(classesDir, rules, 1.0);
+
+            assertThat(report.isPassed()).isFalse();
+            assertThat(report.getRules()).hasSize(2);
+            assertThat(report.getRules()).allMatch(r -> !r.isPassed());
         }
     }
 
@@ -1035,6 +1379,71 @@ public class OopPresetsE2EIntegrationTest {
 
             assertThat(report.isPassed()).isFalse();
             assertThat(report.getRules().get(0).getMessage()).containsIgnoringCase("main");
+        }
+
+        @Test
+        @DisplayName("S6: Polymorphic E-Commerce payment processing scenario with strict OOP presets")
+        void realWorld_EcommercePaymentProcessing_PassesAllStrictOopPresets(@TempDir Path classesDir) throws Exception {
+            Map<String, String> sources = new LinkedHashMap<>();
+            sources.put("payment/PaymentGateway.java", """
+                    package payment;
+                    public interface PaymentGateway {
+                        boolean executeTransaction(long cents);
+                    }
+                    """);
+            sources.put("payment/StripeGateway.java", """
+                    package payment;
+                    public class StripeGateway implements PaymentGateway {
+                        private final String apiKey;
+                        public StripeGateway(String key) { this.apiKey = key; }
+                        public String getApiKey() { return apiKey; }
+                        @Override
+                        public boolean executeTransaction(long cents) {
+                            return cents > 0 && apiKey != null;
+                        }
+                    }
+                    """);
+            sources.put("payment/CheckoutService.java", """
+                    package payment;
+                    public class CheckoutService {
+                        private final PaymentGateway gateway;
+                        public CheckoutService(PaymentGateway gw) { this.gateway = gw; }
+                        public boolean checkout(long totalCents) {
+                            return gateway.executeTransaction(totalCents);
+                        }
+                    }
+                    """);
+            sources.put("payment/EcommerceMain.java", """
+                    package payment;
+                    public class EcommerceMain {
+                        public static void main(String[] args) {
+                            PaymentGateway gw = new StripeGateway("sk_test_123");
+                            CheckoutService s = new CheckoutService(gw);
+                            boolean ok = s.checkout(4999);
+                            System.out.println("Checkout status: " + ok);
+                        }
+                    }
+                    """);
+
+            compileJavaSources(classesDir, sources);
+
+            List<OopConstraintRule> rules = List.of(
+                    createEncapsulationPreset("*"),
+                    createPolymorphismPreset("*"),
+                    createAntiMonolithicPreset("*", 2, true),
+                    createStrictImmutabilityPreset("payment.StripeGateway"),
+                    createCleanCodeLimitsPreset("*", 10, 25),
+                    createRequireOverridePreset("*"),
+                    createAntiAnemicPreset("payment.StripeGateway"),
+                    createLooseCouplingPreset("payment.CheckoutService", 4)
+            );
+
+            OopInspectionReport report = inspector.inspect(classesDir, rules, 1.0);
+
+            assertThat(report.isPassed()).isTrue();
+            assertThat(report.getScore()).isEqualTo(100.0);
+            assertThat(report.getRules()).hasSize(8);
+            assertThat(report.getRules()).allMatch(OopRuleResult::isPassed);
         }
     }
 }

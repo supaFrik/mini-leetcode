@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Lock } from "lucide-react";
 import { CodeExercise } from "@/components/code-exercise/code-exercise";
@@ -21,30 +20,28 @@ import v from "./stage-view.module.css";
  * đề + khu làm bài (bài một file ngay trong trang; project nhiều file mở bằng IntelliJ) + chủ đề của stage.
  */
 export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: number; stageNo: number }) {
-  const router = useRouter();
   const [attempt, setAttempt] = useState(0);
   const load = useLoad(() => fetchStudyPlan(slug), [slug, attempt]);
   const [showProject, setShowProject] = useState(false);
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
 
-  const plan = load.state === "ok" ? load.data : null;
+  const [cachedPlan, setCachedPlan] = useState<Awaited<ReturnType<typeof fetchStudyPlan>> | null>(null);
+  useEffect(() => {
+    if (load.state === "ok") setCachedPlan(load.data);
+  }, [load]);
+
+  const plan = load.state === "ok" ? load.data : cachedPlan;
   const item = plan?.items.find((it) => it.id === itemId);
   const stage = item?.stages.find((st) => st.stageNo === stageNo);
   const planHref = plan ? `/study-plans/${plan.slug}` : "/study-plans";
 
   useEffect(() => {
     if (stage?.status === "LOCKED" && plan && item) {
-      const active = item.stages.find((st) => st.status !== "DONE" && st.status !== "LOCKED") ?? item.stages[0];
       toast(`Please complete stage ${stage.stageNo - 1} first.`, "error");
-      if (active && active.stageNo !== stageNo) {
-        router.replace(`/study-plans/${plan.slug}/${item.id}/${active.stageNo}`);
-      } else {
-        router.replace(`/study-plans/${plan.slug}`);
-      }
     }
-  }, [stage?.status, stage?.stageNo, stageNo, item, plan, router]);
+  }, [stage?.status, stage?.stageNo, item, plan]);
 
-  if (load.state === "loading") return <div className={cn(theme.theme, v.page)} aria-busy="true"><p className={v.muted}>Loading stage…</p></div>;
+  if (load.state === "loading" && !plan) return <div className={cn(theme.theme, v.page)} aria-busy="true"><p className={v.muted}>Loading stage…</p></div>;
   if (load.state === "error") {
     return (
       <div className={cn(theme.theme, v.page)}>
@@ -69,14 +66,14 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
         <nav className={v.crumbs} aria-label="Breadcrumb">
           <Link href="/study-plans">Study plans</Link> → <Link href={planHref}>{plan.title}</Link>
         </nav>
-        <section className={v.card} aria-label="Locked stage">
+        <section className={v.card} aria-label="Stage">
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="mb-3 rounded-full bg-amber-500/10 p-3 text-amber-600 dark:text-amber-500">
               <Lock size={24} aria-hidden />
             </div>
             <h2 className="text-lg font-semibold text-ink">Stage {stage.stageNo} is locked</h2>
             <p className="mt-1 max-w-md text-sm text-mute">
-              You must complete stage {stage.stageNo - 1} before proceeding to this stage.
+              Finish stage {stage.stageNo - 1} first. You must complete stage {stage.stageNo - 1} before proceeding to this stage.
             </p>
             {active && (
               <Button asChild className="mt-4">
@@ -123,15 +120,12 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
         {!stage.published || !stage.slug ? (
           <p className={v.muted}>This stage is being updated. Try again later.</p>
         ) : (
-          <CodeExercise problemSlug={stage.slug} passed={stage.status === "DONE"} onSolved={reload}
-            multiFile={(p) => (
-              <div className={v.ide}>
-                <h3>Write the project in IntelliJ IDEA</h3>
-                <p className={v.muted}>This stage has several files. Open it in IntelliJ, code, then use <b>Check Stage</b> in the IDE.</p>
-                <IdeButton planSlug={plan.slug} itemId={item.id} stageNo={stage.stageNo} />
-                <Link href={`/problems/${p.slug}`} className={v.linkButton}>Prefer the browser? Solve it in the web workspace</Link>
-              </div>
-            )} />
+          <CodeExercise
+            problemSlug={stage.slug}
+            passed={stage.status === "DONE"}
+            onSolved={reload}
+            ideAction={<IdeButton planSlug={plan.slug} itemId={item.id} stageNo={stage.stageNo} />}
+          />
         )}
       </section>
 

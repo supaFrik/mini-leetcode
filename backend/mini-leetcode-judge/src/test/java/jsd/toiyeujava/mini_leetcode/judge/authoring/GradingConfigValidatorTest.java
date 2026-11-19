@@ -146,4 +146,93 @@ class GradingConfigValidatorTest {
         assertThat(result.errors()).isEmpty();
         assertThat(result.ruleCount()).isEqualTo(3);
     }
+
+    @Test
+    void acceptsAllFiveStrictOopRules() {
+        var result = validator.validate("""
+                {
+                  "rules": [
+                    {
+                      "ruleId": "preset-strict-immutability",
+                      "ruleName": "Strict Immutability",
+                      "targetClassName": "Money",
+                      "requireFinalFields": true,
+                      "weight": 1.5
+                    },
+                    {
+                      "ruleId": "preset-clean-code-limits",
+                      "ruleName": "Clean Code Limits",
+                      "targetClassName": "*",
+                      "maxMethodsPerClass": 12,
+                      "maxLinesPerMethod": 30,
+                      "weight": 1.0
+                    },
+                    {
+                      "ruleId": "preset-require-override",
+                      "ruleName": "Require Override",
+                      "targetClassName": "*",
+                      "requireOverrideAnnotation": true,
+                      "requireAnnotations": ["@Override"],
+                      "weight": 1.0
+                    },
+                    {
+                      "ruleId": "preset-anti-anemic",
+                      "ruleName": "Anti-Anemic Domain Model",
+                      "targetClassName": "Account",
+                      "antiAnemic": true,
+                      "weight": 2.0
+                    },
+                    {
+                      "ruleId": "preset-loose-coupling",
+                      "ruleName": "Loose Coupling",
+                      "targetClassName": "*",
+                      "maxCbo": 6,
+                      "weight": 1.0
+                    }
+                  ]
+                }
+                """);
+        assertThat(result.valid()).isTrue();
+        assertThat(result.errors()).isEmpty();
+        assertThat(result.ruleCount()).isEqualTo(5);
+        assertThat(result.totalRuleWeight()).isEqualTo(6.5);
+    }
+
+    @Test
+    void rejectsInvalidBoundsForStrictRules() {
+        var result = validator.validate("""
+                {
+                  "rules": [
+                    {
+                      "targetClassName": "A",
+                      "maxMethodsPerClass": 0,
+                      "maxLinesPerMethod": -5,
+                      "maxCbo": -1
+                    }
+                  ]
+                }
+                """);
+        assertThat(result.valid()).isFalse();
+        assertThat(result.errors()).containsExactlyInAnyOrder(
+                "rules[0].maxMethodsPerClass: must be at least 1",
+                "rules[0].maxLinesPerMethod: must be at least 1",
+                "rules[0].maxCbo: must not be negative"
+        );
+    }
+
+    @Test
+    void rejectsNullRequireAnnotations() {
+        var result = validator.validate("""
+                {
+                  "rules": [
+                    {
+                      "targetClassName": "A",
+                      "requireAnnotations": null
+                    }
+                  ]
+                }
+                """);
+        assertThat(result.valid()).isFalse();
+        assertThat(result.errors()).contains("rules[0].requireAnnotations: must be an array (use [] instead of null)");
+    }
 }
