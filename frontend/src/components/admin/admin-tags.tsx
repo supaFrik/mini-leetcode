@@ -26,7 +26,7 @@ export function AdminTagsView() {
       .then((data) => { setTags(data); setError(null); })
       .catch((e) => setError(errorMessage(e)));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { void reload(); }, []);
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
