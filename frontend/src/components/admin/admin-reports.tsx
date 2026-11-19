@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { useSearchParams } from "next/navigation";
 import { useLoad } from "@/hooks/use-load";
+import { useUser } from "@/hooks/use-user";
 import { fetchAdminContests, fetchPlagiarism, fetchProctoringReport } from "@/lib/services";
 import { formatWhen } from "./admin-overview";
 
@@ -12,8 +14,13 @@ const td = "px-4 py-2";
 /** /admin/reports: báo cáo giám sát (proctoring) và đạo văn của một kỳ thi. */
 export function AdminReportsView() {
   const contests = useLoad(() => fetchAdminContests(), []);
-  const [picked, setPicked] = useState<number | null>(null);
-  const list = contests.state === "ok" ? contests.data : [];
+  const { user } = useUser();
+  const fromUrl = Number(useSearchParams().get("contest")) || null;
+  const [picked, setPicked] = useState<number | null>(fromUrl);
+  // Chỉ kỳ thi mình được xem báo cáo: ADMIN thấy hết, còn lại là chủ hoặc giám thị (backend cũng chặn).
+  const list = contests.state === "ok"
+    ? contests.data.filter((c) => user?.role === "ADMIN" || (user && (c.createdById === user.id || (c.proctorIds ?? []).includes(user.id))))
+    : [];
   const contestId = picked ?? list[0]?.id ?? null;
 
   return (

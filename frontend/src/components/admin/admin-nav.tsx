@@ -52,6 +52,7 @@ const TEACHING: Section[] = [
       { href: "/admin/problems", label: "My problems", icon: BookOpen },
       { href: "/admin/study-plans", label: "My study plans", icon: Map },
       { href: "/admin/contests", label: "My contests", icon: Trophy },
+      { href: "/admin/reports", label: "Reports", icon: ShieldAlert },
     ],
   },
   {

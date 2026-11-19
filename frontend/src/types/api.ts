@@ -385,7 +385,10 @@ export interface AdminContestSummary {
   problemCount: number;
   participantCount: number;
   createdById?: number | null;
+  /** Giám thị (xem live view và báo cáo). */
+  proctorIds?: number[];
 }
+export interface ContestProctor { userId: number; username: string; role: Role }
 export interface AdminContestProblem {
   problemId: number;
   slug: string;

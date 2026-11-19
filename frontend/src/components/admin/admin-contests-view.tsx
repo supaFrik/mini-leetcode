@@ -35,9 +35,13 @@ const STATUS_TONE: Record<ContestStatus, "success" | "warning" | "outline"> = {
   COMPLETED: "outline",
 };
 
-/** Hành động theo trạng thái: [nhãn, đường dẫn, tiền tố aria-label]. */
-function actionsFor(c: AdminContestSummary): [string, string, string][] {
+/** Hành động theo trạng thái: [nhãn, đường dẫn, tiền tố aria-label]. Giám thị chỉ xem live view và báo cáo. */
+function actionsFor(c: AdminContestSummary, proctorOnly = false): [string, string, string][] {
   const edit = `/admin/contests/${c.id}`;
+  if (proctorOnly) {
+    const reports: [string, string, string] = ["Reports", `/admin/reports?contest=${c.id}`, "Reports of"];
+    return c.status === "RUNNING" ? [["Live view", `/exam/${c.id}/leaderboard`, "Live view of"], reports] : [reports];
+  }
   if (c.status === "RUNNING") return [["Live view", `/exam/${c.id}/leaderboard`, "Live view of"], ["Edit", edit, "Edit"]];
   if (c.status === "SCHEDULED") return [["Edit", edit, "Edit"], ["Problems", `${edit}?tab=problems`, "Problems of"]];
   return [["Results", `${edit}?tab=results`, "Results of"], ["Plagiarism", `${edit}?tab=results&report=plagiarism`, "Plagiarism report of"]];
@@ -186,14 +190,16 @@ export function AdminContestsView() {
             <span className="font-sans text-sm text-zinc-600 dark:text-zinc-400">{c.problemCount}</span>
             <span className="font-sans text-sm text-zinc-600 dark:text-zinc-400">{c.participantCount}</span>
             <span className="flex items-center justify-start gap-1 md:justify-end">
-              {actionsFor(c).map(([label, href, aria]) => (
+              {actionsFor(c, !canDelete && c.createdById !== user?.id && !!user && (c.proctorIds ?? []).includes(user.id)).map(([label, href, aria]) => (
                 <Button key={label} asChild size="sm" variant="outline" className="h-8 px-2.5 text-xs">
                   <Link href={href} aria-label={`${aria} ${c.title}`}>
                     {label}
                   </Link>
                 </Button>
               ))}
-              {!canDelete && c.createdById !== user?.id && <span className="text-xs text-mute">Read-only</span>}
+              {!canDelete && c.createdById !== user?.id && (
+                <span className="text-xs text-mute">{user && (c.proctorIds ?? []).includes(user.id) ? "Proctor" : "Read-only"}</span>
+              )}
               {canDelete && c.status === "SCHEDULED" && (
                 <Button
                   size="icon-sm"

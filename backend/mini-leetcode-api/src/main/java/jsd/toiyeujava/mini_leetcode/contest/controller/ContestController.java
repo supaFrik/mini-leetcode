@@ -8,6 +8,7 @@ import jsd.toiyeujava.mini_leetcode.contest.dto.ContestResponse;
 import jsd.toiyeujava.mini_leetcode.contest.dto.LeaderboardRowResponse;
 import jsd.toiyeujava.mini_leetcode.contest.dto.PlagiarismResponse;
 import jsd.toiyeujava.mini_leetcode.contest.dto.ProctorReportRowResponse;
+import jsd.toiyeujava.mini_leetcode.contest.admin.ContestProctorService;
 import jsd.toiyeujava.mini_leetcode.contest.service.ContestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ import java.util.List;
 public class ContestController {
 
     private final ContestService contestService;
+    private final ContestProctorService proctorService;
 
     @GetMapping
     @Operation(summary = "List contests", description = "Returns all contests with the current user's registration status")
@@ -73,8 +75,10 @@ public class ContestController {
 
     @GetMapping("/{contestId}/proctoring/report")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
-    @Operation(summary = "Get proctoring report", description = "Instructor/Admin view of violations per participant")
-    public ResponseEntity<List<ProctorReportRowResponse>> getProctoringReport(@PathVariable Long contestId) {
+    @Operation(summary = "Get proctoring report", description = "Violations per participant: contest owner, its proctors and admins")
+    public ResponseEntity<List<ProctorReportRowResponse>> getProctoringReport(@PathVariable Long contestId,
+                                                                              @AuthenticationPrincipal UserPrincipal currentUser) {
+        proctorService.requireMonitor(contestId, currentUser.getId(), currentUser.getRole());
         return ResponseEntity.ok(contestService.getProctoringReport(contestId));
     }
 
@@ -92,7 +96,9 @@ public class ContestController {
     @GetMapping("/{contestId}/plagiarism")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Get plagiarism report", description = "Similarity pairs between participants' accepted solutions")
-    public ResponseEntity<List<PlagiarismResponse>> getPlagiarism(@PathVariable Long contestId) {
+    public ResponseEntity<List<PlagiarismResponse>> getPlagiarism(@PathVariable Long contestId,
+                                                                  @AuthenticationPrincipal UserPrincipal currentUser) {
+        proctorService.requireMonitor(contestId, currentUser.getId(), currentUser.getRole());
         return ResponseEntity.ok(contestService.getPlagiarism(contestId));
     }
 }

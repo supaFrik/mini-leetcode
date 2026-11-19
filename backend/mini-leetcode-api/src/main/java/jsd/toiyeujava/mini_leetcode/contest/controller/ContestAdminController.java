@@ -11,6 +11,8 @@ import jsd.toiyeujava.mini_leetcode.contest.admin.ContestAdminDtos.BulkParticipa
 import jsd.toiyeujava.mini_leetcode.contest.admin.ContestAdminDtos.BulkParticipantsResult;
 import jsd.toiyeujava.mini_leetcode.contest.admin.ContestAdminDtos.ContestUpsertRequest;
 import jsd.toiyeujava.mini_leetcode.contest.admin.ContestAdminService;
+import jsd.toiyeujava.mini_leetcode.contest.admin.ContestProctorService;
+import jsd.toiyeujava.mini_leetcode.contest.admin.ContestProctorService.ProctorView;
 import jsd.toiyeujava.mini_leetcode.entity.ContestStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -42,6 +44,10 @@ import java.util.List;
 public class ContestAdminController {
 
     private final ContestAdminService service;
+    private final ContestProctorService proctors;
+
+    public record AddProctorRequest(String username) {
+    }
 
     @GetMapping
     @Operation(summary = "List contests with problem/participant counts, filter by effective status and title")
@@ -96,6 +102,25 @@ public class ContestAdminController {
     @Operation(summary = "Remove a participant who has no submissions in the contest")
     public ResponseEntity<Void> removeParticipant(@PathVariable Long contestId, @PathVariable Long userId) {
         service.removeParticipant(contestId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{contestId}/proctors")
+    @Operation(summary = "Proctors of a contest")
+    public List<ProctorView> proctors(@PathVariable Long contestId) {
+        return proctors.list(contestId);
+    }
+
+    @PostMapping("/{contestId}/proctors")
+    @Operation(summary = "Appoint an INSTRUCTOR/ADMIN as proctor (contest owner or ADMIN)")
+    public ResponseEntity<ProctorView> addProctor(@PathVariable Long contestId, @RequestBody AddProctorRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(proctors.add(contestId, request == null ? null : request.username()));
+    }
+
+    @DeleteMapping("/{contestId}/proctors/{userId}")
+    @Operation(summary = "Remove a proctor (contest owner or ADMIN)")
+    public ResponseEntity<Void> removeProctor(@PathVariable Long contestId, @PathVariable Long userId) {
+        proctors.remove(contestId, userId);
         return ResponseEntity.noContent().build();
     }
 }

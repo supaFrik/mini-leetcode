@@ -16,7 +16,7 @@ import type {
   AttemptResult, AuthoringTopic, LearnerTopic, StepAnswer, TopicDraft, TopicSummary,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
-  AdminTag, RankingRow, SitePage, TagCategory, TagCategoryInfo, TagCount,
+  AdminTag, ContestProctor, RankingRow, SitePage, TagCategory, TagCategoryInfo, TagCount,
   AdminStats, AdminUserList, AdminUserRow, Role, UserStatus,
   Announcement, PlanProgress, PublicSettings, SiteSettings, TeachingDashboard,
 } from "@/types/api";
@@ -606,4 +606,15 @@ export async function updateTagCategoryInfo(id: number, body: Partial<Omit<TagCa
 }
 export async function deleteTagCategory(id: number): Promise<void> {
   await api<void>(`/api/v1/admin/tag-categories/${id}`, { method: "DELETE" });
+}
+
+// ===== Giám thị kỳ thi (chủ kỳ thi hoặc ADMIN bổ nhiệm) =====
+export async function fetchContestProctors(id: number): Promise<ContestProctor[]> {
+  return (await api<ContestProctor[]>(`/api/v1/admin/contests/${id}/proctors`)) ?? [];
+}
+export async function addContestProctor(id: number, username: string): Promise<ContestProctor> {
+  return api<ContestProctor>(`/api/v1/admin/contests/${id}/proctors`, { method: "POST", body: JSON.stringify({ username }) });
+}
+export async function removeContestProctor(id: number, userId: number): Promise<void> {
+  await api<void>(`/api/v1/admin/contests/${id}/proctors/${userId}`, { method: "DELETE" });
 }

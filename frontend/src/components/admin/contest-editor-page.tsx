@@ -38,6 +38,7 @@ import { toast } from "@/lib/toast";
 import { useUser } from "@/hooks/use-user";
 import { ContestResults } from "@/components/contests/contest-views";
 import { ContestReport } from "@/components/contests/contest-report";
+import { ProctorsPanel } from "./contest-proctors";
 import {
   addContestParticipants,
   createContest,
@@ -389,6 +390,13 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
               >
                 Participants
               </TabsTrigger>
+              <TabsTrigger
+                value="proctors"
+                disabled={!detail}
+                className="data-[state=active]:bg-card data-[state=active]:shadow-xs px-4 py-2 font-medium disabled:opacity-50"
+              >
+                Proctors
+              </TabsTrigger>
               {detail && status !== "SCHEDULED" && (
                 <TabsTrigger
                   value="results"
@@ -422,6 +430,10 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
 
           <TabsContent value="participants" className="m-0 p-5 sm:p-6">
             {detail && <ParticipantsPanel contest={detail} onChanged={loadContest} />}
+          </TabsContent>
+
+          <TabsContent value="proctors" className="m-0 p-5 sm:p-6">
+            {detail && <ProctorsPanel contestId={detail.id} />}
           </TabsContent>
 
           {detail && status !== "SCHEDULED" && (
