@@ -53,7 +53,7 @@
     {
       "slug": "mini-bank-stage-1",
       "title": "Mini Bank 1/5 — Accounts",
-      "difficulty": "EASY",
+      "difficulty": "BEGINNER",
       "tags": [
         "OOP",
         "Encapsulation",
@@ -92,7 +92,7 @@
     {
       "slug": "mini-bank-stage-5",
       "title": "Mini Bank 5/5 — Full CLI",
-      "difficulty": "MEDIUM",
+      "difficulty": "HARD",
       "tags": [
         "OOP",
         "Scanner"

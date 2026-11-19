@@ -10,7 +10,7 @@ OUT = HERE.parent / "seed-problems.sql"
 
 HEADER = r"""-- ============================================================
 -- seed-problems.sql  (CHỈ DÙNG CHO MÔI TRƯỜNG DEV)
--- 20 bài PUBLISHED (12 DSA + 8 OOP, đủ EASY/MEDIUM/HARD) kèm chủ đề,
+-- 20 bài PUBLISHED (12 DSA + 8 OOP, đủ 5 mức BEGINNER..EXPERT) kèm chủ đề,
 -- để có dữ liệu xem trang /problems.
 --
 -- Run (PowerShell, đứng ở thư mục gốc repo):
