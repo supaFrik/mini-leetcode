@@ -15,7 +15,6 @@ import {
   cloneProblem, createProblem, fetchStudyPlan, publishStudyPlan, transitionStudyPlan, updateStudyPlan,
 } from "@/lib/services";
 import type { ProblemFull, PublishIssue, StudyPlanDetail, StudyPlanStatus } from "@/types/api";
-import { AdminNav } from "../admin-nav";
 import { ProblemPicker } from "../problem-picker";
 import { TopicEditor } from "../admin-topics";
 import type { SaveState } from "../save-state";
@@ -379,7 +378,6 @@ export function CourseBuilder({ slug }: { slug: string }) {
 
   return (
     <div className="mx-auto flex w-full max-w-container flex-col gap-4 px-4 py-6 pb-24 sm:px-6 lg:px-8">
-      <AdminNav />
       <header className="flex flex-wrap items-center gap-3">
         <Link href="/admin/study-plans" className="text-body-sm text-link hover:underline">← Study plans</Link>
         <Badge variant={PLAN_STATUS_VARIANT[detail.status]}>{detail.status}</Badge>

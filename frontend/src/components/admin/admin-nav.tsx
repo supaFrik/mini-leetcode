@@ -1,96 +1,124 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, LayoutDashboard, Medal, Settings, Trophy, Users, type LucideIcon } from "lucide-react";
+import {
+  BookOpen, ClipboardList, FileText, FolderTree, GraduationCap, LayoutDashboard, Map, Medal, Megaphone, Settings,
+  ShieldAlert, Tag, Trophy, UserCog, Users, type LucideIcon,
+} from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
-import type { Role } from "@/types/api";
 
-type Item = { href: string; label: string; adminOnly?: boolean };
-type Group = Item & { icon: LucideIcon; tabs: Item[]; exact?: boolean };
+type Item = { href: string; label: string; icon: LucideIcon; adminOnly?: boolean };
+type Section = { heading?: string; items: Item[] };
 
-// Mục chỉ ADMIN khớp với SecurityConfig: tags, pages, stats, users.
-const GROUPS: Group[] = [
-  { href: "/admin", label: "Overview", icon: LayoutDashboard, adminOnly: true, exact: true, tabs: [] },
+// Mục chỉ ADMIN khớp với SecurityConfig: stats, users, tags, pages, settings.
+const SECTIONS: Section[] = [
+  { items: [{ href: "/admin", label: "Overview", icon: LayoutDashboard, adminOnly: true }] },
   {
-    href: "/admin/users", label: "Users", icon: Users, adminOnly: true,
-    tabs: [{ href: "/admin/users", label: "Users" }, { href: "/admin/roles", label: "Roles" }],
-  },
-  {
-    href: "/admin/problems", label: "Content", icon: FileText,
-    tabs: [
-      { href: "/admin/problems", label: "Problems" },
-      { href: "/admin/study-plans", label: "Study plans" },
-      { href: "/admin/topics", label: "Topics" },
-      { href: "/admin/tags", label: "Tags", adminOnly: true },
+    heading: "People",
+    items: [
+      { href: "/admin/users", label: "Users", icon: Users, adminOnly: true },
+      { href: "/admin/roles", label: "Roles", icon: UserCog, adminOnly: true },
     ],
   },
-  { href: "/admin/contests", label: "Contests", icon: Trophy, tabs: [{ href: "/admin/contests", label: "Contests" }] },
-  { href: "/admin/ranking", label: "Ranking", icon: Medal, tabs: [{ href: "/admin/ranking", label: "Ranking" }] },
-  { href: "/admin/policies", label: "Settings", icon: Settings, adminOnly: true, tabs: [{ href: "/admin/policies", label: "Policies" }] },
+  {
+    heading: "Learning",
+    items: [
+      { href: "/admin/problems", label: "Problems", icon: BookOpen },
+      { href: "/admin/study-plans", label: "Study plans", icon: Map },
+      { href: "/admin/topics", label: "Topics", icon: FolderTree },
+      { href: "/admin/tags", label: "Tags", icon: Tag, adminOnly: true },
+    ],
+  },
+  {
+    heading: "Assessment",
+    items: [
+      { href: "/admin/contests", label: "Contests", icon: Trophy },
+      { href: "/admin/submissions", label: "Submissions", icon: ClipboardList },
+      { href: "/admin/reports", label: "Reports", icon: ShieldAlert },
+    ],
+  },
+  { heading: "Communication", items: [{ href: "/admin/announcements", label: "Announcements", icon: Megaphone }] },
+  { heading: "Insights", items: [{ href: "/admin/ranking", label: "Ranking", icon: Medal }] },
+  {
+    heading: "System",
+    items: [
+      { href: "/admin/policies", label: "Policies", icon: FileText, adminOnly: true },
+      { href: "/admin/settings", label: "Settings", icon: Settings, adminOnly: true },
+    ],
+  },
 ];
 
-const visible = <T extends Item>(items: T[], role?: Role) => items.filter((i) => !i.adminOnly || role === "ADMIN");
-const under = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
-const groupOf = (pathname: string) =>
-  GROUPS.find((g) => (g.exact ? pathname === g.href : g.tabs.some((t) => under(pathname, t.href))));
+// Giảng viên thấy menu "Teaching" riêng; các trang /admin/* tự lọc theo nội dung của họ.
+const TEACHING: Section[] = [
+  { items: [{ href: "/teaching", label: "Dashboard", icon: LayoutDashboard }] },
+  {
+    heading: "My content",
+    items: [
+      { href: "/admin/problems", label: "My problems", icon: BookOpen },
+      { href: "/admin/study-plans", label: "My study plans", icon: Map },
+      { href: "/admin/contests", label: "My contests", icon: Trophy },
+    ],
+  },
+  {
+    heading: "Learners",
+    items: [
+      { href: "/teaching/progress", label: "Student progress", icon: GraduationCap },
+      { href: "/admin/submissions", label: "Submissions", icon: ClipboardList },
+      { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
+    ],
+  },
+];
 
-/** Sidebar trái của khu quản trị. */
+/** Chỉ một mục sáng: href dài nhất khớp pathname ("/admin", "/teaching" chỉ khớp đúng chính nó). */
+export function activeHref(pathname: string, sections: Section[] = SECTIONS): string | undefined {
+  return sections.flatMap((s) => s.items).map((i) => i.href)
+    .filter((h) => pathname === h || (h !== "/admin" && h !== "/teaching" && pathname.startsWith(`${h}/`)))
+    .sort((a, b) => b.length - a.length)[0];
+}
+
+/** Sidebar trái: ADMIN thấy khu quản trị đầy đủ, giảng viên thấy menu Teaching. */
 export function AdminSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
-  const current = groupOf(pathname);
+  const isAdmin = user?.role === "ADMIN";
+  const sections = isAdmin ? SECTIONS : TEACHING;
+  const active = activeHref(pathname, sections);
   return (
     <aside className="w-56 shrink-0 border-r border-border bg-card">
-      <nav aria-label="Admin" className="sticky top-0 space-y-0.5 px-3 py-5">
-        <p className="eyebrow px-3 pb-2">Admin</p>
-        {visible(GROUPS, user?.role).map((g) => {
-          const active = g === current;
-          const Icon = g.icon;
+      <nav aria-label={isAdmin ? "Admin" : "Teaching"} className="sticky top-0 space-y-4 px-3 py-5">
+        {sections.map((section) => {
+          const items = section.items.filter((i) => !i.adminOnly || isAdmin);
+          if (items.length === 0) return null;
           return (
-            <Link
-              key={g.href}
-              href={g.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-2.5 rounded-sm px-3 py-2 text-body-md transition-colors",
-                active ? "bg-hairline-soft font-medium text-ink" : "text-mute hover:bg-hairline-soft hover:text-ink"
-              )}
-            >
-              <Icon className="h-4 w-4" aria-hidden />
-              {g.label}
-            </Link>
+            <div key={section.heading ?? "top"} className="space-y-0.5">
+              {section.heading && <p className="eyebrow px-3 pb-1">{section.heading}</p>}
+              {items.map((item) => {
+                const Icon = item.icon;
+                const on = item.href === active;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={on ? "page" : undefined}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-sm px-3 py-2 text-body-md transition-colors",
+                      on ? "bg-hairline-soft font-medium text-ink" : "text-mute hover:bg-hairline-soft hover:text-ink"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" aria-hidden />
+                    {item.label}
+                    {item.adminOnly && (
+                      <span className="ml-auto rounded-sm bg-ink px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-white"
+                        title="Admin only">Admin only</span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
     </aside>
-  );
-}
-
-/** Tab con trong nhóm hiện tại của sidebar (vd. Content: Problems / Study plans / Topics / Tags). */
-export function AdminNav() {
-  const pathname = usePathname();
-  const { user } = useUser();
-  const tabs = visible(groupOf(pathname)?.tabs ?? [], user?.role);
-  if (tabs.length < 2) return null;
-  return (
-    <nav aria-label="Admin sections" className="flex gap-1 border-b border-border">
-      {tabs.map((s) => {
-        const active = under(pathname, s.href);
-        return (
-          <Link
-            key={s.href}
-            href={s.href}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "-mb-px border-b-2 px-3 py-2 text-body-md transition-colors",
-              active ? "border-ink text-ink" : "border-transparent text-mute hover:text-ink"
-            )}
-          >
-            {s.label}
-          </Link>
-        );
-      })}
-    </nav>
   );
 }

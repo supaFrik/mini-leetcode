@@ -18,6 +18,7 @@ import type {
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
   AdminTag, RankingRow, SitePage, TagCategory, TagCount,
   AdminStats, AdminUserList, AdminUserRow, Role, UserStatus,
+  AdminSubmissionList, Announcement, PlanProgress, PublicSettings, SiteSettings, TeachingDashboard,
 } from "@/types/api";
 import { TAG_CATEGORIES } from "@/types/api";
 
@@ -125,6 +126,38 @@ export async function fetchAdminStats(): Promise<AdminStats> {
 }
 export async function fetchAdminUsers(q: string, page = 0): Promise<AdminUserList> {
   return api<AdminUserList>(`/api/v1/admin/users?q=${encodeURIComponent(q)}&page=${page}`);
+}
+export async function fetchAdminSubmissions(q: { user: string; problem: string; verdict: string }, page = 0): Promise<AdminSubmissionList> {
+  const qs = new URLSearchParams({ ...q, page: String(page) });
+  return api<AdminSubmissionList>(`/api/v1/admin/submissions?${qs}`);
+}
+
+// Thông báo: mọi người đã đăng nhập đọc; giảng viên/ADMIN tạo và xoá.
+export async function fetchAnnouncements(): Promise<Announcement[]> {
+  if (USE_MOCK) return [];
+  return (await api<Announcement[]>("/api/v1/announcements")) ?? [];
+}
+export async function createAnnouncement(body: { title: string; body: string }): Promise<Announcement> {
+  return api<Announcement>("/api/v1/admin/announcements", { method: "POST", body: JSON.stringify(body) });
+}
+export async function deleteAnnouncement(id: number): Promise<void> {
+  await api(`/api/v1/admin/announcements/${id}`, { method: "DELETE" });
+}
+export async function fetchPublicSettings(): Promise<PublicSettings | null> {
+  if (USE_MOCK) return null;
+  return api<PublicSettings>("/api/v1/settings/public");
+}
+export async function fetchSettings(): Promise<SiteSettings> {
+  return api<SiteSettings>("/api/v1/admin/settings");
+}
+export async function saveSettings(changes: SiteSettings): Promise<SiteSettings> {
+  return api<SiteSettings>("/api/v1/admin/settings", { method: "PUT", body: JSON.stringify(changes) });
+}
+export async function fetchTeachingDashboard(): Promise<TeachingDashboard> {
+  return api<TeachingDashboard>("/api/v1/teaching/dashboard");
+}
+export async function fetchTeachingProgress(): Promise<PlanProgress[]> {
+  return api<PlanProgress[]>("/api/v1/teaching/progress");
 }
 export async function updateAdminUser(id: number, change: { role?: Role; status?: UserStatus }): Promise<AdminUserRow> {
   return api<AdminUserRow>(`/api/v1/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(change) });

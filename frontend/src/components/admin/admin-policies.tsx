@@ -12,7 +12,6 @@ import { fetchSitePages, updateSitePage } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { SitePage } from "@/types/api";
-import { AdminNav } from "./admin-nav";
 
 /** Sửa trang chính sách bằng Markdown. Chỉ ADMIN; không lưu lịch sử phiên bản. */
 export function AdminPoliciesView() {
@@ -56,7 +55,6 @@ export function AdminPoliciesView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-8 py-6">
-      <AdminNav />
       <div>
         <h1 className="text-heading-md text-ink">Policies</h1>
         <p className="text-body-md text-mute">Pages linked from the site footer. Content is Markdown.</p>

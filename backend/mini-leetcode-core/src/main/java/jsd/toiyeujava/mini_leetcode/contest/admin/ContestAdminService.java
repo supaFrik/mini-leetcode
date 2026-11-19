@@ -109,7 +109,8 @@ public class ContestAdminService {
             }
             result.add(new AdminContestSummary(c.getId(), c.getTitle(), c.getSlug(), effective,
                     c.getStartTime(), c.getEndTime(), c.getRegistrationMode(),
-                    ((Number) row[1]).longValue(), ((Number) row[2]).longValue()));
+                    ((Number) row[1]).longValue(), ((Number) row[2]).longValue(),
+                    c.getCreatedBy() == null ? null : c.getCreatedBy().getId()));
         }
         // Đang thi → sắp tới (gần nhất trước) → đã kết thúc (mới nhất trước).
         result.sort(Comparator

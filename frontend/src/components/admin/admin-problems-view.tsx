@@ -12,8 +12,8 @@ import { Pagination } from "@/components/problems/pagination";
 import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
+import { useCanEdit } from "@/hooks/use-can-edit";
 import { useUser } from "@/hooks/use-user";
-import { AdminNav } from "./admin-nav";
 import { PROBLEM_STATUS_TONE } from "./status";
 import { deleteProblem, fetchAdminProblems } from "@/lib/services";
 import type { Page, ProblemFull, ProblemLifecycle, ProblemType } from "@/types/api";
@@ -49,6 +49,7 @@ export function AdminProblemsView() {
   const { user } = useUser();
   // Server only allows ADMIN to delete (DELETE /api/v1/problems/** hasRole ADMIN)
   const canDelete = user?.role === "ADMIN";
+  const canEdit = useCanEdit();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,7 +90,6 @@ export function AdminProblemsView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-      <AdminNav />
 
       <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative min-w-0 flex-1 basis-56">
@@ -149,6 +149,7 @@ export function AdminProblemsView() {
                   )}>
                     {p.type === "OOP_GRINDING" ? "OOP" : "DSA"}
                   </span>
+                  {!canEdit(p.createdById) && <span className="shrink-0 text-xs text-mute">Read-only</span>}
                 </span>
                 {p.tags.length > 0 && (
                   <span className="mt-1 block truncate font-sans text-xs text-zinc-500 dark:text-zinc-400">
@@ -165,7 +166,7 @@ export function AdminProblemsView() {
                 </Button>
                 {canDelete && (
                   <Button size="icon-sm" variant="ghost" disabled={pending === p.id} onClick={() => remove(p)}
-                    aria-label={`Delete ${p.title}`} title="Delete" className="text-zinc-400 hover:text-destructive">
+                    aria-label={`Delete ${p.title}`} title="Delete (Admin only)" className="text-zinc-400 hover:text-destructive">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}

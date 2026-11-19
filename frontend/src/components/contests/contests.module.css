@@ -1,7 +1,15 @@
 /* Số đo lấy từ docs/mockups/Contest.dc.html. Màu, font, bảng và trạng thái trống dùng chung problems.module.css. */
 
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
 .title {
-  margin: 0 0 20px;
+  margin: 0;
   font-size: 30px;
   line-height: 1.2;
   font-weight: 600;

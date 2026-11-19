@@ -8,7 +8,6 @@ import { errorMessage } from "@/lib/api";
 import { createTag, deleteTag, fetchAdminTags, updateTagCategory } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import { TAG_CATEGORIES, type AdminTag, type TagCategory } from "@/types/api";
-import { AdminNav } from "./admin-nav";
 
 const selectClass = "h-9 rounded-sm border border-border bg-card px-2 text-body-md text-ink";
 
@@ -68,7 +67,6 @@ export function AdminTagsView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-8 py-6">
-      <AdminNav />
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-heading-md text-ink">Tags</h1>

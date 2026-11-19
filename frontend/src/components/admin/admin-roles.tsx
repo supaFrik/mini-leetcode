@@ -1,7 +1,6 @@
 "use client";
 import { Check, Minus } from "lucide-react";
 import type { Role } from "@/types/api";
-import { AdminNav } from "./admin-nav";
 
 const ROLES: { value: Role; label: string }[] = [
   { value: "USER", label: "User" },
@@ -24,7 +23,6 @@ const PERMISSIONS: { label: string; roles: Role[] }[] = [
 export function AdminRolesView() {
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-8 py-6">
-      <AdminNav />
       <div>
         <h1 className="text-heading-md text-ink">Roles</h1>
         <p className="text-body-md text-mute">What each role can do. Change a user&apos;s role on the Users tab.</p>

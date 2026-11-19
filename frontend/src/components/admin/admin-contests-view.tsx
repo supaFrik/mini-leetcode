@@ -20,7 +20,6 @@ import { parseApiDate } from "@/lib/datetime";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
-import { AdminNav } from "./admin-nav";
 import { deleteContest, fetchAdminContests } from "@/lib/services";
 import type { AdminContestSummary, ContestStatus } from "@/types/api";
 
@@ -99,7 +98,6 @@ export function AdminContestsView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-      <AdminNav />
       <div className="flex flex-wrap items-center gap-2.5">
         <Button asChild className="order-last sm:order-none">
           <Link href="/admin/contests/new">
@@ -195,6 +193,7 @@ export function AdminContestsView() {
                   </Link>
                 </Button>
               ))}
+              {!canDelete && c.createdById !== user?.id && <span className="text-xs text-mute">Read-only</span>}
               {canDelete && c.status === "SCHEDULED" && (
                 <Button
                   size="icon-sm"
@@ -202,7 +201,7 @@ export function AdminContestsView() {
                   disabled={pending === c.id}
                   onClick={() => setConfirmDelete(c)}
                   aria-label={`Delete ${c.title}`}
-                  title="Delete"
+                  title="Delete (Admin only)"
                   className="text-zinc-400 hover:text-destructive"
                 >
                   {pending === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}

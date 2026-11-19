@@ -148,7 +148,10 @@ export function ContestList() {
   return (
     <div className={cn(theme.theme, p.page)}>
       <div className={p.main}>
-        <h1 className={s.title}>Contest</h1>
+        <div className={s.titleRow}>
+          <h1 className={s.title}>Contest</h1>
+          <Link href="/ranking" className={s.results}>View ranking</Link>
+        </div>
 
         {load.state === "error" ? (
           <div className={cn(p.table, p.empty, p.error)} role="alert">

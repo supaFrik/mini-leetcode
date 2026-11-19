@@ -12,7 +12,7 @@ export function formatWhen(iso: string): string {
   return new Date(parseApiDate(iso)).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-function Outcome({ s }: { s: AdminRecentSubmission }) {
+export function Outcome({ s }: { s: Pick<AdminRecentSubmission, "status" | "verdict"> }) {
   if (!s.verdict) return <Badge variant="secondary">{s.status === "FAILED" ? "Failed" : "Judging"}</Badge>;
   const v = VERDICT[s.verdict];
   return <Badge variant={v.ok ? "success" : "destructive"} title={v.label}>{v.short}</Badge>;

@@ -12,7 +12,6 @@ import { useUser } from "@/hooks/use-user";
 import { createProblem, deleteProblem, transitionProblem } from "@/lib/services";
 import { PROBLEM_EDGES } from "@/lib/problem-lifecycle";
 import type { ProblemFull, ProblemLifecycle } from "@/types/api";
-import { AdminNav } from "./admin-nav";
 import { ProblemEditor } from "./problem-editor";
 import type { SaveState } from "./save-state";
 import { PROBLEM_STATUS_TONE } from "./status";
@@ -79,7 +78,6 @@ export function AdminProblemPage({ id }: { id: number }) {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-      <AdminNav />
       <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Problem actions">
         {problem && <Badge variant={PROBLEM_STATUS_TONE[status]} className="font-mono text-[11px]">{status}</Badge>}
         <span className="text-body-sm text-mute" role="status" aria-live="polite">

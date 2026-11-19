@@ -57,6 +57,29 @@ export interface SitePage { slug: string; title: string; contentMd: string; upda
 export type UserStatus = "ACTIVE" | "BLOCKED";
 export interface AdminUserRow { id: number; username: string; email: string; role: Role; status: UserStatus; createdAt: string }
 export interface AdminUserList { items: AdminUserRow[]; total: number; page: number; size: number }
+export interface AdminSubmissionRow {
+  id: number; username: string; problemTitle: string; problemSlug: string; contestId: number | null; language: string;
+  status: SubmissionStatus; verdict: Verdict | null; score: number | null; executionTimeMs: number | null; createdAt: string;
+}
+export interface AdminSubmissionList { items: AdminSubmissionRow[]; total: number; page: number; size: number }
+export interface Announcement {
+  id: number; title: string; body: string; createdById: number; createdByUsername: string; createdAt: string;
+}
+export interface PublicSettings {
+  siteName: string; tagline: string; maintenanceMode: boolean; bannerMessage: string; registrationOpen: boolean;
+}
+/** Mọi cài đặt dạng chuỗi (key/value), xem SiteSettingsService. */
+export type SiteSettings = Record<string, string>;
+export interface TeachingDashboard {
+  learners: number; plans: number; recentSubmissions: AdminSubmissionRow[];
+  upcomingContests: { id: number; title: string; startTime: string; endTime: string }[];
+}
+export type ProgressStatus = "DONE" | "STUCK" | "IN_PROGRESS" | "NOT_STARTED";
+export interface PlanProgress {
+  planId: number; slug: string; title: string;
+  stages: { problemId: number; title: string }[];
+  learners: { userId: number; username: string; stages: ProgressStatus[] }[];
+}
 export interface AdminRecentSubmission {
   id: number; username: string; problemTitle: string; problemSlug: string; status: SubmissionStatus; verdict: Verdict | null; createdAt: string;
 }
@@ -83,6 +106,7 @@ export interface ProblemFull extends ProblemSummary {
   status?: ProblemLifecycle; // vòng đời DRAFT/REVIEWING/PUBLISHED/ARCHIVED
   /** Số testcase của bài (mặc định 0). */
   testCaseCount?: number;
+  createdById?: number;
   createdByUsername?: string;
   updatedAt?: string;
   likes?: number;
@@ -366,6 +390,7 @@ export interface AdminContestSummary {
   registrationMode: RegistrationMode;
   problemCount: number;
   participantCount: number;
+  createdById?: number | null;
 }
 export interface AdminContestProblem {
   problemId: number;

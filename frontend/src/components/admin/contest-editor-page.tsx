@@ -36,7 +36,6 @@ import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/hooks/use-user";
-import { AdminNav } from "./admin-nav";
 import { ContestResults } from "@/components/contests/contest-views";
 import { ContestReport } from "@/components/contests/contest-report";
 import {
@@ -275,7 +274,6 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
 
   return (
     <div className="mx-auto w-full max-w-container space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <AdminNav />
 
       {/* Breadcrumb Header */}
       <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">

@@ -61,6 +61,49 @@ a.navItem:hover {
   font-weight: 600;
 }
 
+/* Lối vào khu quản trị: tách khỏi menu học viên bằng vạch ngăn, nền tối để nổi bật. */
+.navDivider {
+  align-self: center;
+  width: 1px;
+  height: 24px;
+  margin: 0 8px;
+  background: var(--line);
+}
+
+.adminLink {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  align-self: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.adminLink:hover {
+  background: #000;
+}
+
+.adminLink[aria-current="page"] {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--ink);
+}
+
+.teachingLink {
+  background: #6d28d9;
+}
+
+.teachingLink:hover {
+  background: #5b21b6;
+}
+
+.teachingLink[aria-current="page"] {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #6d28d9;
+}
+
 .navItem[aria-disabled="true"] {
   cursor: not-allowed;
 }

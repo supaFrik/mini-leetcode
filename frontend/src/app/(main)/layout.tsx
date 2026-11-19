@@ -7,6 +7,7 @@ import "@fontsource/ibm-plex-sans/600.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import { AuthGuard } from "@/components/layout/auth-guard";
+import { MaintenanceBanner } from "@/components/layout/maintenance-banner";
 import { OfflineBanner } from "@/components/layout/offline-banner";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Toaster } from "@/components/layout/toaster";
@@ -21,6 +22,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
     <AuthGuard>
       <div className="flex h-dvh flex-col">
         <OfflineBanner />
+        <MaintenanceBanner />
         <SiteHeader />
         <main className="min-h-0 flex-1 overflow-auto">{children}</main>
         {showFooter && (

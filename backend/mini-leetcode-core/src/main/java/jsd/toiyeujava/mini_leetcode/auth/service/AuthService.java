@@ -6,6 +6,8 @@ import jsd.toiyeujava.mini_leetcode.entity.Role;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.entity.UserStatus;
 import jsd.toiyeujava.mini_leetcode.exception.DuplicateResourceException;
+import jsd.toiyeujava.mini_leetcode.exception.ForbiddenOperationException;
+import jsd.toiyeujava.mini_leetcode.settings.SiteSettingsService;
 import jsd.toiyeujava.mini_leetcode.exception.InvalidTokenException;
 import jsd.toiyeujava.mini_leetcode.auth.repository.RefreshTokenRepository;
 import jsd.toiyeujava.mini_leetcode.auth.repository.UserRepository;
@@ -24,12 +26,15 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final SiteSettingsService siteSettings;
 
     public AuthService(
             UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
             PasswordEncoder passwordEncoder,
-            JwtTokenProvider jwtTokenProvider) {
+            JwtTokenProvider jwtTokenProvider,
+            SiteSettingsService siteSettings) {
+        this.siteSettings = siteSettings;
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
@@ -38,6 +43,9 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        if (!siteSettings.registrationOpen()) {
+            throw new ForbiddenOperationException("New sign-ups are currently closed");
+        }
         if (userRepository.existsByUsername(request.username())) {
             throw new DuplicateResourceException("Username '" + request.username() + "' is already taken");
         }

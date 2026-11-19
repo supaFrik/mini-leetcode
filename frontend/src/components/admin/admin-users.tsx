@@ -10,7 +10,6 @@ import { errorMessage } from "@/lib/api";
 import { fetchAdminUsers, updateAdminUser } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import type { AdminUserList, AdminUserRow, Role } from "@/types/api";
-import { AdminNav } from "./admin-nav";
 import { formatWhen } from "./admin-overview";
 
 const ROLES: { value: Role; label: string }[] = [
@@ -60,7 +59,6 @@ export function AdminUsersView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-8 py-6">
-      <AdminNav />
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-heading-md text-ink">Users</h1>

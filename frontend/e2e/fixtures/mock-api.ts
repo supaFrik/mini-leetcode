@@ -998,6 +998,15 @@ const quickRunIds = new Set<number>();
       }
     }
 
+    // Chuông thông báo trên header gọi endpoint này ở mọi trang.
+    if (path === "/api/v1/announcements" && method === "GET") {
+      return json([]);
+    }
+    // Banner bảo trì trong layout chính.
+    if (path === "/api/v1/settings/public" && method === "GET") {
+      return json({ siteName: "Mini LeetCode", tagline: "", maintenanceMode: false, bannerMessage: "", registrationOpen: true });
+    }
+
     // Default continue for other unhandled requests
     return route.continue();
   });
