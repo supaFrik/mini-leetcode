@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
+import { DIFFICULTY_LEVELS } from "@/components/problems/difficulty";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
@@ -783,9 +784,7 @@ function ProblemPicker({
           className="h-10 rounded-md border border-border bg-background px-3 text-sm text-ink"
         >
           <option value="">All difficulties</option>
-          <option value="EASY">Easy</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HARD">Hard</option>
+          {DIFFICULTY_LEVELS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
         </select>
       </div>
 

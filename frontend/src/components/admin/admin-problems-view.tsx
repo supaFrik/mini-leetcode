@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConfirm } from "@/components/ui/confirm";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
+import { DIFFICULTY_LEVELS } from "@/components/problems/difficulty";
 import { Pagination } from "@/components/problems/pagination";
 import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api";
@@ -15,7 +16,7 @@ import { useUser } from "@/hooks/use-user";
 import { AdminNav } from "./admin-nav";
 import { PROBLEM_STATUS_TONE } from "./status";
 import { deleteProblem, fetchAdminProblems } from "@/lib/services";
-import type { Difficulty, Page, ProblemFull, ProblemLifecycle, ProblemType } from "@/types/api";
+import type { Page, ProblemFull, ProblemLifecycle, ProblemType } from "@/types/api";
 
 const LIFECYCLES: { value: ProblemLifecycle; label: string }[] = [
   { value: "DRAFT", label: "Draft" },
@@ -23,7 +24,6 @@ const LIFECYCLES: { value: ProblemLifecycle; label: string }[] = [
   { value: "PUBLISHED", label: "Published" },
   { value: "ARCHIVED", label: "Archived" },
 ];
-const DIFFICULTIES: Difficulty[] = ["EASY", "MEDIUM", "HARD"];
 const selectClass = "h-10 rounded-sm border border-border bg-card px-2.5 text-body-md text-ink";
 
 /**
@@ -103,7 +103,7 @@ export function AdminProblemsView() {
         </select>
         <select value={difficulty} onChange={(e) => filter(setDifficulty)(e.target.value)} aria-label="Filter by difficulty" className={selectClass}>
           <option value="">Any difficulty</option>
-          {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+          {DIFFICULTY_LEVELS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
         </select>
         <select value={type} onChange={(e) => filter(setType)(e.target.value as ProblemType | "")} aria-label="Filter by problem type" className={selectClass}>
           <option value="">Any type</option>

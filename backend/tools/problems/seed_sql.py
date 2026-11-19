@@ -94,7 +94,7 @@ DROP TEMPORARY TABLE IF EXISTS seed_tag_rows;
 -- 4. Kiểm tra nhanh.
 SELECT p.problem_type, p.difficulty, COUNT(*) AS problems
 FROM problems p WHERE p.created_by = @seed_author
-GROUP BY p.problem_type, p.difficulty ORDER BY p.problem_type, FIELD(p.difficulty, 'EASY', 'MEDIUM', 'HARD');
+GROUP BY p.problem_type, p.difficulty ORDER BY p.problem_type, FIELD(p.difficulty, 'BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT');
 
 SELECT COUNT(*) AS seeded_problems_without_testcases
 FROM problems p

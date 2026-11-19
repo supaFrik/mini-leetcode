@@ -11,6 +11,7 @@ import { useConfirm } from "@/components/ui/confirm";
 import { errorMessage } from "@/lib/api";
 import { fetchAuthoring, fetchProblem, saveProblem, unlockProblem, type ProblemDraft } from "@/lib/services";
 import type { Difficulty, ProblemAuthoring, ProblemFull, ProblemType, SubmissionFile } from "@/types/api";
+import { DIFFICULTY_LEVELS } from "@/components/problems/difficulty";
 import { GradingPanel, ReferencePanel, SourceFilesEditor, TestCasesPanel, parseSourceFiles } from "./problem-authoring";
 import type { SaveState } from "./save-state";
 
@@ -202,7 +203,7 @@ export function ProblemEditor({ problemId, label, canEdit, learners = 0, current
             <div className="grid gap-3 sm:grid-cols-4">
               <label className={field}>Difficulty
                 <select className={select} value={draft.difficulty} onChange={(e) => set("difficulty", e.target.value as Difficulty)}>
-                  {(["EASY", "MEDIUM", "HARD"] as const).map((d) => <option key={d}>{d}</option>)}
+                  {DIFFICULTY_LEVELS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                 </select>
               </label>
               <label className={field}>Type

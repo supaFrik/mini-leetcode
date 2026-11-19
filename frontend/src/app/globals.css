@@ -53,10 +53,6 @@
     --warning-soft: 36 90% 92%;
     --warning-deep: 30 90% 40%;
 
-    /* ---- Difficulty (kept semantic by decision) ---- */
-    --easy: 145 63% 34%;              /* emerald */
-    --medium: 36 90% 45%;              /* amber */
-    --hard: 0 78% 45%;                /* red */
 
     --radius: 0.75rem;
 

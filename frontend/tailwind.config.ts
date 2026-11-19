@@ -44,10 +44,6 @@ const config: Config = {
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
 
-        /* Difficulty */
-        easy: "hsl(var(--easy))",
-        medium: "hsl(var(--medium))",
-        hard: "hsl(var(--hard))",
       },
       borderRadius: {
         none: "0px",

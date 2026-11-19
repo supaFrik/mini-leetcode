@@ -83,7 +83,7 @@ export function ProblemHeader({
               {status}
             </Badge>
           ) : null}
-          <Badge variant="outline" className={cn("font-normal", diff.className)}>
+          <Badge variant="outline" className={cn("rounded-full font-medium", diff.className)}>
             {diff.label}
           </Badge>
         </div>

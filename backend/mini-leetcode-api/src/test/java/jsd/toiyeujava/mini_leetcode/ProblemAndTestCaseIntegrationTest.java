@@ -371,6 +371,33 @@ class ProblemAndTestCaseIntegrationTest {
     }
 
     @Test
+    @DisplayName("Difficulty: BEGINNER and EXPERT persist (V14 ENUM) and filter like the original levels")
+    void fiveDifficultyLevels_persistAndFilter() throws Exception {
+        long[] ids = new long[2];
+        Difficulty[] levels = {Difficulty.BEGINNER, Difficulty.EXPERT};
+        for (int i = 0; i < levels.length; i++) {
+            CreateProblemRequest req = new CreateProblemRequest("Level " + levels[i], "Desc", levels[i], 1000, 256, null);
+            MvcResult r = mockMvc.perform(post("/api/v1/problems")
+                            .header("Authorization", "Bearer " + instructorToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.difficulty").value(levels[i].name()))
+                    .andReturn();
+            ids[i] = objectMapper.readTree(r.getResponse().getContentAsString()).get("id").asLong();
+        }
+
+        mockMvc.perform(get("/api/v1/problems").param("difficulty", "EXPERT").param("status", "DRAFT").param("size", "50")
+                        .header("Authorization", "Bearer " + instructorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + ids[1] + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.content[?(@.id == " + ids[0] + ")]").isEmpty());
+
+        mockMvc.perform(get("/api/v1/problems").param("difficulty", "IMPOSSIBLE"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("createProblem: invalid payload returns 400 ProblemDetail with invalid_params")
     void createProblem_validationFailure_returns400() throws Exception {
         CreateProblemRequest invalidReq = new CreateProblemRequest("", "", null, -1, -1, null);

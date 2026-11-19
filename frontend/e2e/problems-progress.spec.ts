@@ -4,7 +4,7 @@ import { createMockJwt, installFullscreenMock, setMockAuthSession, setupMockApi 
 /**
  * "Solved" must only count problems the signed-in user has an Accepted submission for.
  * The summary line, Your progress, the per-row ticks and the Status filter must agree.
- * The default fixture has 14 problems (5 Easy, 5 Medium, 4 Hard) and no submissions.
+ * The default fixture has 14 problems (0 Beginner, 5 Easy, 5 Medium, 4 Hard, 0 Expert) and no submissions.
  */
 
 const rows = (page: Page) => page.getByRole("region", { name: "Problem list" }).getByRole("link");
@@ -18,6 +18,10 @@ async function expectNothingSolved(page: Page) {
   await expect(page.getByRole("progressbar", { name: "Easy solved" })).toHaveAttribute("aria-valuemax", "5");
   await expect(page.getByRole("progressbar", { name: "Medium solved" })).toHaveAttribute("aria-valuemax", "5");
   await expect(page.getByRole("progressbar", { name: "Hard solved" })).toHaveAttribute("aria-valuemax", "4");
+  // Five levels, easiest first; the new ones are empty in the fixture.
+  await expect(progress.getByRole("progressbar")).toHaveCount(5);
+  await expect(progress.getByRole("progressbar", { name: "Beginner solved" })).toHaveAttribute("aria-valuemax", "0");
+  await expect(progress.getByRole("progressbar", { name: "Expert solved" })).toHaveAttribute("aria-valuemax", "0");
 
   await expect(rows(page)).toHaveCount(14);
   // No row is marked solved or attempted.

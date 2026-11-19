@@ -12,9 +12,10 @@ import { toast } from "@/lib/toast";
 import { LANG_PREF_KEY, LANGUAGES } from "@/lib/templates";
 import { Pagination } from "./pagination";
 import { DifficultyBadge } from "./difficulty-badge";
+import { DIFFICULTY_LEVELS, difficultyMeta } from "./difficulty";
 import theme from "@/components/layout/plex-theme.module.css";
 import s from "./problems.module.css";
-import type { Difficulty, Page, ProblemSummary, ProblemType, UserProgress } from "@/types/api";
+import type { Page, ProblemSummary, ProblemType, UserProgress } from "@/types/api";
 
 const PAGE_SIZE = 20;
 
@@ -24,12 +25,7 @@ const TRACKS: { id: ProblemType | ""; label: string; icon: LucideIcon }[] = [
   { id: "OOP_GRINDING", label: "OOP (Object-Oriented Programming & Socket)", icon: Box },
 ];
 
-const LEVELS: { value: Difficulty; label: string; rank: number }[] = [
-  { value: "EASY", label: "Easy", rank: 1 },
-  { value: "MEDIUM", label: "Medium", rank: 2 },
-  { value: "HARD", label: "Hard", rank: 3 },
-];
-const levelOf = (d: Difficulty) => LEVELS.find((l) => l.value === d) ?? LEVELS[0];
+const LEVELS = DIFFICULTY_LEVELS;
 
 const STATUSES: { value: UserProgress | ""; label: string; icon?: LucideIcon }[] = [
   { value: "", label: "Any" },
@@ -46,7 +42,7 @@ type Load<T> = { state: "loading" } | { state: "ok"; data: T } | { state: "error
 /* ------------------------------------------------------------------ */
 
 function ProblemRow({ p }: { p: ProblemSummary }) {
-  const level = levelOf(p.difficulty);
+  const level = difficultyMeta(p.difficulty);
   const word = p.progress ? STATUS_WORD[p.progress] : undefined;
   return (
     <Link
