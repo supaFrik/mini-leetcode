@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** P1c nhóm chủ đề, P1b bảng xếp hạng. */
+/** P1c nhóm chủ đề, P1b bảng xếp hạng và trang chính sách. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -143,5 +143,28 @@ class TagsRankingPagesIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.username == 'rk_bob')].solved").value(2))
                 .andExpect(jsonPath("$[?(@.username == 'rk_alice')].submissions").value(2));
+    }
+
+    @Test
+    @DisplayName("Site pages: seeded, public read, ADMIN-only update")
+    void sitePages() throws Exception {
+        User admin = user("pg_admin", Role.ADMIN);
+        User instructor = user("pg_instructor", Role.INSTRUCTOR);
+
+        mockMvc.perform(get("/api/v1/pages/terms"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Terms of use"));
+        mockMvc.perform(get("/api/v1/pages/rules")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/pages/missing")).andExpect(status().isNotFound());
+
+        String body = "{\"title\":\"Terms\",\"contentMd\":\"# Hello\"}";
+        mockMvc.perform(put("/api/v1/admin/pages/terms").header("Authorization", token(instructor))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/v1/admin/pages/terms").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.contentMd").value("# Hello"));
+        mockMvc.perform(get("/api/v1/pages/terms")).andExpect(jsonPath("$.title").value("Terms"));
     }
 }

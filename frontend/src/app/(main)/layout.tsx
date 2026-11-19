@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import "@fontsource/ibm-plex-sans/400.css";
 import "@fontsource/ibm-plex-sans/500.css";
@@ -25,6 +26,10 @@ function MainLayout({ children }: { children: React.ReactNode }) {
         {showFooter && (
           <footer className="flex h-12 shrink-0 items-center border-t border-border bg-background px-6 text-body-sm font-medium text-zinc-600 dark:text-zinc-400">
             © 2026 Mini LeetCode.
+            <nav aria-label="Policies" className="ml-auto flex gap-4">
+              <Link href="/policies/terms" className="hover:text-ink hover:underline">Terms of use</Link>
+              <Link href="/policies/rules" className="hover:text-ink hover:underline">Contest rules</Link>
+            </nav>
           </footer>
         )}
         <Toaster />

@@ -10,9 +10,10 @@ const SECTIONS = [
   { href: "/admin/study-plans", label: "Study plans" },
   { href: "/admin/topics", label: "Topics" },
 ];
-// Chỉ ADMIN (backend cũng chặn: /api/v1/admin/tags).
+// Chỉ ADMIN (backend cũng chặn: /api/v1/admin/tags, /api/v1/admin/pages).
 const ADMIN_ONLY = [
   { href: "/admin/tags", label: "Tags" },
+  { href: "/admin/policies", label: "Policies" },
 ];
 
 /** Chuyển giữa các trang quản trị. */

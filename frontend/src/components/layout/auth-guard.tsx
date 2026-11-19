@@ -13,7 +13,7 @@ import { ensureMockSession } from "@/lib/services";
  * Gốc `/` cũng nằm trong danh sách: nó chỉ là redirect sang `/problems`,
  * nên chặn nó ở đây sẽ đẩy khách về `/login` trước khi kịp chuyển hướng.
  */
-const PUBLIC_PATHS = [/^\/$/, /^\/problems(\/|$)/, /^\/login(\/|$)/, /^\/register(\/|$)/, /^\/ranking$/];
+const PUBLIC_PATHS = [/^\/$/, /^\/problems(\/|$)/, /^\/login(\/|$)/, /^\/register(\/|$)/, /^\/ranking$/, /^\/policies\//];
 
 /**
  * Chưa đăng nhập → về /login. Ngoại trừ /register cho phép tạo tài khoản mới.

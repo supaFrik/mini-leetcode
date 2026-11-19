@@ -16,7 +16,7 @@ import type {
   AttemptResult, AuthoringTopic, LearnerTopic, StepAnswer, TopicDraft, TopicSummary,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
-  AdminTag, RankingRow, TagCategory, TagCount,
+  AdminTag, RankingRow, SitePage, TagCategory, TagCount,
 } from "@/types/api";
 import { TAG_CATEGORIES } from "@/types/api";
 
@@ -118,9 +118,18 @@ export async function deleteTag(name: string): Promise<void> {
   await api<void>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "DELETE" });
 }
 
-// ── Bảng xếp hạng ──────────────────────────────────────
+// ── Bảng xếp hạng và trang chính sách ──────────────────────────────────────
 export async function fetchRanking(): Promise<RankingRow[]> {
   return (await api<RankingRow[]>("/api/v1/ranking")) ?? [];
+}
+export async function fetchSitePages(): Promise<SitePage[]> {
+  return (await api<SitePage[]>("/api/v1/pages")) ?? [];
+}
+export async function fetchSitePage(slug: string): Promise<SitePage> {
+  return api<SitePage>(`/api/v1/pages/${encodeURIComponent(slug)}`);
+}
+export async function updateSitePage(slug: string, title: string, contentMd: string): Promise<SitePage> {
+  return api<SitePage>(`/api/v1/admin/pages/${encodeURIComponent(slug)}`, { method: "PUT", body: JSON.stringify({ title, contentMd }) });
 }
 export async function fetchProblem(idOrSlug: string): Promise<ProblemFull> {
   if (USE_MOCK) return mock.getProblem(idOrSlug);
