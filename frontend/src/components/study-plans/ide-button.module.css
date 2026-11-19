@@ -21,3 +21,8 @@
 .dotOn { background: #16a34a; }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* variant="link": link chữ nhỏ kèm icon, không đổi kiểu nút mặc định */
+.inline { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: #4f46e5; font-size: 13px; font-weight: 500; text-decoration: none; cursor: pointer; }
+.inline:hover:not(:disabled) { text-decoration: underline; }
+.inline:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 2px; }
+.inline:disabled { opacity: 0.7; }

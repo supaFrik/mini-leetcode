@@ -19,10 +19,13 @@ type State =
  * "Open in IntelliJ" một chạm: dò IntelliJ đang chạy ⇒ chưa có thì hướng dẫn cài; có mà chưa kết nối thì
  * "Connect IntelliJ" (tự tạo token và gửi sang plugin, không copy/paste); đã kết nối thì mở đúng stage.
  */
-export function IdeButton({ planSlug, itemId, stageNo, className }: {
+export function IdeButton({ planSlug, itemId, stageNo, className, variant = "button" }: {
   planSlug: string; itemId: number; stageNo: number; className?: string;
+  /** "link": link chữ nhỏ kèm icon (khối bài code trên trang plan); mặc định là nút to như cũ. */
+  variant?: "button" | "link";
 }) {
   const [state, setState] = useState<State>({ kind: "checking" });
+  const action = variant === "link" ? s.inline : s.primary;
 
   const detect = useCallback(async () => {
     setState({ kind: "checking" });
@@ -60,14 +63,14 @@ export function IdeButton({ planSlug, itemId, stageNo, className }: {
   if (state.kind === "checking") {
     return (
       <div className={cn(s.box, className)}>
-        <button type="button" className={s.primary} disabled><Loader2 size={16} className={s.spin} aria-hidden /> Looking for IntelliJ…</button>
+        <button type="button" className={action} disabled><Loader2 size={16} className={s.spin} aria-hidden /> Looking for IntelliJ…</button>
       </div>
     );
   }
   if (state.kind === "missing") {
     return (
       <div className={cn(s.box, className)}>
-        <Link href="/ide" className={s.primary}><Download size={16} aria-hidden /> Install the IntelliJ plugin</Link>
+        <Link href="/ide" className={action}><Download size={16} aria-hidden /> Install the IntelliJ plugin</Link>
         <span className={s.note}>
           Already installed? Start IntelliJ IDEA, then <button type="button" className={s.link} onClick={detect}>check again</button>.
         </span>
@@ -79,12 +82,12 @@ export function IdeButton({ planSlug, itemId, stageNo, className }: {
   return (
     <div className={cn(s.box, className)}>
       {ide.connected ? (
-        <button type="button" className={s.primary} disabled={busy} onClick={() => open(ide)}>
+        <button type="button" className={action} disabled={busy} onClick={() => open(ide)}>
           {busy ? <Loader2 size={16} className={s.spin} aria-hidden /> : <SquareArrowOutUpRight size={16} aria-hidden />}
           {busy ? state.label : "Open in IntelliJ"}
         </button>
       ) : (
-        <button type="button" className={s.primary} disabled={busy} onClick={() => connect(ide)}>
+        <button type="button" className={action} disabled={busy} onClick={() => connect(ide)}>
           {busy ? <Loader2 size={16} className={s.spin} aria-hidden /> : <Plug size={16} aria-hidden />}
           {busy ? state.label : "Connect IntelliJ"}
         </button>

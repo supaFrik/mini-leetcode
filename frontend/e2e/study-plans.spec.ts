@@ -85,7 +85,6 @@ test.describe("/study-plans", () => {
 
     const practice = page.getByRole("region", { name: "Luyện: lớp & đóng gói" });
     await expect(practice.getByText("Completed")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Set up the plugin →" })).toHaveAttribute("href", "/ide");
   });
 
   test("AC-4: a project stage page opens in IntelliJ — install, connect once, then open", async ({ page }) => {

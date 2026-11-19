@@ -111,24 +111,6 @@
   max-width: 720px;
 }
 
-.ide {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 24px;
-  padding: 14px 16px;
-  background: #fff;
-  border: 1px dashed var(--control);
-  border-radius: 8px;
-}
-
-.ide a {
-  color: var(--link);
-  font-weight: 500;
-}
-
 .items {
   display: flex;
   flex-direction: column;
@@ -337,19 +319,27 @@ a.stage:hover {
   }
 }
 
-/* Stage nằm cuối dòng thời gian chủ đề (components/topics/stage-timeline.tsx) */
-.stageCompact {
-  grid-template-columns: 72px minmax(0, 1fr) auto;
-  min-height: 44px;
-  margin-left: -8px;
-  padding: 4px 8px;
-  border: 1px dashed var(--line);
-  border-radius: 8px;
+/* Cột "② Write the code" của stage đang mở (stage-code-card.tsx) */
+.codeCard { display: flex; flex-direction: column; gap: 10px; }
+.codeSummary { margin: 0; color: var(--muted); font-size: 14px; }
+.codeStatus { display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--faint); font-size: 13px; }
+.codeActions { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+/* Nút thường (viền): nút chính duy nhất của stage là Start/Continue ở cột chủ đề */
+.codeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border: 1px solid var(--control);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
 }
-
-.stageCompact:last-child {
-  border-bottom: 1px dashed var(--line);
-}
+.codeButton:hover { border-color: var(--link); color: var(--link); }
+.codeButton:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 
 /* Mô tả soạn bằng trình soạn trực quan (Markdown) */
 .cardText { color: inherit; }
