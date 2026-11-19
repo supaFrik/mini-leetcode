@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
@@ -9,13 +10,19 @@ const SECTIONS = [
   { href: "/admin/study-plans", label: "Study plans" },
   { href: "/admin/topics", label: "Topics" },
 ];
+// Chỉ ADMIN (backend cũng chặn: /api/v1/admin/tags).
+const ADMIN_ONLY = [
+  { href: "/admin/tags", label: "Tags" },
+];
 
 /** Chuyển giữa các trang quản trị. */
 export function AdminNav() {
   const pathname = usePathname();
+  const { user } = useUser();
+  const sections = user?.role === "ADMIN" ? [...SECTIONS, ...ADMIN_ONLY] : SECTIONS;
   return (
     <nav aria-label="Admin sections" className="flex gap-1 border-b border-border">
-      {SECTIONS.map((s) => {
+      {sections.map((s) => {
         const active = pathname.startsWith(s.href);
         return (
           <Link

@@ -40,6 +40,19 @@ export type ProctoringEventType = "WINDOW_BLUR" | "WINDOW_FOCUS" | "CLIPBOARD_PA
 
 export type ProblemType = "ALGORITHMIC" | "OOP_GRINDING";
 
+// ===== Chủ đề =====
+export type TagCategory = "DSA" | "OOP" | "JAVA_CORE" | "SPRING_BOOT" | "OTHER";
+/** Thứ tự hiển thị nhóm trên trang Problems. */
+export const TAG_CATEGORIES: { value: TagCategory; label: string }[] = [
+  { value: "DSA", label: "DSA" },
+  { value: "OOP", label: "OOP" },
+  { value: "JAVA_CORE", label: "Java Core" },
+  { value: "SPRING_BOOT", label: "Spring Boot" },
+  { value: "OTHER", label: "Other" },
+];
+export interface TagCount { tag: string; count: number; category: TagCategory }
+export interface AdminTag { name: string; category: TagCategory; problemCount: number }
+
 // ===== Đề bài =====
 export interface ProblemSummary {
   id: number;

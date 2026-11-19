@@ -15,7 +15,7 @@ import { DifficultyBadge } from "./difficulty-badge";
 import { DIFFICULTY_LEVELS, difficultyMeta } from "./difficulty";
 import theme from "@/components/layout/plex-theme.module.css";
 import s from "./problems.module.css";
-import type { Page, ProblemSummary, ProblemType, UserProgress } from "@/types/api";
+import { TAG_CATEGORIES, type Page, type ProblemSummary, type ProblemType, type TagCount, type UserProgress } from "@/types/api";
 
 const PAGE_SIZE = 20;
 
@@ -172,7 +172,7 @@ export function ProblemsView() {
   }, [page, q, difficulty, progress, topic, type, listTry, signedIn]);
 
   /* ---- Chủ đề (đếm theo loại đang chọn) ---- */
-  const [topics, setTopics] = useState<Load<{ tag: string; count: number }[]>>({ state: "loading" });
+  const [topics, setTopics] = useState<Load<TagCount[]>>({ state: "loading" });
   const [topicsTry, setTopicsTry] = useState(0);
   useEffect(() => {
     let ignore = false;
@@ -462,18 +462,27 @@ export function ProblemsView() {
                 <p className={s.note}>No topics yet.</p>
               ) : (
                 <div>
-                  {topics.data.map(({ tag, count }) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      className={s.topic}
-                      aria-pressed={topic === tag}
-                      onClick={() => set({ tags: topic === tag ? null : tag })}
-                    >
-                      <span>{tag}</span>
-                      <span className={s.mono}>{count}</span>
-                    </button>
-                  ))}
+                  {TAG_CATEGORIES.map(({ value, label }) => {
+                    const group = topics.data.filter((t) => t.category === value);
+                    if (group.length === 0) return null;
+                    return (
+                      <div key={value} role="group" aria-labelledby={`topic-group-${value}`} className={s.topicGroup}>
+                        <h3 id={`topic-group-${value}`} className={s.topicGroupTitle}>{label}</h3>
+                        {group.map(({ tag, count }) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            className={s.topic}
+                            aria-pressed={topic === tag}
+                            onClick={() => set({ tags: topic === tag ? null : tag })}
+                          >
+                            <span>{tag}</span>
+                            <span className={s.mono}>{count}</span>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>

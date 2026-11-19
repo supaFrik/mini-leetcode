@@ -16,7 +16,9 @@ import type {
   AttemptResult, AuthoringTopic, LearnerTopic, StepAnswer, TopicDraft, TopicSummary,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
+  AdminTag, TagCategory, TagCount,
 } from "@/types/api";
+import { TAG_CATEGORIES } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
 export const DRAFT_SYNC = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_DRAFT_SYNC === "true";
@@ -90,12 +92,32 @@ export async function countProblems(p: Partial<Omit<ProblemQuery, "page" | "size
   return r.totalElements;
 }
 
-/** Danh sách chủ đề đang có trong catalogue, kèm số bài. `type` lọc theo DSA/OOP. */
-export async function fetchProblemTags(type?: ProblemType): Promise<{ tag: string; count: number }[]> {
-  if (USE_MOCK) return mock.listTags(type);
+/** Danh sách chủ đề đang có trong catalogue, kèm số bài và nhóm. `type` lọc theo DSA/OOP. */
+export async function fetchProblemTags(type?: ProblemType): Promise<TagCount[]> {
+  if (USE_MOCK) return (await mock.listTags(type)).map((t) => ({ ...t, category: "OTHER" as const }));
   const raw = await api<Raw[]>(`/api/v1/problems/tags${type ? `?type=${type}` : ""}`);
-  return (raw ?? []).map((t) => ({ tag: String(t.tag), count: Number(t.count) }));
+  return (raw ?? []).map((t) => ({ tag: String(t.tag), count: Number(t.count), category: toTagCategory(t.category) }));
 }
+
+function toTagCategory(v: unknown): TagCategory {
+  return TAG_CATEGORIES.some((c) => c.value === v) ? (v as TagCategory) : "OTHER";
+}
+
+// ── Nhóm chủ đề (chỉ ADMIN). Chủ đề nhận diện bằng tên. ────────────────────
+export async function fetchAdminTags(): Promise<AdminTag[]> {
+  const raw = await api<Raw[]>("/api/v1/admin/tags");
+  return (raw ?? []).map((t) => ({ name: String(t.name), category: toTagCategory(t.category), problemCount: Number(t.problemCount) }));
+}
+export async function createTag(name: string, category: TagCategory): Promise<AdminTag> {
+  return api<AdminTag>("/api/v1/admin/tags", { method: "POST", body: JSON.stringify({ name, category }) });
+}
+export async function updateTagCategory(name: string, category: TagCategory): Promise<AdminTag> {
+  return api<AdminTag>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify({ category }) });
+}
+export async function deleteTag(name: string): Promise<void> {
+  await api<void>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "DELETE" });
+}
+
 export async function fetchProblem(idOrSlug: string): Promise<ProblemFull> {
   if (USE_MOCK) return mock.getProblem(idOrSlug);
   return normProblem(await api<Raw>(`/api/v1/problems/${encodeURIComponent(idOrSlug)}`));

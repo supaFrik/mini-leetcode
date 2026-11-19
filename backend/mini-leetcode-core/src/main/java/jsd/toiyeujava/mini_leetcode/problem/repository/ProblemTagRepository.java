@@ -19,16 +19,18 @@ import java.util.List;
 @org.springframework.stereotype.Repository
 public interface ProblemTagRepository extends Repository<Problem, Long> {
 
-    /** Danh sách chủ đề đang được dùng, kèm số bài có chủ đề đó. */
-    @Query(value = "select pt.tag, count(pt.problem_id) from problem_tags pt "
+    /** Danh sách chủ đề đang được dùng: [tag, số bài, nhóm] (chưa có trong {@code tags} thì nhóm OTHER). */
+    @Query(value = "select pt.tag, count(pt.problem_id), coalesce(max(t.category), 'OTHER') from problem_tags pt "
             + "join problems p on p.id = pt.problem_id "
+            + "left join tags t on t.name = pt.tag "
             + "where p.status = 'PUBLISHED' "
             + "group by pt.tag order by count(pt.problem_id) desc, pt.tag asc", nativeQuery = true)
     List<Object[]> findTagCounts();
 
     /** Giống {@link #findTagCounts()} nhưng chỉ đếm bài thuộc một loại (ALGORITHMIC / OOP_GRINDING). */
-    @Query(value = "select pt.tag, count(pt.problem_id) from problem_tags pt "
+    @Query(value = "select pt.tag, count(pt.problem_id), coalesce(max(t.category), 'OTHER') from problem_tags pt "
             + "join problems p on p.id = pt.problem_id "
+            + "left join tags t on t.name = pt.tag "
             + "where p.status = 'PUBLISHED' and p.problem_type = :type "
             + "group by pt.tag order by count(pt.problem_id) desc, pt.tag asc", nativeQuery = true)
     List<Object[]> findTagCountsByType(@org.springframework.data.repository.query.Param("type") String type);

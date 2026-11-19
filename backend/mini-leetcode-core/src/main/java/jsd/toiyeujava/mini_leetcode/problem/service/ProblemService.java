@@ -472,12 +472,12 @@ public class ProblemService {
                 ? problemTagRepository.findTagCounts()
                 : problemTagRepository.findTagCountsByType(type.name());
         return rows.stream()
-                .map(row -> new TagCount(String.valueOf(row[0]), ((Number) row[1]).intValue()))
+                .map(row -> new TagCount(String.valueOf(row[0]), ((Number) row[1]).intValue(), String.valueOf(row[2])))
                 .toList();
     }
 
-    /** Số bài tập thuộc một chủ đề. */
-    public record TagCount(String tag, int count) {
+    /** Số bài tập thuộc một chủ đề, kèm nhóm (DSA, OOP, JAVA_CORE, SPRING_BOOT, OTHER). */
+    public record TagCount(String tag, int count, String category) {
     }
 
     @Transactional
