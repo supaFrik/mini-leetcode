@@ -8,7 +8,8 @@ import { useCountdown } from "@/hooks/use-countdown";
 import { useUser } from "@/hooks/use-user";
 import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
-import { fetchContests, registerContest } from "@/lib/services";
+import { fetchContests, fetchLeaderboard, registerContest } from "@/lib/services";
+import { fmtClock, fmtSpan } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import theme from "@/components/layout/plex-theme.module.css";
 import p from "@/components/problems/problems.module.css";
@@ -19,16 +20,21 @@ type Load = { state: "loading" } | { state: "ok"; data: ContestInfo[] } | { stat
 
 const minutesOf = (c: ContestInfo) =>
   Math.max(0, Math.round((parseApiDate(c.endTime) - parseApiDate(c.startTime)) / 60000));
+/** "90 min" / "90 minutes"; từ một ngày trở lên thì "7d 2h". */
+const durationLabel = (c: ContestInfo, unit: string) => {
+  const m = minutesOf(c);
+  return m >= 1440 ? fmtSpan(m * 60000) : `${m} ${unit}`;
+};
 const problemsLabel = (c: ContestInfo) => `${c.problems.length} problem${c.problems.length === 1 ? "" : "s"}`;
 const fmtStart = (iso: string) =>
   new Date(parseApiDate(iso)).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const fmtDate = (iso: string) =>
   new Date(parseApiDate(iso)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-const fmtClock = (ms: number) => {
-  const t = Math.max(0, Math.floor(ms / 1000));
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(Math.floor(t / 3600))}:${pad(Math.floor((t % 3600) / 60))}:${pad(t % 60)}`;
-};
+
+function StartsIn({ c }: { c: ContestInfo }) {
+  const left = useCountdown(parseApiDate(c.startTime));
+  return <>{left == null ? "" : left === 0 ? "Starting…" : `Starts in ${fmtSpan(left)}`}</>;
+}
 
 /** Đăng ký dùng chung cho thẻ Live và hàng Upcoming. Chưa đăng nhập thì chuyển sang /login. */
 function useRegister(onDone: (id: number) => void) {
@@ -68,7 +74,7 @@ function LiveCard({ c, busy, onRegister }: { c: ContestInfo; busy: boolean; onRe
           <Link href={`/exam/${c.id}`}>{c.title}</Link>
         </h2>
         <p className={s.liveMeta}>
-          {problemsLabel(c)} · {minutesOf(c)} minutes · Proctored
+          {problemsLabel(c)} · {durationLabel(c, "minutes")} · Proctored
         </p>
       </div>
       <div className={s.liveRight}>
@@ -107,6 +113,19 @@ export function ContestList() {
     };
   }, [attempt]);
 
+  const [participants, setParticipants] = useState<Record<number, number>>({});
+  const pastIds = load.state === "ok" ? load.data.filter((c) => c.status === "COMPLETED").map((c) => c.id).join(",") : "";
+  useEffect(() => {
+    if (!pastIds) return;
+    let off = false;
+    // shortcut: one leaderboard request per past contest; add participantCount to the contest API if the list grows.
+    Promise.all(pastIds.split(",").map((id) => fetchLeaderboard(Number(id)).then((rows) => [Number(id), rows.length] as const).catch(() => null)))
+      .then((pairs) => !off && setParticipants(Object.fromEntries(pairs.filter((x) => x !== null))));
+    return () => {
+      off = true;
+    };
+  }, [pastIds]);
+
   const markRegistered = (id: number) =>
     setLoad((l) =>
       l.state === "ok" ? { ...l, data: l.data.map((c) => (c.id === id ? { ...c, myStatus: c.myStatus ?? "REGISTERED" } : c)) } : l
@@ -120,6 +139,9 @@ export function ContestList() {
     .filter((c) => c.status === "COMPLETED")
     .sort((a, b) => parseApiDate(b.startTime) - parseApiDate(a.startTime));
   const joined = data.filter((c) => c.myStatus).length;
+  const history = data
+    .filter((c) => c.myStatus)
+    .sort((a, b) => parseApiDate(b.startTime) - parseApiDate(a.startTime));
   const ranks = data.map((c) => c.myRank).filter((r): r is number => typeof r === "number");
   const bestRank = ranks.length ? Math.min(...ranks) : null;
 
@@ -148,14 +170,21 @@ export function ContestList() {
         ) : (
           <div className={p.layout}>
             <div className={s.column}>
-              {live.map((c) => (
-                <LiveCard
-                  key={c.id}
-                  c={c}
-                  busy={busy === c.id}
-                  onRegister={() => register(c, () => router.push(`/exam/${c.id}`))}
-                />
-              ))}
+              {live.length > 0 && (
+                <section className={s.section} aria-labelledby="running">
+                  <h2 id="running">Running now</h2>
+                  <div className={s.liveList}>
+                    {live.map((c) => (
+                      <LiveCard
+                        key={c.id}
+                        c={c}
+                        busy={busy === c.id}
+                        onRegister={() => register(c, () => router.push(`/exam/${c.id}`))}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <section className={s.section} aria-labelledby="upcoming">
                 <h2 id="upcoming">Upcoming</h2>
@@ -172,7 +201,10 @@ export function ContestList() {
                           </Link>
                           <span className={cn(s.muted, s.hideSm)}>{fmtStart(c.startTime)}</span>
                           <span className={cn(s.muted, s.hideSm)}>
-                            {problemsLabel(c)} · {minutesOf(c)} min
+                            {problemsLabel(c)} · {durationLabel(c, "min")}
+                          </span>
+                          <span className={cn(s.muted, s.hideSm)}>
+                            <StartsIn c={c} />
                           </span>
                           <button
                             type="button"
@@ -198,6 +230,7 @@ export function ContestList() {
                   <div className={s.pastHead}>
                     <span>Contest</span>
                     <span>Date</span>
+                    <span>Participants</span>
                     <span>Rank</span>
                     <span>Solved</span>
                     <span aria-hidden="true" />
@@ -209,11 +242,12 @@ export function ContestList() {
                       <Link key={c.id} href={`/exam/${c.id}/leaderboard`} className={s.pastRow}>
                         <span className={s.name}>{c.title}</span>
                         <span className={cn(s.muted, s.hideSm)}>{fmtDate(c.startTime)}</span>
+                        <span className={cn(s.num, s.hideSm)}>{participants[c.id] ?? "…"}</span>
                         <span className={cn(s.num, s.hideSm)}>
-                          {c.myRank != null ? `#${c.myRank}` : <span className="text-zinc-600 dark:text-zinc-400 font-normal text-xs">Unranked</span>}
+                          {c.myRank != null ? `#${c.myRank}` : <span className={s.dim}>{c.myStatus ? "Unranked" : "—"}</span>}
                         </span>
                         <span className={cn(s.num, s.hideSm)}>
-                          {c.mySolved != null ? `${c.mySolved}/${c.problems.length}` : <span className="text-zinc-600 dark:text-zinc-400 font-normal text-xs">Unsolved</span>}
+                          {c.mySolved != null ? `${c.mySolved}/${c.problems.length}` : <span className={s.dim}>—</span>}
                         </span>
                         <span className={s.results}>Results</span>
                       </Link>
@@ -236,6 +270,29 @@ export function ContestList() {
                     <p className={s.muted}>Best rank</p>
                   </div>
                 </div>
+              </section>
+              <section aria-labelledby="history">
+                <h2 id="history">My contest history</h2>
+                {history.length === 0 ? (
+                  <p className={s.muted} style={{ margin: 0 }}>You have not joined a contest yet.</p>
+                ) : (
+                  <ul className={s.history}>
+                    {history.map((c) => (
+                      <li key={c.id}>
+                        <Link href={`/exam/${c.id}`} className={s.name}>
+                          {c.title}
+                        </Link>
+                        <span className={s.muted}>
+                          {c.status === "RUNNING"
+                            ? "Running · in progress"
+                            : c.status === "SCHEDULED"
+                              ? `Registered · ${fmtDate(c.startTime)}`
+                              : `${c.myRank != null ? `Rank #${c.myRank}` : "Unranked"} · ${c.mySolved ?? 0}/${c.problems.length} solved`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </section>
               <section>
                 <h2>Before you enter</h2>
