@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLoad } from "@/hooks/use-load";
 import { useUser } from "@/hooks/use-user";
@@ -13,7 +13,7 @@ import { Markdown } from "@/components/ui/markdown";
 import theme from "@/components/layout/plex-theme.module.css";
 import p from "@/components/problems/problems.module.css";
 import s from "./study-plans.module.css";
-import type { StudyPlanItem, StudyPlanStage } from "@/types/api";
+import type { StudyPlanDetail, StudyPlanItem, StudyPlanStage } from "@/types/api";
 
 function Progress({ done, total }: { done: number; total: number }) {
   const pct = total > 0 ? Math.round((done * 100) / total) : 0;
@@ -114,6 +114,44 @@ function currentStage(item: StudyPlanItem): StudyPlanStage | undefined {
   return item.stages.find((st) => st.status !== "DONE") ?? item.stages[0];
 }
 
+/** Bước học tiếp theo: stage đầu tiên chưa DONE, đã xuất bản và không bị khoá. */
+function nextStep(plan: StudyPlanDetail): { item: StudyPlanItem; stage: StudyPlanStage } | undefined {
+  for (const item of plan.items) {
+    for (const stage of item.stages) {
+      if (stage.status !== "DONE") {
+        return stage.published && stage.status !== "LOCKED" ? { item, stage } : undefined;
+      }
+    }
+  }
+  return undefined;
+}
+
+const HOW_KEY = "study-plan-how-hidden";
+
+/** Khối "How it works" 3 bước; ẩn thì nhớ trong trình duyệt. */
+function HowItWorks() {
+  const [hidden, setHidden] = useState(true);
+  useEffect(() => {
+    try { setHidden(localStorage.getItem(HOW_KEY) === "1"); } catch { setHidden(false); }
+  }, []);
+  if (hidden) return null;
+  const hide = () => {
+    setHidden(true);
+    try { localStorage.setItem(HOW_KEY, "1"); } catch { /* bỏ qua: chỉ ẩn trong phiên này */ }
+  };
+  return (
+    <section className={s.howTo} aria-label="How it works">
+      <h2>How it works</h2>
+      <button type="button" className={s.howClose} onClick={hide}>Hide</button>
+      <ol className={s.howSteps}>
+        <li><strong>Open the next stage.</strong> Stages unlock in order.</li>
+        <li><strong>Learn, then code.</strong> Read the topics and solve the task here or in your IDE.</li>
+        <li><strong>Pass the tests.</strong> Accepted marks the stage done and opens the next one.</li>
+      </ol>
+    </section>
+  );
+}
+
 /** /study-plans/[slug] — mục theo thứ tự, stage mở khoá tuần tự trong mỗi project. */
 export function StudyPlanDetailView({ slug }: { slug: string }) {
   const [attempt, setAttempt] = useState(0);
@@ -131,7 +169,21 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
               <h1 className={s.title}>{load.data.title}</h1>
               {load.data.description && <div className={s.lead}><Markdown>{load.data.description}</Markdown></div>}
               <Progress done={load.data.doneStages} total={load.data.stageCount} />
+              {(() => {
+                const next = nextStep(load.data);
+                if (!next) return null;
+                const label = next.item.kind === "PROJECT"
+                  ? `${next.item.title}, stage ${next.stage.stageNo}`
+                  : `${next.item.title}`;
+                return (
+                  <Link href={`/study-plans/${slug}/${next.item.id}/${next.stage.stageNo}`} className={s.continue}>
+                    Continue: {label} →
+                  </Link>
+                );
+              })()}
             </div>
+
+            <HowItWorks />
 
             <div className={s.items}>
               {load.data.items.map((item) => (

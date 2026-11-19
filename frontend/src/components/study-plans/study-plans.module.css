@@ -347,3 +347,88 @@ a.stage:hover {
 .lead p { margin: 0; }
 .cardText p + p,
 .lead p + p { margin-top: 0.4em; }
+
+/* ---- Hướng dẫn cho người mới + nút học tiếp ---- */
+.continue {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.continue:hover {
+  opacity: 0.9;
+}
+
+.howTo {
+  position: relative;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.howTo h2 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.howSteps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: how;
+}
+
+.howSteps li {
+  counter-increment: how;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.howSteps li::before {
+  content: counter(how);
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--hover);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.howSteps strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.howClose {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: 0;
+  background: none;
+  color: var(--faint);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.howClose:hover {
+  color: var(--ink);
+}
