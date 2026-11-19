@@ -8,6 +8,10 @@ import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Tag;
 import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.problem.repository.TagRepository;
+import jsd.toiyeujava.mini_leetcode.ranking.service.RankingService;
+import jsd.toiyeujava.mini_leetcode.ranking.service.RankingService.RankingRow;
+import jsd.toiyeujava.mini_leetcode.submission.entity.Submission;
+import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +30,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** P1c nhóm chủ đề. */
+/** P1c nhóm chủ đề, P1b bảng xếp hạng. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -37,6 +41,8 @@ class TagsRankingPagesIntegrationTest {
     @Autowired private JwtTokenProvider jwtTokenProvider;
     @Autowired private UserRepository userRepository;
     @Autowired private ProblemRepository problemRepository;
+    @Autowired private SubmissionRepository submissionRepository;
+    @Autowired private RankingService rankingService;
     @Autowired private TagRepository tagRepository;
 
     private User user(String name, Role role) {
@@ -53,6 +59,11 @@ class TagsRankingPagesIntegrationTest {
                 .difficulty(Difficulty.EASY).status(ProblemStatus.PUBLISHED).createdBy(author).build();
         p.setTags(new ArrayList<>(tags));
         return problemRepository.save(p);
+    }
+
+    private void submit(User u, Problem p, SubmissionVerdict verdict, boolean quickRun) {
+        submissionRepository.save(Submission.builder().user(u).problem(p).language(SubmissionLanguage.JAVA)
+                .codeStorageUri("minio://x").status(SubmissionStatus.COMPLETED).verdict(verdict).quickRun(quickRun).build());
     }
 
     @Test
@@ -103,5 +114,34 @@ class TagsRankingPagesIntegrationTest {
                 .andExpect(status().isConflict());
         mockMvc.perform(delete("/api/v1/admin/tags/{name}", "Fresh Tag").header("Authorization", token(admin)))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Ranking: distinct accepted problems, ties go to fewer submissions; runs and staff are ignored")
+    void ranking() throws Exception {
+        User author = user("rk_author", Role.INSTRUCTOR);
+        User alice = user("rk_alice", Role.USER);
+        User bob = user("rk_bob", Role.USER);
+        User carol = user("rk_carol", Role.USER);
+        Problem p1 = problem("rk-p1", author, List.of());
+        Problem p2 = problem("rk-p2", author, List.of());
+
+        submit(alice, p1, SubmissionVerdict.AC, false);
+        submit(alice, p1, SubmissionVerdict.AC, false); // same problem twice counts once
+        submit(bob, p1, SubmissionVerdict.WA, false);
+        submit(bob, p1, SubmissionVerdict.AC, false);
+        submit(bob, p2, SubmissionVerdict.AC, false);
+        submit(carol, p1, SubmissionVerdict.AC, false);
+        submit(carol, p2, SubmissionVerdict.AC, true); // quick run: not counted
+        submit(author, p1, SubmissionVerdict.AC, false); // staff: not ranked
+
+        List<String> order = rankingService.top().stream().map(RankingRow::username)
+                .filter(n -> n.startsWith("rk_")).toList();
+        assertThat(order).containsExactly("rk_bob", "rk_carol", "rk_alice");
+
+        mockMvc.perform(get("/api/v1/ranking"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.username == 'rk_bob')].solved").value(2))
+                .andExpect(jsonPath("$[?(@.username == 'rk_alice')].submissions").value(2));
     }
 }

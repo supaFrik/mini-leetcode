@@ -77,6 +77,8 @@ public class SecurityConfig {
                         // Nhóm chủ đề: chỉ ADMIN.
                         .requestMatchers("/api/v1/admin/tags/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("INSTRUCTOR", "ADMIN")
+                        // Bảng xếp hạng: đọc công khai.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/ranking").permitAll()
                         // Problems public reads
                         .requestMatchers(HttpMethod.GET, "/api/v1/problems/**").permitAll()
                         // Testcase management (more specific paths must come before general problem routes)

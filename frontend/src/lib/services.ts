@@ -16,7 +16,7 @@ import type {
   AttemptResult, AuthoringTopic, LearnerTopic, StepAnswer, TopicDraft, TopicSummary,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
-  AdminTag, TagCategory, TagCount,
+  AdminTag, RankingRow, TagCategory, TagCount,
 } from "@/types/api";
 import { TAG_CATEGORIES } from "@/types/api";
 
@@ -118,6 +118,10 @@ export async function deleteTag(name: string): Promise<void> {
   await api<void>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "DELETE" });
 }
 
+// ── Bảng xếp hạng ──────────────────────────────────────
+export async function fetchRanking(): Promise<RankingRow[]> {
+  return (await api<RankingRow[]>("/api/v1/ranking")) ?? [];
+}
 export async function fetchProblem(idOrSlug: string): Promise<ProblemFull> {
   if (USE_MOCK) return mock.getProblem(idOrSlug);
   return normProblem(await api<Raw>(`/api/v1/problems/${encodeURIComponent(idOrSlug)}`));

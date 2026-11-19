@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, History, List, LogOut, Plug, Route, Trophy, type LucideIcon } from "lucide-react";
+import { Bell, History, List, LogOut, Medal, Plug, Route, Trophy, type LucideIcon } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { clearTokens } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -60,6 +60,7 @@ export function SiteHeader() {
     { label: "Study Plans", icon: Route, href: "/study-plans", active: pathname.startsWith("/study-plans"), disabledReason: lockReason },
     { label: "Contest", icon: Trophy, href: "/exam", active: pathname.startsWith("/exam") },
     { label: "Submissions", icon: History, href: "/submissions", active: pathname.startsWith("/submissions") },
+    { label: "Ranking", icon: Medal, href: "/ranking", active: pathname.startsWith("/ranking"), disabledReason: lockReason },
   ];
   if (isStaff) entries.push({ label: "Admin", href: "/admin/problems", active: pathname.startsWith("/admin") });
 
