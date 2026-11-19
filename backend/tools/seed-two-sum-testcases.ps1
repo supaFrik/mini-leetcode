@@ -10,13 +10,21 @@
 
 .EXAMPLE
     .\backend\tools\seed-two-sum-testcases.ps1 -Username dev_instructor -Password 'dev-password-123'
+
+.EXAMPLE
+    # Bài đang nằm trong contest chưa kết thúc (API trả 409 "Problem is used by contest ..."):
+    .\backend\tools\seed-two-sum-testcases.ps1 -Username admin -Password 'Admin@123456' -Slug two-sum -BypassContestLock
 #>
 param(
     [Parameter(Mandatory = $true)][string]$Username,
     [Parameter(Mandatory = $true)][string]$Password,
     # Bài khác dùng cùng script: -Slug coin-change (file ở backend\tools\<slug>\cases, sinh bằng problems\dsa.py).
     [string]$Slug = "two-sum",
-    [string]$BaseUrl = "http://localhost:8080"
+    [string]$BaseUrl = "http://localhost:8080",
+    # Bài PUBLISHED nằm trong contest chưa kết thúc thì API trả 409 khi rời PUBLISHED.
+    # Bật cờ này (CHỈ DEV) để đổi status sang DRAFT trực tiếp trong MySQL; phần còn lại vẫn đi qua API.
+    [switch]$BypassContestLock,
+    [string]$MysqlContainer = "mini_leetcode_mysql"
 )
 $ErrorActionPreference = "Stop"
 $cases = Join-Path $PSScriptRoot "$Slug\cases"
@@ -31,10 +39,25 @@ $base = "$BaseUrl/api/v1/problems/$($problem.id)/test-cases"
 
 # Bài PUBLISHED bị khoá testcase, nên đi đúng vòng đời: PUBLISHED -> ARCHIVED -> DRAFT, nạp xong thì REVIEWING -> PUBLISHED.
 function Move-Status([string]$status) {
-    Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/problems/$($problem.id)/transitions" -Headers $headers `
-        -ContentType "application/json" -Body (@{ status = $status } | ConvertTo-Json) | Out-Null
+    try {
+        Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/v1/problems/$($problem.id)/transitions" -Headers $headers `
+            -ContentType "application/json" -Body (@{ status = $status } | ConvertTo-Json) | Out-Null
+    } catch {
+        # PowerShell 5.1 không in body lỗi; đọc từ response để thấy lý do (vd 409 "Problem is used by contest ...").
+        $body = $_.ErrorDetails.Message
+        if (-not $body -and $_.Exception.Response) {
+            $body = (New-Object IO.StreamReader($_.Exception.Response.GetResponseStream())).ReadToEnd()
+        }
+        throw "Transition to $status failed: $($_.Exception.Message) $body"
+    }
 }
-if ($problem.status -eq "PUBLISHED") { Move-Status "ARCHIVED"; Move-Status "DRAFT" }
+if ($problem.status -eq "PUBLISHED" -and $BypassContestLock) {
+    # MYSQL_PWD thay cho -p: mysql không in cảnh báo ra stderr (PowerShell 5.1 coi stderr là lỗi).
+    & docker exec -e MYSQL_PWD=leetcode_password $MysqlContainer mysql -u leetcode mini_leetcode `
+        -e "UPDATE problems SET status = 'DRAFT' WHERE id = $($problem.id) AND status = 'PUBLISHED'"
+    if ($LASTEXITCODE -ne 0) { throw "Could not set problem $($problem.id) to DRAFT in MySQL" }
+}
+elseif ($problem.status -eq "PUBLISHED") { Move-Status "ARCHIVED"; Move-Status "DRAFT" }
 elseif ($problem.status -eq "ARCHIVED") { Move-Status "DRAFT" }
 elseif ($problem.status -eq "REVIEWING") { Move-Status "DRAFT" }
 
