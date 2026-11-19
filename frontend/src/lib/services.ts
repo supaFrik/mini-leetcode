@@ -17,6 +17,7 @@ import type {
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
   AdminTag, RankingRow, SitePage, TagCategory, TagCount,
+  AdminStats, AdminUserList, AdminUserRow, Role, UserStatus,
 } from "@/types/api";
 import { TAG_CATEGORIES } from "@/types/api";
 
@@ -116,6 +117,17 @@ export async function updateTagCategory(name: string, category: TagCategory): Pr
 }
 export async function deleteTag(name: string): Promise<void> {
   await api<void>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "DELETE" });
+}
+
+// ── Quản trị: tổng quan và người dùng (chỉ ADMIN) ───────────────────────────
+export async function fetchAdminStats(): Promise<AdminStats> {
+  return api<AdminStats>("/api/v1/admin/stats");
+}
+export async function fetchAdminUsers(q: string, page = 0): Promise<AdminUserList> {
+  return api<AdminUserList>(`/api/v1/admin/users?q=${encodeURIComponent(q)}&page=${page}`);
+}
+export async function updateAdminUser(id: number, change: { role?: Role; status?: UserStatus }): Promise<AdminUserRow> {
+  return api<AdminUserRow>(`/api/v1/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(change) });
 }
 
 // ── Bảng xếp hạng và trang chính sách ──────────────────────────────────────

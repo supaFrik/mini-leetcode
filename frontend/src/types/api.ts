@@ -54,6 +54,16 @@ export interface TagCount { tag: string; count: number; category: TagCategory }
 export interface AdminTag { name: string; category: TagCategory; problemCount: number }
 export interface RankingRow { rank: number; userId: number; username: string; solved: number; submissions: number }
 export interface SitePage { slug: string; title: string; contentMd: string; updatedAt: string }
+export type UserStatus = "ACTIVE" | "BLOCKED";
+export interface AdminUserRow { id: number; username: string; email: string; role: Role; status: UserStatus; createdAt: string }
+export interface AdminUserList { items: AdminUserRow[]; total: number; page: number; size: number }
+export interface AdminRecentSubmission {
+  id: number; username: string; problemTitle: string; problemSlug: string; status: SubmissionStatus; verdict: Verdict | null; createdAt: string;
+}
+export interface AdminStats {
+  users: number; problems: number; submissions: number; contests: number;
+  recentSubmissions: AdminRecentSubmission[]; recentUsers: AdminUserRow[];
+}
 
 // ===== Đề bài =====
 export interface ProblemSummary {

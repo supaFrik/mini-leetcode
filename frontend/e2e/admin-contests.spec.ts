@@ -153,7 +153,7 @@ test.describe("Admin: contests", () => {
   test("AC-CT-001: instructor creates a contest with three published problems labelled A, B, C", async ({ page }) => {
     const m = await open(page, "INSTRUCTOR");
     await expect(page.getByText("No contests yet")).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Admin sections" }).getByRole("link", { name: "Contests" }))
+    await expect(page.getByRole("navigation", { name: "Admin", exact: true }).getByRole("link", { name: "Contests" }))
       .toHaveAttribute("aria-current", "page");
 
     await page.getByRole("link", { name: "New contest" }).click();

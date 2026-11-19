@@ -62,7 +62,7 @@ export function SiteHeader() {
     { label: "Submissions", icon: History, href: "/submissions", active: pathname.startsWith("/submissions") },
     { label: "Ranking", icon: Medal, href: "/ranking", active: pathname.startsWith("/ranking"), disabledReason: lockReason },
   ];
-  if (isStaff) entries.push({ label: "Admin", href: "/admin/problems", active: pathname.startsWith("/admin") });
+  if (isStaff) entries.push({ label: "Admin", href: user?.role === "ADMIN" ? "/admin" : "/admin/problems", active: pathname.startsWith("/admin") });
 
   const signOut = () => {
     clearTokens();
