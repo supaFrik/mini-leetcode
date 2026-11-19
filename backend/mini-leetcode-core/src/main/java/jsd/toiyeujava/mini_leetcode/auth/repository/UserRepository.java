@@ -18,4 +18,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     java.util.List<User> findByUsernameIn(java.util.Collection<String> usernames);
 
     java.util.List<User> findByEmailIn(java.util.Collection<String> emails);
+
+    org.springframework.data.domain.Page<User> findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+            String username, String email, org.springframework.data.domain.Pageable pageable);
 }

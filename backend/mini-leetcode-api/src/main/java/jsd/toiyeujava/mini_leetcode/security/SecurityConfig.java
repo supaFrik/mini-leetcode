@@ -74,8 +74,9 @@ public class SecurityConfig {
                         // Soạn bài (grading_config, lời giải mẫu): KHÔNG công khai như GET /api/v1/problems/**
                         // Xoá kỳ thi: chỉ ADMIN (gỡ thí sinh /contests/{id}/participants/{uid} thì giảng viên vẫn làm được).
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/contests/*").hasRole("ADMIN")
-                        // Nhóm chủ đề và trang chính sách: chỉ ADMIN.
-                        .requestMatchers("/api/v1/admin/tags/**", "/api/v1/admin/pages/**").hasRole("ADMIN")
+                        // Nhóm chủ đề, trang chính sách, tổng quan và người dùng: chỉ ADMIN.
+                        .requestMatchers("/api/v1/admin/tags/**", "/api/v1/admin/pages/**",
+                                "/api/v1/admin/stats", "/api/v1/admin/users/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("INSTRUCTOR", "ADMIN")
                         // Bảng xếp hạng và trang chính sách: đọc công khai.
                         .requestMatchers(HttpMethod.GET, "/api/v1/ranking", "/api/v1/pages/**").permitAll()
