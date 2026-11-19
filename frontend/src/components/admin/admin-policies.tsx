@@ -3,17 +3,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Markdown } from "@/components/ui/markdown";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { useConfirm } from "@/components/ui/confirm";
-import { POLICY_PROSE } from "@/components/policies/policy-view";
 import { errorMessage } from "@/lib/api";
 import { fetchSitePages, updateSitePage } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { SitePage } from "@/types/api";
 
-/** Sửa trang chính sách bằng Markdown. Chỉ ADMIN; không lưu lịch sử phiên bản. */
+/** Sửa trang chính sách bằng rich text editor (lưu Markdown). Chỉ ADMIN; không lưu lịch sử phiên bản. */
 export function AdminPoliciesView() {
   const [pages, setPages] = useState<SitePage[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,18 +83,8 @@ export function AdminPoliciesView() {
                   {saving ? "Saving…" : "Save"}
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  aria-label="Page content (Markdown)"
-                  spellCheck={false}
-                  className="min-h-[480px] font-mono text-body-sm"
-                />
-                <div className="min-h-[480px] overflow-auto rounded-sm border border-border bg-card p-4" aria-label="Preview" role="region">
-                  <div className={POLICY_PROSE}><Markdown>{content}</Markdown></div>
-                </div>
-              </div>
+              {/* Cùng editor với Description bài tập; vẫn lưu Markdown nên nội dung cũ mở được nguyên trạng. */}
+              <RichTextEditor key={current.slug} value={content} onChange={setContent} label="Page content" className="min-h-[480px]" />
             </div>
           )}
         </div>
