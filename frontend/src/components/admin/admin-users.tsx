@@ -11,6 +11,7 @@ import { fetchAdminUsers, updateAdminUser } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import type { AdminUserList, AdminUserRow, Role } from "@/types/api";
 import { formatWhen } from "./admin-overview";
+import { RolesGuide } from "./admin-roles";
 
 const ROLES: { value: Role; label: string }[] = [
   { value: "USER", label: "User" },
@@ -59,11 +60,7 @@ export function AdminUsersView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-8 py-6">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-heading-md text-ink">Users</h1>
-          <p className="text-body-md text-mute">Blocked users cannot sign in. Their current session stops working on the next request.</p>
-        </div>
+      <div className="flex justify-end">
         <div className="relative w-72">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden />
           <Input
@@ -149,6 +146,7 @@ export function AdminUsersView() {
           <Button variant="outline" size="sm" disabled={page + 1 >= pages} onClick={() => setPage(page + 1)}>Next</Button>
         </div>
       )}
+      <RolesGuide />
     </div>
   );
 }

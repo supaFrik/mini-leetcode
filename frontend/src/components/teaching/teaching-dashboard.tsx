@@ -12,10 +12,6 @@ export function TeachingDashboardView() {
   const load = useLoad(fetchTeachingDashboard, []);
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-8 py-6">
-      <div>
-        <h1 className="text-heading-md text-ink">Teaching</h1>
-        <p className="text-body-md text-mute">Your learners, recent submissions to your problems and your upcoming contests.</p>
-      </div>
       {load.state === "loading" && <p className="text-body-md text-mute">Loading…</p>}
       {load.state === "error" && <p className="text-body-md text-destructive" role="alert">{load.message}</p>}
       {load.state === "ok" && (
@@ -26,10 +22,7 @@ export function TeachingDashboardView() {
           </div>
 
           <section className="space-y-2">
-            <div className="flex items-baseline justify-between">
-              <h2 className="text-heading-sm text-ink">Recent submissions</h2>
-              <Link href="/admin/submissions" className="text-body-sm text-mute hover:text-ink hover:underline">View all</Link>
-            </div>
+            <h2 className="text-heading-sm text-ink">Recent submissions</h2>
             <div className="overflow-x-auto rounded-sm border border-border bg-card" role="region" aria-label="Recent submissions">
               {load.data.recentSubmissions.length === 0 ? (
                 <p className="p-6 text-body-md text-mute">No submissions to your problems yet.</p>

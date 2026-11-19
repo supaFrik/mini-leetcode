@@ -16,12 +16,6 @@ export function StudentProgressView() {
   const load = useLoad(fetchTeachingProgress, []);
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-8 py-6">
-      <div>
-        <h1 className="text-heading-md text-ink">Student progress</h1>
-        <p className="text-body-md text-mute">
-          Each learner&apos;s state per stage of your study plans. Stuck means 3 or more submissions without Accepted.
-        </p>
-      </div>
       {load.state === "loading" && <p className="text-body-md text-mute">Loading…</p>}
       {load.state === "error" && <p className="text-body-md text-destructive" role="alert">{load.message}</p>}
       {load.state === "ok" && load.data.length === 0 && <p className="text-body-md text-mute">You have not created any study plans yet.</p>}

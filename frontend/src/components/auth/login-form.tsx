@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthPage } from "@/components/auth/auth-page";
 import { ApiError, USE_MOCK, errorMessage } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { decodeUser, getToken } from "@/lib/auth";
 import { login, register } from "@/lib/services";
 
 // Prevent open-redirect (e.g., //evil.com)
@@ -17,7 +17,13 @@ const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith(
  */
 export function LoginForm({ initialMode = "signin" }: { initialMode?: "signin" | "signup" } = {}) {
   const router = useRouter();
-  const next = safeNext(useSearchParams().get("next"));
+  const nextParam = useSearchParams().get("next");
+  // Không có ?next: ADMIN vào /admin, giảng viên vào /teaching, học viên về trang chủ.
+  const target = () => {
+    if (nextParam) return safeNext(nextParam);
+    const role = decodeUser(getToken())?.role;
+    return role === "ADMIN" ? "/admin" : role === "INSTRUCTOR" ? "/teaching" : "/";
+  };
   const mode = initialMode;
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -27,11 +33,12 @@ export function LoginForm({ initialMode = "signin" }: { initialMode?: "signin" |
   const [fields, setFields] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { if (getToken()) router.replace(next); }, [router, next]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (getToken()) router.replace(target()); }, [router, nextParam]);
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setError(null); setFields({});
-    try { await fn(); router.replace(next); }
+    try { await fn(); router.replace(target()); }
     catch (err) {
       setError(errorMessage(err, "Login failed."));
       if (err instanceof ApiError && err.problem?.invalid_params) setFields(err.problem.invalid_params);

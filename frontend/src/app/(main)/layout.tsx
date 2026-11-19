@@ -16,14 +16,16 @@ import { Toaster } from "@/components/layout/toaster";
 // Trang /problems theo bản mẫu không có footer.
 function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const showFooter = pathname !== "/problems";
+  // Khu quản trị có khung riêng (sidebar có "View site"), không dùng header/footer học viên.
+  const inConsole = pathname.startsWith("/admin") || pathname.startsWith("/teaching");
+  const showFooter = pathname !== "/problems" && !inConsole;
 
   return (
     <AuthGuard>
       <div className="flex h-dvh flex-col">
         <OfflineBanner />
         <MaintenanceBanner />
-        <SiteHeader />
+        {!inConsole && <SiteHeader />}
         <main className="min-h-0 flex-1 overflow-auto">{children}</main>
         {showFooter && (
           <footer className="flex h-12 shrink-0 items-center border-t border-border bg-background px-6 text-body-sm font-medium text-zinc-600 dark:text-zinc-400">

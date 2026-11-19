@@ -9,18 +9,18 @@ import { cn } from "@/lib/utils";
 const MEDAL = ["text-amber-500", "text-zinc-400", "text-orange-700"];
 
 /** Bảng xếp hạng toàn site: số bài khác nhau đã AC, hoà thì ít lần nộp hơn đứng trên. */
-export function RankingView() {
+export function RankingView({ hideHeader = false }: { hideHeader?: boolean } = {}) {
   const load = useLoad(fetchRanking, []);
   const { user } = useUser();
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 px-8 py-8">
-      <header className="space-y-1">
+      {!hideHeader && <header className="space-y-1">
         <h1 className="text-heading-lg text-ink">Ranking</h1>
         <p className="text-body-md text-mute">
           Students ranked by distinct problems solved. Ties go to the one with fewer submissions.
         </p>
-      </header>
+      </header>}
 
       <div className="overflow-hidden rounded-sm border border-border bg-card" role="region" aria-label="Ranking">
         {load.state === "loading" && <p className="p-6 text-body-md text-mute">Loading ranking…</p>}

@@ -166,7 +166,7 @@ export function AdminProblemsView() {
                 </Button>
                 {canDelete && (
                   <Button size="icon-sm" variant="ghost" disabled={pending === p.id} onClick={() => remove(p)}
-                    aria-label={`Delete ${p.title}`} title="Delete (Admin only)" className="text-zinc-400 hover:text-destructive">
+                    aria-label={`Delete ${p.title}`} title="Delete" className="text-zinc-400 hover:text-destructive">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}

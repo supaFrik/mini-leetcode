@@ -68,10 +68,6 @@ export function AdminTagsView() {
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-8 py-6">
       <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-heading-md text-ink">Tags</h1>
-          <p className="text-body-md text-mute">The category decides where a tag appears in the Topics panel on Problems.</p>
-        </div>
         <form onSubmit={add} className="flex items-center gap-2" aria-label="Add tag">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="New tag name" maxLength={50} aria-label="Tag name" className="w-56" />
           <select value={category} onChange={(e) => setCategory(e.target.value as TagCategory)} aria-label="Category for new tag" className={selectClass}>

@@ -1,8 +1,8 @@
-/**
- * Lớp trung gian giữa UI và backend. Mọi component CHỈ gọi hàm ở đây.
- * - USE_MOCK=true  → gọi mock-server (dữ liệu giả)
- * - USE_MOCK=false → gọi REST API thật. Endpoint đánh dấu [ĐỀ XUẤT] chưa có trong spec,
- *   cần thống nhất với Kỹ sư 1 (xem README_FRONTEND.md).
+﻿/**
+ * Lá»›p trung gian giá»¯a UI vÃ  backend. Má»i component CHá»ˆ gá»i hÃ m á»Ÿ Ä‘Ã¢y.
+ * - USE_MOCK=true  â†’ gá»i mock-server (dá»¯ liá»‡u giáº£)
+ * - USE_MOCK=false â†’ gá»i REST API tháº­t. Endpoint Ä‘Ã¡nh dáº¥u [Äá»€ XUáº¤T] chÆ°a cÃ³ trong spec,
+ *   cáº§n thá»‘ng nháº¥t vá»›i Ká»¹ sÆ° 1 (xem README_FRONTEND.md).
  */
 import { api, ApiError, request, USE_MOCK } from "./api";
 import { parseApiDate } from "./datetime";
@@ -18,7 +18,7 @@ import type {
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
   AdminTag, RankingRow, SitePage, TagCategory, TagCount,
   AdminStats, AdminUserList, AdminUserRow, Role, UserStatus,
-  AdminSubmissionList, Announcement, PlanProgress, PublicSettings, SiteSettings, TeachingDashboard,
+  Announcement, PlanProgress, PublicSettings, SiteSettings, TeachingDashboard,
 } from "@/types/api";
 import { TAG_CATEGORIES } from "@/types/api";
 
@@ -53,10 +53,10 @@ const normProblem = (r: Raw): ProblemFull => ({
 });
 
 /**
- * Backend trả về Page theo dạng lồng: `{ content: [...], page: { number, size, totalElements, totalPages } }`
- * (xem ProblemController trả `ResponseEntity.ok(Page<ProblemResponse>)` và test
- * `jsonPath("$.page.totalElements")`). Còn mock-server trả dạng phẳng.
- * Hàm này gộp cả hai về một shape phẳng duy nhất để UI đọc nhất quán.
+ * Backend tráº£ vá» Page theo dáº¡ng lá»“ng: `{ content: [...], page: { number, size, totalElements, totalPages } }`
+ * (xem ProblemController tráº£ `ResponseEntity.ok(Page<ProblemResponse>)` vÃ  test
+ * `jsonPath("$.page.totalElements")`). CÃ²n mock-server tráº£ dáº¡ng pháº³ng.
+ * HÃ m nÃ y gá»™p cáº£ hai vá» má»™t shape pháº³ng duy nháº¥t Ä‘á»ƒ UI Ä‘á»c nháº¥t quÃ¡n.
  */
 const normPage = <T,>(r: Raw): Page<T> => {
   const content: T[] = Array.isArray(r?.content) ? r.content : [];
@@ -71,14 +71,14 @@ const normPage = <T,>(r: Raw): Page<T> => {
 export interface ProblemQuery { page: number; q: string; difficulty: string; progress: string; tags: string[]; type?: ProblemType; size?: number }
 export async function fetchProblems(p: ProblemQuery): Promise<Page<ProblemSummary>> {
   if (USE_MOCK) return mock.listProblems(p);
-  const qs = new URLSearchParams({ page: String(p.page - 1), size: String(p.size ?? 8) }); // backend đếm trang từ 0
+  const qs = new URLSearchParams({ page: String(p.page - 1), size: String(p.size ?? 8) }); // backend Ä‘áº¿m trang tá»« 0
   if (p.q) qs.set("search", p.q);
   if (p.difficulty) qs.set("difficulty", p.difficulty);
   if (p.type) qs.set("type", p.type);
-  // Backend lọc chủ đề ở tầng SQL: bài khớp nếu thuộc ÍT NHẤT MỘT tag được gửi lên
-  // (so khớp chính xác, không phân biệt hoa/thường).
+  // Backend lá»c chá»§ Ä‘á» á»Ÿ táº§ng SQL: bÃ i khá»›p náº¿u thuá»™c ÃT NHáº¤T Má»˜T tag Ä‘Æ°á»£c gá»­i lÃªn
+  // (so khá»›p chÃ­nh xÃ¡c, khÃ´ng phÃ¢n biá»‡t hoa/thÆ°á»ng).
   if (p.tags.length) qs.set("tags", p.tags.join(","));
-  // `progress` chỉ có ý nghĩa với người đã đăng nhập; backend tự tính từ submissions.
+  // `progress` chá»‰ cÃ³ Ã½ nghÄ©a vá»›i ngÆ°á»i Ä‘Ã£ Ä‘Äƒng nháº­p; backend tá»± tÃ­nh tá»« submissions.
   if (p.progress) qs.set("progress", p.progress);
   const raw = await api<Raw>(`/api/v1/problems?${qs}`);
   const page = normPage<Raw>(raw);
@@ -86,15 +86,15 @@ export async function fetchProblems(p: ProblemQuery): Promise<Page<ProblemSummar
 }
 
 /**
- * Đếm số bài khớp bộ lọc mà không tải nội dung: gọi trang 1 với size=1 rồi đọc totalElements.
- * Dùng cho "Your progress" vì backend chưa có endpoint thống kê riêng.
+ * Äáº¿m sá»‘ bÃ i khá»›p bá»™ lá»c mÃ  khÃ´ng táº£i ná»™i dung: gá»i trang 1 vá»›i size=1 rá»“i Ä‘á»c totalElements.
+ * DÃ¹ng cho "Your progress" vÃ¬ backend chÆ°a cÃ³ endpoint thá»‘ng kÃª riÃªng.
  */
 export async function countProblems(p: Partial<Omit<ProblemQuery, "page" | "size">>): Promise<number> {
   const r = await fetchProblems({ page: 1, size: 1, q: p.q ?? "", difficulty: p.difficulty ?? "", progress: p.progress ?? "", tags: p.tags ?? [], type: p.type });
   return r.totalElements;
 }
 
-/** Danh sách chủ đề đang có trong catalogue, kèm số bài và nhóm. `type` lọc theo DSA/OOP. */
+/** Danh sÃ¡ch chá»§ Ä‘á» Ä‘ang cÃ³ trong catalogue, kÃ¨m sá»‘ bÃ i vÃ  nhÃ³m. `type` lá»c theo DSA/OOP. */
 export async function fetchProblemTags(type?: ProblemType): Promise<TagCount[]> {
   if (USE_MOCK) return (await mock.listTags(type)).map((t) => ({ ...t, category: "OTHER" as const }));
   const raw = await api<Raw[]>(`/api/v1/problems/tags${type ? `?type=${type}` : ""}`);
@@ -105,7 +105,7 @@ function toTagCategory(v: unknown): TagCategory {
   return TAG_CATEGORIES.some((c) => c.value === v) ? (v as TagCategory) : "OTHER";
 }
 
-// ── Nhóm chủ đề (chỉ ADMIN). Chủ đề nhận diện bằng tên. ────────────────────
+// â”€â”€ NhÃ³m chá»§ Ä‘á» (chá»‰ ADMIN). Chá»§ Ä‘á» nháº­n diá»‡n báº±ng tÃªn. â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function fetchAdminTags(): Promise<AdminTag[]> {
   const raw = await api<Raw[]>("/api/v1/admin/tags");
   return (raw ?? []).map((t) => ({ name: String(t.name), category: toTagCategory(t.category), problemCount: Number(t.problemCount) }));
@@ -120,19 +120,15 @@ export async function deleteTag(name: string): Promise<void> {
   await api<void>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "DELETE" });
 }
 
-// ── Quản trị: tổng quan và người dùng (chỉ ADMIN) ───────────────────────────
+// â”€â”€ Quáº£n trá»‹: tá»•ng quan vÃ  ngÆ°á»i dÃ¹ng (chá»‰ ADMIN) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function fetchAdminStats(): Promise<AdminStats> {
   return api<AdminStats>("/api/v1/admin/stats");
 }
 export async function fetchAdminUsers(q: string, page = 0): Promise<AdminUserList> {
   return api<AdminUserList>(`/api/v1/admin/users?q=${encodeURIComponent(q)}&page=${page}`);
 }
-export async function fetchAdminSubmissions(q: { user: string; problem: string; verdict: string }, page = 0): Promise<AdminSubmissionList> {
-  const qs = new URLSearchParams({ ...q, page: String(page) });
-  return api<AdminSubmissionList>(`/api/v1/admin/submissions?${qs}`);
-}
 
-// Thông báo: mọi người đã đăng nhập đọc; giảng viên/ADMIN tạo và xoá.
+// ThÃ´ng bÃ¡o: má»i ngÆ°á»i Ä‘Ã£ Ä‘Äƒng nháº­p Ä‘á»c; giáº£ng viÃªn/ADMIN táº¡o vÃ  xoÃ¡.
 export async function fetchAnnouncements(): Promise<Announcement[]> {
   if (USE_MOCK) return [];
   return (await api<Announcement[]>("/api/v1/announcements")) ?? [];
@@ -163,7 +159,7 @@ export async function updateAdminUser(id: number, change: { role?: Role; status?
   return api<AdminUserRow>(`/api/v1/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(change) });
 }
 
-// ── Bảng xếp hạng và trang chính sách ──────────────────────────────────────
+// â”€â”€ Báº£ng xáº¿p háº¡ng vÃ  trang chÃ­nh sÃ¡ch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function fetchRanking(): Promise<RankingRow[]> {
   return (await api<RankingRow[]>("/api/v1/ranking")) ?? [];
 }
@@ -186,8 +182,8 @@ export async function updateProblem(id: number, patch: Partial<ProblemFull>): Pr
 }
 
 /**
- * Chuyển trạng thái vòng đời của bài (DRAFT → REVIEWING → PUBLISHED → ARCHIVED).
- * Tách riêng khỏi `updateProblem` vì server kiểm tra cạnh trạng thái hợp lệ.
+ * Chuyá»ƒn tráº¡ng thÃ¡i vÃ²ng Ä‘á»i cá»§a bÃ i (DRAFT â†’ REVIEWING â†’ PUBLISHED â†’ ARCHIVED).
+ * TÃ¡ch riÃªng khá»i `updateProblem` vÃ¬ server kiá»ƒm tra cáº¡nh tráº¡ng thÃ¡i há»£p lá»‡.
  */
 export async function transitionProblem(id: number, status: ProblemLifecycle): Promise<ProblemFull> {
   if (USE_MOCK) return mock.transitionProblem(id, status);
@@ -199,15 +195,15 @@ export interface AdminProblemQuery {
   page: number;
   q: string;
   difficulty: string;
-  /** Trạng thái vòng đời; rỗng = không lọc. */
+  /** Tráº¡ng thÃ¡i vÃ²ng Ä‘á»i; rá»—ng = khÃ´ng lá»c. */
   status: string;
   tags: string[];
   type?: ProblemType;
-  /** STANDALONE (mặc định của server) = đề lẻ; COURSE = đề nằm trong study plan / chủ đề; ALL = tất cả. */
+  /** STANDALONE (máº·c Ä‘á»‹nh cá»§a server) = Ä‘á» láº»; COURSE = Ä‘á» náº±m trong study plan / chá»§ Ä‘á»; ALL = táº¥t cáº£. */
   scope?: ProblemScope;
 }
 
-/** Danh sách bài cho trang quản trị — staff thấy cả bài chưa publish. */
+/** Danh sÃ¡ch bÃ i cho trang quáº£n trá»‹ â€” staff tháº¥y cáº£ bÃ i chÆ°a publish. */
 export async function fetchAdminProblems(q: AdminProblemQuery): Promise<Page<ProblemFull>> {
   if (USE_MOCK) return mock.listAdminProblems(q);
   const qs = new URLSearchParams({ page: String(q.page - 1), size: "20" });
@@ -233,19 +229,19 @@ export interface ProblemDraft {
   starterTemplates?: string | null;
 }
 
-/** Tạo bài mới. Luôn bắt đầu ở trạng thái DRAFT. */
+/** Táº¡o bÃ i má»›i. LuÃ´n báº¯t Ä‘áº§u á»Ÿ tráº¡ng thÃ¡i DRAFT. */
 export async function createProblem(draft: ProblemDraft): Promise<ProblemFull> {
   if (USE_MOCK) return mock.createProblem(draft);
   return normProblem(await api<Raw>(`/api/v1/problems`, { method: "POST", body: JSON.stringify(draft) }));
 }
 
-/** Cập nhật metadata của bài (không đổi trạng thái vòng đời). */
+/** Cáº­p nháº­t metadata cá»§a bÃ i (khÃ´ng Ä‘á»•i tráº¡ng thÃ¡i vÃ²ng Ä‘á»i). */
 export async function saveProblem(id: number, draft: ProblemDraft): Promise<ProblemFull> {
   if (USE_MOCK) return mock.updateProblem(id, draft as Partial<ProblemFull>);
   return normProblem(await api<Raw>(`/api/v1/problems/${id}`, { method: "PUT", body: JSON.stringify(draft) }));
 }
 
-/** Xoá cứng bài. Server trả 409 nếu bài đã có lịch sử bài nộp. */
+/** XoÃ¡ cá»©ng bÃ i. Server tráº£ 409 náº¿u bÃ i Ä‘Ã£ cÃ³ lá»‹ch sá»­ bÃ i ná»™p. */
 export async function deleteProblem(id: number): Promise<void> {
   if (USE_MOCK) return mock.deleteProblem(id);
   await api<Raw>(`/api/v1/problems/${id}`, { method: "DELETE" });
@@ -262,7 +258,7 @@ export async function fetchTestCases(problemId: number): Promise<TestCase[]> {
 }
 export async function addTestCase(problemId: number, c: { input: string; expectedOutput: string; isHidden: boolean }): Promise<TestCase> {
   if (USE_MOCK) return mock.addTestCase(problemId, c);
-  // Backend nhận multipart 2 file. TÊN FIELD dưới đây là đoán, hãy đối chiếu Swagger.
+  // Backend nháº­n multipart 2 file. TÃŠN FIELD dÆ°á»›i Ä‘Ã¢y lÃ  Ä‘oÃ¡n, hÃ£y Ä‘á»‘i chiáº¿u Swagger.
   const fd = new FormData();
   fd.append("inputFile", new Blob([c.input], { type: "text/plain" }), "input.txt");
   fd.append("outputFile", new Blob([c.expectedOutput], { type: "text/plain" }), "output.txt");
@@ -270,7 +266,7 @@ export async function addTestCase(problemId: number, c: { input: string; expecte
   return normCase(await api<Raw>(`/api/v1/problems/${problemId}/test-cases`, { method: "POST", body: fd }));
 }
 
-/** Cập nhật testcase. Trường nào không truyền thì giữ nguyên (file được gửi dạng multipart). */
+/** Cáº­p nháº­t testcase. TrÆ°á»ng nÃ o khÃ´ng truyá»n thÃ¬ giá»¯ nguyÃªn (file Ä‘Æ°á»£c gá»­i dáº¡ng multipart). */
 export async function updateTestCase(
   problemId: number,
   testCaseId: number,
@@ -288,7 +284,7 @@ export async function deleteTestCase(problemId: number, testCaseId: number): Pro
   await api<Raw>(`/api/v1/problems/${problemId}/test-cases/${testCaseId}`, { method: "DELETE" });
 }
 
-// ---------- Soạn bài: grading_config, lời giải mẫu, sinh output (INSTRUCTOR/ADMIN) ----------
+// ---------- Soáº¡n bÃ i: grading_config, lá»i giáº£i máº«u, sinh output (INSTRUCTOR/ADMIN) ----------
 const authoringBase = (id: number) => `/api/v1/admin/problems/${id}`;
 const normAuthoring = (r: Raw): ProblemAuthoring => ({
   problemId: r.problemId, status: r.status, problemType: r.problemType ?? "ALGORITHMIC",
@@ -305,7 +301,7 @@ export async function validateGradingConfig(problemId: number, gradingConfig: st
     method: "POST", body: JSON.stringify({ gradingConfig }),
   });
 }
-/** Lưu grading_config (rỗng ⇒ xoá). Lỗi 400 mang `errors` trong ApiError.body. */
+/** LÆ°u grading_config (rá»—ng â‡’ xoÃ¡). Lá»—i 400 mang `errors` trong ApiError.body. */
 export async function saveGradingConfig(problemId: number, gradingConfig: string | null): Promise<ProblemAuthoring> {
   if (USE_MOCK) return mock.saveGradingConfig(problemId, gradingConfig);
   return normAuthoring(await api<Raw>(`${authoringBase(problemId)}/grading-config`, {
@@ -319,8 +315,8 @@ export async function saveReferenceSolution(problemId: number, files: Submission
   }));
 }
 /**
- * Chạy lời giải mẫu đã lưu trong sandbox của judge.
- * `inputs`: stdin tuỳ ý (soạn testcase mới). Không có `inputs`: chạy trên testcase của bài, `apply` ghi output mới.
+ * Cháº¡y lá»i giáº£i máº«u Ä‘Ã£ lÆ°u trong sandbox cá»§a judge.
+ * `inputs`: stdin tuá»³ Ã½ (soáº¡n testcase má»›i). KhÃ´ng cÃ³ `inputs`: cháº¡y trÃªn testcase cá»§a bÃ i, `apply` ghi output má»›i.
  */
 export async function runReference(
   problemId: number,
@@ -333,7 +329,7 @@ export async function runReference(
 // ---------- Submissions ----------
 export async function submitCode(problemId: number, body: SubmitBody, run = false): Promise<Submission> {
   if (USE_MOCK) return mock.submit(problemId, body, run);
-  return api<Submission>(`/api/v1/problems/${problemId}/${run ? "run" : "submit"}`, { method: "POST", body: JSON.stringify(body) }); // /run: [ĐỀ XUẤT]
+  return api<Submission>(`/api/v1/problems/${problemId}/${run ? "run" : "submit"}`, { method: "POST", body: JSON.stringify(body) }); // /run: [Äá»€ XUáº¤T]
 }
 
 export async function submitCodeMultipart(problemId: number, formData: FormData, run = false): Promise<Submission> {
@@ -369,7 +365,7 @@ export async function fetchSubmission(id: number): Promise<Submission> {
   if (USE_MOCK) return mock.getSubmission(id);
   return api<Submission>(`/api/v1/submissions/${id}`);
 }
-/** `verdict` là tên verdict hoặc PENDING; server lọc và phân trang. Bỏ trống là không lọc. */
+/** `verdict` lÃ  tÃªn verdict hoáº·c PENDING; server lá»c vÃ  phÃ¢n trang. Bá» trá»‘ng lÃ  khÃ´ng lá»c. */
 export async function fetchMySubmissions(page: number, size = 15, filter: { verdict?: string; language?: string } = {}): Promise<Page<Submission>> {
   if (USE_MOCK) return mock.mySubmissions(page - 1, size, filter);
   const qs = new URLSearchParams({ page: String(page - 1), size: String(size) });
@@ -377,7 +373,7 @@ export async function fetchMySubmissions(page: number, size = 15, filter: { verd
   if (filter.language) qs.set("language", filter.language);
   return normPage<Submission>(await api<Raw>(`/api/v1/submissions/my?${qs}`));
 }
-/** Số bài nộp theo verdict (thêm PENDING) trên toàn bộ bài nộp của user. */
+/** Sá»‘ bÃ i ná»™p theo verdict (thÃªm PENDING) trÃªn toÃ n bá»™ bÃ i ná»™p cá»§a user. */
 export async function fetchMySubmissionSummary(): Promise<Record<string, number>> {
   if (USE_MOCK) return mock.mySubmissionSummary();
   return (await api<Record<string, number>>("/api/v1/submissions/my/summary")) ?? {};
@@ -386,10 +382,10 @@ export async function fetchSubmissionCode(id: number): Promise<string> {
   if (USE_MOCK) return mock.submissionCode(id);
   return api<string>(`/api/v1/submissions/${id}/code`);
 }
-// [ĐỀ XUẤT] GET /api/v1/submissions/{id}/results – chi tiết từng testcase công khai. Chưa có → trả null.
+// [Äá»€ XUáº¤T] GET /api/v1/submissions/{id}/results â€“ chi tiáº¿t tá»«ng testcase cÃ´ng khai. ChÆ°a cÃ³ â†’ tráº£ null.
 export async function fetchSubmissionResults(id: number): Promise<CaseResult[] | null> {
   if (USE_MOCK) return mock.submissionResults(id);
-  // Backend chưa có endpoint này (404 → null, UI ẩn chi tiết từng testcase); giữ lời gọi để tự hiện khi backend bổ sung.
+  // Backend chÆ°a cÃ³ endpoint nÃ y (404 â†’ null, UI áº©n chi tiáº¿t tá»«ng testcase); giá»¯ lá»i gá»i Ä‘á»ƒ tá»± hiá»‡n khi backend bá»• sung.
   try { return await api<CaseResult[]>(`/api/v1/submissions/${id}/results`); }
   catch (e) { if (e instanceof ApiError && [404, 405, 501].includes(e.status)) return null; throw e; }
 }
@@ -413,7 +409,7 @@ export async function postProctoringEvent(contestId: number, eventType: Proctori
   if (USE_MOCK) return mock.proctoringEvent(contestId, eventType);
   return api<ProctoringResult>(`/api/v1/contests/${contestId}/proctoring/events`, {
     method: "POST",
-    keepalive: true, // vẫn gửi được khi tab đang bị ẩn
+    keepalive: true, // váº«n gá»­i Ä‘Æ°á»£c khi tab Ä‘ang bá»‹ áº©n
     body: JSON.stringify({ eventType, clientTimestamp: Date.now() }),
   });
 }
@@ -422,35 +418,35 @@ export async function registerContest(id: number): Promise<void> {
   if (USE_MOCK) return mock.registerContest(id);
   await api(`/api/v1/contests/${id}/register`, { method: "POST" });
 }
-// POST /api/v1/contests/{id}/finalize: chốt bài thi, khoá nộp bài tiếp theo.
+// POST /api/v1/contests/{id}/finalize: chá»‘t bÃ i thi, khoÃ¡ ná»™p bÃ i tiáº¿p theo.
 export async function finalizeContestSubmission(id: number): Promise<ContestInfo | null> {
   if (USE_MOCK) return mock.getContest(id);
   try {
     return await api<ContestInfo>(`/api/v1/contests/${id}/finalize`, { method: "POST" });
   } catch {
-    // Chốt bài là hành động "best effort": lỗi không được chặn luồng hiển thị phía client.
+    // Chá»‘t bÃ i lÃ  hÃ nh Ä‘á»™ng "best effort": lá»—i khÃ´ng Ä‘Æ°á»£c cháº·n luá»“ng hiá»ƒn thá»‹ phÃ­a client.
     return null;
   }
 }
-// GET /api/v1/contests/{id}/proctoring/report (INSTRUCTOR, ADMIN): báo cáo vi phạm của thí sinh
+// GET /api/v1/contests/{id}/proctoring/report (INSTRUCTOR, ADMIN): bÃ¡o cÃ¡o vi pháº¡m cá»§a thÃ­ sinh
 export async function fetchProctoringReport(id: number): Promise<ProctorReportRow[]> {
   if (USE_MOCK) return mock.proctoringReport(id);
   return api<ProctorReportRow[]>(`/api/v1/contests/${id}/proctoring/report`);
 }
-// POST /api/v1/contests/{id}/participants/{userId}/unlock (ADMIN): mở khoá thí sinh bị loại
+// POST /api/v1/contests/{id}/participants/{userId}/unlock (ADMIN): má»Ÿ khoÃ¡ thÃ­ sinh bá»‹ loáº¡i
 export async function unlockParticipant(contestId: number, userId: number): Promise<void> {
   if (USE_MOCK) return mock.unlockParticipant(contestId, userId);
   await api(`/api/v1/contests/${contestId}/participants/${userId}/unlock`, { method: "POST" });
 }
-// GET /api/v1/contests/{id}/plagiarism: kết quả đối soát đạo văn (Jaccard) của Kỹ sư 2
+// GET /api/v1/contests/{id}/plagiarism: káº¿t quáº£ Ä‘á»‘i soÃ¡t Ä‘áº¡o vÄƒn (Jaccard) cá»§a Ká»¹ sÆ° 2
 export async function fetchPlagiarism(id: number): Promise<PlagiarismRow[]> {
   if (USE_MOCK) return mock.plagiarism(id);
   return api<PlagiarismRow[]>(`/api/v1/contests/${id}/plagiarism`);
 }
 export function resetMockExam(contestId: number) { mock.resetExam(contestId); }
 
-// ---------- Draft (chống rớt mạng) ----------
-// [ĐỀ XUẤT] GET/PUT /api/v1/contests/{cid}/problems/{pid}/draft?language=
+// ---------- Draft (chá»‘ng rá»›t máº¡ng) ----------
+// [Äá»€ XUáº¤T] GET/PUT /api/v1/contests/{cid}/problems/{pid}/draft?language=
 export async function loadDraft(cid: number, pid: number, lang: Language): Promise<Draft | null> {
   if (USE_MOCK) return mock.loadDraft(cid, pid, lang);
   const d = await api<Raw>(`/api/v1/contests/${cid}/problems/${pid}/draft?language=${lang}`);
@@ -462,7 +458,7 @@ export async function saveDraft(cid: number, pid: number, lang: Language, value:
 }
 
 // ---------- Study plans (specs/study-plan.spec.md) ----------
-// Backend trả thẳng JSON (không bọc ApiResponse); `api()` xử lý được cả hai dạng.
+// Backend tráº£ tháº³ng JSON (khÃ´ng bá»c ApiResponse); `api()` xá»­ lÃ½ Ä‘Æ°á»£c cáº£ hai dáº¡ng.
 export async function fetchStudyPlans(): Promise<StudyPlanSummary[]> {
   if (USE_MOCK) return mock.listStudyPlans();
   return (await api<StudyPlanSummary[]>("/api/v1/study-plans")) ?? [];
@@ -472,7 +468,7 @@ export async function fetchStudyPlan(slug: string): Promise<StudyPlanDetail> {
   return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}`);
 }
 
-// Soạn plan (INSTRUCTOR / ADMIN). Server kiểm tra quyền tác giả, đề PUBLISHED, đề không thuộc plan khác.
+// Soáº¡n plan (INSTRUCTOR / ADMIN). Server kiá»ƒm tra quyá»n tÃ¡c giáº£, Ä‘á» PUBLISHED, Ä‘á» khÃ´ng thuá»™c plan khÃ¡c.
 export async function createStudyPlan(draft: StudyPlanDraft): Promise<StudyPlanDetail> {
   if (USE_MOCK) return mock.saveStudyPlan(null, draft);
   return api<StudyPlanDetail>("/api/v1/study-plans", { method: "POST", body: JSON.stringify(draft) });
@@ -495,23 +491,23 @@ export async function fetchPublishCheck(slug: string): Promise<PublishCheck> {
   if (USE_MOCK) return mock.publishCheck(slug);
   return api<PublishCheck>(`/api/v1/study-plans/${encodeURIComponent(slug)}/publish-check`);
 }
-/** Publish plan cùng mọi đề / chủ đề chưa PUBLISHED bên trong (một transaction ở server). */
+/** Publish plan cÃ¹ng má»i Ä‘á» / chá»§ Ä‘á» chÆ°a PUBLISHED bÃªn trong (má»™t transaction á»Ÿ server). */
 export async function publishStudyPlan(slug: string): Promise<StudyPlanDetail> {
   if (USE_MOCK) return mock.publishStudyPlan(slug);
   return api<StudyPlanDetail>(`/api/v1/study-plans/${encodeURIComponent(slug)}/publish`, { method: "POST" });
 }
-/** Đề DRAFT mới chép đề bài, grading, starter, lời giải mẫu và mọi testcase của `problemId`. */
+/** Äá» DRAFT má»›i chÃ©p Ä‘á» bÃ i, grading, starter, lá»i giáº£i máº«u vÃ  má»i testcase cá»§a `problemId`. */
 export async function cloneProblem(problemId: number, title: string): Promise<ProblemFull> {
   if (USE_MOCK) return mock.cloneProblem(problemId, title);
   return normProblem(await api<Raw>(`/api/v1/admin/problems/${problemId}/clone`, { method: "POST", body: JSON.stringify({ title }) }));
 }
-/** PUBLISHED → DRAFT để sửa testcase / grading; học viên không nộp được stage này cho tới khi publish lại. */
+/** PUBLISHED â†’ DRAFT Ä‘á»ƒ sá»­a testcase / grading; há»c viÃªn khÃ´ng ná»™p Ä‘Æ°á»£c stage nÃ y cho tá»›i khi publish láº¡i. */
 export async function unlockProblem(problemId: number): Promise<ProblemFull> {
   if (USE_MOCK) return mock.unlockProblem(problemId);
   return normProblem(await api<Raw>(`/api/v1/admin/problems/${problemId}/unlock`, { method: "POST" }));
 }
 
-// ---------- Chủ đề học (specs/topics.spec.md) ----------
+// ---------- Chá»§ Ä‘á» há»c (specs/topics.spec.md) ----------
 const topicPath = (slug: string) => `/api/v1/topics/${encodeURIComponent(slug)}`;
 export async function fetchTopic(slug: string): Promise<LearnerTopic> {
   if (USE_MOCK) return mock.getTopic(slug);
@@ -525,7 +521,7 @@ export async function setTopicSkipped(slug: string, skipped: boolean): Promise<v
   if (USE_MOCK) return mock.setTopicSkipped(slug, skipped);
   await api(`${topicPath(slug)}/skip`, { method: skipped ? "POST" : "DELETE" });
 }
-// Soạn (INSTRUCTOR / ADMIN)
+// Soáº¡n (INSTRUCTOR / ADMIN)
 export async function fetchTopics(search = ""): Promise<TopicSummary[]> {
   if (USE_MOCK) return mock.listTopics(search);
   return (await api<TopicSummary[]>(`/api/v1/topics${search ? `?search=${encodeURIComponent(search)}` : ""}`)) ?? [];
@@ -563,10 +559,10 @@ export async function revokeAccessToken(id: number): Promise<void> {
   await api(`/api/v1/me/tokens/${id}`, { method: "DELETE" });
 }
 
-/** File ZIP của plugin; `npm run plugin:copy` chép bản build vào public/downloads. */
+/** File ZIP cá»§a plugin; `npm run plugin:copy` chÃ©p báº£n build vÃ o public/downloads. */
 export const PLUGIN_DOWNLOAD_URL = process.env.NEXT_PUBLIC_PLUGIN_DOWNLOAD_URL || "/downloads/mini-leetcode-intellij.zip";
-// ---------- Admin: kỳ thi (/api/v1/admin/contests, INSTRUCTOR + ADMIN; xoá chỉ ADMIN) ----------
-// Không có bản mock: trang này luôn nói chuyện với API thật (e2e chặn request bằng page.route).
+// ---------- Admin: ká»³ thi (/api/v1/admin/contests, INSTRUCTOR + ADMIN; xoÃ¡ chá»‰ ADMIN) ----------
+// KhÃ´ng cÃ³ báº£n mock: trang nÃ y luÃ´n nÃ³i chuyá»‡n vá»›i API tháº­t (e2e cháº·n request báº±ng page.route).
 export async function fetchAdminContests(q: { status?: string; search?: string } = {}): Promise<AdminContestSummary[]> {
   const qs = new URLSearchParams();
   if (q.status) qs.set("status", q.status);

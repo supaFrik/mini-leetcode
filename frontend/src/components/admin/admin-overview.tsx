@@ -38,10 +38,6 @@ export function AdminOverviewView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-6 px-8 py-6">
-      <div>
-        <h1 className="text-heading-md text-ink">Overview</h1>
-        <p className="text-body-md text-mute">Site totals and the latest activity. Quick runs are not counted as submissions.</p>
-      </div>
       {error && <p className="text-body-md text-destructive" role="alert">{error}</p>}
       {!error && !stats && <p className="text-body-md text-mute">Loading overview…</p>}
       {stats && cards && (

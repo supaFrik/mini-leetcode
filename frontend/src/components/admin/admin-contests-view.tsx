@@ -201,7 +201,7 @@ export function AdminContestsView() {
                   disabled={pending === c.id}
                   onClick={() => setConfirmDelete(c)}
                   aria-label={`Delete ${c.title}`}
-                  title="Delete (Admin only)"
+                  title="Delete"
                   className="text-zinc-400 hover:text-destructive"
                 >
                   {pending === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}

@@ -70,10 +70,6 @@ export function AdminSettingsView() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 px-8 py-6">
-      <div>
-        <h1 className="text-heading-md text-ink">Settings</h1>
-        <p className="text-body-md text-mute">Site-wide configuration. Maintenance banner and sign-up toggle apply immediately.</p>
-      </div>
       {error && <p className="text-body-md text-destructive" role="alert">{error}</p>}
       {!error && !values && <p className="text-body-md text-mute">Loading settings…</p>}
       {values && (

@@ -6,9 +6,9 @@ import { RoleGuard } from "@/components/layout/role-guard";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <RoleGuard allow={["INSTRUCTOR", "ADMIN"]}>
-      <div className="flex min-h-full">
+      <div className="flex h-full">
         <AdminSidebar />
-        <div className="min-w-0 flex-1">{children}</div>
+        <div className="min-w-0 flex-1 overflow-auto">{children}</div>
       </div>
     </RoleGuard>
   );

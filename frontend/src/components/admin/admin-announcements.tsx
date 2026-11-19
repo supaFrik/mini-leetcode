@@ -52,10 +52,6 @@ export function AdminAnnouncementsView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-8 py-6">
-      <div>
-        <h1 className="text-heading-md text-ink">Announcements</h1>
-        <p className="text-body-md text-mute">Posts appear in every signed-in user&apos;s notification bell.</p>
-      </div>
 
       <form onSubmit={post} className="space-y-3 rounded-sm border border-border bg-card p-4" aria-label="New announcement">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" aria-label="Title" maxLength={200} className="bg-card" />
