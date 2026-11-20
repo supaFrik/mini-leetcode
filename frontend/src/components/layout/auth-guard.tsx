@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getToken } from "@/lib/auth";
+import { decodeUser, getToken, isViewingSite } from "@/lib/auth";
 import { USE_MOCK } from "@/lib/api";
 import { ensureMockSession } from "@/lib/services";
 
@@ -34,6 +34,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         router.replace(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         return;
       }
+    }
+    const inConsole = pathname.startsWith("/admin") || pathname.startsWith("/teaching");
+    if (!inConsole && decodeUser(getToken())?.role === "ADMIN" && !isViewingSite()) {
+      router.replace("/admin");
+      return;
     }
     setOk(true);
   }, [router, pathname]);

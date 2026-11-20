@@ -18,11 +18,11 @@ const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith(
 export function LoginForm({ initialMode = "signin" }: { initialMode?: "signin" | "signup" } = {}) {
   const router = useRouter();
   const nextParam = useSearchParams().get("next");
-  // Không có ?next: ADMIN vào /admin, giảng viên vào /teaching, học viên về trang chủ.
+  // Không có ?next: ADMIN vào /admin, còn lại về trang chủ.
   const target = () => {
     if (nextParam) return safeNext(nextParam);
     const role = decodeUser(getToken())?.role;
-    return role === "ADMIN" ? "/admin" : role === "INSTRUCTOR" ? "/teaching" : "/";
+    return role === "ADMIN" ? "/admin" : "/";
   };
   const mode = initialMode;
   const [username, setUsername] = useState("");

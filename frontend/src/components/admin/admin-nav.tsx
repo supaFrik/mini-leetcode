@@ -6,7 +6,7 @@ import {
   ShieldAlert, Tag, Trophy, Users, type LucideIcon,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
-import { clearTokens } from "@/lib/auth";
+import { clearTokens, setViewingSite } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string; icon: LucideIcon };
@@ -84,7 +84,7 @@ export function AdminSidebar() {
     <aside className="flex h-full w-56 shrink-0 flex-col border-r border-border bg-card">
       <div className="flex items-center justify-between gap-2 px-6 pb-2 pt-5">
         <span className="text-body-md font-semibold text-ink">{isAdmin ? "Admin" : "Teaching"}</span>
-        <Link href="/problems" className="flex items-center gap-1 text-body-sm text-mute hover:text-ink">
+        <Link href="/problems" onClick={() => setViewingSite(true)} className="flex items-center gap-1 text-body-sm text-mute hover:text-ink">
           View site <ExternalLink className="h-3.5 w-3.5" aria-hidden />
         </Link>
       </div>

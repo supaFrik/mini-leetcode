@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { GraduationCap, History, List, LogOut, Plug, Route, ShieldCheck, Trophy, type LucideIcon } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
-import { clearTokens } from "@/lib/auth";
+import { clearTokens, setViewingSite } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -84,9 +84,9 @@ export function SiteHeader() {
             <>
               <span className={s.navDivider} aria-hidden="true" />
               {user?.role === "ADMIN" ? (
-                <Link href="/admin" className={s.adminLink} aria-current={pathname.startsWith("/admin") ? "page" : undefined}>
+                <Link href="/admin" onClick={() => setViewingSite(false)} className={s.adminLink}>
                   <ShieldCheck size={16} aria-hidden="true" />
-                  Admin
+                  Back to admin
                 </Link>
               ) : (
                 <Link
