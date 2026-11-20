@@ -1,7 +1,15 @@
 /* Số đo lấy từ docs/mockups/Contest.dc.html. Màu, font, bảng và trạng thái trống dùng chung problems.module.css. */
 
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
 .title {
-  margin: 0 0 20px;
+  margin: 0;
   font-size: 30px;
   line-height: 1.2;
   font-weight: 600;
@@ -23,6 +31,12 @@
 }
 
 /* ---- Live card ---- */
+.liveList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .live {
   background: var(--ink);
   color: #fff;
@@ -106,7 +120,7 @@
 /* ---- Upcoming ---- */
 .upRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 190px 150px 120px;
+  grid-template-columns: minmax(0, 1fr) 150px 130px 120px 120px;
   gap: 12px;
   align-items: center;
   min-height: 64px;
@@ -170,7 +184,7 @@ a.name:hover {
 .pastHead,
 .pastRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 130px 90px 90px 100px;
+  grid-template-columns: minmax(0, 1fr) 120px 100px 80px 70px 80px;
   gap: 12px;
   align-items: center;
 }
@@ -211,7 +225,27 @@ a.name:hover {
   font-size: 14px;
 }
 
+.dim {
+  font: 400 12px var(--sans, inherit);
+  color: var(--muted);
+}
+
 /* ---- Aside ---- */
+.history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .record {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

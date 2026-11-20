@@ -1,0 +1,6 @@
+=== Mini Bank ===
+Accounts to open: Owner #1: Type (S = savings, C = checking): Initial balance: -> Opened #1 CHECKING     Ha                   1,000
+Commands: OPEN <S|C> <balance> <name> | DEPOSIT <id> <amount> | WITHDRAW <id> <amount>
+          TRANSFER <from> <to> <amount> | BALANCE <id> | LIST | MONTH | REPORT <n> | EXIT [code]
+> > > > > > #1 CHECKING     Ha                   1,000
+> Bye!

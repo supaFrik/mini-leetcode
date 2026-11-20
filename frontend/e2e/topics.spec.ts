@@ -108,25 +108,38 @@ test("theory renders underline and colour from the visual editor but never runs 
 test.describe("Topics: theory, quiz and drag-and-drop steps on project stages", () => {
   test.beforeEach(async ({ page }) => {
     await installFullscreenMock(page);
-    await setupMockApi(page);
+    const mock = await setupMockApi(page);
+    mock.addProblem({ id: 101, slug: "mini-bank-stage-1", title: "Mini Bank 1/2 — Stage 1", difficulty: "EASY", tags: [],
+      type: "OOP_GRINDING", description: "# Stage 1\n\nCreate the **Account** class.\n\nMore details.", timeLimitMs: 2000,
+      memoryLimitMb: 256, status: "PUBLISHED" });
     await setMockAuthSession(page, { username: "student", role: "USER" });
   });
 
   test("the current stage shows a topic timeline with Start and Skip; skip is reversible", async ({ page }) => {
     const api = await serve(page);
     await page.goto("/study-plans/oop", { waitUntil: "domcontentloaded" });
-    const toggle = page.getByRole("button", { name: /Stage 1\/2: Stage 1/ });
+    const toggle = page.getByRole("button", { name: /Stage 1\/2 · Stage 1/ });
     await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(toggle).toContainText("Step 1/2");
     const timeline = page.getByRole("list", { name: "Stage 1 topics" });
-    await expect(timeline.getByRole("link", { name: "Start" })).toHaveAttribute("href", "/topics/oop-dong-goi?plan=oop&stage=1");
-    await expect(timeline).toContainText("private + method có kiểm tra");
-    await expect(timeline.getByRole("link", { name: /Stage 1/ })).toHaveAttribute("href", "/study-plans/oop/1/1");
+    const first = timeline.getByRole("listitem").filter({ hasText: "Đóng gói" });
+    const second = timeline.getByRole("listitem").filter({ hasText: "Kế thừa" });
+    await expect(first.getByRole("link", { name: "Start" })).toHaveAttribute("href", "/topics/oop-dong-goi?plan=oop&stage=1");
+    await expect(first).toContainText("private + method có kiểm tra");
+    // Mọi chủ đề đều có nút, Skip chỉ ở chủ đề đang học
+    await expect(second.getByRole("link", { name: "Start" })).toHaveAttribute("href", /oop-ke-thua/);
+    await expect(second.getByRole("button", { name: "Skip" })).toHaveCount(0);
 
-    await timeline.getByRole("button", { name: "Skip" }).click();
+    const code = page.getByRole("region", { name: "Write the code" });
+    await expect(code).toContainText("Create the Account class.");
+    await expect(code.getByRole("link", { name: /Open on the web/ })).toHaveAttribute("href", "/study-plans/oop/1/1");
+    await expect(code.getByRole("link", { name: "Install the IntelliJ plugin" })).toHaveAttribute("href", "/ide");
+
+    await first.getByRole("button", { name: "Skip" }).click();
     await expect.poll(api.isSkipped).toBe(true);
-    await expect(timeline.getByText("Skipped")).toBeVisible();
-    // Chủ đề kế tiếp được mở sẵn
-    await expect(timeline.getByRole("link", { name: "Start" })).toHaveAttribute("href", /oop-ke-thua/);
+    await expect(first.getByText("Skipped")).toBeVisible();
+    // Chủ đề kế tiếp thành chủ đề đang học
+    await expect(second.getByRole("button", { name: "Skip" })).toBeVisible();
     await timeline.getByRole("button", { name: "Undo" }).click();
     await expect.poll(api.isSkipped).toBe(false);
 

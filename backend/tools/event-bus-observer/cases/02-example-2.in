@@ -1,0 +1,5 @@
+4
+PUBLISH news hello
+SUBSCRIBE ann news
+SUBSCRIBE ann news
+UNSUBSCRIBE bob news

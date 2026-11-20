@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowDown,
   ArrowLeft,
@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
+import { DIFFICULTY_LEVELS } from "@/components/problems/difficulty";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
@@ -35,7 +36,9 @@ import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/hooks/use-user";
-import { AdminNav } from "./admin-nav";
+import { ContestResults } from "@/components/contests/contest-views";
+import { ContestReport } from "@/components/contests/contest-report";
+import { ProctorsPanel } from "./contest-proctors";
 import {
   addContestParticipants,
   createContest,
@@ -149,7 +152,13 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
 
   const [detail, setDetail] = useState<AdminContestDetail | null>(null);
   const [form, setForm] = useState<Form>(emptyForm);
-  const [tab, setTab] = useState("details");
+  // ?tab=problems|results&report=plagiarism from the contest list actions (routes wrap this page in Suspense).
+  const query = useSearchParams();
+  const initialTab = query.get("tab");
+  const [tab, setTab] = useState(
+    initialTab === "problems" || initialTab === "participants" || initialTab === "results" ? initialTab : "details"
+  );
+  const report = query.get("report") === "plagiarism" ? "plagiarism" : "violations";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -266,7 +275,6 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
 
   return (
     <div className="mx-auto w-full max-w-container space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <AdminNav />
 
       {/* Breadcrumb Header */}
       <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -302,7 +310,7 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          {detail && canDelete && (
+          {detail && canDelete && status === "SCHEDULED" && (
             <Button
               variant="outline"
               onClick={() => setConfirmDelete(true)}
@@ -352,8 +360,8 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" />
           <span>
             {running
-              ? "This contest is actively running. Only the end time can be extended; problems, scoring, start time, and violation limits are locked."
-              : "This contest has ended and is now locked in read-only mode."}
+              ? "This contest is running. Only the end time can be extended; problems, scoring, start time and violation limits are locked."
+              : "This contest has ended. It is read-only."}
           </span>
         </div>
       )}
@@ -382,10 +390,25 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
               >
                 Participants
               </TabsTrigger>
+              <TabsTrigger
+                value="proctors"
+                disabled={!detail}
+                className="data-[state=active]:bg-card data-[state=active]:shadow-xs px-4 py-2 font-medium disabled:opacity-50"
+              >
+                Proctors
+              </TabsTrigger>
+              {detail && status !== "SCHEDULED" && (
+                <TabsTrigger
+                  value="results"
+                  className="data-[state=active]:bg-card data-[state=active]:shadow-xs px-4 py-2 font-medium"
+                >
+                  Results
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
-          <TabsContent value="details" className="m-0 p-6 sm:p-8">
+          <TabsContent value="details" className="m-0 p-5 sm:p-6">
             <FullDetailsForm
               form={form}
               set={set}
@@ -396,7 +419,7 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
             />
           </TabsContent>
 
-          <TabsContent value="problems" className="m-0 p-6 sm:p-8">
+          <TabsContent value="problems" className="m-0 p-5 sm:p-6">
             <FullProblemsEditor
               problems={form.problems}
               onChange={(p) => set("problems", p)}
@@ -405,9 +428,23 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
             />
           </TabsContent>
 
-          <TabsContent value="participants" className="m-0 p-6 sm:p-8">
+          <TabsContent value="participants" className="m-0 p-5 sm:p-6">
             {detail && <ParticipantsPanel contest={detail} onChanged={loadContest} />}
           </TabsContent>
+
+          <TabsContent value="proctors" className="m-0 p-5 sm:p-6">
+            {detail && <ProctorsPanel contestId={detail.id} />}
+          </TabsContent>
+
+          {detail && status !== "SCHEDULED" && (
+            <TabsContent value="results" className="m-0 space-y-8 p-5 sm:p-6">
+              <ContestResults
+                contestId={detail.id}
+                problems={detail.problems.map((p) => ({ id: p.problemId, slug: p.slug, title: p.title, difficulty: p.difficulty, label: p.label }))}
+              />
+              {user && <ContestReport key={report} contestId={detail.id} role={user.role} defaultTab={report} />}
+            </TabsContent>
+          )}
         </Tabs>
       </section>
 
@@ -683,6 +720,7 @@ function FullProblemsEditor({
                 <div>
                   <Input
                     value={p.label}
+                    aria-label={`Label for ${p.title}`}
                     disabled={locked}
                     onChange={(e) => setLabel(i, e.target.value.toUpperCase())}
                     maxLength={3}
@@ -703,6 +741,7 @@ function FullProblemsEditor({
                     disabled={locked || i === 0}
                     onClick={() => move(i, -1)}
                     title="Move up"
+                    aria-label={`Move ${p.title} up`}
                   >
                     <ArrowUp className="h-4 w-4" />
                   </Button>
@@ -712,6 +751,7 @@ function FullProblemsEditor({
                     disabled={locked || i === problems.length - 1}
                     onClick={() => move(i, 1)}
                     title="Move down"
+                    aria-label={`Move ${p.title} down`}
                   >
                     <ArrowDown className="h-4 w-4" />
                   </Button>
@@ -724,6 +764,7 @@ function FullProblemsEditor({
                       onClick={() => remove(i)}
                       className="text-zinc-400 hover:text-destructive"
                       title="Remove from contest"
+                      aria-label={`Remove ${p.title}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -774,6 +815,7 @@ function ProblemPicker({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search published problems..."
+            aria-label="Search published problems"
             className="pl-9 h-10"
           />
         </div>
@@ -783,9 +825,7 @@ function ProblemPicker({
           className="h-10 rounded-md border border-border bg-background px-3 text-sm text-ink"
         >
           <option value="">All difficulties</option>
-          <option value="EASY">Easy</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HARD">Hard</option>
+          {DIFFICULTY_LEVELS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
         </select>
       </div>
 
@@ -815,6 +855,7 @@ function ProblemPicker({
                     size="sm"
                     variant={picked ? "outline" : "default"}
                     disabled={picked}
+                    aria-label={`Add ${p.title}`}
                     onClick={() => onPick(p)}
                   >
                     {picked ? "Added" : "Add"}

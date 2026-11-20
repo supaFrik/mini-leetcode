@@ -1,0 +1,11 @@
+=== Mini Bank ===
+Accounts to open: Commands: OPEN <S|C> <balance> <name> | DEPOSIT <id> <amount> | WITHDRAW <id> <amount>
+          TRANSFER <from> <to> <amount> | BALANCE <id> | LIST | MONTH | REPORT <n> | EXIT [code]
+> -> Opened #1 SAVINGS      Le Thi Hong Nhung          70,000
+> -> Opened #2 CHECKING     Pham Quang           5,000
+> #1 SAVINGS      Le Thi Hong Nhung          70,000
+#2 CHECKING     Pham Quang           5,000
+> Transferred.
+> #1 SAVINGS      Le Thi Hong Nhung          55,000
+#2 CHECKING     Pham Quang          20,000
+> Bye!

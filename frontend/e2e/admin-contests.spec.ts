@@ -115,13 +115,37 @@ async function mockAdminContests(page: Page, seed: AdminContestDetail[] = []): P
   return m;
 }
 
-async function open(page: Page, role: "ADMIN" | "INSTRUCTOR", seed: AdminContestDetail[] = []) {
+/** Problem bank cho picker (GET /api/v1/admin/problems). */
+async function mockProblemBank(page: Page) {
+  const bank = [
+    { id: 1, slug: "two-sum", title: "Two Sum", difficulty: "EASY", type: "DSA", status: "PUBLISHED" },
+    { id: 2, slug: "add-two-numbers", title: "Add Two Numbers", difficulty: "MEDIUM", type: "DSA", status: "PUBLISHED" },
+    { id: 4, slug: "median-of-two-sorted-arrays", title: "Median of Two Sorted Arrays", difficulty: "HARD", type: "DSA", status: "PUBLISHED" },
+  ];
+  await page.route(/\/api\/v1\/admin\/problems(\?|$)/, (route) =>
+    route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify({ content: bank, totalElements: bank.length, totalPages: 1, number: 0, size: 20 }),
+    })
+  );
+}
+
+/** Results tab reports; unmocked they reach a real backend and its 401 logs the user out. */
+async function mockContestReports(page: Page) {
+  await page.route(/\/api\/v1\/contests\/\d+\/(proctoring\/report|plagiarism)$/, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
+  );
+}
+
+async function open(page: Page, role: "ADMIN" | "INSTRUCTOR", seed: AdminContestDetail[] = [], path = "/admin/contests") {
   await installFullscreenMock(page);
   await setupMockApi(page);
   const m = await mockAdminContests(page, seed);
+  await mockProblemBank(page);
+  await mockContestReports(page);
   await setMockAuthSession(page, { username: role === "ADMIN" ? "admin" : "teacher1", role });
-  await page.goto("/admin/contests", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("button", { name: "New contest" })).toBeVisible();
+  await page.goto(path, { waitUntil: "domcontentloaded" });
+  if (path === "/admin/contests") await expect(page.getByRole("link", { name: "New contest" })).toBeVisible();
   return m;
 }
 
@@ -129,53 +153,54 @@ test.describe("Admin: contests", () => {
   test("AC-CT-001: instructor creates a contest with three published problems labelled A, B, C", async ({ page }) => {
     const m = await open(page, "INSTRUCTOR");
     await expect(page.getByText("No contests yet")).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Admin sections" }).getByRole("link", { name: "Contests" }))
+    // Giảng viên dùng sidebar Teaching, mục "My contests".
+    await expect(page.getByRole("navigation", { name: "Teaching", exact: true }).getByRole("link", { name: "My contests" }))
       .toHaveAttribute("aria-current", "page");
 
-    await page.getByRole("button", { name: "New contest" }).click();
-    const editor = page.getByRole("dialog", { name: "Contest editor" });
-    await editor.getByLabel("Title").fill("Giữa kỳ OOP");
+    await page.getByRole("link", { name: "New contest" }).click();
+    await expect(page).toHaveURL(/\/admin\/contests\/new$/);
+    await page.getByLabel("Contest Title").fill("Giữa kỳ OOP");
     // Ô giờ hiện múi giờ của người xem.
-    await expect(editor.getByText(/GMT[+-]\d+/).first()).toBeVisible();
-    await expect(editor.getByRole("tab", { name: "Participants" })).toBeDisabled();
+    await expect(page.getByText(/GMT[+-]\d+/).first()).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Participants" })).toBeDisabled();
 
-    await editor.getByRole("tab", { name: /Problems/ }).click();
-    await editor.getByLabel("Add published problems").fill("Two");
+    await page.getByRole("tab", { name: /Problems/ }).click();
+    // Picker đóng sau mỗi lần thêm.
     for (const t of ["Two Sum", "Add Two Numbers", "Median of Two Sorted Arrays"]) {
-      await editor.getByRole("button", { name: `Add ${t}`, exact: true }).click();
+      await page.getByRole("button", { name: "Add problems" }).click();
+      await page.getByRole("button", { name: `Add ${t}`, exact: true }).click();
     }
-    await expect(editor.getByRole("button", { name: "Add Two Sum", exact: true })).toHaveText("Added");
-    await expect(editor.getByLabel("Label for Two Sum")).toHaveValue("A");
-    await expect(editor.getByLabel("Label for Add Two Numbers")).toHaveValue("B");
-    await expect(editor.getByLabel("Label for Median of Two Sorted Arrays")).toHaveValue("C");
+    await page.getByRole("button", { name: "Add problems" }).click();
+    await expect(page.getByRole("button", { name: "Add Two Sum", exact: true })).toHaveText("Added");
+    await expect(page.getByLabel("Label for Two Sum")).toHaveValue("A");
+    await expect(page.getByLabel("Label for Add Two Numbers")).toHaveValue("B");
+    await expect(page.getByLabel("Label for Median of Two Sorted Arrays")).toHaveValue("C");
 
     // Đổi thứ tự: đưa bài C lên trên bài B.
-    await editor.getByRole("button", { name: "Move Median of Two Sorted Arrays up" }).click();
+    await page.getByRole("button", { name: "Move Median of Two Sorted Arrays up" }).click();
 
-    await editor.getByRole("button", { name: "Create contest" }).click();
-    await expect(page.getByText("Contest created.")).toBeVisible();
+    await page.getByRole("button", { name: "Create contest" }).click();
+    await expect(page.getByText("Contest created successfully.")).toBeVisible();
 
     const post = m.requests.find((r) => r.method === "POST" && r.path.endsWith("/admin/contests"))!;
     expect(post.body.title).toBe("Giữa kỳ OOP");
     expect(post.body.startTime).toMatch(/Z$/);
     expect(Date.parse(post.body.endTime) - Date.parse(post.body.startTime)).toBe(2 * HOUR);
-    expect(post.body.problems.map((p: any) => `${p.label}@${p.orderIndex}`)).toEqual(["A@0", "C@1", "B@2"]);
+    // Nhãn chữ cái tự đánh lại theo thứ tự mới.
+    expect(post.body.problems.map((p: any) => `${p.problemId}:${p.label}@${p.orderIndex}`)).toEqual(["1:A@0", "4:B@1", "2:C@2"]);
 
-    // Trình soạn vẫn mở ở kỳ thi vừa tạo; tab thí sinh đã dùng được; danh sách có kỳ thi mới.
-    await expect(editor.getByRole("tab", { name: "Participants" })).toBeEnabled();
-    await editor.getByRole("button", { name: "Close editor" }).click();
-    await expect(page.getByRole("button", { name: "Giữa kỳ OOP" })).toBeVisible();
+    // Chuyển sang trang sửa kỳ thi vừa tạo; tab thí sinh đã dùng được.
+    await expect(page).toHaveURL(/\/admin\/contests\/500$/);
+    await expect(page.getByRole("tab", { name: "Participants" })).toBeEnabled();
   });
 
   test("AC-CT-003: end time not after start shows an inline error and blocks saving", async ({ page }) => {
-    await open(page, "INSTRUCTOR");
-    await page.getByRole("button", { name: "New contest" }).click();
-    const editor = page.getByRole("dialog", { name: "Contest editor" });
-    await editor.getByLabel("Title").fill("Bad times");
-    const start = await editor.locator("#contest-start").inputValue();
-    await editor.locator("#contest-end").fill(start);
-    await expect(editor.getByRole("alert")).toHaveText("End time must be after start time");
-    await expect(editor.getByRole("button", { name: "Create contest" })).toBeDisabled();
+    await open(page, "INSTRUCTOR", [], "/admin/contests/new");
+    await page.getByLabel("Contest Title").fill("Bad times");
+    const start = await page.locator("#contest-start").inputValue();
+    await page.locator("#contest-end").fill(start);
+    await expect(page.getByRole("alert").filter({ hasText: "End time" })).toHaveText("End time must be after start time");
+    await expect(page.getByRole("button", { name: "Create contest" })).toBeDisabled();
   });
 
   test("AC-CT-002: a running contest only lets staff extend the end time", async ({ page }) => {
@@ -184,27 +209,28 @@ test.describe("Admin: contests", () => {
       problems: [{ problemId: 1, slug: "two-sum", title: "Two Sum", difficulty: "EASY", label: "A", orderIndex: 0 }],
     });
     const m = await open(page, "INSTRUCTOR", [running]);
-    await page.getByRole("button", { name: "Weekly Live" }).click();
-    const editor = page.getByRole("dialog", { name: "Contest editor" });
+    await expect(page.getByRole("link", { name: "Live view of Weekly Live" })).toHaveAttribute("href", "/exam/7/leaderboard");
+    await page.getByRole("link", { name: "Edit Weekly Live" }).click();
+    await expect(page).toHaveURL(/\/admin\/contests\/7$/);
 
-    await expect(editor.getByRole("status")).toContainText("Only the end time can be extended");
-    await expect(editor.getByLabel("Title")).toBeDisabled();
-    await expect(editor.locator("#contest-start")).toBeDisabled();
-    await expect(editor.getByLabel("Scoring")).toBeDisabled();
-    await expect(editor.locator("#contest-end")).toBeEnabled();
+    await expect(page.getByRole("status")).toContainText("Only the end time can be extended");
+    await expect(page.getByLabel("Contest Title")).toBeDisabled();
+    await expect(page.locator("#contest-start")).toBeDisabled();
+    await expect(page.getByLabel("Scoring Policy")).toBeDisabled();
+    await expect(page.locator("#contest-end")).toBeEnabled();
 
-    await editor.getByRole("tab", { name: /Problems/ }).click();
-    await expect(editor.getByLabel("Add published problems")).toHaveCount(0);
-    await expect(editor.getByRole("button", { name: "Remove Two Sum" })).toHaveCount(0);
-    await editor.getByRole("tab", { name: "Details" }).click();
+    await page.getByRole("tab", { name: /Problems/ }).click();
+    await expect(page.getByRole("button", { name: "Add problems" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Remove Two Sum" })).toHaveCount(0);
+    await page.getByRole("tab", { name: "Details" }).click();
 
     // Lùi giờ kết thúc 30 phút.
     const end = new Date(Date.parse(running.endTime) + 30 * 60_000);
     const pad = (n: number) => String(n).padStart(2, "0");
     const local = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}`;
-    await editor.locator("#contest-end").fill(local);
-    await editor.getByRole("button", { name: "Save end time" }).click();
-    await expect(page.getByText("Contest saved.")).toBeVisible();
+    await page.locator("#contest-end").fill(local);
+    await page.getByRole("button", { name: "Save end time" }).click();
+    await expect(page.getByText("Contest saved successfully.")).toBeVisible();
 
     const put = m.requests.find((r) => r.method === "PUT")!;
     expect(put.body.startTime).toBe(running.startTime); // giờ bắt đầu gửi lại nguyên văn
@@ -215,31 +241,46 @@ test.describe("Admin: contests", () => {
 
   test("Completed contests are read-only", async ({ page }) => {
     await open(page, "INSTRUCTOR", [contest(8, "COMPLETED", { title: "Old one" })]);
-    await page.getByRole("button", { name: "Old one" }).click();
-    const editor = page.getByRole("dialog", { name: "Contest editor" });
-    await expect(editor.getByRole("status")).toHaveText("This contest has ended. It is read-only.");
-    await expect(editor.locator("#contest-end")).toBeDisabled();
-    await expect(editor.getByRole("button", { name: /Save/ })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Plagiarism report of Old one" }))
+      .toHaveAttribute("href", "/admin/contests/8?tab=results&report=plagiarism");
+    await page.getByRole("link", { name: "Results of Old one" }).click();
+    await expect(page.getByRole("tab", { name: "Results" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("status").filter({ hasText: "ended" })).toHaveText("This contest has ended. It is read-only.");
+    await page.getByRole("tab", { name: "Details" }).click();
+    await expect(page.locator("#contest-end")).toBeDisabled();
+    await expect(page.getByRole("button", { name: /Save/ })).toHaveCount(0);
+  });
+
+  test("Status chips filter the list and show counts", async ({ page }) => {
+    await open(page, "INSTRUCTOR", [
+      contest(20, "RUNNING", { title: "Run A" }),
+      contest(21, "SCHEDULED", { title: "Soon B" }),
+      contest(22, "COMPLETED", { title: "Done C" }),
+      contest(23, "COMPLETED", { title: "Done D" }),
+    ]);
+    const chips = page.getByRole("group", { name: "Filter by status" });
+    await expect(chips.getByRole("button", { name: /Completed/ })).toContainText("2");
+    await chips.getByRole("button", { name: /Completed/ }).click();
+    await expect(chips.getByRole("button", { name: /Completed/ })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("link", { name: "Done C", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Run A", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Problems of Soon B" })).toHaveCount(0);
   });
 
   test("AC-CT-004: pasting a list reports added and not found per line", async ({ page }) => {
     const m = await open(page, "INSTRUCTOR", [contest(9, "SCHEDULED", { title: "Invite test", registrationMode: "INVITE_ONLY" })]);
-    await page.getByRole("button", { name: "Invite test" }).click();
-    const editor = page.getByRole("dialog", { name: "Contest editor" });
-    await editor.getByRole("tab", { name: "Participants" }).click();
-    await expect(editor.getByText("Nobody has registered yet.")).toBeVisible();
-    await expect(editor.getByText(/This contest is invite-only/)).toBeVisible();
+    await page.getByRole("link", { name: "Edit Invite test" }).click();
+    await expect(page.getByText("Invite only").first()).toBeVisible();
+    await page.getByRole("tab", { name: "Participants" }).click();
+    await expect(page.getByText(/No participants registered yet/)).toBeVisible();
 
-    await editor.getByLabel("Add participants").fill("sv01, sv02, khongtontai");
-    await editor.getByRole("button", { name: "Add 3" }).click();
+    await page.getByLabel("Bulk Invite Participants").fill("sv01, sv02, khongtontai");
+    await page.getByRole("button", { name: "Add participants" }).click();
 
-    const results = editor.getByRole("region", { name: "Add results" });
-    await expect(results).toContainText("2 added · 1 not added");
-    await expect(results.getByRole("listitem").nth(0)).toContainText("sv01added");
-    await expect(results.getByRole("listitem").nth(2)).toContainText("khongtontainot found");
-    // Dòng chưa thêm được giữ lại trong ô nhập để sửa.
-    await expect(editor.getByLabel("Add participants")).toHaveValue("khongtontai");
-    await expect(editor.getByRole("region", { name: "Participants" })).toContainText("2 participant(s)");
+    await expect(page.getByText("Bulk addition outcome:")).toBeVisible();
+    await expect(page.getByText("NOT_FOUND")).toBeVisible();
+    await expect(page.getByText("ADDED", { exact: true })).toHaveCount(2);
+    await expect(page.getByText("Registered Candidates (2)")).toBeVisible();
     expect(m.requests.filter((r) => r.method === "POST" && r.path.endsWith("/participants"))).toHaveLength(1);
   });
 
@@ -276,13 +317,13 @@ test.describe("Admin: contests", () => {
     await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
     await dialog.getByRole("button", { name: "Delete contest" }).click();
     await expect(page.getByText("Contest deleted.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Delete me", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Delete me", exact: true })).toHaveCount(0);
     expect(m.requests.filter((r) => r.method === "DELETE").map((r) => r.path)).toEqual(["/api/v1/admin/contests/10"]);
   });
 
   test("AC-CT-006: instructor does not see the delete button", async ({ page }) => {
     await open(page, "INSTRUCTOR", [contest(12, "SCHEDULED", { title: "Keep me" })]);
-    await expect(page.getByRole("button", { name: "Keep me", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Keep me", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Delete Keep me" })).toHaveCount(0);
   });
 });

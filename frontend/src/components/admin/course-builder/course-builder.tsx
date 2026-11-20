@@ -15,7 +15,6 @@ import {
   cloneProblem, createProblem, fetchStudyPlan, publishStudyPlan, transitionStudyPlan, updateStudyPlan,
 } from "@/lib/services";
 import type { ProblemFull, PublishIssue, StudyPlanDetail, StudyPlanStatus } from "@/types/api";
-import { AdminNav } from "../admin-nav";
 import { ProblemPicker } from "../problem-picker";
 import { TopicEditor } from "../admin-topics";
 import type { SaveState } from "../save-state";
@@ -379,7 +378,6 @@ export function CourseBuilder({ slug }: { slug: string }) {
 
   return (
     <div className="mx-auto flex w-full max-w-container flex-col gap-4 px-4 py-6 pb-24 sm:px-6 lg:px-8">
-      <AdminNav />
       <header className="flex flex-wrap items-center gap-3">
         <Link href="/admin/study-plans" className="text-body-sm text-link hover:underline">← Study plans</Link>
         <Badge variant={PLAN_STATUS_VARIANT[detail.status]}>{detail.status}</Badge>
@@ -407,7 +405,7 @@ export function CourseBuilder({ slug }: { slug: string }) {
         </section>
       </div>
 
-      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur">
+      <footer className="fixed bottom-0 left-56 right-0 z-40 border-t border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-container flex-wrap items-center gap-3 px-4 py-2 sm:px-6 lg:px-8">
           <span className="text-body-sm text-mute" role="status" aria-live="polite">
             {state === "saving" && <span className="flex items-center gap-1"><Loader2 className="h-3.5 w-3.5 animate-spin" />Saving…</span>}

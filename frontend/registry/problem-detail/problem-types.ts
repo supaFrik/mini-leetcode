@@ -1,4 +1,4 @@
-export type ProblemDifficulty = "EASY" | "MEDIUM" | "HARD";
+export type ProblemDifficulty = "BEGINNER" | "EASY" | "MEDIUM" | "HARD" | "EXPERT";
 
 export type ProblemVerdict =
   | "AC"
@@ -86,25 +86,16 @@ export interface ProblemDifficultyMeta {
   className: string;
 }
 
+// Self-contained registry copy of src/components/problems/difficulty.ts; keep the two in sync.
 export const PROBLEM_DIFFICULTY_META: Record<
   ProblemDifficulty,
   ProblemDifficultyMeta
 > = {
-  EASY: {
-    label: "Easy",
-    className:
-      "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  },
-  MEDIUM: {
-    label: "Medium",
-    className:
-      "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  },
-  HARD: {
-    label: "Hard",
-    className:
-      "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400",
-  },
+  BEGINNER: { label: "Beginner", className: "border-transparent bg-[#0F6E56] text-white" },
+  EASY: { label: "Easy", className: "border-transparent bg-[#3B6D11] text-white" },
+  MEDIUM: { label: "Medium", className: "border-transparent bg-[#854F0B] text-white" },
+  HARD: { label: "Hard", className: "border-transparent bg-[#993C1D] text-white" },
+  EXPERT: { label: "Expert", className: "border-transparent bg-[#A32D2D] text-white" },
 };
 
 /** Formats a kilobyte reading the way the judge reports it. */

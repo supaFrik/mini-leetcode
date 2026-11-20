@@ -1,0 +1,5 @@
+OK, balance: 100000
+OK, balance: 70000
+Error: Insufficient funds
+Error: Amount must be positive
+Lan: 70000

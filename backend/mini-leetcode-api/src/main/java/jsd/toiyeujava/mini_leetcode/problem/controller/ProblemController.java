@@ -105,7 +105,7 @@ public class ProblemController {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved page of problems")
     })
     public ResponseEntity<Page<ProblemResponse>> getProblems(
-            @Parameter(description = "Filter by difficulty (EASY, MEDIUM, HARD)")
+            @Parameter(description = "Filter by difficulty (BEGINNER, EASY, MEDIUM, HARD, EXPERT)")
             @RequestParam(required = false) Difficulty difficulty,
             @Parameter(description = "Filter by problem status (DRAFT, REVIEWING, PUBLISHED, ARCHIVED)")
             @RequestParam(required = false) ProblemStatus status,

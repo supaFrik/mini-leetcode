@@ -671,6 +671,14 @@ const quickRunIds = new Set<number>();
       return json({ success: true, statusCode: 200, data: pagePayload, ...pagePayload });
     }
 
+    // GET /api/v1/tag-categories
+    if (path === "/api/v1/tag-categories" && method === "GET") {
+      return json([
+        { id: 1, name: "DSA", color: "#2563eb", sortOrder: 10 },
+        { id: 9, name: "Other", color: "#64748b", sortOrder: 1000 },
+      ]);
+    }
+
     // GET /api/v1/problems/tags
     if (path === "/api/v1/problems/tags" && method === "GET") {
       const counts = new Map<string, number>();
@@ -996,6 +1004,15 @@ const quickRunIds = new Set<number>();
         drafts.set(draftKey, { value: body.code || "", savedAt: Date.now() });
         return json({ success: true, message: "Draft saved" });
       }
+    }
+
+    // Chuông thông báo trên header gọi endpoint này ở mọi trang.
+    if (path === "/api/v1/announcements" && method === "GET") {
+      return json([]);
+    }
+    // Banner bảo trì trong layout chính.
+    if (path === "/api/v1/settings/public" && method === "GET") {
+      return json({ siteName: "Mini LeetCode", tagline: "", maintenanceMode: false, bannerMessage: "", registrationOpen: true });
     }
 
     // Default continue for other unhandled requests

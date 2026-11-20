@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getToken } from "@/lib/auth";
+import { decodeUser, getToken, isViewingSite } from "@/lib/auth";
 import { USE_MOCK } from "@/lib/api";
 import { ensureMockSession } from "@/lib/services";
 
@@ -13,7 +13,7 @@ import { ensureMockSession } from "@/lib/services";
  * Gốc `/` cũng nằm trong danh sách: nó chỉ là redirect sang `/problems`,
  * nên chặn nó ở đây sẽ đẩy khách về `/login` trước khi kịp chuyển hướng.
  */
-const PUBLIC_PATHS = [/^\/$/, /^\/problems(\/|$)/, /^\/login(\/|$)/, /^\/register(\/|$)/];
+const PUBLIC_PATHS = [/^\/$/, /^\/problems(\/|$)/, /^\/login(\/|$)/, /^\/register(\/|$)/, /^\/ranking$/, /^\/policies\//];
 
 /**
  * Chưa đăng nhập → về /login. Ngoại trừ /register cho phép tạo tài khoản mới.
@@ -34,6 +34,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         router.replace(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         return;
       }
+    }
+    const inConsole = pathname.startsWith("/admin") || pathname.startsWith("/teaching");
+    if (!inConsole && decodeUser(getToken())?.role === "ADMIN" && !isViewingSite()) {
+      router.replace("/admin");
+      return;
     }
     setOk(true);
   }, [router, pathname]);

@@ -71,6 +71,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ContestAdminService {
 
+    private final ContestProctorService proctorService;
+
     static final String RUNNING_LOCKED = "Only the end time can be changed while the contest is running";
     static final String ONLY_EXTEND = "The end time can only be extended while the contest is running";
     static final String ENDED = "Contest has ended";
@@ -98,6 +100,7 @@ public class ContestAdminService {
     public List<AdminContestSummary> list(ContestStatus status, String search) {
         String needle = StringUtils.hasText(search) ? search.trim().toLowerCase(Locale.ROOT) : null;
         List<AdminContestSummary> result = new ArrayList<>();
+        Map<Long, List<Long>> proctorIds = proctorService.proctorIdsByContest();
         for (Object[] row : contestRepository.findAllWithCounts()) {
             Contest c = (Contest) row[0];
             ContestStatus effective = c.resolveStatus();
@@ -109,7 +112,9 @@ public class ContestAdminService {
             }
             result.add(new AdminContestSummary(c.getId(), c.getTitle(), c.getSlug(), effective,
                     c.getStartTime(), c.getEndTime(), c.getRegistrationMode(),
-                    ((Number) row[1]).longValue(), ((Number) row[2]).longValue()));
+                    ((Number) row[1]).longValue(), ((Number) row[2]).longValue(),
+                    c.getCreatedBy() == null ? null : c.getCreatedBy().getId(),
+                    proctorIds.getOrDefault(c.getId(), List.of())));
         }
         // Đang thi → sắp tới (gần nhất trước) → đã kết thúc (mới nhất trước).
         result.sort(Comparator

@@ -89,6 +89,18 @@ Student code is untrusted. The Docker container is the only security boundary th
 
 ---
 
+## Run locally
+
+Needs Docker Desktop (running, ≥ 6 GB RAM), JDK 17+ and Python 3.8+. From PowerShell:
+
+```powershell
+git clone <repo-url> mini-leetcode
+cd mini-leetcode
+.\setup-demo.ps1
+```
+
+The script builds the backend, starts the Docker stack, loads all problems, testcases, contests and demo data, then prints the links and demo accounts (`admin / Admin@123456`, `demo_instructor / Demo@123456`, `demo_student / Demo@123456`). Safe to run again; `.\setup-demo.ps1 -SkipBuild` only reloads the data. Dev only.
+
 ## 6. Quick start (Docker — recommended)
 
 ### Prerequisites

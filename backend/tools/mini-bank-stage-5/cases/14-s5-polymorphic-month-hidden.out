@@ -1,0 +1,15 @@
+=== Mini Bank ===
+Accounts to open: Owner #1: Type (S = savings, C = checking): Initial balance: -> Opened #1 SAVINGS      H1                 200,000
+Owner #2: Type (S = savings, C = checking): Initial balance: -> Opened #2 CHECKING     H2                       0
+Owner #3: Type (S = savings, C = checking): Initial balance: -> Opened #3 SAVINGS      H3                  50,000
+Commands: OPEN <S|C> <balance> <name> | DEPOSIT <id> <amount> | WITHDRAW <id> <amount>
+          TRANSFER <from> <to> <amount> | BALANCE <id> | LIST | MONTH | REPORT <n> | EXIT [code]
+> Month-end interest and fees applied.
+> Transferred.
+> Month-end interest and fees applied.
+> #1 SAVINGS      H1                 101,505
+#2 CHECKING     H2                  80,000
+#3 SAVINGS      H3                  50,501
+> Report line 1 - total 232006
+Report line 2 - total 232006
+> Bye!

@@ -18,7 +18,7 @@ const STATUS: Record<ParticipantStatus, { label: string; cls: string }> = {
 };
 const THRESHOLD = 0.8;
 
-export function ContestReport({ contestId, role }: { contestId: number; role: Role }) {
+export function ContestReport({ contestId, role, defaultTab = "violations" }: { contestId: number; role: Role; defaultTab?: "violations" | "plagiarism" }) {
   const [rows, setRows] = useState<ProctorReportRow[] | null>(null);
   const [plag, setPlag] = useState<PlagiarismRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export function ContestReport({ contestId, role }: { contestId: number; role: Ro
   return (
     <section className="space-y-4" aria-label="Proctoring report">
       <h2 className="text-heading-md text-ink">Instructor proctoring report</h2>
-      <Tabs defaultValue="violations">
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="violations">Violations{rows ? ` (${flagged})` : ""}</TabsTrigger>
           <TabsTrigger value="plagiarism">

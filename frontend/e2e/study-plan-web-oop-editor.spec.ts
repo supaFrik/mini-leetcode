@@ -163,7 +163,7 @@ test.describe("Study Plan: Web Multi-File OOP Code Editor", () => {
     await page.goto("/study-plans/oop-mastery/10/1", { waitUntil: "domcontentloaded" });
 
     // 1. Verify stage heading and vertical layout
-    await expect(page.getByRole("heading", { name: "Shape Hierarchy Project. Stage 1/1", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Stage 1\/1 · /, level: 1 })).toBeVisible();
 
     // 2. Verify starter files tabs
     const stageRegion = page.getByRole("region", { name: "Stage" });

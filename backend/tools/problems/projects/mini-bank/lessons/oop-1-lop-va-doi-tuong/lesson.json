@@ -1,7 +1,7 @@
 {
   "slug": "oop-1-lop-va-doi-tuong",
   "title": "Classes and objects: customers",
-  "difficulty": "EASY",
+  "difficulty": "BEGINNER",
   "tags": ["OOP", "Class", "Constructor", "Static"],
   "forStage": 1,
   "rules": [

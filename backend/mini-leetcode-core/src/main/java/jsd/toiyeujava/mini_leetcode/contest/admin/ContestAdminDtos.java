@@ -45,7 +45,9 @@ public final class ContestAdminDtos {
             LocalDateTime endTime,
             RegistrationMode registrationMode,
             long problemCount,
-            long participantCount) {
+            long participantCount,
+            Long createdById,
+            List<Long> proctorIds) {
     }
 
     public record AdminContestProblem(

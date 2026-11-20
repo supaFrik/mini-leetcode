@@ -33,9 +33,10 @@ test.describe("Problem Exploration E2E Suite", () => {
     await expect(page.getByText(/Showing \d+–\d+ of/)).toHaveCount(0);
   });
 
-  test("filters problems by difficulty (Easy, Medium, Hard)", async ({ page }) => {
+  test("filters problems by all five difficulty levels", async ({ page }) => {
     await page.goto("/problems", { waitUntil: "domcontentloaded" });
     const select = page.getByLabel("Filter by difficulty");
+    await expect(select.locator("option")).toHaveText(["All difficulties", "Beginner", "Easy", "Medium", "Hard", "Expert"]);
 
     // 1. Filter by EASY
     await select.selectOption("EASY");
@@ -48,6 +49,11 @@ test.describe("Problem Exploration E2E Suite", () => {
     await expect(page).toHaveURL(/difficulty=HARD/);
     await expect(page.getByText("Median of Two Sorted Arrays").first()).toBeVisible();
     await expect(page.getByText("Merge k Sorted Lists").first()).toBeVisible();
+
+    // A level with no problems yet shows the empty state, not stale rows
+    await select.selectOption("EXPERT");
+    await expect(page).toHaveURL(/difficulty=EXPERT/);
+    await expect(page.getByText("No problems match your filters")).toBeVisible();
 
     // 3. Reset filters
     await page.getByRole("button", { name: "Clear filters" }).first().click();

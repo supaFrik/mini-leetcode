@@ -251,7 +251,9 @@ def run_reference(source_dir, cases, local):
     """Biên dịch lời giải trong source_dir, chạy từng case; trả {tên case: stdout bytes}."""
     work = Path(tempfile.mkdtemp(prefix="mb-ref-"))
     try:
-        subprocess.run(["javac", "-encoding", "UTF-8", "-d", str(work), *map(str, source_dir.glob("*.java"))], check=True)
+        # --release 17: javac trên máy có thể mới hơn (vd 21); image chạy Java 17 -> UnsupportedClassVersionError.
+        subprocess.run(["javac", "--release", "17", "-encoding", "UTF-8", "-d", str(work),
+                        *map(str, source_dir.glob("*.java"))], check=True)
         env = dict(os.environ, MSYS_NO_PATHCONV="1")
         if local:
             runner = ["java", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US", "-cp", str(work), "Main"]

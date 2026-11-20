@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, History, List, LogOut, Plug, Route, Trophy, type LucideIcon } from "lucide-react";
+import { GraduationCap, History, List, LogOut, Plug, Route, ShieldCheck, Trophy, type LucideIcon } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
-import { clearTokens } from "@/lib/auth";
+import { clearTokens, setViewingSite } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NotificationBell } from "./notification-bell";
 import theme from "./plex-theme.module.css";
 import s from "./site-header.module.css";
 
@@ -61,7 +62,6 @@ export function SiteHeader() {
     { label: "Contest", icon: Trophy, href: "/exam", active: pathname.startsWith("/exam") },
     { label: "Submissions", icon: History, href: "/submissions", active: pathname.startsWith("/submissions") },
   ];
-  if (isStaff) entries.push({ label: "Admin", href: "/admin/problems", active: pathname.startsWith("/admin") });
 
   const signOut = () => {
     clearTokens();
@@ -80,14 +80,32 @@ export function SiteHeader() {
           {entries.map((e) => (
             <NavItem key={e.label} {...e} />
           ))}
+          {isStaff && (
+            <>
+              <span className={s.navDivider} aria-hidden="true" />
+              {user?.role === "ADMIN" ? (
+                <Link href="/admin" onClick={() => setViewingSite(false)} className={s.adminLink}>
+                  <ShieldCheck size={16} aria-hidden="true" />
+                  Back to admin
+                </Link>
+              ) : (
+                <Link
+                  href="/teaching"
+                  className={`${s.adminLink} ${s.teachingLink}`}
+                  aria-current={pathname.startsWith("/teaching") || pathname.startsWith("/admin") ? "page" : undefined}
+                >
+                  <GraduationCap size={16} aria-hidden="true" />
+                  Teaching
+                </Link>
+              )}
+            </>
+          )}
         </nav>
 
         <div className={s.user}>
           {!ready ? null : user ? (
             <>
-              <button className={s.ghost} type="button" aria-label="Notifications">
-                <Bell size={20} aria-hidden="true" />
-              </button>
+              <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className={cn(s.ghost, s.account)} type="button" aria-label={`Account: ${user.username}`}>

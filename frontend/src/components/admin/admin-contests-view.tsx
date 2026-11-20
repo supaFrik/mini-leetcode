@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Loader2, Lock, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Loader2, Lock, Plus, Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/hooks/use-user";
-import { AdminNav } from "./admin-nav";
+import { cn } from "@/lib/utils";
 import { deleteContest, fetchAdminContests } from "@/lib/services";
 import type { AdminContestSummary, ContestStatus } from "@/types/api";
 
@@ -34,6 +34,18 @@ const STATUS_TONE: Record<ContestStatus, "success" | "warning" | "outline"> = {
   SCHEDULED: "warning",
   COMPLETED: "outline",
 };
+
+/** Hành động theo trạng thái: [nhãn, đường dẫn, tiền tố aria-label]. Giám thị chỉ xem live view và báo cáo. */
+function actionsFor(c: AdminContestSummary, proctorOnly = false): [string, string, string][] {
+  const edit = `/admin/contests/${c.id}`;
+  if (proctorOnly) {
+    const reports: [string, string, string] = ["Reports", `/admin/reports?contest=${c.id}`, "Reports of"];
+    return c.status === "RUNNING" ? [["Live view", `/exam/${c.id}/leaderboard`, "Live view of"], reports] : [reports];
+  }
+  if (c.status === "RUNNING") return [["Live view", `/exam/${c.id}/leaderboard`, "Live view of"], ["Edit", edit, "Edit"]];
+  if (c.status === "SCHEDULED") return [["Edit", edit, "Edit"], ["Problems", `${edit}?tab=problems`, "Problems of"]];
+  return [["Results", `${edit}?tab=results`, "Results of"], ["Plagiarism", `${edit}?tab=results&report=plagiarism`, "Plagiarism report of"]];
+}
 
 function formatWhen(iso: string): string {
   const d = new Date(parseApiDate(iso));
@@ -57,11 +69,14 @@ export function AdminContestsView() {
   const { user } = useUser();
   const canDelete = user?.role === "ADMIN";
 
+  // Lọc trạng thái ở client để các nút lọc hiện được số lượng của mọi trạng thái.
   const load = useCallback(() => {
-    fetchAdminContests({ search: search, status: status || undefined })
+    fetchAdminContests({ search: search })
       .then(setRows)
       .catch((e) => setError(errorMessage(e)));
-  }, [search, status]);
+  }, [search]);
+  const shown = rows?.filter((c) => !status || c.status === status) ?? null;
+  const count = (st: ContestStatus | "") => rows?.filter((c) => !st || c.status === st).length ?? 0;
 
   useEffect(() => {
     load();
@@ -87,7 +102,6 @@ export function AdminContestsView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-      <AdminNav />
       <div className="flex flex-wrap items-center gap-2.5">
         <Button asChild className="order-last sm:order-none">
           <Link href="/admin/contests/new">
@@ -105,19 +119,22 @@ export function AdminContestsView() {
             className="h-10 rounded-md bg-card pl-9 text-sm text-ink"
           />
         </div>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value as ContestStatus | "")}
-          aria-label="Filter by status"
-          className="h-10 rounded-md border border-border bg-card px-3 text-sm text-ink"
-        >
-          <option value="">Any status</option>
-          {STATUSES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
+        <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-1.5">
+          {[{ value: "" as const, label: "All" }, ...STATUSES].map((st) => (
+            <button
+              key={st.value}
+              type="button"
+              aria-pressed={status === st.value}
+              onClick={() => setStatus(st.value)}
+              className={cn(
+                "h-10 rounded-md border px-3 text-sm font-medium transition-colors",
+                status === st.value ? "border-ink bg-ink text-white" : "border-border bg-card text-ink hover:bg-hairline-soft"
+              )}
+            >
+              {st.label} <span className="ml-1 font-mono text-xs opacity-75">{count(st.value)}</span>
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
       {error && (
@@ -127,7 +144,7 @@ export function AdminContestsView() {
       )}
 
       <section aria-label="Contest administration" className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-        <div className="hidden items-center gap-3 border-b border-border bg-muted/30 px-5 py-3 font-sans text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 md:grid md:grid-cols-[minmax(0,1fr)_104px_minmax(0,220px)_72px_88px_96px]">
+        <div className="hidden items-center gap-3 border-b border-border bg-muted/30 px-5 py-3 font-sans text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 md:grid md:grid-cols-[minmax(0,1fr)_104px_minmax(0,220px)_72px_88px_200px]">
           <span>Title</span>
           <span>Status</span>
           <span>When</span>
@@ -144,10 +161,10 @@ export function AdminContestsView() {
           </div>
         )}
 
-        {rows?.map((c) => (
+        {shown?.map((c) => (
           <div
             key={c.id}
-            className="grid grid-cols-1 items-center gap-2 border-t border-border px-5 py-3.5 transition-colors hover:bg-hairline-soft/60 md:grid-cols-[minmax(0,1fr)_104px_minmax(0,220px)_72px_88px_96px] md:gap-3"
+            className="grid grid-cols-1 items-center gap-2 border-t border-border px-5 py-3.5 transition-colors hover:bg-hairline-soft/60 md:grid-cols-[minmax(0,1fr)_104px_minmax(0,220px)_72px_88px_200px] md:gap-3"
           >
             <span className="min-w-0">
               <Link
@@ -173,11 +190,16 @@ export function AdminContestsView() {
             <span className="font-sans text-sm text-zinc-600 dark:text-zinc-400">{c.problemCount}</span>
             <span className="font-sans text-sm text-zinc-600 dark:text-zinc-400">{c.participantCount}</span>
             <span className="flex items-center justify-start gap-1 md:justify-end">
-              <Button asChild size="icon-sm" variant="ghost" title="Edit contest">
-                <Link href={`/admin/contests/${c.id}`} aria-label={`Edit ${c.title}`}>
-                  <Pencil className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-400" />
-                </Link>
-              </Button>
+              {actionsFor(c, !canDelete && c.createdById !== user?.id && !!user && (c.proctorIds ?? []).includes(user.id)).map(([label, href, aria]) => (
+                <Button key={label} asChild size="sm" variant="outline" className="h-8 px-2.5 text-xs">
+                  <Link href={href} aria-label={`${aria} ${c.title}`}>
+                    {label}
+                  </Link>
+                </Button>
+              ))}
+              {!canDelete && c.createdById !== user?.id && (
+                <span className="text-xs text-mute">{user && (c.proctorIds ?? []).includes(user.id) ? "Proctor" : "Read-only"}</span>
+              )}
               {canDelete && c.status === "SCHEDULED" && (
                 <Button
                   size="icon-sm"
@@ -191,16 +213,11 @@ export function AdminContestsView() {
                   {pending === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                 </Button>
               )}
-              <Button asChild size="icon-sm" variant="ghost" title="Open student view">
-                <Link href={`/exam/${c.id}`} target="_blank" aria-label={`Open ${c.title}`}>
-                  <ExternalLink className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-400" />
-                </Link>
-              </Button>
             </span>
           </div>
         ))}
 
-        {rows && rows.length === 0 && (
+        {shown && shown.length === 0 && (
           <div className="border-t border-border p-12 text-center">
             <p className="font-semibold text-ink">{search || status ? "No contests match these filters" : "No contests yet"}</p>
             <p className="mx-auto mt-1 max-w-[44ch] text-sm text-zinc-500">

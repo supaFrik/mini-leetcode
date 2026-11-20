@@ -54,7 +54,7 @@ const TITLES = ["Two Sum", "Valid Parentheses", "Merge Two Sorted Lists", "Best 
   "LRU Cache", "Course Schedule", "Maximum Subarray", "Word Ladder"];
 const TAGSETS = [["Array", "Hash Table"], ["Two Pointers", "Sorting"], ["Math", "Dynamic Programming"],
   ["Design", "Doubly-Linked List"], ["Array", "DFS / BFS"], ["Graph"]];
-const DIFFS = ["EASY", "MEDIUM", "HARD"] as const;
+const DIFFS = ["BEGINNER", "EASY", "MEDIUM", "HARD", "EXPERT"] as const;
 const PROGRESS = ["DONE", "IN_PROGRESS", "NEVER"] as const;
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
@@ -71,7 +71,7 @@ const PROBLEMS: ProblemFull[] = Array.from({ length: 36 }, (_, i) => {
   const title = i < TITLES.length ? TITLES[i] : `Placeholder #${id}`;
   return {
     id, title, slug: i < TITLES.length ? slugify(title) : `placeholder-${id}`,
-    difficulty: DIFFS[i % 3], tags: TAGSETS[i % TAGSETS.length], progress: PROGRESS[i % 3],
+    difficulty: DIFFS[i % DIFFS.length], tags: TAGSETS[i % TAGSETS.length], progress: PROGRESS[i % 3],
     description: i === 0 ? TWO_SUM_MD : `Problem **${title}** (sample data).\n\nRead two integers \`a\`, \`b\` from input and output \`a + b\`.`,
     timeLimitMs: 1000, memoryLimitMb: 256, status: "PUBLISHED", likes: 40 + ((id * 7) % 60), dislikes: 5 + ((id * 3) % 30),
   };

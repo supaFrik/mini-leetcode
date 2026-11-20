@@ -16,6 +16,9 @@ import type {
   AttemptResult, AuthoringTopic, LearnerTopic, StepAnswer, TopicDraft, TopicSummary,
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
+  AdminTag, ContestProctor, RankingRow, SitePage, TagCategory, TagCategoryInfo, TagCount,
+  AdminStats, AdminUserList, AdminUserRow, Role, UserStatus,
+  Announcement, PlanProgress, PublicSettings, SiteSettings, TeachingDashboard,
 } from "@/types/api";
 
 export const RUN_ENABLED = USE_MOCK || process.env.NEXT_PUBLIC_ENABLE_RUN === "true";
@@ -90,11 +93,83 @@ export async function countProblems(p: Partial<Omit<ProblemQuery, "page" | "size
   return r.totalElements;
 }
 
-/** Danh sách chủ đề đang có trong catalogue, kèm số bài. `type` lọc theo DSA/OOP. */
-export async function fetchProblemTags(type?: ProblemType): Promise<{ tag: string; count: number }[]> {
-  if (USE_MOCK) return mock.listTags(type);
+/** Danh sách chủ đề đang có trong catalogue, kèm số bài và nhóm. `type` lọc theo DSA/OOP. */
+export async function fetchProblemTags(type?: ProblemType): Promise<TagCount[]> {
+  if (USE_MOCK) return (await mock.listTags(type)).map((t) => ({ ...t, category: "OTHER" as const }));
   const raw = await api<Raw[]>(`/api/v1/problems/tags${type ? `?type=${type}` : ""}`);
-  return (raw ?? []).map((t) => ({ tag: String(t.tag), count: Number(t.count) }));
+  return (raw ?? []).map((t) => ({ tag: String(t.tag), count: Number(t.count), category: toTagCategory(t.category) }));
+}
+
+function toTagCategory(v: unknown): TagCategory {
+  return typeof v === "string" && v ? v : "Other";
+}
+
+// ── Nhóm chủ đề (chỉ ADMIN). Chủ đề nhận diện bằng tên. ────────────────────
+export async function fetchAdminTags(): Promise<AdminTag[]> {
+  const raw = await api<Raw[]>("/api/v1/admin/tags");
+  return (raw ?? []).map((t) => ({ name: String(t.name), category: toTagCategory(t.category), problemCount: Number(t.problemCount) }));
+}
+export async function createTag(name: string, category: TagCategory): Promise<AdminTag> {
+  return api<AdminTag>("/api/v1/admin/tags", { method: "POST", body: JSON.stringify({ name, category }) });
+}
+export async function updateTagCategory(name: string, category: TagCategory): Promise<AdminTag> {
+  return api<AdminTag>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify({ category }) });
+}
+export async function deleteTag(name: string): Promise<void> {
+  await api<void>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "DELETE" });
+}
+
+// ── Quản trị: tổng quan và người dùng (chỉ ADMIN) ───────────────────────────
+export async function fetchAdminStats(): Promise<AdminStats> {
+  return api<AdminStats>("/api/v1/admin/stats");
+}
+export async function fetchAdminUsers(q: string, page = 0): Promise<AdminUserList> {
+  return api<AdminUserList>(`/api/v1/admin/users?q=${encodeURIComponent(q)}&page=${page}`);
+}
+
+// Thông báo: mọi người đã đăng nhập đọc; giảng viên/ADMIN tạo và xoá.
+export async function fetchAnnouncements(): Promise<Announcement[]> {
+  if (USE_MOCK) return [];
+  return (await api<Announcement[]>("/api/v1/announcements")) ?? [];
+}
+export async function createAnnouncement(body: { title: string; body: string }): Promise<Announcement> {
+  return api<Announcement>("/api/v1/admin/announcements", { method: "POST", body: JSON.stringify(body) });
+}
+export async function deleteAnnouncement(id: number): Promise<void> {
+  await api(`/api/v1/admin/announcements/${id}`, { method: "DELETE" });
+}
+export async function fetchPublicSettings(): Promise<PublicSettings | null> {
+  if (USE_MOCK) return null;
+  return api<PublicSettings>("/api/v1/settings/public");
+}
+export async function fetchSettings(): Promise<SiteSettings> {
+  return api<SiteSettings>("/api/v1/admin/settings");
+}
+export async function saveSettings(changes: SiteSettings): Promise<SiteSettings> {
+  return api<SiteSettings>("/api/v1/admin/settings", { method: "PUT", body: JSON.stringify(changes) });
+}
+export async function fetchTeachingDashboard(): Promise<TeachingDashboard> {
+  return api<TeachingDashboard>("/api/v1/teaching/dashboard");
+}
+export async function fetchTeachingProgress(): Promise<PlanProgress[]> {
+  return api<PlanProgress[]>("/api/v1/teaching/progress");
+}
+export async function updateAdminUser(id: number, change: { role?: Role; status?: UserStatus }): Promise<AdminUserRow> {
+  return api<AdminUserRow>(`/api/v1/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(change) });
+}
+
+// ── Bảng xếp hạng và trang chính sách ──────────────────────────────────────
+export async function fetchRanking(): Promise<RankingRow[]> {
+  return (await api<RankingRow[]>("/api/v1/ranking")) ?? [];
+}
+export async function fetchSitePages(): Promise<SitePage[]> {
+  return (await api<SitePage[]>("/api/v1/pages")) ?? [];
+}
+export async function fetchSitePage(slug: string): Promise<SitePage> {
+  return api<SitePage>(`/api/v1/pages/${encodeURIComponent(slug)}`);
+}
+export async function updateSitePage(slug: string, title: string, contentMd: string): Promise<SitePage> {
+  return api<SitePage>(`/api/v1/admin/pages/${encodeURIComponent(slug)}`, { method: "PUT", body: JSON.stringify({ title, contentMd }) });
 }
 export async function fetchProblem(idOrSlug: string): Promise<ProblemFull> {
   if (USE_MOCK) return mock.getProblem(idOrSlug);
@@ -517,4 +592,29 @@ export async function addContestParticipants(id: number, entries: string): Promi
 }
 export async function removeContestParticipant(id: number, userId: number): Promise<void> {
   await api(`/api/v1/admin/contests/${id}/participants/${userId}`, { method: "DELETE" });
+}
+
+// ===== Nhóm chủ đề =====
+export async function fetchTagCategories(): Promise<TagCategoryInfo[]> {
+  return (await api<TagCategoryInfo[]>("/api/v1/tag-categories")) ?? [];
+}
+export async function createTagCategory(body: { name: string; color?: string }): Promise<TagCategoryInfo> {
+  return api<TagCategoryInfo>("/api/v1/admin/tag-categories", { method: "POST", body: JSON.stringify(body) });
+}
+export async function updateTagCategoryInfo(id: number, body: Partial<Omit<TagCategoryInfo, "id">>): Promise<TagCategoryInfo> {
+  return api<TagCategoryInfo>(`/api/v1/admin/tag-categories/${id}`, { method: "PUT", body: JSON.stringify(body) });
+}
+export async function deleteTagCategory(id: number): Promise<void> {
+  await api<void>(`/api/v1/admin/tag-categories/${id}`, { method: "DELETE" });
+}
+
+// ===== Giám thị kỳ thi (chủ kỳ thi hoặc ADMIN bổ nhiệm) =====
+export async function fetchContestProctors(id: number): Promise<ContestProctor[]> {
+  return (await api<ContestProctor[]>(`/api/v1/admin/contests/${id}/proctors`)) ?? [];
+}
+export async function addContestProctor(id: number, username: string): Promise<ContestProctor> {
+  return api<ContestProctor>(`/api/v1/admin/contests/${id}/proctors`, { method: "POST", body: JSON.stringify({ username }) });
+}
+export async function removeContestProctor(id: number, userId: number): Promise<void> {
+  await api<void>(`/api/v1/admin/contests/${id}/proctors/${userId}`, { method: "DELETE" });
 }

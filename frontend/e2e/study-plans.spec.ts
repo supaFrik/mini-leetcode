@@ -85,7 +85,6 @@ test.describe("/study-plans", () => {
 
     const practice = page.getByRole("region", { name: "Luyện: lớp & đóng gói" });
     await expect(practice.getByText("Completed")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Set up the plugin →" })).toHaveAttribute("href", "/ide");
   });
 
   test("AC-4: a project stage page opens in IntelliJ — install, connect once, then open", async ({ page }) => {
@@ -105,7 +104,7 @@ test.describe("/study-plans", () => {
     });
 
     await page.goto("/study-plans/oop-voi-java/2/1");
-    await expect(page.getByRole("heading", { name: "Project: Mini Bank Console. Stage 1/3", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Stage 1\/3 · /, level: 1 })).toBeVisible();
     const stage = page.getByRole("region", { name: "Stage" });
     await expect(stage.getByRole("link", { name: "Install the IntelliJ plugin" })).toHaveAttribute("href", "/ide");
 
@@ -122,7 +121,7 @@ test.describe("/study-plans", () => {
 
   test("a locked stage page explains what to finish first", async ({ page }) => {
     await page.goto("/study-plans/oop-voi-java/2/2");
-    await expect(page.getByRole("region", { name: "Stage" })).toContainText("Finish stage 1 first.");
+    await expect(page.getByRole("region", { name: "Stage" })).toContainText("Finish stage 1 to unlock it.");
     await expect(page.getByRole("button", { name: /IntelliJ/ })).toHaveCount(0);
   });
 

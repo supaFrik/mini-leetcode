@@ -7,15 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useConfirm } from "@/components/ui/confirm";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
+import { DIFFICULTY_LEVELS } from "@/components/problems/difficulty";
 import { Pagination } from "@/components/problems/pagination";
 import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
+import { useCanEdit } from "@/hooks/use-can-edit";
 import { useUser } from "@/hooks/use-user";
-import { AdminNav } from "./admin-nav";
 import { PROBLEM_STATUS_TONE } from "./status";
 import { deleteProblem, fetchAdminProblems } from "@/lib/services";
-import type { Difficulty, Page, ProblemFull, ProblemLifecycle, ProblemType } from "@/types/api";
+import type { Page, ProblemFull, ProblemLifecycle, ProblemType } from "@/types/api";
 
 const LIFECYCLES: { value: ProblemLifecycle; label: string }[] = [
   { value: "DRAFT", label: "Draft" },
@@ -23,7 +24,6 @@ const LIFECYCLES: { value: ProblemLifecycle; label: string }[] = [
   { value: "PUBLISHED", label: "Published" },
   { value: "ARCHIVED", label: "Archived" },
 ];
-const DIFFICULTIES: Difficulty[] = ["EASY", "MEDIUM", "HARD"];
 const selectClass = "h-10 rounded-sm border border-border bg-card px-2.5 text-body-md text-ink";
 
 /**
@@ -49,6 +49,7 @@ export function AdminProblemsView() {
   const { user } = useUser();
   // Server only allows ADMIN to delete (DELETE /api/v1/problems/** hasRole ADMIN)
   const canDelete = user?.role === "ADMIN";
+  const canEdit = useCanEdit();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,7 +90,6 @@ export function AdminProblemsView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-      <AdminNav />
 
       <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative min-w-0 flex-1 basis-56">
@@ -103,7 +103,7 @@ export function AdminProblemsView() {
         </select>
         <select value={difficulty} onChange={(e) => filter(setDifficulty)(e.target.value)} aria-label="Filter by difficulty" className={selectClass}>
           <option value="">Any difficulty</option>
-          {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+          {DIFFICULTY_LEVELS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
         </select>
         <select value={type} onChange={(e) => filter(setType)(e.target.value as ProblemType | "")} aria-label="Filter by problem type" className={selectClass}>
           <option value="">Any type</option>
@@ -149,6 +149,7 @@ export function AdminProblemsView() {
                   )}>
                     {p.type === "OOP_GRINDING" ? "OOP" : "DSA"}
                   </span>
+                  {!canEdit(p.createdById) && <span className="shrink-0 text-xs text-mute">Read-only</span>}
                 </span>
                 {p.tags.length > 0 && (
                   <span className="mt-1 block truncate font-sans text-xs text-zinc-500 dark:text-zinc-400">

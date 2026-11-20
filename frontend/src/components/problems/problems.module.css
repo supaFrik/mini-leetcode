@@ -440,6 +440,19 @@
   cursor: pointer;
 }
 
+.topicGroup + .topicGroup {
+  margin-top: 10px;
+}
+
+.topicGroupTitle {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .topic:hover {
   background: var(--hover);
 }

@@ -1,18 +1,19 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
-import { Check, CircleDot, Circle, Lock, Wrench } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLoad } from "@/hooks/use-load";
 import { useUser } from "@/hooks/use-user";
 import { fetchStudyPlan, fetchStudyPlans } from "@/lib/services";
 import { DifficultyBadge } from "@/components/problems/difficulty-badge";
-import { StageTimeline } from "@/components/topics/stage-timeline";
+import { StageTimeline, stageName } from "@/components/topics/stage-timeline";
+import { StageIcon } from "./stage-status-icon";
+import { StageCodeCard } from "./stage-code-card";
 import { Markdown } from "@/components/ui/markdown";
 import theme from "@/components/layout/plex-theme.module.css";
 import p from "@/components/problems/problems.module.css";
 import s from "./study-plans.module.css";
-import type { StudyPlanItem, StudyPlanStage } from "@/types/api";
+import type { StudyPlanDetail, StudyPlanItem, StudyPlanStage } from "@/types/api";
 
 function Progress({ done, total }: { done: number; total: number }) {
   const pct = total > 0 ? Math.round((done * 100) / total) : 0;
@@ -79,23 +80,13 @@ export function StudyPlanList() {
   );
 }
 
-function StageIcon({ stage }: { stage: StudyPlanStage }) {
-  if (!stage.published) return <Wrench size={18} className={s.locked} aria-label="Under maintenance" />;
-  switch (stage.status) {
-    case "DONE": return <Check size={18} strokeWidth={2.4} className={s.iconDone} aria-label="Done" />;
-    case "IN_PROGRESS": return <CircleDot size={18} className={s.iconProgress} aria-label="In progress" />;
-    case "LOCKED": return <Lock size={16} className={s.locked} aria-label="Locked" />;
-    default: return <Circle size={18} className={s.locked} aria-label="Not started" />;
-  }
-}
-
-/** {@code compact}: nút cuối dòng thời gian chủ đề — biểu tượng trạng thái đã do dòng thời gian vẽ. */
-function StageRow({ planSlug, item, stage, compact }: { planSlug: string; item: StudyPlanItem; stage: StudyPlanStage; compact?: boolean }) {
+/** Một stage không có chủ đề học: một dòng mở thẳng trang stage. */
+function StageRow({ planSlug, item, stage }: { planSlug: string; item: StudyPlanItem; stage: StudyPlanStage }) {
   const label = item.kind === "PROJECT" ? `Stage ${stage.stageNo}` : "Practice";
-  const title = stage.title ?? `Problem #${stage.problemId}`;
+  const title = stageName(stage);
   const content = (
     <>
-      {!compact && <StageIcon stage={stage} />}
+      <StageIcon stage={stage} />
       <span className={s.stageNo}>{label}</span>
       <span className={cn(stage.status === "LOCKED" && s.locked)}>{title}</span>
       <span>
@@ -110,7 +101,7 @@ function StageRow({ planSlug, item, stage, compact }: { planSlug: string; item: 
     </>
   );
   const open = stage.published && stage.status !== "LOCKED" && stage.slug;
-  const cls = cn(s.stage, compact && s.stageCompact);
+  const cls = s.stage;
   return open ? (
     <Link href={`/study-plans/${planSlug}/${item.id}/${stage.stageNo}`} className={cls}>{content}</Link>
   ) : (
@@ -121,6 +112,44 @@ function StageRow({ planSlug, item, stage, compact }: { planSlug: string; item: 
 /** Stage đang học của một mục: stage đầu tiên chưa DONE (mở sẵn dòng thời gian chủ đề của nó). */
 function currentStage(item: StudyPlanItem): StudyPlanStage | undefined {
   return item.stages.find((st) => st.status !== "DONE") ?? item.stages[0];
+}
+
+/** Bước học tiếp theo: stage đầu tiên chưa DONE, đã xuất bản và không bị khoá. */
+function nextStep(plan: StudyPlanDetail): { item: StudyPlanItem; stage: StudyPlanStage } | undefined {
+  for (const item of plan.items) {
+    for (const stage of item.stages) {
+      if (stage.status !== "DONE") {
+        return stage.published && stage.status !== "LOCKED" ? { item, stage } : undefined;
+      }
+    }
+  }
+  return undefined;
+}
+
+const HOW_KEY = "study-plan-how-hidden";
+
+/** Khối "How it works" 3 bước; ẩn thì nhớ trong trình duyệt. */
+function HowItWorks() {
+  const [hidden, setHidden] = useState(true);
+  useEffect(() => {
+    try { setHidden(localStorage.getItem(HOW_KEY) === "1"); } catch { setHidden(false); }
+  }, []);
+  if (hidden) return null;
+  const hide = () => {
+    setHidden(true);
+    try { localStorage.setItem(HOW_KEY, "1"); } catch { /* bỏ qua: chỉ ẩn trong phiên này */ }
+  };
+  return (
+    <section className={s.howTo} aria-label="How it works">
+      <h2>How it works</h2>
+      <button type="button" className={s.howClose} onClick={hide}>Hide</button>
+      <ol className={s.howSteps}>
+        <li><strong>Open the next stage.</strong> Stages unlock in order.</li>
+        <li><strong>Learn, then code.</strong> Read the topics and solve the task here or in your IDE.</li>
+        <li><strong>Pass the tests.</strong> Accepted marks the stage done and opens the next one.</li>
+      </ol>
+    </section>
+  );
 }
 
 /** /study-plans/[slug] — mục theo thứ tự, stage mở khoá tuần tự trong mỗi project. */
@@ -140,12 +169,21 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
               <h1 className={s.title}>{load.data.title}</h1>
               {load.data.description && <div className={s.lead}><Markdown>{load.data.description}</Markdown></div>}
               <Progress done={load.data.doneStages} total={load.data.stageCount} />
+              {(() => {
+                const next = nextStep(load.data);
+                if (!next) return null;
+                const label = next.item.kind === "PROJECT"
+                  ? `${next.item.title}, stage ${next.stage.stageNo}`
+                  : `${next.item.title}`;
+                return (
+                  <Link href={`/study-plans/${slug}/${next.item.id}/${next.stage.stageNo}`} className={s.continue}>
+                    Continue: {label} →
+                  </Link>
+                );
+              })()}
             </div>
 
-            <div className={s.ide}>
-              <span>Project stages open in IntelliJ IDEA with one click from the stage page.</span>
-              <Link href="/ide">Set up the plugin →</Link>
-            </div>
+            <HowItWorks />
 
             <div className={s.items}>
               {load.data.items.map((item) => (
@@ -159,7 +197,7 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
                   {item.stages.map((stage) => (stage.topics?.length ?? 0) > 0 ? (
                     <StageTimeline key={stage.stageNo} stage={stage} stageCount={item.stages.length} planSlug={slug}
                       defaultOpen={stage === currentStage(item)} onChanged={() => setAttempt((n) => n + 1)}
-                      stageTask={<StageRow planSlug={slug} item={item} stage={stage} compact />} />
+                      stageTask={<StageCodeCard planSlug={slug} item={item} stage={stage} />} />
                   ) : (
                     <StageRow key={stage.stageNo} planSlug={slug} item={item} stage={stage} />
                   ))}

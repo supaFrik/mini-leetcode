@@ -29,7 +29,7 @@ export interface Page<T> {
 // ===== Enum =====
 export type Role = "USER" | "INSTRUCTOR" | "ADMIN";
 export type Language = "JAVA" | "PYTHON";
-export type Difficulty = "EASY" | "MEDIUM" | "HARD";
+export type Difficulty = "BEGINNER" | "EASY" | "MEDIUM" | "HARD" | "EXPERT";
 export type ProblemLifecycle = "DRAFT" | "REVIEWING" | "PUBLISHED" | "ARCHIVED";
 export type UserProgress = "DONE" | "IN_PROGRESS" | "NEVER";
 export type SubmissionStatus = "PENDING" | "JUDGING" | "COMPLETED" | "FAILED";
@@ -39,6 +39,56 @@ export type ParticipantStatus = "REGISTERED" | "IN_PROGRESS" | "SUBMITTED" | "DI
 export type ProctoringEventType = "WINDOW_BLUR" | "WINDOW_FOCUS" | "CLIPBOARD_PASTE";
 
 export type ProblemType = "ALGORITHMIC" | "OOP_GRINDING";
+
+// ===== Chủ đề, bảng xếp hạng, trang chính sách =====
+/** Tên nhóm chủ đề, do ADMIN quản lý (bảng tag_categories). */
+export type TagCategory = string;
+export interface TagCategoryInfo { id: number; name: string; color: string; sortOrder: number }
+export interface TagCount { tag: string; count: number; category: TagCategory }
+export interface AdminTag { name: string; category: TagCategory; problemCount: number }
+export interface RankingRow { rank: number; userId: number; username: string; solved: number; submissions: number }
+export interface SitePage { slug: string; title: string; contentMd: string; updatedAt: string }
+export type UserStatus = "ACTIVE" | "BLOCKED";
+export interface AdminUserRow { id: number; username: string; email: string; role: Role; status: UserStatus; createdAt: string }
+export interface AdminUserList { items: AdminUserRow[]; total: number; page: number; size: number }
+export interface AdminSubmissionRow {
+  id: number; username: string; problemTitle: string; problemSlug: string; contestId: number | null; language: string;
+  status: SubmissionStatus; verdict: Verdict | null; score: number | null; executionTimeMs: number | null; createdAt: string;
+}
+export interface AdminSubmissionList { items: AdminSubmissionRow[]; total: number; page: number; size: number }
+export interface Announcement {
+  id: number; title: string; body: string; createdById: number; createdByUsername: string; createdAt: string;
+}
+export interface PublicSettings {
+  siteName: string; tagline: string; maintenanceMode: boolean; bannerMessage: string; registrationOpen: boolean;
+}
+/** Mọi cài đặt dạng chuỗi (key/value), xem SiteSettingsService. */
+export type SiteSettings = Record<string, string>;
+export interface TeachingDashboard {
+  learners: number; plans: number; recentSubmissions: AdminSubmissionRow[];
+  upcomingContests: { id: number; title: string; startTime: string; endTime: string }[];
+}
+export type ProgressStatus = "DONE" | "STUCK" | "IN_PROGRESS" | "NOT_STARTED";
+export interface PlanProgress {
+  planId: number; slug: string; title: string;
+  stages: { problemId: number; title: string }[];
+  learners: { userId: number; username: string; stages: ProgressStatus[] }[];
+}
+export interface AdminRecentSubmission {
+  id: number; username: string; problemTitle: string; problemSlug: string; status: SubmissionStatus; verdict: Verdict | null; createdAt: string;
+}
+export interface AdminStats {
+  users: number; problems: number; submissions: number; contests: number;
+  recentSubmissions: AdminRecentSubmission[]; recentUsers: AdminUserRow[];
+  /** 14 ngày gần nhất, cũ → mới. */
+  daily: { date: string; total: number; accepted: number }[];
+  /** 0..1 */
+  acRate: number;
+  activeUsers7d: number;
+  byDifficulty: Record<string, number>;
+  lowestAc: { slug: string; title: string; submissions: number; acRate: number }[];
+  upcomingContests: { id: number; title: string; startTime: string }[];
+}
 
 // ===== Đề bài =====
 export interface ProblemSummary {
@@ -58,6 +108,7 @@ export interface ProblemFull extends ProblemSummary {
   status?: ProblemLifecycle; // vòng đời DRAFT/REVIEWING/PUBLISHED/ARCHIVED
   /** Số testcase của bài (mặc định 0). */
   testCaseCount?: number;
+  createdById?: number;
   createdByUsername?: string;
   updatedAt?: string;
   likes?: number;
@@ -341,7 +392,11 @@ export interface AdminContestSummary {
   registrationMode: RegistrationMode;
   problemCount: number;
   participantCount: number;
+  createdById?: number | null;
+  /** Giám thị (xem live view và báo cáo). */
+  proctorIds?: number[];
 }
+export interface ContestProctor { userId: number; username: string; role: Role }
 export interface AdminContestProblem {
   problemId: number;
   slug: string;

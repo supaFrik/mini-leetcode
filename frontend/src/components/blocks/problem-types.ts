@@ -1,4 +1,4 @@
-export type ProblemDifficulty = "EASY" | "MEDIUM" | "HARD";
+export type ProblemDifficulty = "BEGINNER" | "EASY" | "MEDIUM" | "HARD" | "EXPERT";
 
 export type ProblemVerdict =
   | "AC"
@@ -84,31 +84,6 @@ export const PROBLEM_VERDICT_META: Record<ProblemVerdict, ProblemVerdictMeta> = 
   FLAGGED_CHEATING: { label: "Flagged (Cheating)", ok: false },
 };
 
-export interface ProblemDifficultyMeta {
-  label: string;
-  className: string;
-}
-
-export const PROBLEM_DIFFICULTY_META: Record<
-  ProblemDifficulty,
-  ProblemDifficultyMeta
-> = {
-  EASY: {
-    label: "Easy",
-    className:
-      "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  },
-  MEDIUM: {
-    label: "Medium",
-    className:
-      "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  },
-  HARD: {
-    label: "Hard",
-    className:
-      "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400",
-  },
-};
 
 /** Formats a kilobyte reading the way the judge reports it. */
 export function formatProblemMemory(kb: number | null | undefined): string {

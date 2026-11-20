@@ -15,7 +15,6 @@ import { useCanEdit } from "@/hooks/use-can-edit";
 import { isSlug, slugify } from "@/lib/slug";
 import { deleteTopic, fetchTopicForAuthoring, fetchTopics, saveTopic, transitionTopic } from "@/lib/services";
 import type { AuthoringStep, AuthoringTopic, StudyPlanStatus, TopicStepType, TopicSummary } from "@/types/api";
-import { AdminNav } from "./admin-nav";
 import { ProblemPicker } from "./problem-picker";
 import type { SaveState } from "./save-state";
 import { PLAN_STATUS_VARIANT } from "./status";
@@ -51,7 +50,6 @@ export function AdminTopicsView() {
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-      <AdminNav />
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 max-w-sm flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-mute" aria-hidden="true" />

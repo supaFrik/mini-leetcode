@@ -7,14 +7,15 @@ import { cn } from "@/lib/utils";
 import { useUrlState } from "@/hooks/use-url-state";
 import { useUser } from "@/hooks/use-user";
 import { errorMessage } from "@/lib/api";
-import { countProblems, fetchProblems, fetchProblemTags } from "@/lib/services";
+import { countProblems, fetchProblems, fetchProblemTags, fetchTagCategories } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import { LANG_PREF_KEY, LANGUAGES } from "@/lib/templates";
 import { Pagination } from "./pagination";
 import { DifficultyBadge } from "./difficulty-badge";
+import { DIFFICULTY_LEVELS, difficultyMeta } from "./difficulty";
 import theme from "@/components/layout/plex-theme.module.css";
 import s from "./problems.module.css";
-import type { Difficulty, Page, ProblemSummary, ProblemType, UserProgress } from "@/types/api";
+import { type Page, type ProblemSummary, type ProblemType, type TagCount, type UserProgress } from "@/types/api";
 
 const PAGE_SIZE = 20;
 
@@ -24,12 +25,7 @@ const TRACKS: { id: ProblemType | ""; label: string; icon: LucideIcon }[] = [
   { id: "OOP_GRINDING", label: "OOP (Object-Oriented Programming & Socket)", icon: Box },
 ];
 
-const LEVELS: { value: Difficulty; label: string; rank: number }[] = [
-  { value: "EASY", label: "Easy", rank: 1 },
-  { value: "MEDIUM", label: "Medium", rank: 2 },
-  { value: "HARD", label: "Hard", rank: 3 },
-];
-const levelOf = (d: Difficulty) => LEVELS.find((l) => l.value === d) ?? LEVELS[0];
+const LEVELS = DIFFICULTY_LEVELS;
 
 const STATUSES: { value: UserProgress | ""; label: string; icon?: LucideIcon }[] = [
   { value: "", label: "Any" },
@@ -46,7 +42,7 @@ type Load<T> = { state: "loading" } | { state: "ok"; data: T } | { state: "error
 /* ------------------------------------------------------------------ */
 
 function ProblemRow({ p }: { p: ProblemSummary }) {
-  const level = levelOf(p.difficulty);
+  const level = difficultyMeta(p.difficulty);
   const word = p.progress ? STATUS_WORD[p.progress] : undefined;
   return (
     <Link
@@ -69,6 +65,13 @@ function ProblemRow({ p }: { p: ProblemSummary }) {
       </span>
     </Link>
   );
+}
+
+/** Nhóm có chủ đề, theo thứ tự ADMIN đặt; nhóm lạ (chưa tải được danh sách) xếp sau theo tên. */
+function groupOrder(order: string[], data: TagCount[]): string[] {
+  const present = new Set(data.map((t) => t.category));
+  const known = order.filter((n) => present.has(n));
+  return [...known, ...Array.from(present).filter((n) => !order.includes(n)).sort((a, b) => a.localeCompare(b))];
 }
 
 function SkeletonRows() {
@@ -176,8 +179,13 @@ export function ProblemsView() {
   }, [page, q, difficulty, progress, topic, type, listTry, signedIn]);
 
   /* ---- Chủ đề (đếm theo loại đang chọn) ---- */
-  const [topics, setTopics] = useState<Load<{ tag: string; count: number }[]>>({ state: "loading" });
+  const [topics, setTopics] = useState<Load<TagCount[]>>({ state: "loading" });
   const [topicsTry, setTopicsTry] = useState(0);
+  const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
+  // Thứ tự nhóm do ADMIN đặt; lỗi thì vẫn hiện, xếp theo tên.
+  useEffect(() => {
+    fetchTagCategories().then((c) => setCategoryOrder(c.map((x) => x.name))).catch(() => {});
+  }, []);
   useEffect(() => {
     let ignore = false;
     setTopics({ state: "loading" });
@@ -466,18 +474,26 @@ export function ProblemsView() {
                 <p className={s.note}>No topics yet.</p>
               ) : (
                 <div>
-                  {topics.data.map(({ tag, count }) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      className={s.topic}
-                      aria-pressed={topic === tag}
-                      onClick={() => set({ tags: topic === tag ? null : tag })}
-                    >
-                      <span>{tag}</span>
-                      <span className={s.mono}>{count}</span>
-                    </button>
-                  ))}
+                  {groupOrder(categoryOrder, topics.data).map((value, gi) => {
+                    const group = topics.data.filter((t) => t.category === value);
+                    return (
+                      <div key={value} role="group" aria-labelledby={`topic-group-${gi}`} className={s.topicGroup}>
+                        <h3 id={`topic-group-${gi}`} className={s.topicGroupTitle}>{value}</h3>
+                        {group.map(({ tag, count }) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            className={s.topic}
+                            aria-pressed={topic === tag}
+                            onClick={() => set({ tags: topic === tag ? null : tag })}
+                          >
+                            <span>{tag}</span>
+                            <span className={s.mono}>{count}</span>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>

@@ -35,6 +35,27 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
                               @Param("language") SubmissionLanguage language,
                               Pageable pageable);
 
+    /**
+     * Mọi bài nộp (không tính Run) cho trang admin. Chuỗi rỗng = không lọc; {@code pending} = chưa có verdict.
+     */
+    @Query(value = "select s from Submission s join fetch s.user u join fetch s.problem p where s.quickRun = false"
+            + ADMIN_FILTER,
+            countQuery = "select count(s) from Submission s join s.user u join s.problem p where s.quickRun = false"
+                    + ADMIN_FILTER)
+    Page<Submission> searchForAdmin(@Param("user") String user,
+                                    @Param("problem") String problem,
+                                    @Param("verdict") SubmissionVerdict verdict,
+                                    @Param("pending") boolean pending,
+                                    @Param("owner") Long owner,
+                                    Pageable pageable);
+
+    String ADMIN_FILTER = " and (:user = '' or lower(u.username) like concat('%', lower(:user), '%'))"
+            + " and (:problem = '' or lower(p.title) like concat('%', lower(:problem), '%')"
+            + "      or lower(p.slug) like concat('%', lower(:problem), '%'))"
+            + " and (:verdict is null or s.verdict = :verdict)"
+            + " and (:pending = false or s.verdict is null)"
+            + " and (:owner is null or p.createdBy.id = :owner)";
+
     /** Số bài nộp của user theo (verdict, status), để tóm tắt trên toàn bộ dữ liệu. */
     @Query("select s.verdict, s.status, count(s) from Submission s where s.user.id = :userId and s.quickRun = false"
             + " group by s.verdict, s.status")
@@ -91,5 +112,13 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
             + " and s.user.role = jsd.toiyeujava.mini_leetcode.entity.Role.USER"
             + " group by s.problem.id, s.user.id")
     List<Object[]> findLearnerProgress(@Param("problemIds") Collection<Long> problemIds,
+                                       @Param("ac") SubmissionVerdict ac);
+
+    /** Như {@link #findLearnerProgress} nhưng kèm username và số lần nộp: [problemId, userId, username, solved, attempts]. */
+    @Query("select s.problem.id, s.user.id, s.user.username, max(case when s.verdict = :ac then 1 else 0 end), count(s)"
+            + " from Submission s where s.problem.id in :problemIds and s.quickRun = false"
+            + " and s.user.role = jsd.toiyeujava.mini_leetcode.entity.Role.USER"
+            + " group by s.problem.id, s.user.id, s.user.username")
+    List<Object[]> findLearnerAttempts(@Param("problemIds") Collection<Long> problemIds,
                                        @Param("ac") SubmissionVerdict ac);
 }

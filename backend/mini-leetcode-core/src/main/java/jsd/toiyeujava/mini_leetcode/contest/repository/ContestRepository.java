@@ -5,12 +5,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface ContestRepository extends JpaRepository<Contest, Long> {
     Optional<Contest> findBySlug(String slug);
+
+    /** Kỳ thi sắp diễn ra của một người tạo (trang /teaching). */
+    List<Contest> findTop10ByCreatedByIdAndStartTimeAfterOrderByStartTimeAsc(Long createdById, LocalDateTime now);
 
     boolean existsBySlug(String slug);
 
