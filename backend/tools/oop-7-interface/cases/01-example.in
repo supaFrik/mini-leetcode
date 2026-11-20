@@ -1,0 +1,6 @@
+HELP
+ECHO hello   world
+ADD 1 2 3
+ADD 4 x
+UPPER mini bank
+PING

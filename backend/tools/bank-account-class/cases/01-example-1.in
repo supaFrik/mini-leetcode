@@ -1,0 +1,5 @@
+4
+OPEN alice 100
+DEPOSIT alice 50
+WITHDRAW alice 30
+BALANCE alice

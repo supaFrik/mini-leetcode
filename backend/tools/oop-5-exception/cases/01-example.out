@@ -1,0 +1,6 @@
+Ann: 20
+Bob: ERROR - Not a number: abc
+Carl: ERROR - Invalid age: 200
+Dan: ERROR - Invalid age: -1
+Eve: 0
+Valid: 2, invalid: 3

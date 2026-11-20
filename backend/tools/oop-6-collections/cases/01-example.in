@@ -1,0 +1,7 @@
+ADD B1 Clean Code
+ADD B2 Effective Java
+ADD B1 Refactoring
+FIND B2
+REMOVE B9
+LIST
+COUNT

@@ -1,0 +1,6 @@
+ADD A Book A
+ADD B Book B
+REMOVE A
+ADD A New book A
+LIST
+COUNT
