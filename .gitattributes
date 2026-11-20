@@ -1,0 +1,2 @@
+# Test case files are uploaded byte for byte: never convert their line endings.
+backend/tools/*/cases/** -text
