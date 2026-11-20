@@ -71,7 +71,7 @@ function ProblemRow({ p }: { p: ProblemSummary }) {
 function groupOrder(order: string[], data: TagCount[]): string[] {
   const present = new Set(data.map((t) => t.category));
   const known = order.filter((n) => present.has(n));
-  return [...known, ...Array.from(present).filter((n) => !order.includes(n)).sort()];
+  return [...known, ...Array.from(present).filter((n) => !order.includes(n)).sort((a, b) => a.localeCompare(b))];
 }
 
 function SkeletonRows() {

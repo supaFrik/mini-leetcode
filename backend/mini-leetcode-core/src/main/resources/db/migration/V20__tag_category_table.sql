@@ -32,7 +32,8 @@ UPDATE tags SET category_name = CASE category
     WHEN 'JAVA_CORE' THEN 'Java Core'
     WHEN 'SPRING_BOOT' THEN 'Spring Boot'
     ELSE 'Other'
-END;
+END
+WHERE category_name IS NULL;
 
 ALTER TABLE tags DROP COLUMN category;
 

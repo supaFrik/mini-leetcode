@@ -108,7 +108,7 @@ export function AdminUsersView() {
                         className={selectClass}
                         onChange={(e) => {
                           const role = e.target.value as Role;
-                          apply(u, { role }, `Change ${u.username} from ${roleLabel(u.role)} to ${roleLabel(role)}?`, "Change role");
+                          void apply(u, { role }, `Change ${u.username} from ${roleLabel(u.role)} to ${roleLabel(role)}?`, "Change role");
                         }}
                       >
                         {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}

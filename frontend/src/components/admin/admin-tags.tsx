@@ -45,14 +45,14 @@ export function AdminTagsView() {
     const n = catName.trim();
     if (!n) return;
     setCatName("");
-    catAction(() => createTagCategory({ name: n }), `Category "${n}" added.`);
+    void catAction(() => createTagCategory({ name: n }), `Category "${n}" added.`);
   };
   const removeCat = async (c: TagCategoryInfo) => {
     const ok = await confirm({
       title: `Delete category "${c.name}"?`, action: "Delete", destructive: true,
       description: "Its tags move to Other.",
     });
-    if (ok) catAction(() => deleteTagCategory(c.id), `Category "${c.name}" deleted.`);
+    if (ok) void catAction(() => deleteTagCategory(c.id), `Category "${c.name}" deleted.`);
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { void reload(); }, []);
@@ -124,7 +124,7 @@ export function AdminTagsView() {
                   defaultValue={c.name} aria-label={`Rename ${c.name}`} maxLength={50}
                   onBlur={(e) => {
                     const n = e.target.value.trim();
-                    if (n && n !== c.name) catAction(() => updateTagCategoryInfo(c.id, { name: n }));
+                    if (n && n !== c.name) void catAction(() => updateTagCategoryInfo(c.id, { name: n }));
                     else e.target.value = c.name;
                   }}
                   onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
