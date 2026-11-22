@@ -338,6 +338,15 @@ public class ProblemService {
                                              List<String> tags, UserProgress progress, Long userId,
                                              Pageable pageable, boolean staff, ProblemType problemType,
                                              ProblemScope scope) {
+        return getProblems(difficulty, status, search, tags, progress, userId, pageable, staff, problemType, scope, null);
+    }
+
+    /** @param draftOwnerId khác null: bài chưa publish chỉ hiện nếu do người này tạo (giảng viên thiếu PROBLEM_VIEW_ALL) */
+    @Transactional(readOnly = true)
+    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
+                                             List<String> tags, UserProgress progress, Long userId,
+                                             Pageable pageable, boolean staff, ProblemType problemType,
+                                             ProblemScope scope, Long draftOwnerId) {
         Set<Long> solvedIds = Set.of();
         Set<Long> attemptedIds = Set.of();
         if (userId != null && submissionRepository != null) {
@@ -352,6 +361,9 @@ public class ProblemService {
 
             if (!staff) {
                 predicates.add(cb.equal(root.get("status"), ProblemStatus.PUBLISHED));
+            } else if (draftOwnerId != null) {
+                predicates.add(cb.or(cb.equal(root.get("status"), ProblemStatus.PUBLISHED),
+                        cb.equal(root.get("createdBy").get("id"), draftOwnerId)));
             }
             // Trang Problems chỉ có đề lẻ; đề của khoá học vào qua plan / chủ đề. Học viên không bao giờ thấy ALL / COURSE.
             ProblemScope effective = staff && scope != null ? scope : ProblemScope.STANDALONE;

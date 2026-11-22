@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useCanEdit } from "@/hooks/use-can-edit";
-import { useUser } from "@/hooks/use-user";
+import { usePermissions } from "@/hooks/use-permissions";
 import { PROBLEM_STATUS_TONE } from "./status";
 import { deleteProblem, fetchAdminProblems } from "@/lib/services";
 import type { Page, ProblemFull, ProblemLifecycle, ProblemType } from "@/types/api";
@@ -46,9 +46,8 @@ export function AdminProblemsView() {
   const [difficulty, setDifficulty] = useState("");
   const [type, setType] = useState<ProblemType | "">("");
   const [pending, setPending] = useState<number | null>(null);
-  const { user } = useUser();
   // Server only allows ADMIN to delete (DELETE /api/v1/problems/** hasRole ADMIN)
-  const canDelete = user?.role === "ADMIN";
+  const canDelete = usePermissions().includes("PROBLEM_DELETE");
   const canEdit = useCanEdit();
 
   const load = useCallback(async () => {
@@ -164,7 +163,7 @@ export function AdminProblemsView() {
                 <Button size="icon-sm" variant="ghost" asChild>
                   <Link href={`/problems/${p.slug}`} target="_blank" aria-label={`View ${p.title}`} title="View"><ExternalLink className="h-3.5 w-3.5" /></Link>
                 </Button>
-                {canDelete && (
+                {canDelete && canEdit(p.createdById) && (
                   <Button size="icon-sm" variant="ghost" disabled={pending === p.id} onClick={() => remove(p)}
                     aria-label={`Delete ${p.title}`} title="Delete" className="text-zinc-400 hover:text-destructive">
                     <Trash2 className="h-3.5 w-3.5" />

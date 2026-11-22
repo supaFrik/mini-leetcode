@@ -38,7 +38,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/contests")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+@PreAuthorize("hasAnyAuthority('CONTEST_EDIT', 'CONTEST_PARTICIPANTS', 'CONTEST_REPORTS')")
 @Tag(name = "Contest administration", description = "Create, edit, delete contests and manage participants (INSTRUCTOR/ADMIN)")
 @SecurityRequirement(name = "bearerAuth")
 public class ContestAdminController {
@@ -63,6 +63,7 @@ public class ContestAdminController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CONTEST_EDIT')")
     @Operation(summary = "Create a scheduled contest (start must be in the future, only PUBLISHED problems)")
     public ResponseEntity<AdminContestDetail> create(@RequestBody ContestUpsertRequest request,
                                                      @AuthenticationPrincipal UserPrincipal currentUser) {
@@ -70,6 +71,7 @@ public class ContestAdminController {
     }
 
     @PutMapping("/{contestId}")
+    @PreAuthorize("hasAuthority('CONTEST_EDIT')")
     @Operation(summary = "Edit a contest",
             description = "SCHEDULED: any field. RUNNING: only a later end time (409 otherwise). COMPLETED: 409. "
                     + "'problems' null keeps the current list; a stale 'version' returns 409.")
@@ -78,7 +80,7 @@ public class ContestAdminController {
     }
 
     @DeleteMapping("/{contestId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CONTEST_DELETE')")
     @Operation(summary = "Delete a scheduled contest without submissions (ADMIN only)")
     public ResponseEntity<Void> delete(@PathVariable Long contestId) {
         service.delete(contestId);
@@ -92,6 +94,7 @@ public class ContestAdminController {
     }
 
     @PostMapping("/{contestId}/participants")
+    @PreAuthorize("hasAuthority('CONTEST_PARTICIPANTS')")
     @Operation(summary = "Add participants by username/email (one per line or comma-separated, up to 500)")
     public BulkParticipantsResult addParticipants(@PathVariable Long contestId,
                                                   @RequestBody BulkParticipantsRequest request) {
@@ -99,6 +102,7 @@ public class ContestAdminController {
     }
 
     @DeleteMapping("/{contestId}/participants/{userId}")
+    @PreAuthorize("hasAuthority('CONTEST_PARTICIPANTS')")
     @Operation(summary = "Remove a participant who has no submissions in the contest")
     public ResponseEntity<Void> removeParticipant(@PathVariable Long contestId, @PathVariable Long userId) {
         service.removeParticipant(contestId, userId);
@@ -112,12 +116,14 @@ public class ContestAdminController {
     }
 
     @PostMapping("/{contestId}/proctors")
+    @PreAuthorize("hasAuthority('CONTEST_PARTICIPANTS')")
     @Operation(summary = "Appoint an INSTRUCTOR/ADMIN as proctor (contest owner or ADMIN)")
     public ResponseEntity<ProctorView> addProctor(@PathVariable Long contestId, @RequestBody AddProctorRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(proctors.add(contestId, request == null ? null : request.username()));
     }
 
     @DeleteMapping("/{contestId}/proctors/{userId}")
+    @PreAuthorize("hasAuthority('CONTEST_PARTICIPANTS')")
     @Operation(summary = "Remove a proctor (contest owner or ADMIN)")
     public ResponseEntity<Void> removeProctor(@PathVariable Long contestId, @PathVariable Long userId) {
         proctors.remove(contestId, userId);

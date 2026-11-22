@@ -17,7 +17,7 @@ import type {
   GradingValidation, ProblemAuthoring, ReferenceRunResult, SubmissionFile,
   AdminContestDetail, AdminContestSummary, AdminParticipant, BulkParticipantsResult, ContestUpsert,
   AdminTag, ContestProctor, RankingRow, SitePage, TagCategory, TagCategoryInfo, TagCount,
-  AdminStats, AdminUserList, AdminUserRow, Role, UserStatus,
+  AdminStats, AdminUserList, AdminUserRow, Permission, Role, UserStatus,
   Announcement, PlanProgress, PublicSettings, SiteSettings, TeachingDashboard,
 } from "@/types/api";
 
@@ -147,6 +147,15 @@ export async function fetchSettings(): Promise<SiteSettings> {
 }
 export async function saveSettings(changes: SiteSettings): Promise<SiteSettings> {
   return api<SiteSettings>("/api/v1/admin/settings", { method: "PUT", body: JSON.stringify(changes) });
+}
+export async function fetchRolePermissions(): Promise<Record<Role, Permission[]>> {
+  return api<Record<Role, Permission[]>>("/api/v1/admin/permissions");
+}
+export async function saveInstructorPermissions(perms: Permission[]): Promise<Record<Role, Permission[]>> {
+  return api<Record<Role, Permission[]>>("/api/v1/admin/permissions", { method: "PUT", body: JSON.stringify({ INSTRUCTOR: perms }) });
+}
+export async function fetchMyPermissions(): Promise<Permission[]> {
+  return api<Permission[]>("/api/v1/auth/me/permissions");
 }
 export async function fetchTeachingDashboard(): Promise<TeachingDashboard> {
   return api<TeachingDashboard>("/api/v1/teaching/dashboard");

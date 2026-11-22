@@ -35,6 +35,7 @@ import {
 import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
 import { toast } from "@/lib/toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useUser } from "@/hooks/use-user";
 import { ContestResults } from "@/components/contests/contest-views";
 import { ContestReport } from "@/components/contests/contest-report";
@@ -148,7 +149,7 @@ function formFrom(d: AdminContestDetail): Form {
 export function ContestEditorPage({ contestId }: { contestId?: number | null }) {
   const router = useRouter();
   const { user } = useUser();
-  const canDelete = user?.role === "ADMIN";
+  const canDelete = usePermissions().includes("CONTEST_DELETE");
 
   const [detail, setDetail] = useState<AdminContestDetail | null>(null);
   const [form, setForm] = useState<Form>(emptyForm);
@@ -310,7 +311,7 @@ export function ContestEditorPage({ contestId }: { contestId?: number | null }) 
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          {detail && canDelete && status === "SCHEDULED" && (
+          {detail && canDelete && (user?.role === "ADMIN" || detail.createdBy === user?.username) && status === "SCHEDULED" && (
             <Button
               variant="outline"
               onClick={() => setConfirmDelete(true)}

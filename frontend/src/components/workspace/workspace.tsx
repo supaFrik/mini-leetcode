@@ -26,6 +26,7 @@ import { useAutosave, type SaveStatus } from "@/hooks/use-autosave";
 import { useCountdown } from "@/hooks/use-countdown";
 import { useJudge } from "@/hooks/use-judge";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useProctoring } from "@/hooks/use-proctoring";
 import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
@@ -290,6 +291,8 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
       window.removeEventListener("contextmenu", onContextMenu, true);
     };
   }, [examMode, proctor]);
+
+  const canPublish = usePermissions().includes("PROBLEM_PUBLISH");
 
   const publish = async () => {
     const target = role === "ADMIN" ? "PUBLISHED" : "REVIEWING";
@@ -649,9 +652,11 @@ export function Workspace({ problem: initialProblem, testCases: initialCases, mo
               <Button variant="outline" size="sm" className="h-8" onClick={() => router.push(`/problems/${problem.slug}?as=student`)}>Preview</Button>
               {/* Test case, starter code, chấm điểm: sửa ở trình soạn đầy đủ, không phải gõ Markdown. */}
               <Button variant="outline" size="sm" className="h-8" onClick={() => router.push(`/admin/problems/${problem.id}`)}>Open full editor</Button>
-              <Button size="sm" className="h-8" onClick={publish} disabled={busy || problem.status === "PUBLISHED"}>
-                {problem.status === "PUBLISHED" ? "Published" : "Publish Problem"}
-              </Button>
+              {canPublish && (
+                <Button size="sm" className="h-8" onClick={publish} disabled={busy || problem.status === "PUBLISHED"}>
+                  {problem.status === "PUBLISHED" ? "Published" : "Publish Problem"}
+                </Button>
+              )}
             </>
           )}
           {mode !== "instructor" && (

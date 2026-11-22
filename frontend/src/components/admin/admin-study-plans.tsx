@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLoad } from "@/hooks/use-load";
 import { useCanEdit } from "@/hooks/use-can-edit";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useConfirm } from "@/components/ui/confirm";
 import { errorMessage } from "@/lib/api";
 import { deleteStudyPlan, fetchStudyPlans } from "@/lib/services";
@@ -18,6 +19,7 @@ export function AdminStudyPlansView() {
   const [version, setVersion] = useState(0);
   const load = useLoad(fetchStudyPlans, [version]);
   const canEdit = useCanEdit();
+  const canDelete = usePermissions().includes("COURSE_DELETE");
   const confirm = useConfirm();
 
   async function remove(plan: StudyPlanSummary) {
@@ -75,7 +77,7 @@ export function AdminStudyPlansView() {
                   <td className="px-4 py-3 text-right">
                     {!canEdit(plan.createdById) && <span className="mr-3 text-body-sm text-mute">Read-only</span>}
                     <Link href={`/study-plans/${plan.slug}`} className="text-body-sm text-link hover:underline">Preview</Link>
-                    {canEdit(plan.createdById) && (
+                    {canDelete && canEdit(plan.createdById) && (
                       <Button variant="ghost" size="icon-sm" className="ml-2" aria-label={`Delete ${plan.title}`} onClick={() => void remove(plan)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>

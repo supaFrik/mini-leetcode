@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 /** Course Builder (specs/course-builder.spec.md): nhân bản stage và mở khoá stage đang chạy. */
 @RestController
 @RequestMapping("/api/v1/admin/problems/{problemId}")
-@PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+@PreAuthorize("hasAuthority('PROBLEM_EDIT')")
 @Tag(name = "Course Builder", description = "Clone and unlock problems used as study plan stages")
 public class ProblemCloneController {
 

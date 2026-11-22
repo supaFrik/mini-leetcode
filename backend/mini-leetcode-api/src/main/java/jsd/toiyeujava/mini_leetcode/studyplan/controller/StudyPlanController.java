@@ -44,7 +44,7 @@ public class StudyPlanController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_EDIT')")
     @Operation(summary = "Create a study plan (DRAFT)")
     public ResponseEntity<PlanDetail> create(@Valid @RequestBody UpsertPlanRequest request,
                                              @AuthenticationPrincipal UserPrincipal user) {
@@ -52,7 +52,7 @@ public class StudyPlanController {
     }
 
     @PutMapping("/{slug}")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_EDIT')")
     @Operation(summary = "Replace a study plan's content (author or admin)")
     public PlanDetail update(@PathVariable String slug, @Valid @RequestBody UpsertPlanRequest request,
                              @AuthenticationPrincipal UserPrincipal user) {
@@ -60,7 +60,7 @@ public class StudyPlanController {
     }
 
     @PostMapping("/{slug}/transitions")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_EDIT')")
     @Operation(summary = "Change status: DRAFT / PUBLISHED / ARCHIVED (author or admin)")
     public PlanDetail transition(@PathVariable String slug, @Valid @RequestBody TransitionRequest request,
                                  @AuthenticationPrincipal UserPrincipal user) {
@@ -68,21 +68,21 @@ public class StudyPlanController {
     }
 
     @GetMapping("/{slug}/publish-check")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_EDIT')")
     @Operation(summary = "Checklist before publishing the plan with its draft problems and topics")
     public PublishCheck publishCheck(@PathVariable String slug, @AuthenticationPrincipal UserPrincipal user) {
         return studyPlanService.publishCheck(slug, user.getId(), user.getRole());
     }
 
     @PostMapping("/{slug}/publish")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_EDIT')")
     @Operation(summary = "Publish the plan and every unpublished problem / topic in it, in one transaction")
     public PlanDetail publish(@PathVariable String slug, @AuthenticationPrincipal UserPrincipal user) {
         return studyPlanService.publish(slug, user.getId(), user.getRole());
     }
 
     @DeleteMapping("/{slug}")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_DELETE')")
     @Operation(summary = "Delete a study plan (author or admin)")
     public ResponseEntity<Void> delete(@PathVariable String slug, @AuthenticationPrincipal UserPrincipal user) {
         studyPlanService.delete(slug, user.getId(), user.getRole());

@@ -74,7 +74,7 @@ public class ContestController {
     }
 
     @GetMapping("/{contestId}/proctoring/report")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('CONTEST_REPORTS')")
     @Operation(summary = "Get proctoring report", description = "Violations per participant: contest owner, its proctors and admins")
     public ResponseEntity<List<ProctorReportRowResponse>> getProctoringReport(@PathVariable Long contestId,
                                                                               @AuthenticationPrincipal UserPrincipal currentUser) {
@@ -83,7 +83,7 @@ public class ContestController {
     }
 
     @PostMapping("/{contestId}/participants/{userId}/unlock")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('SYSTEM_MANAGE')")
     @Operation(summary = "Unlock a disqualified participant", description = "Admin only. Resets the participant's violation count.")
     public ResponseEntity<Void> unlockParticipant(
             @PathVariable Long contestId,
@@ -94,7 +94,7 @@ public class ContestController {
     }
 
     @GetMapping("/{contestId}/plagiarism")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('CONTEST_REPORTS')")
     @Operation(summary = "Get plagiarism report", description = "Similarity pairs between participants' accepted solutions")
     public ResponseEntity<List<PlagiarismResponse>> getPlagiarism(@PathVariable Long contestId,
                                                                   @AuthenticationPrincipal UserPrincipal currentUser) {

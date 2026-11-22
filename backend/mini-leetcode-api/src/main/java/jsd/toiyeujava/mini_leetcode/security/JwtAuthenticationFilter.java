@@ -1,5 +1,6 @@
 package jsd.toiyeujava.mini_leetcode.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jsd.toiyeujava.mini_leetcode.auth.permission.RolePermissionService;
 import jsd.toiyeujava.mini_leetcode.auth.security.CustomUserDetailsService;
 import jsd.toiyeujava.mini_leetcode.auth.security.JwtTokenProvider;
 import jsd.toiyeujava.mini_leetcode.auth.security.PatForbiddenException;
@@ -16,8 +17,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -26,6 +28,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -51,13 +54,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
     private final PersonalAccessTokenService patService;
     private final ObjectMapper objectMapper;
+    private final RolePermissionService permissions;
 
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, CustomUserDetailsService userDetailsService,
-                                   PersonalAccessTokenService patService, ObjectMapper objectMapper) {
+                                   PersonalAccessTokenService patService, ObjectMapper objectMapper,
+                                   RolePermissionService permissions) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.userDetailsService = userDetailsService;
         this.patService = patService;
         this.objectMapper = objectMapper;
+        this.permissions = permissions;
     }
 
     @Override
@@ -93,7 +99,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } else if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
             try {
                 String username = jwtTokenProvider.getUsernameFromToken(token);
-                var userDetails = userDetailsService.loadUserByUsername(username);
+                var userDetails = (UserPrincipal) userDetailsService.loadUserByUsername(username);
                 if (userDetails.isAccountNonLocked() && userDetails.isEnabled()) {
                     authenticate(userDetails, request);
                 }
@@ -105,8 +111,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private void authenticate(UserDetails userDetails, HttpServletRequest request) {
-        var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+    /** Authority = ROLE_X + các permission của role, đọc lại từ DB mỗi request để đổi quyền có hiệu lực ngay. */
+    private void authenticate(UserPrincipal userDetails, HttpServletRequest request) {
+        List<GrantedAuthority> authorities = new ArrayList<>(userDetails.getAuthorities());
+        permissions.forRole(userDetails.getRole()).forEach(p -> authorities.add(new SimpleGrantedAuthority(p.name())));
+        var authentication = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }

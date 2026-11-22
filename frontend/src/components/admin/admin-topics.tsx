@@ -12,6 +12,7 @@ import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useLoad } from "@/hooks/use-load";
 import { useCanEdit } from "@/hooks/use-can-edit";
+import { usePermissions } from "@/hooks/use-permissions";
 import { isSlug, slugify } from "@/lib/slug";
 import { deleteTopic, fetchTopicForAuthoring, fetchTopics, saveTopic, transitionTopic } from "@/lib/services";
 import type { AuthoringStep, AuthoringTopic, StudyPlanStatus, TopicStepType, TopicSummary } from "@/types/api";
@@ -345,6 +346,7 @@ export function TopicEditor({ slug, embedded = false, onSaved, onSaveState }: {
   const router = useRouter();
   const lastSaved = useRef<string>("");
   const canEditFn = useCanEdit();
+  const canDelete = usePermissions().includes("COURSE_DELETE");
   const [loaded, setLoaded] = useState<AuthoringTopic | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -535,7 +537,7 @@ export function TopicEditor({ slug, embedded = false, onSaved, onSaveState }: {
           {status && status !== "PUBLISHED" && <Button type="button" variant="outline" onClick={() => transition("PUBLISHED")}>Publish</Button>}
           {status && status !== "DRAFT" && <Button type="button" variant="outline" onClick={() => transition("DRAFT")}>Move to draft</Button>}
           {status === "PUBLISHED" && <Button type="button" variant="outline" onClick={() => transition("ARCHIVED")}>Archive</Button>}
-          {slug && <Button type="button" variant="ghost" className="ml-auto text-destructive" onClick={remove}><Trash2 className="h-4 w-4" />Delete</Button>}
+          {slug && canDelete && <Button type="button" variant="ghost" className="ml-auto text-destructive" onClick={remove}><Trash2 className="h-4 w-4" />Delete</Button>}
           {slug && <Link href={`/topics/${slug}`} className="text-body-sm text-link hover:underline">Preview as student</Link>}
         </footer>
       )}

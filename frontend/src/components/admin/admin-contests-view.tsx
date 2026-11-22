@@ -18,6 +18,7 @@ import {
 import { errorMessage } from "@/lib/api";
 import { parseApiDate } from "@/lib/datetime";
 import { toast } from "@/lib/toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
 import { deleteContest, fetchAdminContests } from "@/lib/services";
@@ -67,7 +68,8 @@ export function AdminContestsView() {
   const [confirmDelete, setConfirmDelete] = useState<AdminContestSummary | null>(null);
 
   const { user } = useUser();
-  const canDelete = user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN";
+  const canDelete = usePermissions().includes("CONTEST_DELETE");
 
   // Lọc trạng thái ở client để các nút lọc hiện được số lượng của mọi trạng thái.
   const load = useCallback(() => {
@@ -190,17 +192,17 @@ export function AdminContestsView() {
             <span className="font-sans text-sm text-zinc-600 dark:text-zinc-400">{c.problemCount}</span>
             <span className="font-sans text-sm text-zinc-600 dark:text-zinc-400">{c.participantCount}</span>
             <span className="flex items-center justify-start gap-1 md:justify-end">
-              {actionsFor(c, !canDelete && c.createdById !== user?.id && !!user && (c.proctorIds ?? []).includes(user.id)).map(([label, href, aria]) => (
+              {actionsFor(c, !isAdmin && c.createdById !== user?.id && !!user && (c.proctorIds ?? []).includes(user.id)).map(([label, href, aria]) => (
                 <Button key={label} asChild size="sm" variant="outline" className="h-8 px-2.5 text-xs">
                   <Link href={href} aria-label={`${aria} ${c.title}`}>
                     {label}
                   </Link>
                 </Button>
               ))}
-              {!canDelete && c.createdById !== user?.id && (
+              {!isAdmin && c.createdById !== user?.id && (
                 <span className="text-xs text-mute">{user && (c.proctorIds ?? []).includes(user.id) ? "Proctor" : "Read-only"}</span>
               )}
-              {canDelete && c.status === "SCHEDULED" && (
+              {canDelete && (isAdmin || c.createdById === user?.id) && c.status === "SCHEDULED" && (
                 <Button
                   size="icon-sm"
                   variant="ghost"

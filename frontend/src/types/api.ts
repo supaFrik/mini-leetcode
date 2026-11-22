@@ -28,6 +28,11 @@ export interface Page<T> {
 
 // ===== Enum =====
 export type Role = "USER" | "INSTRUCTOR" | "ADMIN";
+/** Khớp enum Permission ở backend. */
+export type Permission =
+  | "PROBLEM_VIEW_ALL" | "PROBLEM_EDIT" | "PROBLEM_PUBLISH" | "PROBLEM_DELETE"
+  | "CONTEST_EDIT" | "CONTEST_PARTICIPANTS" | "CONTEST_REPORTS" | "CONTEST_DELETE"
+  | "COURSE_EDIT" | "COURSE_DELETE" | "TAG_MANAGE" | "PAGE_MANAGE" | "ANNOUNCEMENT_SEND" | "SYSTEM_MANAGE";
 export type Language = "JAVA" | "PYTHON";
 export type Difficulty = "BEGINNER" | "EASY" | "MEDIUM" | "HARD" | "EXPERT";
 export type ProblemLifecycle = "DRAFT" | "REVIEWING" | "PUBLISHED" | "ARCHIVED";

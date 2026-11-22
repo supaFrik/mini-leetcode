@@ -58,21 +58,21 @@ public class TopicController {
     // ── Soạn ────────────────────────────────────────────────────────────────
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_EDIT')")
     @Operation(summary = "List topics for authoring and for attaching to stages")
     public List<TopicSummary> list(@RequestParam(value = "search", required = false) String search) {
         return topicService.list(search);
     }
 
     @GetMapping("/{slug}/authoring")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_EDIT')")
     @Operation(summary = "Get a topic with its answers for editing")
     public AuthoringTopic getForAuthoring(@PathVariable String slug) {
         return topicService.getForAuthoring(slug);
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_EDIT')")
     @Operation(summary = "Create a topic (DRAFT)")
     public ResponseEntity<AuthoringTopic> create(@Valid @RequestBody UpsertTopicRequest request,
                                                  @AuthenticationPrincipal UserPrincipal user) {
@@ -80,7 +80,7 @@ public class TopicController {
     }
 
     @PutMapping("/{slug}")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_EDIT')")
     @Operation(summary = "Replace a topic's content (author or admin); steps sent with their id keep learner progress")
     public AuthoringTopic update(@PathVariable String slug, @Valid @RequestBody UpsertTopicRequest request,
                                  @AuthenticationPrincipal UserPrincipal user) {
@@ -88,7 +88,7 @@ public class TopicController {
     }
 
     @PostMapping("/{slug}/transitions")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_EDIT')")
     @Operation(summary = "Change status: DRAFT / PUBLISHED / ARCHIVED (author or admin)")
     public AuthoringTopic transition(@PathVariable String slug, @Valid @RequestBody TransitionRequest request,
                                      @AuthenticationPrincipal UserPrincipal user) {
@@ -96,7 +96,7 @@ public class TopicController {
     }
 
     @DeleteMapping("/{slug}")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('COURSE_DELETE')")
     @Operation(summary = "Delete a topic that no study plan uses (author or admin)")
     public ResponseEntity<Void> delete(@PathVariable String slug, @AuthenticationPrincipal UserPrincipal user) {
         topicService.delete(slug, user.getId(), user.getRole());

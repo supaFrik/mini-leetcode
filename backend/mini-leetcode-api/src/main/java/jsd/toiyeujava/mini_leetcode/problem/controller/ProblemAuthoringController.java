@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/admin/problems/{problemId}")
-@PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+@PreAuthorize("hasAuthority('PROBLEM_EDIT')")
 @Tag(name = "Problem authoring", description = "Grading config, reference solution and expected-output generation (INSTRUCTOR/ADMIN)")
 public class ProblemAuthoringController {
 

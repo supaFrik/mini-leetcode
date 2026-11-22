@@ -3,7 +3,7 @@ import { RoleGuard } from "@/components/layout/role-guard";
 
 export default function AdminPoliciesPage() {
   return (
-    <RoleGuard allow={["ADMIN"]}>
+    <RoleGuard allow={["INSTRUCTOR", "ADMIN"]}>
       <AdminPoliciesView />
     </RoleGuard>
   );
