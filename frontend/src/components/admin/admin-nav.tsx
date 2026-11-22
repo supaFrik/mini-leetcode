@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BookOpen, ExternalLink, FileText, FolderTree, GraduationCap, LayoutDashboard, LogOut, Map, Medal, Megaphone, Settings,
+  BookOpen, ExternalLink, FileText, GraduationCap, LayoutDashboard, LogOut, Map, Medal, Megaphone, Settings,
   ShieldAlert, Tag, Trophy, Users, type LucideIcon,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -24,7 +24,6 @@ const SECTIONS: Section[] = [
     items: [
       { href: "/admin/problems", label: "Problems", icon: BookOpen },
       { href: "/admin/study-plans", label: "Study plans", icon: Map },
-      { href: "/admin/topics", label: "Topics", icon: FolderTree },
       { href: "/admin/tags", label: "Tags", icon: Tag },
     ],
   },

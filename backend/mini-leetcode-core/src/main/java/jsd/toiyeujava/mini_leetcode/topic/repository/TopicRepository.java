@@ -19,6 +19,6 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     List<Topic> search(@Param("q") String query);
 
     /** Có plan nào đang dùng chủ đề này không (chặn xoá). */
-    @Query(value = "select count(*) from study_plan_stage_topics where topic_id = :topicId", nativeQuery = true)
+    @Query(value = "select count(*) from study_plan_entries where topic_id = :topicId", nativeQuery = true)
     long countPlanUsages(@Param("topicId") Long topicId);
 }

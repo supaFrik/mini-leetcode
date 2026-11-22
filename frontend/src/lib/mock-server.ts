@@ -583,18 +583,25 @@ export async function plagiarism(contestId: number): Promise<PlagiarismRow[]> {
 
 // ---------- Study plans (giống seed "OOP với Java" ở backend/tools/problems/projects/mini-bank) ----------
 const bankStage = (n: number, title: string, status: StudyPlanStage["status"]): StudyPlanStage => ({
-  stageNo: n, problemId: 100 + n, slug: `mini-bank-stage-${n}`, title: `Mini Bank ${n}/5 — ${title}`,
+  stageNo: 1, problemId: 100 + n, slug: `mini-bank-stage-${n}`, title: `Mini Bank ${n}/5 — ${title}`,
   difficulty: n <= 2 ? "EASY" : "MEDIUM", problemType: "OOP_GRINDING", published: true, status,
 });
+type MockEntry = StudyPlanDraft["sessions"][number]["entries"][number];
+/** Mục của từng session (theo id session) — lesson lưu id topic, đề lưu id problem. */
+const mockEntries = new Map<number, MockEntry[]>();
+const BANK: [number, string, StudyPlanStage["status"]][] = [
+  [1, "Accounts", "DONE"], [2, "Account types", "NEVER"], [3, "Transfers", "LOCKED"],
+  [4, "Opening accounts", "LOCKED"], [5, "Full CLI", "LOCKED"],
+];
 const MOCK_PLAN: StudyPlanDetail = {
   id: 1, slug: "oop-voi-java", title: "OOP in Java: Mini Bank", status: "PUBLISHED", stageCount: 5, doneStages: 1,
   description: null,
-  items: [
-    { id: 3, position: 0, kind: "PROJECT", title: "Mini Bank Console", done: false, description: null,
-      stages: [bankStage(1, "Accounts", "DONE"), bankStage(2, "Account types", "NEVER"),
-        bankStage(3, "Transfers", "LOCKED"), bankStage(4, "Opening accounts", "LOCKED"),
-        bankStage(5, "Full CLI", "LOCKED")] },
-  ],
+  items: BANK.map(([n, title, status], position) => {
+    mockEntries.set(3 + position, [...(MOCK_STAGE_TOPICS[n] ?? []).map((topicId) => ({ type: "LESSON" as const, topicId })),
+      { type: "STAGE", problemId: 100 + n }]);
+    return { id: 3 + position, position, kind: "SESSION" as const, title: `Mini Bank Console · Stage ${n}`, done: status === "DONE",
+      description: null, stages: [bankStage(n, title, status)], entries: [] };
+  }),
 };
 MOCK_PLAN.createdById = 2;
 MOCK_PLAN.createdByUsername = "instructor";
@@ -609,10 +616,6 @@ export async function listStudyPlans(): Promise<StudyPlanSummary[]> {
   await sleep(); ensureOnline();
   return mockPlans.map(({ items, ...rest }) => ({ ...rest, itemCount: items.length }));
 }
-/** id chủ đề theo (id mục, stageNo) của các plan mock; plan mẫu gắn sẵn chủ đề vào project Mini Bank. */
-const mockStageTopics = new Map<string, number[]>(
-  Object.entries(MOCK_STAGE_TOPICS).map(([stageNo, ids]) => [`3:${stageNo}`, ids]),
-);
 export async function getStudyPlan(slug: string): Promise<StudyPlanDetail> {
   await sleep(); ensureOnline();
   const plan = findPlan(slug);
@@ -627,8 +630,20 @@ export async function getStudyPlan(slug: string): Promise<StudyPlanDetail> {
       published: status === "PUBLISHED", problemStatus: staff ? status : null, learnersOnStage: staff ? 0 : null };
   };
   return { ...plan, learnerCount: staff ? (plan.learnerCount ?? 0) : null,
-    items: plan.items.map((item) => ({ ...item, stages: item.stages.map((st) => ({
-      ...live(st), topics: stageTopicRefs(mockStageTopics.get(`${item.id}:${st.stageNo}`) ?? [], staff) })) })) };
+    items: plan.items.map((item) => {
+      const list = mockEntries.get(item.id) ?? [];
+      const lessons = stageTopicRefs(list.flatMap((e) => (e.topicId != null ? [e.topicId] : [])), staff);
+      const stages = item.stages.map((st) => ({ ...live(st), topics: lessons }));
+      const entries = list.flatMap((e): StudyPlanDetail["items"][number]["entries"] => {
+        if (e.type === "LESSON") {
+          const topic = lessons.find((t) => t.id === e.topicId);
+          return topic ? [{ type: e.type, topic }] : [];
+        }
+        const k = stages.findIndex((st) => st.problemId === e.problemId);
+        return k >= 0 ? [{ type: e.type, stageNo: k + 1 }] : [];
+      });
+      return { ...item, stages, entries };
+    }) };
 }
 export async function saveStudyPlan(slug: string | null, draft: StudyPlanDraft): Promise<StudyPlanDetail> {
   await sleep(); ensureOnline();
@@ -638,24 +653,33 @@ export async function saveStudyPlan(slug: string | null, draft: StudyPlanDraft):
     throw new ApiError(409, { title: "Resource Conflict", status: 409,
       detail: "This study plan was changed in another tab or by another user. Reload to continue." });
   }
+  let newSlug = draft.slug || old?.slug;
+  if (!newSlug) {
+    const base = slugify(draft.title) || "study-plan";
+    newSlug = base;
+    for (let n = 2; mockPlans.some((p) => p.slug === newSlug); n++) newSlug = `${base}-${n}`;
+  }
   const id = old?.id ?? Date.now();
+  const prevStages = old?.items.flatMap((i) => i.stages) ?? [];
   const plan: StudyPlanDetail = {
-    id, slug: draft.slug, title: draft.title, description: draft.description ?? null,
+    id, slug: newSlug, title: draft.title, description: draft.description ?? null,
     status: old?.status ?? "DRAFT", createdById: old?.createdById ?? user?.id, createdByUsername: old?.createdByUsername ?? user?.username,
-    stageCount: draft.items.reduce((n, i) => n + i.problemIds.length, 0), doneStages: 0,
+    stageCount: draft.sessions.reduce((n, i) => n + i.entries.filter((e) => e.problemId != null).length, 0), doneStages: 0,
     updatedAt: new Date().toISOString(), learnerCount: old?.learnerCount ?? 0,
-    items: draft.items.map((it, position) => ({
-      id: id * 100 + position + 1, position, kind: it.kind, title: it.title, description: it.description ?? null, done: false,
-      stages: it.problemIds.map((problemId, k) => {
-        const prev = old?.items.flatMap((i) => i.stages).find((s) => s.problemId === problemId);
-        return { stageNo: k + 1, problemId, slug: prev?.slug ?? `problem-${problemId}`, title: prev?.title ?? `Problem #${problemId}`,
-          difficulty: prev?.difficulty ?? "EASY", problemType: prev?.problemType ?? "ALGORITHMIC", published: true,
-          status: k === 0 ? "NEVER" : "LOCKED" } satisfies StudyPlanStage;
-      }),
-    })),
+    items: draft.sessions.map((it, position) => {
+      const itemId = id * 100 + position + 1;
+      mockEntries.set(itemId, it.entries);
+      return {
+        id: itemId, position, kind: "SESSION" as const, title: it.title, description: it.description ?? null, done: false, entries: [],
+        stages: it.entries.flatMap((e) => (e.problemId == null ? [] : [e.problemId])).map((problemId, k) => {
+          const prev = prevStages.find((s) => s.problemId === problemId);
+          return { stageNo: k + 1, problemId, slug: prev?.slug ?? `problem-${problemId}`, title: prev?.title ?? `Problem #${problemId}`,
+            difficulty: prev?.difficulty ?? "EASY", problemType: prev?.problemType ?? "ALGORITHMIC", published: true,
+            status: "NEVER" } satisfies StudyPlanStage;
+        }),
+      };
+    }),
   };
-  plan.items.forEach((item, position) => (draft.items[position].stageTopics ?? [])
-    .forEach((ids, k) => mockStageTopics.set(`${item.id}:${k + 1}`, ids)));
   if (old) mockPlans.splice(mockPlans.indexOf(old), 1, plan); else mockPlans.push(plan);
   return getStudyPlan(plan.slug);
 }
@@ -667,24 +691,23 @@ export async function publishCheck(slug: string): Promise<PublishCheck> {
   const warnings: PublishIssue[] = [];
   const problemsToPublish: number[] = [];
   const topicsToPublish: number[] = [];
-  if (plan.items.length === 0) errors.push({ node: "plan", message: "Add at least one project or practice problem" });
+  if (plan.items.length === 0) errors.push({ node: "plan", message: "Add at least one session" });
   plan.items.forEach((item, itemIndex) => {
-    const project = item.kind === "PROJECT";
-    if (item.stages.length === 0) errors.push({ node: "item", itemIndex, message: `"${item.title}" has no ${project ? "stage" : "problem"}` });
+    if ((mockEntries.get(item.id) ?? []).length === 0) errors.push({ node: "item", itemIndex, message: `Session "${item.title}" is empty` });
     item.stages.forEach((st) => {
-      const where = project ? `${item.title} · stage ${st.stageNo}` : item.title;
+      const where = `${item.title} · ${st.title}`;
       if (st.problemStatus && st.problemStatus !== "PUBLISHED") problemsToPublish.push(st.problemId);
       const p = PROBLEMS.find((x) => x.id === st.problemId);
       if (p && !withEdits(p).description.trim()) errors.push({ node: "stage", itemIndex, problemId: st.problemId, message: `${where}: the statement is empty` });
       if (p && (withEdits(p).type ?? "ALGORITHMIC") === "OOP_GRINDING" && authoringOf(p.id).referenceSolution.length === 0) {
         warnings.push({ node: "stage", itemIndex, problemId: st.problemId, message: `${where}: no reference solution, expected outputs are not verified` });
       }
-      (st.topics ?? []).forEach((t) => {
-        if (t.status === "PUBLISHED" || topicsToPublish.includes(t.id)) return;
-        const topic = topicById(t.id);
-        if (topic && topic.steps.length === 0) errors.push({ node: "topic", topicId: t.id, message: `Topic "${t.title}" has no steps` });
-        topicsToPublish.push(t.id);
-      });
+    });
+    item.entries.forEach(({ topic: t }) => {
+      if (!t || t.status === "PUBLISHED" || topicsToPublish.includes(t.id)) return;
+      const topic = topicById(t.id);
+      if (topic && topic.steps.length === 0) errors.push({ node: "topic", topicId: t.id, message: `Topic "${t.title}" has no steps` });
+      topicsToPublish.push(t.id);
     });
   });
   return { ok: errors.length === 0, errors, warnings, problemsToPublish, topicsToPublish };

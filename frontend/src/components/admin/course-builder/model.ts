@@ -1,20 +1,22 @@
 /**
- * Mô hình dữ liệu của Course Builder (specs/course-builder.spec.md): plan → item → stage (đề) → topic.
+ * Mô hình dữ liệu của Course Builder: plan → session → mục (lesson = topic, problem / stage = đề).
  * Nút trên outline được định danh bằng chuỗi để giữ trong URL (?node=...).
  */
 import type {
-  Difficulty, ProblemLifecycle, StudyPlanDetail, StudyPlanDraft, StudyPlanItemKind, StudyPlanStatus,
+  Difficulty, ProblemLifecycle, StudyPlanDetail, StudyPlanDraft, StudyPlanEntryType, StudyPlanStatus,
 } from "@/types/api";
 
-export interface TopicNode { id: number; slug: string; title: string; status?: StudyPlanStatus }
+export interface TopicNode { id: number; slug: string; title: string; status?: StudyPlanStatus; stepCount?: number }
 export interface StageNode {
   problemId: number; slug: string | null; title: string | null; difficulty: Difficulty | null;
-  status: ProblemLifecycle | null; learners: number; topics: TopicNode[];
+  status: ProblemLifecycle | null; learners: number;
 }
-export interface ItemNode { key: string; kind: StudyPlanItemKind; title: string; description: string; stages: StageNode[] }
-export interface PlanModel { slug: string; title: string; description: string; status: StudyPlanStatus; items: ItemNode[] }
+export interface EntryNode { key: string; type: StudyPlanEntryType; topic?: TopicNode; problem?: StageNode }
+export interface SessionNode { key: string; title: string; description: string; entries: EntryNode[] }
+export interface PlanModel { slug: string; title: string; description: string; status: StudyPlanStatus; sessions: SessionNode[] }
 
-/** "plan" | "item:<key>" | "stage:<problemId>" | "topic:<topicId>@<problemId>" */
+export type AddMode = "lesson" | "problem";
+/** "none" | "session:<key>" | "entry:<key>" | "add:<sessionKey>:<mode>" */
 export type NodeId = string;
 
 let keySeq = 0;
@@ -23,25 +25,30 @@ export const newKey = () => `n${Date.now().toString(36)}${(keySeq++).toString(36
 export function fromDetail(plan: StudyPlanDetail): PlanModel {
   return {
     slug: plan.slug, title: plan.title, description: plan.description ?? "", status: plan.status,
-    items: plan.items.map((it) => ({
-      key: newKey(), kind: it.kind, title: it.title, description: it.description ?? "",
-      stages: it.stages.map((st) => ({
-        problemId: st.problemId, slug: st.slug, title: st.title, difficulty: st.difficulty,
-        status: st.problemStatus ?? (st.published ? "PUBLISHED" : "DRAFT"), learners: st.learnersOnStage ?? 0,
-        topics: (st.topics ?? []).map((t) => ({ id: t.id, slug: t.slug, title: t.title, status: t.status })),
-      })),
+    sessions: plan.items.map((it) => ({
+      key: newKey(), title: it.title, description: it.description ?? "",
+      entries: it.entries.flatMap((e): EntryNode[] => {
+        if (e.type === "LESSON") {
+          const t = e.topic;
+          return t ? [{ key: newKey(), type: e.type, topic: { id: t.id, slug: t.slug, title: t.title, status: t.status, stepCount: t.stepCount } }] : [];
+        }
+        const st = e.stageNo ? it.stages[e.stageNo - 1] : undefined;
+        return st ? [{ key: newKey(), type: e.type, problem: {
+          problemId: st.problemId, slug: st.slug, title: st.title, difficulty: st.difficulty,
+          status: st.problemStatus ?? (st.published ? "PUBLISHED" : "DRAFT"), learners: st.learnersOnStage ?? 0,
+        } }] : [];
+      }),
     })),
   };
 }
 
+/** Không gửi slug: server tự đặt theo title. */
 export function toDraft(m: PlanModel, expectedUpdatedAt?: string | null): StudyPlanDraft {
   return {
-    slug: m.slug, title: m.title.trim() || "Untitled plan", description: m.description.trim() || undefined, expectedUpdatedAt,
-    items: m.items.map((it) => ({
-      kind: it.kind, title: it.title.trim() || (it.kind === "PROJECT" ? "Untitled project" : "Untitled practice"),
-      description: it.description.trim() || undefined,
-      problemIds: it.stages.map((s) => s.problemId),
-      stageTopics: it.stages.map((s) => s.topics.map((t) => t.id)),
+    title: m.title.trim() || m.slug, description: m.description.trim() || undefined, expectedUpdatedAt,
+    sessions: m.sessions.map((s, i) => ({
+      title: s.title.trim() || `Session ${i + 1}`, description: s.description.trim() || undefined,
+      entries: s.entries.map((e) => (e.topic ? { type: e.type, topicId: e.topic.id } : { type: e.type, problemId: e.problem!.problemId })),
     })),
   };
 }
@@ -57,46 +64,34 @@ export function move<T>(list: T[], from: number, to: number): T[] {
   return copy;
 }
 
-export function findStage(m: PlanModel, problemId: number): { item: ItemNode; index: number; stage: StageNode } | null {
-  for (const item of m.items) {
-    const index = item.stages.findIndex((s) => s.problemId === problemId);
-    if (index >= 0) return { item, index, stage: item.stages[index] };
+export function findEntry(m: PlanModel, key: string): { session: SessionNode; index: number; entry: EntryNode } | null {
+  for (const session of m.sessions) {
+    const index = session.entries.findIndex((e) => e.key === key);
+    if (index >= 0) return { session, index, entry: session.entries[index] };
   }
   return null;
 }
 
-export function parseNode(id: string | null): { kind: "plan" } | { kind: "item"; key: string }
-  | { kind: "stage"; problemId: number } | { kind: "topic"; topicId: number; problemId: number } {
-  if (!id || id === "plan") return { kind: "plan" };
-  const [kind, rest] = id.split(":");
-  if (kind === "item") return { kind: "item", key: rest };
-  if (kind === "stage") return { kind: "stage", problemId: Number(rest) };
-  if (kind === "topic") {
-    const [topicId, problemId] = rest.split("@").map(Number);
-    return { kind: "topic", topicId, problemId };
-  }
-  return { kind: "plan" };
+export function parseNode(id: string | null): { kind: "none" } | { kind: "session"; key: string }
+  | { kind: "entry"; key: string } | { kind: "add"; key: string; mode: AddMode } {
+  const [kind, key, mode] = (id ?? "").split(":");
+  if (kind === "session" || kind === "entry") return { kind, key };
+  if (kind === "add") return { kind, key, mode: mode as AddMode };
+  return { kind: "none" };
 }
 
 /** Di chuyển nút đang chọn lên / xuống trong cùng cấp (Alt+↑ / Alt+↓). */
 export function shift(m: PlanModel, node: NodeId, delta: -1 | 1): PlanModel {
   const n = parseNode(node);
-  if (n.kind === "item") {
-    const i = m.items.findIndex((it) => it.key === n.key);
-    return { ...m, items: move(m.items, i, i + delta) };
+  if (n.kind === "session") {
+    const i = m.sessions.findIndex((s) => s.key === n.key);
+    return { ...m, sessions: move(m.sessions, i, i + delta) };
   }
-  if (n.kind === "stage" || n.kind === "topic") {
-    return {
-      ...m,
-      items: m.items.map((it) => {
-        const k = it.stages.findIndex((s) => s.problemId === n.problemId);
-        if (k < 0) return it;
-        if (n.kind === "stage") return { ...it, stages: move(it.stages, k, k + delta) };
-        const st = it.stages[k];
-        const t = st.topics.findIndex((x) => x.id === n.topicId);
-        return { ...it, stages: it.stages.map((s, j) => (j === k ? { ...s, topics: move(st.topics, t, t + delta) } : s)) };
-      }),
-    };
+  if (n.kind === "entry") {
+    return { ...m, sessions: m.sessions.map((s) => {
+      const k = s.entries.findIndex((e) => e.key === n.key);
+      return k < 0 ? s : { ...s, entries: move(s.entries, k, k + delta) };
+    }) };
   }
   return m;
 }

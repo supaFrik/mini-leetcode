@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLoad } from "@/hooks/use-load";
 import { useUser } from "@/hooks/use-user";
@@ -69,7 +70,7 @@ export function StudyPlanList() {
                 {plan.status !== "PUBLISHED" && <span className={s.badge}>{plan.status}</span>}
                 <h2>{plan.title}</h2>
                 {plan.description && <div className={s.cardText}><Markdown>{plan.description}</Markdown></div>}
-                <span className={s.meta}>{plan.itemCount} items · {plan.stageCount} stages</span>
+                <span className={s.meta}>{plan.itemCount} sessions · {plan.stageCount} problems</span>
                 <Progress done={plan.doneStages} total={plan.stageCount} />
               </Link>
             ))}
@@ -82,7 +83,7 @@ export function StudyPlanList() {
 
 /** Một stage không có chủ đề học: một dòng mở thẳng trang stage. */
 function StageRow({ planSlug, item, stage }: { planSlug: string; item: StudyPlanItem; stage: StudyPlanStage }) {
-  const label = item.kind === "PROJECT" ? `Stage ${stage.stageNo}` : "Practice";
+  const label = item.entries.some((e) => e.stageNo === stage.stageNo && e.type === "STAGE") ? `Stage ${stage.stageNo}` : "Problem";
   const title = stageName(stage);
   const content = (
     <>
@@ -93,7 +94,7 @@ function StageRow({ planSlug, item, stage }: { planSlug: string; item: StudyPlan
         {!stage.published ? (
           <span className={s.hint}>Being updated — try later</span>
         ) : stage.status === "LOCKED" ? (
-          <span className={s.hint}>Finish stage {stage.stageNo - 1} first</span>
+          <span className={s.hint}>{stage.stageNo > 1 ? `Finish stage ${stage.stageNo - 1} first` : "Finish the previous session first"}</span>
         ) : (
           stage.difficulty && <DifficultyBadge value={stage.difficulty} />
         )}
@@ -172,9 +173,7 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
               {(() => {
                 const next = nextStep(load.data);
                 if (!next) return null;
-                const label = next.item.kind === "PROJECT"
-                  ? `${next.item.title}, stage ${next.stage.stageNo}`
-                  : `${next.item.title}`;
+                const label = next.item.stages.length > 1 ? `${next.item.title}, ${stageName(next.stage)}` : next.item.title;
                 return (
                   <Link href={`/study-plans/${slug}/${next.item.id}/${next.stage.stageNo}`} className={s.continue}>
                     Continue: {label} →
@@ -189,18 +188,25 @@ export function StudyPlanDetailView({ slug }: { slug: string }) {
               {load.data.items.map((item) => (
                 <section key={item.id} className={s.item} aria-label={item.title}>
                   <div className={s.itemHead}>
-                    <span className={s.kind}>{item.kind === "PROJECT" ? "Project" : "Practice"}</span>
+                    <span className={s.kind}>Session {item.position + 1}</span>
                     <h2>{item.title}</h2>
                     {item.done && <span className={s.done}>Completed</span>}
                     {item.description && <Markdown>{item.description}</Markdown>}
                   </div>
-                  {item.stages.map((stage) => (stage.topics?.length ?? 0) > 0 ? (
-                    <StageTimeline key={stage.stageNo} stage={stage} stageCount={item.stages.length} planSlug={slug}
-                      defaultOpen={stage === currentStage(item)} onChanged={() => setAttempt((n) => n + 1)}
-                      stageTask={<StageCodeCard planSlug={slug} item={item} stage={stage} />} />
-                  ) : (
-                    <StageRow key={stage.stageNo} planSlug={slug} item={item} stage={stage} />
-                  ))}
+                  {item.stages.length === 1 && (item.stages[0].topics?.length ?? 0) > 0 ? (
+                    <StageTimeline stage={item.stages[0]} stageCount={1} planSlug={slug}
+                      defaultOpen={item.stages[0] === currentStage(item)} onChanged={() => setAttempt((n) => n + 1)}
+                      stageTask={<StageCodeCard planSlug={slug} item={item} stage={item.stages[0]} />} />
+                  ) : item.entries.map((e, k) => e.topic ? (
+                    <Link key={k} href={`/topics/${e.topic.slug}`} className={s.stage}>
+                      <BookOpen className="h-4 w-4" aria-hidden />
+                      <span className={s.stageNo}>Lesson</span>
+                      <span>{e.topic.title}</span>
+                      <span className={s.hint}>{e.topic.progress === "DONE" ? "Done" : `${e.topic.estMinutes} min`}</span>
+                    </Link>
+                  ) : e.stageNo && item.stages[e.stageNo - 1] ? (
+                    <StageRow key={k} planSlug={slug} item={item} stage={item.stages[e.stageNo - 1]} />
+                  ) : null)}
                 </section>
               ))}
             </div>

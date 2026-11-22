@@ -20,20 +20,27 @@ public interface StudyPlanRepository extends JpaRepository<StudyPlan, Long> {
     List<StudyPlan> findAllByOrderByCreatedAtDesc();
 
     /**
-     * Vị trí của đề trong một lộ trình đang PUBLISHED: {@code [itemId, stageNo]} (stage_no 0-based).
+     * Vị trí của đề trong một lộ trình đang PUBLISHED: {@code [planId, sessionId, sessionOrder, entryOrder, type]}.
      * Có tối đa một dòng vì {@code UNIQUE(problem_id)}. Plan DRAFT / ARCHIVED không khoá gì.
      */
-    @Query(value = "select s.item_id, s.stage_no from study_plan_item_stages s "
-            + "join study_plan_items i on i.id = s.item_id join study_plans p on p.id = i.plan_id "
-            + "where s.problem_id = :problemId and p.status = 'PUBLISHED'",
+    @Query(value = "select i.plan_id, i.id, i.sort_order, e.sort_order, e.type from study_plan_entries e "
+            + "join study_plan_items i on i.id = e.session_id join study_plans p on p.id = i.plan_id "
+            + "where e.problem_id = :problemId and p.status = 'PUBLISHED'",
             nativeQuery = true)
     List<Object[]> findStagePosition(@Param("problemId") Long problemId);
 
-    /** Các đề trong {@code ids} đã thuộc một mục lộ trình nào đó (mọi trạng thái plan). */
-    @Query(value = "select problem_id from study_plan_item_stages where problem_id in (:ids)", nativeQuery = true)
+    /** Các đề trong {@code ids} đã thuộc một session nào đó (mọi trạng thái plan). */
+    @Query(value = "select problem_id from study_plan_entries where problem_id in (:ids)", nativeQuery = true)
     List<Number> findProblemIdsAlreadyInPlans(@Param("ids") List<Long> ids);
 
-    @Query(value = "select problem_id from study_plan_item_stages where item_id = :itemId and stage_no = :stageNo",
+    /**
+     * Đề phải AC trước khi mở một đề: mọi đề của các session trước, và các stage đứng trước {@code entryOrder}
+     * trong cùng session (truyền -1 nếu đề không phải stage).
+     */
+    @Query(value = "select e.problem_id from study_plan_entries e join study_plan_items i on i.id = e.session_id "
+            + "where i.plan_id = :planId and e.problem_id is not null and (i.sort_order < :sessionOrder "
+            + "or (i.id = :sessionId and e.type = 'STAGE' and e.sort_order < :entryOrder))",
             nativeQuery = true)
-    List<Number> findStageProblemId(@Param("itemId") Long itemId, @Param("stageNo") int stageNo);
+    List<Number> findPrerequisiteProblemIds(@Param("planId") Long planId, @Param("sessionId") Long sessionId,
+                                            @Param("sessionOrder") int sessionOrder, @Param("entryOrder") int entryOrder);
 }

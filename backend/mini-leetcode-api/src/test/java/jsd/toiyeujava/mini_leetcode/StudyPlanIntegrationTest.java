@@ -77,8 +77,8 @@ class StudyPlanIntegrationTest {
         single = problem("sp-two-sum", ProblemStatus.PUBLISHED);
 
         createPlan("sp-oop", List.of(
-                item("PROJECT", "Mini Bank", stage1.getId(), stage2.getId()),
-                item("PROBLEM", "Two Sum", single.getId())))
+                session("STAGE", "Mini Bank", stage1.getId(), stage2.getId()),
+                session("PROBLEM", "Two Sum", single.getId())))
                 .andExpect(status().isCreated());
         transition("sp-oop", "PUBLISHED").andExpect(status().isOk());
     }
@@ -109,7 +109,8 @@ class StudyPlanIntegrationTest {
         save(stage1, SubmissionVerdict.AC, true); // Run AC: không tính
         expectLocked(submitJson(stage2, studentJwt));
         plan(studentJwt).andExpect(jsonPath("$.items[0].stages[0].status").value("NEVER"))
-                .andExpect(jsonPath("$.items[0].stages[1].status").value("LOCKED"));
+                .andExpect(jsonPath("$.items[0].stages[1].status").value("LOCKED"))
+                .andExpect(jsonPath("$.items[1].stages[0].status").value("LOCKED"));
         // Mở đề / tải starter của stage bị khoá cũng bị chặn (học viên, khách); stage 1 và staff thì không.
         expectLocked(mockMvc.perform(get("/api/v1/problems/" + stage2.getSlug()).header("Authorization", studentJwt)));
         expectLocked(mockMvc.perform(get("/api/v1/problems/" + stage2.getId())));
@@ -124,6 +125,39 @@ class StudyPlanIntegrationTest {
                 .andExpect(jsonPath("$.items[0].stages[1].status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.doneStages").value(1))
                 .andExpect(jsonPath("$.stageCount").value(3));
+    }
+
+    @Test
+    @DisplayName("A session opens only after every problem of the previous sessions is accepted")
+    void sessionOpensAfterPreviousSession() throws Exception {
+        save(stage1, SubmissionVerdict.AC, false);
+        expectLocked(submitJson(single, studentJwt));
+        save(stage2, SubmissionVerdict.AC, false);
+        submitJson(single, studentJwt).andExpect(status().isAccepted());
+        plan(studentJwt).andExpect(jsonPath("$.items[1].stages[0].status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.items[1].entries[0].type").value("PROBLEM"))
+                .andExpect(jsonPath("$.items[1].entries[0].stageNo").value(1));
+    }
+
+    @Test
+    @DisplayName("A plan created without a slug gets one from its title")
+    void slugFromTitle() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of("title", "OOP in Java: Mini Bank",
+                "sessions", List.of(Map.of("title", "Session 1", "entries", List.of()))));
+        for (String expected : List.of("oop-in-java-mini-bank", "oop-in-java-mini-bank-2")) {
+            mockMvc.perform(post("/api/v1/study-plans").header("Authorization", instructorJwt)
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.slug").value(expected))
+                    .andExpect(jsonPath("$.items[0].title").value("Session 1"));
+        }
+        // Draft: same title keeps "-2"; a new title moves the slug.
+        mockMvc.perform(put("/api/v1/study-plans/oop-in-java-mini-bank-2").header("Authorization", instructorJwt)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.slug").value("oop-in-java-mini-bank-2"));
+        mockMvc.perform(put("/api/v1/study-plans/oop-in-java-mini-bank-2").header("Authorization", instructorJwt)
+                        .contentType(MediaType.APPLICATION_JSON).content(body.replace("OOP in Java: Mini Bank", "Banking 101")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.slug").value("banking-101"));
     }
 
     @Test
@@ -154,7 +188,7 @@ class StudyPlanIntegrationTest {
         problemRepository.save(stage1);
         mockMvc.perform(put("/api/v1/study-plans/sp-oop").header("Authorization", instructorJwt)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(planBody("sp-oop", List.of(item("PROJECT", "Mini Bank v2", stage1.getId(), stage2.getId())))))
+                        .content(planBody("sp-oop", List.of(session("STAGE", "Mini Bank v2", stage1.getId(), stage2.getId())))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].title").value("Mini Bank v2"))
                 .andExpect(jsonPath("$.items[0].stages[0].published").value(false));
@@ -216,13 +250,12 @@ class StudyPlanIntegrationTest {
         Problem free = problem("sp-free", ProblemStatus.PUBLISHED);
 
         mockMvc.perform(post("/api/v1/study-plans").header("Authorization", studentJwt)
-                        .contentType(MediaType.APPLICATION_JSON).content(planBody("sp-x", List.of(item("PROBLEM", "x", free.getId())))))
+                        .contentType(MediaType.APPLICATION_JSON).content(planBody("sp-x", List.of(session("PROBLEM", "x", free.getId())))))
                 .andExpect(status().isForbidden());
         // Course Builder: đề DRAFT gắn được vào plan (publish cùng plan sau).
-        createPlan("sp-with-draft", List.of(item("PROBLEM", "x", draft.getId()))).andExpect(status().isCreated());
-        createPlan("sp-x", List.of(item("PROBLEM", "x", stage1.getId()))).andExpect(status().isConflict());
-        Problem free2 = problem("sp-free-2", ProblemStatus.PUBLISHED);
-        createPlan("sp-x", List.of(item("PROBLEM", "x", free.getId(), free2.getId()))).andExpect(status().isBadRequest());
+        createPlan("sp-with-draft", List.of(session("PROBLEM", "x", draft.getId()))).andExpect(status().isCreated());
+        createPlan("sp-x", List.of(session("PROBLEM", "x", stage1.getId()))).andExpect(status().isConflict());
+        createPlan("sp-x", List.of(session("PROBLEM", "x", free.getId(), free.getId()))).andExpect(status().isBadRequest());
         createPlan("sp-empty", List.of()).andExpect(status().isCreated());
         transition("sp-empty", "PUBLISHED").andExpect(status().isConflict());
 
@@ -234,7 +267,7 @@ class StudyPlanIntegrationTest {
         // Tác giả sắp xếp lại: đề cũ được dùng lại trong chính plan đó.
         mockMvc.perform(put("/api/v1/study-plans/sp-oop").header("Authorization", instructorJwt)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(planBody("sp-oop", List.of(item("PROJECT", "Mini Bank", stage2.getId(), stage1.getId())))))
+                        .content(planBody("sp-oop", List.of(session("STAGE", "Mini Bank", stage2.getId(), stage1.getId())))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].stages[0].slug").value("sp-bank-2"))
                 .andExpect(jsonPath("$.items.length()").value(1));
@@ -315,12 +348,17 @@ class StudyPlanIntegrationTest {
                 .codeStorageUri("minio://test").status(SubmissionStatus.COMPLETED).verdict(verdict).quickRun(quickRun).build());
     }
 
-    private Map<String, Object> item(String kind, String title, Long... problemIds) {
-        return Map.of("kind", kind, "title", title, "problemIds", List.of(problemIds));
+    /** Một session chứa các đề cùng loại ({@code STAGE} hoặc {@code PROBLEM}) theo thứ tự. */
+    private Map<String, Object> session(String type, String title, Long... problemIds) {
+        List<Map<String, Object>> entries = new java.util.ArrayList<>();
+        for (Long id : problemIds) {
+            entries.add(Map.of("type", type, "problemId", id));
+        }
+        return new java.util.HashMap<>(Map.of("title", title, "entries", entries));
     }
 
     private String planBody(String slug, List<Map<String, Object>> items) throws Exception {
-        return objectMapper.writeValueAsString(Map.of("slug", slug, "title", slug, "items", items));
+        return objectMapper.writeValueAsString(Map.of("slug", slug, "title", slug, "sessions", items));
     }
 
     private ResultActions createPlan(String slug, List<Map<String, Object>> items) throws Exception {

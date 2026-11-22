@@ -102,8 +102,9 @@ class TopicIntegrationTest {
 
         mockMvc.perform(post("/api/v1/study-plans").header("Authorization", instructorJwt)
                 .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(Map.of(
-                        "slug", "tp-plan", "title", "Plan", "items", List.of(Map.of("kind", "PROJECT", "title", "Bank",
-                                "problemIds", List.of(stage1.getId()), "stageTopics", List.of(List.of(topicId))))))))
+                        "slug", "tp-plan", "title", "Plan", "sessions", List.of(Map.of("title", "Bank",
+                                "entries", List.of(Map.of("type", "LESSON", "topicId", topicId),
+                                        Map.of("type", "STAGE", "problemId", stage1.getId()))))))))
                 .andExpect(status().isCreated());
         mockMvc.perform(post("/api/v1/study-plans/tp-plan/transitions").header("Authorization", instructorJwt)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"PUBLISHED\"}")).andExpect(status().isOk());
@@ -150,8 +151,9 @@ class TopicIntegrationTest {
         mockMvc.perform(get("/api/v1/topics/tp-skip").header("Authorization", studentJwt)).andExpect(status().isNotFound());
         mockMvc.perform(post("/api/v1/study-plans").header("Authorization", instructorJwt)
                 .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(Map.of(
-                        "slug", "tp-plan2", "title", "Plan", "items", List.of(Map.of("kind", "PROJECT", "title", "Bank",
-                                "problemIds", List.of(stage1.getId()), "stageTopics", List.of(List.of(topicId))))))))
+                        "slug", "tp-plan2", "title", "Plan", "sessions", List.of(Map.of("title", "Bank",
+                                "entries", List.of(Map.of("type", "LESSON", "topicId", topicId),
+                                        Map.of("type", "STAGE", "problemId", stage1.getId()))))))))
                 .andExpect(status().isCreated());
         mockMvc.perform(post("/api/v1/study-plans/tp-plan2/transitions").header("Authorization", instructorJwt)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"PUBLISHED\"}")).andExpect(status().isOk());
@@ -210,8 +212,8 @@ class TopicIntegrationTest {
         createTopic("tp-scope").andExpect(status().isCreated()); // bài code của chủ đề: tp-wallet
         mockMvc.perform(post("/api/v1/study-plans").header("Authorization", instructorJwt)
                 .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(Map.of(
-                        "slug", "tp-scope-plan", "title", "Plan", "items", List.of(Map.of("kind", "PROBLEM", "title", "Practice",
-                                "problemIds", List.of(stage1.getId())))))))
+                        "slug", "tp-scope-plan", "title", "Plan", "sessions", List.of(Map.of("title", "Practice",
+                                "entries", List.of(Map.of("type", "PROBLEM", "problemId", stage1.getId()))))))))
                 .andExpect(status().isCreated());
 
         for (String auth : List.of(studentJwt, instructorJwt)) {

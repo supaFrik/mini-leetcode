@@ -107,13 +107,21 @@ function toTagCategory(v: unknown): TagCategory {
 // ── Nhóm chủ đề (chỉ ADMIN). Chủ đề nhận diện bằng tên. ────────────────────
 export async function fetchAdminTags(): Promise<AdminTag[]> {
   const raw = await api<Raw[]>("/api/v1/admin/tags");
-  return (raw ?? []).map((t) => ({ name: String(t.name), category: toTagCategory(t.category), problemCount: Number(t.problemCount) }));
+  return (raw ?? []).map((t) => ({ name: String(t.name), category: toTagCategory(t.category), color: (t.color as string | null) ?? null, problemCount: Number(t.problemCount) }));
 }
 export async function createTag(name: string, category: TagCategory): Promise<AdminTag> {
   return api<AdminTag>("/api/v1/admin/tags", { method: "POST", body: JSON.stringify({ name, category }) });
 }
-export async function updateTagCategory(name: string, category: TagCategory): Promise<AdminTag> {
-  return api<AdminTag>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify({ category }) });
+/** Đổi tên, category và/hoặc màu; trường bỏ trống thì giữ nguyên, color "" = dùng màu category. */
+export async function updateTag(name: string, body: { name?: string; category?: TagCategory; color?: string }): Promise<AdminTag> {
+  return api<AdminTag>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(body) });
+}
+/** Gắn hoặc gỡ một tag cho nhiều bài; trả số bài thực sự đổi. */
+export async function applyTagToProblems(name: string, problemIds: number[], remove: boolean): Promise<number> {
+  const r = await api<{ changed: number }>(`/api/v1/admin/tags/${encodeURIComponent(name)}/problems`, {
+    method: "POST", body: JSON.stringify({ problemIds, remove }),
+  });
+  return r.changed;
 }
 export async function deleteTag(name: string): Promise<void> {
   await api<void>(`/api/v1/admin/tags/${encodeURIComponent(name)}`, { method: "DELETE" });

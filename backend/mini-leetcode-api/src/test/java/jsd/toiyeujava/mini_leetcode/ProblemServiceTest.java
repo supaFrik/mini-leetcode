@@ -141,6 +141,17 @@ class ProblemServiceTest {
     }
 
     @Test
+    @DisplayName("getProblemById: reports the problem's test case count (builder 'No tests' label)")
+    void getProblemById_reportsTestCaseCount() {
+        Problem p = Problem.builder().id(7L).title("Bank").slug("bank").difficulty(Difficulty.EASY)
+                .status(ProblemStatus.PUBLISHED).build();
+        when(problemRepository.findById(7L)).thenReturn(Optional.of(p));
+        when(testCaseRepository.countByProblemId(7L)).thenReturn(3L);
+
+        assertThat(problemService.getProblemById(7L).testCaseCount()).isEqualTo(3L);
+    }
+
+    @Test
     @DisplayName("getProblemBySlug: throws when slug not found")
     void getProblemBySlug_notFound_throwsException() {
         when(problemRepository.findBySlug("unknown-slug")).thenReturn(Optional.empty());

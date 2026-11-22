@@ -32,9 +32,10 @@ const PLAN = {
     {
       id: 10,
       position: 0,
-      kind: "PROJECT",
+      kind: "SESSION",
       title: "Shape Hierarchy Project",
       done: false,
+      entries: [{ type: "STAGE", stageNo: 1 }],
       stages: [
         {
           stageNo: 1,

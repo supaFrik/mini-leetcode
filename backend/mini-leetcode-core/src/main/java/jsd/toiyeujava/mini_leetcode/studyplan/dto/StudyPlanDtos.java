@@ -9,6 +9,7 @@ import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.entity.StageStatus;
+import jsd.toiyeujava.mini_leetcode.entity.StudyPlanEntryType;
 import jsd.toiyeujava.mini_leetcode.entity.StudyPlanItemKind;
 import jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus;
 import jsd.toiyeujava.mini_leetcode.topic.dto.TopicDtos.TopicRef;
@@ -35,11 +36,18 @@ public final class StudyPlanDtos {
                              int stageCount, int doneStages, List<Item> items, Long createdById, String createdByUsername,
                              LocalDateTime updatedAt, Integer learnerCount) {}
 
+    /**
+     * Một session. {@code stages}: các mục problem / stage theo thứ tự (giữ cho plugin IDE và URL stage);
+     * {@code entries}: mọi mục theo thứ tự hiển thị.
+     */
     public record Item(Long id, int position, StudyPlanItemKind kind, String title, String description,
-                       boolean done, List<Stage> stages) {}
+                       boolean done, List<Stage> stages, List<Entry> entries) {}
+
+    /** LESSON có {@code topic}; PROBLEM / STAGE có {@code stageNo} (1-based, trỏ vào {@code Item.stages}). */
+    public record Entry(StudyPlanEntryType type, TopicRef topic, Integer stageNo) {}
 
     /**
-     * {@code stageNo} bắt đầu từ 1. {@code published = false} nghĩa là đề đang bảo trì
+     * {@code stageNo} bắt đầu từ 1. {@code topics}: các lesson của session. {@code published = false} nghĩa là đề đang bảo trì
      * (không tải / nộp được) — trạng thái học vẫn giữ nguyên.
      */
     /** {@code problemStatus}, {@code learnersOnStage} (USER đã nộp nhưng chưa AC): chỉ trả cho staff. */
@@ -47,31 +55,29 @@ public final class StudyPlanDtos {
                         ProblemType problemType, boolean published, StageStatus status, List<TopicRef> topics,
                         ProblemStatus problemStatus, Integer learnersOnStage) {}
 
+    /** {@code slug} bỏ trống khi tạo ⇒ sinh từ title. */
     public record UpsertPlanRequest(
-            @NotBlank @Size(max = 200) @Pattern(regexp = "^[a-z0-9]+(-[a-z0-9]+)*$",
+            @Size(max = 200) @Pattern(regexp = "^[a-z0-9]+(-[a-z0-9]+)*$",
                     message = "slug must be lowercase letters, digits and single hyphens") String slug,
             @NotBlank @Size(max = 200) String title,
             String description,
-            @NotNull @Valid List<ItemRequest> items,
+            @NotNull @Valid List<SessionRequest> sessions,
             LocalDateTime expectedUpdatedAt) {}
 
-    /**
-     * {@code PROBLEM} có đúng 1 đề; {@code PROJECT} có ≥ 1 đề theo thứ tự stage. Plan DRAFT được lưu mục chưa có đề
-     * (Course Builder lưu nháp liên tục); kiểm tra đủ đề khi publish.
-     * {@code stageTopics} (không bắt buộc): id chủ đề học cho từng stage, cùng thứ tự với {@code problemIds}.
-     */
-    public record ItemRequest(
-            @NotNull StudyPlanItemKind kind,
+    /** Plan DRAFT được lưu session rỗng (Course Builder lưu nháp liên tục); kiểm tra khi publish. */
+    public record SessionRequest(
             @NotBlank @Size(max = 200) String title,
             String description,
-            @NotNull List<@NotNull Long> problemIds,
-            List<List<@NotNull Long>> stageTopics) {}
+            @NotNull @Valid List<EntryRequest> entries) {}
+
+    /** LESSON cần {@code topicId}; PROBLEM / STAGE cần {@code problemId}. */
+    public record EntryRequest(@NotNull StudyPlanEntryType type, Long topicId, Long problemId) {}
 
     public record TransitionRequest(@NotNull StudyPlanStatus status) {}
 
     /**
      * Một mục trong checklist publish (specs/course-builder.spec.md, BE-4). {@code node} chỉ tới nút trên outline:
-     * {@code plan}, {@code item} ({@code itemIndex}), {@code stage} ({@code problemId}), {@code topic} ({@code topicId}).
+     * {@code plan}, {@code item} ({@code itemIndex} = vị trí session), {@code stage} ({@code problemId}), {@code topic} ({@code topicId}).
      */
     public record PublishIssue(String node, Integer itemIndex, Long problemId, Long topicId, String message) {}
 

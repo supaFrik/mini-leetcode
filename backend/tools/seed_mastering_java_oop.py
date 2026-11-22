@@ -790,12 +790,12 @@ plan_items_def = [
 for sort_order, item_title, prob_id in plan_items_def:
     run_mysql(f"""
     INSERT INTO study_plan_items (plan_id, sort_order, kind, title, description)
-    VALUES ({plan_id}, {sort_order}, 'PROBLEM', '{sql_esc(item_title)}', 'Mastery exercise for {sql_esc(item_title)}');
+    VALUES ({plan_id}, {sort_order}, 'SESSION', '{sql_esc(item_title)}', 'Mastery exercise for {sql_esc(item_title)}');
     """)
     last_item_id = int(run_mysql("SELECT LAST_INSERT_ID();").strip().split("\n")[1].strip())
     run_mysql(f"""
-    INSERT INTO study_plan_item_stages (item_id, stage_no, problem_id)
-    VALUES ({last_item_id}, 0, {prob_id});
+    INSERT INTO study_plan_entries (session_id, sort_order, type, topic_id, problem_id)
+    VALUES ({last_item_id}, 0, 'PROBLEM', NULL, {prob_id});
     """)
     print(f"Linked Stage {sort_order + 1}: '{item_title}' -> Problem {prob_id}")
 

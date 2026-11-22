@@ -337,7 +337,7 @@ for t in TOPICS:
             """)
         print(f"  [+] Step {so}: {stype} '{stitle}'")
 
-# 2. Link Topics to Study Plan Stages in study_plan_stage_topics
+# 2. Link Topics to Study Plan sessions in study_plan_entries
 # Items in Study Plan 8:
 # Item 27, 28 -> Stage 1 -> Topic 10 (Encapsulation & Immutability)
 # Item 29, 30 -> Stage 2 -> Topic 11 (Inheritance vs Composition)
@@ -356,11 +356,12 @@ STAGE_TOPIC_LINKS = [
     (34, 0, 0, 14),
 ]
 
-run_mysql("DELETE FROM study_plan_stage_topics WHERE item_id BETWEEN 27 AND 34;")
+run_mysql("DELETE FROM study_plan_entries WHERE type = 'LESSON' AND session_id BETWEEN 27 AND 34;")
 for item_id, sort_order, stage_no, topic_id in STAGE_TOPIC_LINKS:
+    # sort_order -1: lesson đứng trước đề (đề ở sort_order 0).
     run_mysql(f"""
-    INSERT INTO study_plan_stage_topics (item_id, sort_order, stage_no, topic_id)
-    VALUES ({item_id}, {sort_order}, {stage_no}, {topic_id});
+    INSERT INTO study_plan_entries (session_id, sort_order, type, topic_id, problem_id)
+    VALUES ({item_id}, {sort_order - 1}, 'LESSON', {topic_id}, NULL);
     """)
     print(f"Linked item {item_id} (stage {stage_no}) -> Topic {topic_id}")
 

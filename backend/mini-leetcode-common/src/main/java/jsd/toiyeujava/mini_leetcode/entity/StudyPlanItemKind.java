@@ -1,12 +1,6 @@
 package jsd.toiyeujava.mini_leetcode.entity;
 
-/**
- * Loại mục trong lộ trình.
- *
- * - PROJECT: project nhiều stage, mở khoá tuần tự; đề của nó bị ẩn khỏi danh mục /problems.
- * - PROBLEM: bài luyện lẻ, đúng một stage, vẫn hiện trong /problems.
- */
+/** Loại mục trong lộ trình: từ V25 mọi mục là SESSION (chứa lesson, problem, project stage). */
 public enum StudyPlanItemKind {
-    PROJECT,
-    PROBLEM
+    SESSION
 }

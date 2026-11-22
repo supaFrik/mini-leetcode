@@ -60,7 +60,7 @@ export function PublishDialog({ slug, title, itemCount, stageCount, beforeCheck,
         {check && (
           <ul className="text-body-sm" aria-label="Publish checklist">
             <li className="flex items-center gap-2 py-1"><Check className="h-4 w-4 text-solved" aria-hidden />
-              {itemCount} item{itemCount === 1 ? "" : "s"}, {stageCount} stage{stageCount === 1 ? "" : "s"}</li>
+              {itemCount} session{itemCount === 1 ? "" : "s"}, {stageCount} problem{stageCount === 1 ? "" : "s"}</li>
             {check.errors.map((i, k) => <Issue key={`e${k}`} issue={i} error />)}
             {check.warnings.map((i, k) => <Issue key={`w${k}`} issue={i} error={false} />)}
             <li className="pt-2 text-mute">Will publish: plan

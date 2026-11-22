@@ -2,8 +2,10 @@ package jsd.toiyeujava.mini_leetcode.problem.service;
 
 import jsd.toiyeujava.mini_leetcode.exception.ResourceNotFoundException;
 import jsd.toiyeujava.mini_leetcode.exception.StateConflictException;
+import jsd.toiyeujava.mini_leetcode.problem.entity.Problem;
 import jsd.toiyeujava.mini_leetcode.problem.entity.Tag;
 import jsd.toiyeujava.mini_leetcode.problem.entity.TagCategory;
+import jsd.toiyeujava.mini_leetcode.problem.repository.ProblemRepository;
 import jsd.toiyeujava.mini_leetcode.problem.repository.TagRepository;
 import jsd.toiyeujava.mini_leetcode.problem.util.TagNormalizer;
 import org.springframework.stereotype.Service;
@@ -20,23 +22,28 @@ public class TagService {
 
     private final TagRepository tagRepository;
     private final TagCategoryService categories;
+    private final ProblemRepository problems;
 
-    public TagService(TagRepository tagRepository, TagCategoryService categories) {
+    public TagService(TagRepository tagRepository, TagCategoryService categories, ProblemRepository problems) {
         this.tagRepository = tagRepository;
         this.categories = categories;
+        this.problems = problems;
     }
 
-    public record AdminTag(String name, String category, int problemCount) {
+    /** {@code color} null = dùng màu của category. */
+    public record AdminTag(String name, String category, String color, int problemCount) {
     }
+
+    private static final java.util.regex.Pattern COLOR = java.util.regex.Pattern.compile("^#[0-9a-fA-F]{6}$");
 
     @Transactional(readOnly = true)
     public List<AdminTag> list() {
         Map<String, Integer> counts = usageCounts();
         Map<String, AdminTag> byName = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Tag tag : tagRepository.findAll()) {
-            byName.put(tag.getName(), new AdminTag(tag.getName(), tag.getCategory() == null ? TagCategory.OTHER : tag.getCategory(), counts.getOrDefault(tag.getName(), 0)));
+            byName.put(tag.getName(), new AdminTag(tag.getName(), tag.getCategory() == null ? TagCategory.OTHER : tag.getCategory(), tag.getColor(), counts.getOrDefault(tag.getName(), 0)));
         }
-        counts.forEach((name, count) -> byName.putIfAbsent(name, new AdminTag(name, TagCategory.OTHER, count)));
+        counts.forEach((name, count) -> byName.putIfAbsent(name, new AdminTag(name, TagCategory.OTHER, null, count)));
         return List.copyOf(byName.values());
     }
 
@@ -65,17 +72,83 @@ public class TagService {
         return find(tag.getName());
     }
 
-    /** Chỉ xoá được chủ đề chưa gắn bài nào, để không lặng lẽ sửa bài (kể cả bài trong contest). */
+    /** Màu riêng của chủ đề; chuỗi rỗng = bỏ màu riêng, dùng lại màu category. */
+    @Transactional
+    public AdminTag updateColor(String name, String color) {
+        String value = color.isBlank() ? null : color.trim();
+        if (value != null && !COLOR.matcher(value).matches()) {
+            throw new IllegalArgumentException("Color must look like #1a2b3c");
+        }
+        Tag tag = tagRepository.findByNameIgnoreCase(name).orElse(null);
+        if (tag == null) {
+            if (!usageCounts().containsKey(name)) {
+                throw new ResourceNotFoundException("Tag not found: " + name);
+            }
+            tag = Tag.builder().name(name).category(TagCategory.OTHER).build();
+        }
+        tag.setColor(value == null ? null : value.toLowerCase());
+        tagRepository.save(tag);
+        return find(tag.getName());
+    }
+
+    /** Đổi tên chủ đề, cả trên mọi bài đang gắn nó. Sửa qua entity để giữ sort_order liền mạch. */
+    @Transactional
+    public AdminTag rename(String name, String rawNewName) {
+        String next = normalizeName(rawNewName);
+        Tag tag = tagRepository.findByNameIgnoreCase(name).orElse(null);
+        List<Problem> using = problems.findByTag(name);
+        if (tag == null && using.isEmpty()) {
+            throw new ResourceNotFoundException("Tag not found: " + name);
+        }
+        if (!next.equalsIgnoreCase(name)
+                && (tagRepository.findByNameIgnoreCase(next).isPresent() || usageCounts().containsKey(next))) {
+            throw new StateConflictException("Tag already exists: " + next);
+        }
+        for (Problem p : using) {
+            p.getTags().replaceAll(t -> t.equalsIgnoreCase(name) ? next : t);
+        }
+        problems.saveAll(using);
+        if (tag == null) {
+            tag = Tag.builder().category(TagCategory.OTHER).build();
+        }
+        tag.setName(next);
+        tagRepository.save(tag);
+        return find(next);
+    }
+
+    /** Xoá chủ đề và gỡ nó khỏi mọi bài đang gắn (giao diện đã hỏi xác nhận kèm số bài). */
     @Transactional
     public void delete(String name) {
-        Tag tag = tagRepository.findByNameIgnoreCase(name)
-                .orElseThrow(() -> new ResourceNotFoundException("Tag not found: " + name));
-        int used = usageCounts().getOrDefault(tag.getName(), 0);
-        if (used > 0) {
-            throw new StateConflictException("Tag \"" + tag.getName() + "\" is used by " + used
-                    + " problem(s). Remove it from those problems first.");
+        Optional<Tag> tag = tagRepository.findByNameIgnoreCase(name);
+        List<Problem> using = problems.findByTag(name);
+        if (tag.isEmpty() && using.isEmpty()) {
+            throw new ResourceNotFoundException("Tag not found: " + name);
         }
-        tagRepository.delete(tag);
+        for (Problem p : using) {
+            p.getTags().removeIf(t -> t.equalsIgnoreCase(name));
+        }
+        problems.saveAll(using);
+        tag.ifPresent(tagRepository::delete);
+    }
+
+    /** Gắn ({@code remove = false}) hoặc gỡ chủ đề cho nhiều bài; trả số bài thực sự đổi. */
+    @Transactional
+    public int applyToProblems(String rawName, List<Long> problemIds, boolean remove) {
+        String name = normalizeName(rawName);
+        int changed = 0;
+        for (Problem p : problems.findAllById(problemIds == null ? List.of() : problemIds)) {
+            boolean has = p.getTags().stream().anyMatch(t -> t.equalsIgnoreCase(name));
+            if (remove && has) {
+                p.getTags().removeIf(t -> t.equalsIgnoreCase(name));
+            } else if (!remove && !has) {
+                p.getTags().add(name);
+            } else {
+                continue;
+            }
+            problems.save(p);
+            changed++;
+        }
+        return changed;
     }
 
     private Map<String, Integer> usageCounts() {
@@ -86,7 +159,8 @@ public class TagService {
         return counts;
     }
 
-    private AdminTag find(String name) {
+    @Transactional(readOnly = true)
+    public AdminTag find(String name) {
         return list().stream().filter(t -> t.name().equalsIgnoreCase(name)).findFirst().orElseThrow();
     }
 

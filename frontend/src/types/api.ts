@@ -50,7 +50,8 @@ export type ProblemType = "ALGORITHMIC" | "OOP_GRINDING";
 export type TagCategory = string;
 export interface TagCategoryInfo { id: number; name: string; color: string; sortOrder: number }
 export interface TagCount { tag: string; count: number; category: TagCategory }
-export interface AdminTag { name: string; category: TagCategory; problemCount: number }
+/** `color` null = dùng màu của category. */
+export interface AdminTag { name: string; category: TagCategory; color?: string | null; problemCount: number }
 export interface RankingRow { rank: number; userId: number; username: string; solved: number; submissions: number }
 export interface SitePage { slug: string; title: string; contentMd: string; updatedAt: string }
 export type UserStatus = "ACTIVE" | "BLOCKED";
@@ -271,7 +272,10 @@ export interface PlagiarismRow { id: number; problemId: number; problemTitle: st
 /** Trạng thái một stage với người đang xem — server suy ra từ submissions. */
 export type StageStatus = "LOCKED" | "NEVER" | "IN_PROGRESS" | "DONE";
 export type StudyPlanStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
-export type StudyPlanItemKind = "PROJECT" | "PROBLEM";
+/** Mỗi item của plan là một session (V25). */
+export type StudyPlanItemKind = "SESSION";
+/** Mục trong session: LESSON = topic, PROBLEM = bài lẻ, STAGE = stage project. */
+export type StudyPlanEntryType = "LESSON" | "PROBLEM" | "STAGE";
 export interface StudyPlanSummary {
   id: number; slug: string; title: string; description?: string | null; status: StudyPlanStatus;
   itemCount: number; stageCount: number; doneStages: number;
@@ -281,7 +285,7 @@ export interface StudyPlanSummary {
 export interface StudyPlanStage {
   stageNo: number; problemId: number; slug: string | null; title: string | null; difficulty: Difficulty | null;
   problemType: ProblemType | null; published: boolean; status: StageStatus;
-  /** Chủ đề học gắn vào stage (specs/topics.spec.md); có thể thiếu ở API cũ. */
+  /** Các lesson của session chứa stage (specs/topics.spec.md); có thể thiếu ở API cũ. */
   topics?: TopicRef[];
   /** Chỉ staff: trạng thái vòng đời của đề và số học viên đã nộp nhưng chưa AC (specs/course-builder.spec.md). */
   problemStatus?: ProblemLifecycle | null;
@@ -351,6 +355,8 @@ export interface TopicDraft {
 export interface StudyPlanItem {
   id: number; position: number; kind: StudyPlanItemKind; title: string; description?: string | null;
   done: boolean; stages: StudyPlanStage[];
+  /** Thứ tự hiển thị của session: lesson (topic) hoặc đề (stageNo trỏ vào stages, đếm từ 1). */
+  entries: { type: StudyPlanEntryType; topic?: TopicRef | null; stageNo?: number | null }[];
 }
 export interface StudyPlanDetail {
   id: number; slug: string; title: string; description?: string | null; status: StudyPlanStatus;
@@ -370,10 +376,10 @@ export interface PublishCheck {
 }
 /** Body của POST / PUT /api/v1/study-plans (thay toàn bộ nội dung plan). */
 export interface StudyPlanDraft {
-  slug: string; title: string; description?: string;
+  /** Bỏ trống khi tạo: server sinh từ title. */
+  slug?: string; title: string; description?: string;
   expectedUpdatedAt?: string | null;
-  /** `stageTopics[k]`: id chủ đề học của stage k (cùng thứ tự với problemIds). */
-  items: { kind: StudyPlanItemKind; title: string; description?: string; problemIds: number[]; stageTopics?: number[][] }[];
+  sessions: { title: string; description?: string; entries: { type: StudyPlanEntryType; topicId?: number; problemId?: number }[] }[];
 }
 
 // ===== Personal Access Token cho plugin IntelliJ =====

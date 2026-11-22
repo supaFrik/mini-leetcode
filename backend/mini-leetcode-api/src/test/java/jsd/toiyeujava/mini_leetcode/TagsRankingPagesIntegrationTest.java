@@ -83,7 +83,7 @@ class TagsRankingPagesIntegrationTest {
     void tagCategories() throws Exception {
         User admin = user("tag_admin", Role.ADMIN);
         User instructor = user("tag_instructor", Role.INSTRUCTOR);
-        problem("tag-p1", admin, List.of("Zeta Topic"));
+        Problem p1 = problem("tag-p1", admin, List.of("Zeta Topic"));
 
         mockMvc.perform(get("/api/v1/admin/tags").header("Authorization", token(instructor)))
                 .andExpect(status().isForbidden());
@@ -113,8 +113,37 @@ class TagsRankingPagesIntegrationTest {
         mockMvc.perform(post("/api/v1/admin/tags").header("Authorization", token(admin))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Odd\",\"category\":\"Nope\"}"))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(delete("/api/v1/admin/tags/{name}", "Zeta Topic").header("Authorization", token(admin)))
-                .andExpect(status().isConflict());
+        // Rename follows the problem; bulk remove / add; delete also untags the problem.
+        mockMvc.perform(put("/api/v1/admin/tags/{name}", "Zeta Topic").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Zeta Renamed\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Zeta Renamed"))
+                .andExpect(jsonPath("$.category").value("Spring Boot"))
+                .andExpect(jsonPath("$.problemCount").value(1));
+        // Own color, bad hex rejected, empty string falls back to the category color.
+        mockMvc.perform(put("/api/v1/admin/tags/{name}", "Zeta Renamed").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"color\":\"#AA00CC\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.color").value("#aa00cc"));
+        mockMvc.perform(put("/api/v1/admin/tags/{name}", "Zeta Renamed").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"color\":\"red\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(put("/api/v1/admin/tags/{name}", "Zeta Renamed").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"color\":\"\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.color").doesNotExist());
+        mockMvc.perform(post("/api/v1/admin/tags/{name}/problems", "Zeta Renamed").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"problemIds\":[" + p1.getId() + "],\"remove\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.changed").value(1));
+        mockMvc.perform(post("/api/v1/admin/tags/{name}/problems", "Zeta Renamed").header("Authorization", token(admin))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"problemIds\":[" + p1.getId() + "],\"remove\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.changed").value(1));
+        mockMvc.perform(delete("/api/v1/admin/tags/{name}", "Zeta Renamed").header("Authorization", token(admin)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/admin/tags").header("Authorization", token(admin)))
+                .andExpect(jsonPath("$[?(@.name == 'Zeta Renamed')]").isEmpty());
         mockMvc.perform(delete("/api/v1/admin/tags/{name}", "Fresh Tag").header("Authorization", token(admin)))
                 .andExpect(status().isNoContent());
     }
