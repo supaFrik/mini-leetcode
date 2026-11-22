@@ -84,24 +84,24 @@ public class SubmitCheckHandler implements CheckHandler {
         } catch (AuthenticationException e) {
             ErrorMessages.openSettings(project);
             return result(CheckStatus.ERROR, manifest,
-                    "Token hết hiệu lực, tạo token mới trên web rồi dán vào Settings › Tools › Mini LeetCode.");
+                    "Personal Access Token is invalid or expired. Please generate a new token on the web and configure it in Settings › Tools › Mini LeetCode. (Token hết hiệu lực)");
         } catch (MiniLeetCodeApiException e) {
             if (e.getStatusCode() == 409 && "STAGE_LOCKED".equals(e.getCode())) {
                 return result(CheckStatus.WARNING, manifest,
-                        "Stage " + stage + " chưa mở: hoàn thành stage " + (stage - 1) + " trước.");
+                        "Stage " + stage + " is locked: please complete stage " + (stage - 1) + " first. (chưa mở)");
             }
             if (e.getStatusCode() == 403) {
-                return result(CheckStatus.ERROR, manifest, "Thao tác này chỉ làm được trên web.");
+                return result(CheckStatus.ERROR, manifest, "This operation can only be performed on the web.");
             }
             if (e.getStatusCode() == 404) {
-                return result(CheckStatus.WARNING, manifest, "Stage đang được cập nhật, thử lại sau.");
+                return result(CheckStatus.WARNING, manifest, "This stage is being updated. Please try again later.");
             }
-            return result(CheckStatus.ERROR, manifest, "Nộp bài thất bại: " + e.getMessage());
+            return result(CheckStatus.ERROR, manifest, "Submission failed: " + e.getMessage());
         } catch (IOException | IllegalArgumentException e) {
-            return result(CheckStatus.ERROR, manifest, "Không đọc được mã nguồn: " + e.getMessage());
+            return result(CheckStatus.ERROR, manifest, "Cannot read source code: " + e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return result(CheckStatus.WARNING, manifest, "Đã huỷ chờ kết quả. Xem kết quả trên web.");
+            return result(CheckStatus.WARNING, manifest, "Waiting for results cancelled. Check results on the web.");
         }
     }
 
@@ -120,14 +120,14 @@ public class SubmitCheckHandler implements CheckHandler {
         int stage = manifest.currentStage();
         if (!s.isFinished()) {
             return result(CheckStatus.WARNING, manifest,
-                    "Stage " + stage + ": đang chấm (bài nộp #" + s.id() + "). Xem kết quả trên web.");
+                    "Stage " + stage + ": grading in progress (submission #" + s.id() + "). Check results on the web. (đang chấm)");
         }
         String score = s.score() != null ? String.format(" — %.0f/100", s.score()) : "";
         String tests = s.totalTestCases() != null && s.totalTestCases() > 0
                 ? " — testcase " + s.passTestCases() + "/" + s.totalTestCases() : "";
         if (s.isAccepted()) {
             return result(CheckStatus.SUCCESS, manifest, "Stage " + stage + ": PASSED (AC" + score + ")" + tests
-                    + ". Chọn Mini LeetCode › Next Stage để làm stage tiếp theo.");
+                    + ". Select Mini LeetCode › Next Stage to proceed to the next stage.");
         }
         String verdict = s.verdict() != null ? s.verdict() : s.status();
         String detail = s.errorMessage() != null && !s.errorMessage().isBlank()
@@ -136,16 +136,16 @@ public class SubmitCheckHandler implements CheckHandler {
     }
 
     /** ZIP các file .java dưới src/main/java, giữ đường dẫn tương đối (package). */
-    static byte[] zipSources(Path sourceRoot) throws IOException {
+    public static byte[] zipSources(Path sourceRoot) throws IOException {
         List<Path> sources;
         try (Stream<Path> walk = Files.walk(sourceRoot)) {
             sources = walk.filter(p -> Files.isRegularFile(p) && p.toString().endsWith(".java")).sorted().toList();
         }
         if (sources.isEmpty()) {
-            throw new IllegalArgumentException("src/main/java không có file .java nào");
+            throw new IllegalArgumentException("src/main/java does not contain any .java files");
         }
         if (sources.size() > MAX_FILES) {
-            throw new IllegalArgumentException("Quá " + MAX_FILES + " file .java trong src/main/java");
+            throw new IllegalArgumentException("Exceeded maximum limit of " + MAX_FILES + " .java files in src/main/java");
         }
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(out)) {
@@ -171,7 +171,7 @@ public class SubmitCheckHandler implements CheckHandler {
     static ApiClient clientFromSettings() {
         String url = MiniLeetCodeSettingsState.getInstance().getNormalizedServerUrl();
         if (url == null || url.isBlank()) {
-            throw new IllegalArgumentException("Chưa cấu hình Server URL (Settings › Tools › Mini LeetCode)");
+            throw new IllegalArgumentException("Server URL is not configured. Please open Settings › Tools › Mini LeetCode.");
         }
         return new ApiClient(url, MiniLeetCodePasswordSafe.getInstance().getPassword());
     }

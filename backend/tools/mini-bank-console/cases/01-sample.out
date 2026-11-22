@@ -1,0 +1,10 @@
+=== Mini Bank ===
+Số tài khoản cần mở: Chủ tài khoản #1: Loại (S = tiết kiệm, C = thanh toán): Số dư ban đầu: -> Đã mở #1 SAVINGS      Nguyễn Văn A         100,000
+Chủ tài khoản #2: Loại (S = tiết kiệm, C = thanh toán): Số dư ban đầu: -> Đã mở #2 CHECKING     Trần B                   0
+Lệnh: OPEN <S|C> <số dư> <tên> | DEPOSIT <id> <tiền> | WITHDRAW <id> <tiền>
+      TRANSFER <từ> <đến> <tiền> | BALANCE <id> | LIST | MONTH | REPORT <n> | EXIT [mã]
+> > Đã chuyển.
+> Đã tính lãi / phí cuối tháng.
+> #1 SAVINGS      Nguyễn Văn A          70,350
+#2 CHECKING     Trần B              20,000
+> Bye!

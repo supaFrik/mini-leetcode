@@ -447,4 +447,119 @@ class ApiClientTest {
         assertThrows(IllegalArgumentException.class, () -> client.getStudyPlan(""));
         assertThrows(IllegalArgumentException.class, () -> client.getStudyPlan("   "));
     }
+
+    @Test
+    @DisplayName("testRunStage_Success: POST /problems/{id}/run-multipart with zip -> deserializes SubmissionDto")
+    void testRunStage_Success() throws InterruptedException {
+        String json = """
+            {
+              "status": "success",
+              "message": "Submission accepted and queued for judging",
+              "data": {
+                "id": 999,
+                "problemId": 42,
+                "status": "PENDING",
+                "verdict": null,
+                "passTestCases": 0,
+                "totalTestCases": 2
+              }
+            }
+            """;
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(json));
+
+        byte[] zipBytes = new byte[]{1, 2, 3, 4};
+        SubmissionDto sub = client.runStage(42L, zipBytes);
+
+        assertNotNull(sub);
+        assertEquals(999L, sub.id());
+        assertEquals(42L, sub.problemId());
+        assertEquals("PENDING", sub.status());
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        assertEquals("/api/v1/problems/42/run-multipart", req.getPath());
+        assertEquals("POST", req.getMethod());
+        assertTrue(req.getHeader("Content-Type").contains("multipart/form-data"));
+        assertEquals("Bearer " + TEST_PAT, req.getHeader("Authorization"));
+    }
+
+    @Test
+    @DisplayName("testSubmitStage_Success: POST /problems/{id}/submit-multipart with zip -> deserializes SubmissionDto")
+    void testSubmitStage_Success() throws InterruptedException {
+        String json = """
+            {
+              "status": "success",
+              "message": "Submission accepted and queued for judging",
+              "data": {
+                "id": 1001,
+                "problemId": 42,
+                "status": "COMPLETED",
+                "verdict": "AC",
+                "score": 100.0,
+                "passTestCases": 3,
+                "totalTestCases": 3
+              }
+            }
+            """;
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(json));
+
+        byte[] zipBytes = new byte[]{5, 6, 7, 8};
+        SubmissionDto sub = client.submitStage(42L, zipBytes);
+
+        assertNotNull(sub);
+        assertEquals(1001L, sub.id());
+        assertEquals(42L, sub.problemId());
+        assertTrue(sub.isFinished());
+        assertTrue(sub.isAccepted());
+        assertEquals(3, sub.passTestCases());
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        assertEquals("/api/v1/problems/42/submit-multipart", req.getPath());
+        assertEquals("POST", req.getMethod());
+    }
+
+    @Test
+    @DisplayName("testGetSubmission_Success: GET /submissions/{id} -> unwrap SubmissionDto")
+    void testGetSubmission_Success() throws InterruptedException {
+        String json = """
+            {
+              "status": "success",
+              "message": "Submission retrieved",
+              "data": {
+                "id": 1001,
+                "problemId": 42,
+                "status": "COMPLETED",
+                "verdict": "WA",
+                "passTestCases": 1,
+                "totalTestCases": 3,
+                "errorMessage": "Expected: 100, Actual: 50"
+              }
+            }
+            """;
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(json));
+
+        SubmissionDto sub = client.getSubmission(1001L);
+
+        assertNotNull(sub);
+        assertEquals(1001L, sub.id());
+        assertEquals("COMPLETED", sub.status());
+        assertEquals("WA", sub.verdict());
+        assertFalse(sub.isAccepted());
+        assertEquals("Expected: 100, Actual: 50", sub.errorMessage());
+
+        RecordedRequest req = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(req);
+        assertEquals("/api/v1/submissions/1001", req.getPath());
+        assertEquals("GET", req.getMethod());
+    }
 }

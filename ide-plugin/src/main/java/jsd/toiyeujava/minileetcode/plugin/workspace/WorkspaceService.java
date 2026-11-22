@@ -113,20 +113,20 @@ public class WorkspaceService {
         // 4. Extract starter template; file .java ở gốc ZIP được đưa vào src/main/java (pom dùng layout Maven chuẩn)
         ArchiveExtractor.ExtractionResult extractionResult = extractStarterTemplate(targetDir, request, starterZip);
 
-        // 5. Write stages/stage-N.md (PL-4)
+        // 5. Write stages/stage-N.md (PL-4 offline backup)
         Path stageMarkdownPath = writeStageMarkdown(targetDir, request, problem);
 
         // 6. Write .mlc/project.yaml cuối cùng: chỉ chuyển stage khi mọi bước trên đã xong
         Path manifestPath = writeManifest(targetDir, request);
 
-        // 6. Invoke ProjectOpener (PL-3)
+        // 7. Invoke ProjectOpener (PL-3)
         try {
             projectOpener.openProject(targetDir);
         } catch (Exception e) {
             throw new WorkspaceException("Failed to open project in IDE at: " + targetDir + " - " + e.getMessage(), e);
         }
 
-        // 7. Return assembled result
+        // 8. Return assembled result
         return new WorkspaceResult(targetDir, manifestPath, stageMarkdownPath, extractionResult);
     }
 

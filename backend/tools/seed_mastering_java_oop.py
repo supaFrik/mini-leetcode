@@ -6,7 +6,7 @@ import time
 API_BASE = "http://localhost:8088/api/v1"
 
 # 1. Login to get Admin JWT
-login_res = requests.post(f"{API_BASE}/auth/login", json={"usernameOrEmail": "live_admin", "password": "Password123!"})
+login_res = requests.post(f"{API_BASE}/auth/login", json={"usernameOrEmail": "admin", "password": "Password123!"})
 login_res.raise_for_status()
 tok = login_res.json().get("accessToken") or login_res.json().get("token")
 headers = {"Authorization": f"Bearer {tok}"}
@@ -766,38 +766,38 @@ else:
     plan_id = int(plan_id_res.split("\n")[1].strip())
     print(f"Created new Study Plan {plan_id}.")
 
-# Remove old items for this plan
-old_items = run_mysql(f"SELECT id FROM study_plan_items WHERE plan_id = {plan_id};").strip()
-if old_items and len(old_items.split("\n")) > 1:
-    item_ids = [line.strip() for line in old_items.split("\n")[1:] if line.strip()]
-    if item_ids:
-        ids_str = ",".join(item_ids)
-        run_mysql(f"DELETE FROM study_plan_item_stages WHERE item_id IN ({ids_str});")
-        run_mysql(f"DELETE FROM study_plan_items WHERE id IN ({ids_str});")
+# Remove old sessions for this plan (study_plan_entries go with them: ON DELETE CASCADE)
+run_mysql(f"DELETE FROM study_plan_items WHERE plan_id = {plan_id};")
 
-# Insert 8 items into study_plan_items
-plan_items_def = [
-    (0, "Stage 1: Employee Payroll (Encapsulation)", 140),
-    (1, "Stage 1: Digital Wallet (Strict Immutability)", 141),
-    (2, "Stage 2: Shape Hierarchy (Inheritance & Polymorphism)", 145),
-    (3, "Stage 2: Discount Engine (Composition over Inheritance)", 146),
-    (4, "Stage 3: Payment Gateway (Polymorphism & Strategy)", 142),
-    (5, "Stage 3: Cloud Storage (Interface Abstraction)", 147),
-    (6, "Stage 4: Shopping Cart (Rich Domain Model)", 143),
-    (7, "Stage 5: Notification Dispatcher (Clean Code & Low Coupling)", 144)
+# 1 project with 8 sequential stages. Since V25 each project stage is its own session
+# "<project> · Stage N" holding one STAGE entry (same shape V25 gives migrated projects).
+project_title = "Mastering Java OOP Curriculum"
+project_desc = "A progressive 8-stage mastery curriculum covering Core Java OOP principles."
+
+stages_def = [
+    (0, 140), # Stage 1: Employee Payroll (Encapsulation)
+    (1, 141), # Stage 2: Digital Wallet (Strict Immutability)
+    (2, 145), # Stage 3: Shape Hierarchy (Inheritance & Polymorphism)
+    (3, 146), # Stage 4: Discount Engine (Composition over Inheritance)
+    (4, 142), # Stage 5: Payment Gateway (Polymorphism & Strategy)
+    (5, 147), # Stage 6: Cloud Storage (Interface Abstraction)
+    (6, 143), # Stage 7: Shopping Cart (Rich Domain Model)
+    (7, 144)  # Stage 8: Notification Dispatcher (Clean Code & Low Coupling)
 ]
 
-for sort_order, item_title, prob_id in plan_items_def:
+for stage_no, prob_id in stages_def:
+    session_title = f"{project_title} \u00b7 Stage {stage_no + 1}"
+    session_desc = f"'{sql_esc(project_desc)}'" if stage_no == 0 else "NULL"
     run_mysql(f"""
     INSERT INTO study_plan_items (plan_id, sort_order, kind, title, description)
-    VALUES ({plan_id}, {sort_order}, 'SESSION', '{sql_esc(item_title)}', 'Mastery exercise for {sql_esc(item_title)}');
+    VALUES ({plan_id}, {stage_no}, 'SESSION', '{sql_esc(session_title)}', {session_desc});
     """)
     last_item_id = int(run_mysql("SELECT LAST_INSERT_ID();").strip().split("\n")[1].strip())
     run_mysql(f"""
     INSERT INTO study_plan_entries (session_id, sort_order, type, topic_id, problem_id)
-    VALUES ({last_item_id}, 0, 'PROBLEM', NULL, {prob_id});
+    VALUES ({last_item_id}, 0, 'STAGE', NULL, {prob_id});
     """)
-    print(f"Linked Stage {sort_order + 1}: '{item_title}' -> Problem {prob_id}")
+    print(f"Linked Stage {stage_no + 1} -> Problem {prob_id}")
 
 print("\n==========================================")
 print("ALL 8 PROBLEMS AND STUDY PLAN SUCCESSFULLY SEEDED AND PUBLISHED!")

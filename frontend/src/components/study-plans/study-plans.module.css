@@ -432,3 +432,95 @@ a.stage:hover {
 .howClose:hover {
   color: var(--ink);
 }
+
+/* Callout & Guide helpers for /ide page */
+.callout {
+  display: flex;
+  gap: 12px;
+  margin: 14px 0;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-left: 4px solid var(--control);
+  border-radius: 4px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.calloutWarning {
+  display: flex;
+  gap: 12px;
+  margin: 14px 0;
+  padding: 14px 16px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  border-radius: 6px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #92400e;
+}
+
+.calloutWarning strong {
+  color: #78350f;
+}
+
+.calloutIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.featureBox {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.featureCard {
+  padding: 14px 16px;
+  background: var(--hover);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.featureCard h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.featureCard p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.shortcut {
+  display: inline-block;
+  padding: 1px 5px;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.fileTree {
+  margin: 10px 0;
+  padding: 10px 14px;
+  background: #1e293b;
+  color: #f1f5f9;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+

@@ -14,8 +14,24 @@ public record SubmissionDto(
         Integer passTestCases,
         Integer totalTestCases,
         String errorMessage,
-        String scoreBreakdown
+        String scoreBreakdown,
+        Integer executionTimeMs,
+        Integer memoryUsedKb
 ) {
+    public SubmissionDto(
+            Long id,
+            Long problemId,
+            String status,
+            String verdict,
+            Double score,
+            Integer passTestCases,
+            Integer totalTestCases,
+            String errorMessage,
+            String scoreBreakdown
+    ) {
+        this(id, problemId, status, verdict, score, passTestCases, totalTestCases, errorMessage, scoreBreakdown, null, null);
+    }
+
     public boolean isFinished() {
         return "COMPLETED".equals(status) || "FAILED".equals(status);
     }
