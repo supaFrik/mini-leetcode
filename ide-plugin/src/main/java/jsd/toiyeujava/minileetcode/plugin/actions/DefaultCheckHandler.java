@@ -44,11 +44,14 @@ public class DefaultCheckHandler implements CheckHandler {
             missingFiles.add("pom.xml");
         }
 
-        // 2. Validate stages/stage-N.md
+        // 2. Validate stages/stage-N.md (only for legacy projects that contain a 'stages' directory)
         int stage = manifest.currentStage();
-        Path stageMd = projectDir.resolve("stages").resolve("stage-" + stage + ".md");
-        if (!Files.isRegularFile(stageMd)) {
-            missingFiles.add("stages/stage-" + stage + ".md");
+        Path stagesDir = projectDir.resolve("stages");
+        if (Files.isDirectory(stagesDir)) {
+            Path stageMd = stagesDir.resolve("stage-" + stage + ".md");
+            if (!Files.isRegularFile(stageMd)) {
+                missingFiles.add("stages/stage-" + stage + ".md");
+            }
         }
 
         // 3. Validate src/main/java

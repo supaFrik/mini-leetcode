@@ -42,6 +42,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             new String[]{"GET", "/api/v1/problems/*/starter-template"},
             new String[]{"POST", "/api/v1/problems/*/submit"},
             new String[]{"POST", "/api/v1/problems/*/submit-multipart"},
+            new String[]{"POST", "/api/v1/problems/*/run"},
+            new String[]{"POST", "/api/v1/problems/*/run-multipart"},
+            new String[]{"GET", "/api/v1/problems/*/submissions"},
             new String[]{"POST", "/api/v1/submissions"},
             new String[]{"GET", "/api/v1/submissions/{id:[0-9]+}"} // không khớp /submissions/my
     );

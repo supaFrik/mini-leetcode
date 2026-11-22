@@ -31,9 +31,9 @@ function Test-Command([string]$name) { [bool](Get-Command $name -ErrorAction Sil
 # ---------------------------------------------------------------- 1. Requirements
 Step "Checking requirements"
 if (-not (Test-Command docker)) { Fail "Docker is not installed. Install Docker Desktop: https://www.docker.com/products/docker-desktop/" }
-& docker info *> $null
+cmd /c "docker info >nul 2>&1"
 if ($LASTEXITCODE -ne 0) { Fail "Docker is installed but not running. Start Docker Desktop, wait until it is ready, then run this script again." }
-& docker compose version *> $null
+cmd /c "docker compose version >nul 2>&1"
 if ($LASTEXITCODE -ne 0) { Fail "'docker compose' (Compose v2) is not available. Update Docker Desktop." }
 
 if (-not (Test-Command java)) { Fail "Java is not installed. Install JDK 17 or newer (e.g. https://adoptium.net/) and reopen PowerShell." }
@@ -113,6 +113,12 @@ do {
 } while ((Get-Date) -lt $deadline)
 if ($health -ne "healthy") { Fail "The API did not become healthy within 5 minutes. Check: docker logs $ApiContainer" }
 Write-Host "API is healthy."
+
+# Detect host port mapping if overridden in docker-compose.override.yml (e.g. 8088:8080)
+$portMapping = (& docker port $ApiContainer 8080 2>$null | Select-Object -First 1)
+if ($portMapping -match ':(\d+)$') {
+    $ApiUrl = "http://localhost:$($Matches[1])"
+}
 
 # ---------------------------------------------------------------- 4. Data
 function Import-Sql([string]$path) {

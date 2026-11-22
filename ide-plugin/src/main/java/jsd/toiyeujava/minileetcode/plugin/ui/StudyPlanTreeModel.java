@@ -97,9 +97,34 @@ public class StudyPlanTreeModel extends DefaultTreeModel {
             for (ItemDto item : plan.items()) {
                 if (item == null) continue;
                 ItemTreeNode itemNode = new ItemTreeNode(item);
-                if (item.stages() != null) {
-                    for (StageDto stage : item.stages()) {
-                        if (stage != null) itemNode.add(new StageTreeNode(stage));
+                if (item.stages() != null && !item.stages().isEmpty()) {
+                    StageDto firstStage = item.stages().get(0);
+                    boolean enforceSequential = (firstStage != null && firstStage.status() != StageStatus.LOCKED);
+                    boolean previousDone = (firstStage != null && firstStage.status() == StageStatus.DONE);
+
+                    for (int i = 0; i < item.stages().size(); i++) {
+                        StageDto stage = item.stages().get(i);
+                        if (stage == null) continue;
+                        StageStatus status = stage.status();
+                        if (enforceSequential && i > 0) {
+                            if (!previousDone && status != StageStatus.DONE) {
+                                status = StageStatus.LOCKED;
+                            }
+                            previousDone = (status == StageStatus.DONE);
+                        }
+                        StageDto effectiveStage = (status != stage.status())
+                                ? new StageDto(
+                                        stage.stageNo(),
+                                        stage.problemId(),
+                                        stage.slug(),
+                                        stage.title(),
+                                        stage.difficulty(),
+                                        stage.problemType(),
+                                        stage.published(),
+                                        status
+                                )
+                                : stage;
+                        itemNode.add(new StageTreeNode(effectiveStage));
                     }
                 }
                 planNode.add(itemNode);

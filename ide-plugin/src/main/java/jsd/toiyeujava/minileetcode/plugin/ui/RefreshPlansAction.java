@@ -208,7 +208,7 @@ public class RefreshPlansAction extends DumbAwareAction {
             });
 
         } catch (AuthenticationException e) {
-            reportError(project, "Token hết hiệu lực, tạo token mới trên web rồi dán vào Settings › Tools › Mini LeetCode.");
+            reportError(project, "Personal Access Token is invalid or expired. Please generate a new token on the web and configure it in Settings › Tools › Mini LeetCode. (Token hết hiệu lực)");
             openSettings(project);
         } catch (MiniLeetCodeApiException e) {
             String msg = (e.getMessage() != null && !e.getMessage().isBlank())

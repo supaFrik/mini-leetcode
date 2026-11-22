@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class ApiClient {
 
-    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
+    public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
     private static final String USER_AGENT = "MiniLeetCode-IntelliJ-Plugin/0.1.0";
     private static final Type PLAN_SUMMARY_LIST_TYPE = new TypeToken<List<PlanSummary>>() {}.getType();
 
@@ -211,6 +211,38 @@ public class ApiClient {
         return null; // Unreachable
     }
 
+    /**
+     * Chạy thử các testcase công khai của stage (POST /api/v1/problems/{id}/run-multipart, field {@code file} = ZIP,
+     * {@code language} = JAVA). Không tính điểm và không đánh dấu hoàn thành stage trên server.
+     */
+    public SubmissionDto runStage(long problemId, byte[] zipBytes) {
+        if (zipBytes == null || zipBytes.length == 0) {
+            throw new IllegalArgumentException("zipBytes must not be empty");
+        }
+        String boundary = "----MiniLeetCodeBoundary" + java.util.UUID.randomUUID().toString().replace("-", "");
+        java.io.ByteArrayOutputStream body = new java.io.ByteArrayOutputStream();
+        byte[] crlf = "\r\n".getBytes(StandardCharsets.UTF_8);
+        body.writeBytes(("--" + boundary + "\r\nContent-Disposition: form-data; name=\"language\"\r\n\r\nJAVA\r\n")
+                .getBytes(StandardCharsets.UTF_8));
+        body.writeBytes(("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"submission.zip\"\r\n"
+                + "Content-Type: application/zip\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+        body.writeBytes(zipBytes);
+        body.writeBytes(crlf);
+        body.writeBytes(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+
+        URI uri = URI.create(baseUrl + "/api/v1/problems/" + problemId + "/run-multipart");
+        HttpRequest request = createRequestBuilder(uri)
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()))
+                .build();
+        HttpResponse<String> response = send(request);
+        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            return unwrapData(response.body(), SubmissionDto.class);
+        }
+        handleErrorResponse(response);
+        return null; // Unreachable
+    }
+
     /** Kết quả bài nộp (GET /api/v1/submissions/{id}); backend bọc trong {@code ApiResponse{data: ...}}. */
     public SubmissionDto getSubmission(long submissionId) {
         URI uri = URI.create(baseUrl + "/api/v1/submissions/" + submissionId);
@@ -263,8 +295,16 @@ public class ApiClient {
         try {
             return httpClient.send(request, handler);
         } catch (HttpTimeoutException e) {
+            HttpResponse<T> fallback = tryLocalhostFallback(request, handler);
+            if (fallback != null) {
+                return fallback;
+            }
             throw new MiniLeetCodeApiException("Connection to " + server(request) + " timed out. " + CHECK_URL_HINT, e);
         } catch (IOException e) {
+            HttpResponse<T> fallback = tryLocalhostFallback(request, handler);
+            if (fallback != null) {
+                return fallback;
+            }
             // ConnectException của java.net.http thường có message null ⇒ luôn nêu server và loại lỗi.
             String detail = e.getMessage() != null && !e.getMessage().isBlank() ? e.getMessage() : e.getClass().getSimpleName();
             throw new MiniLeetCodeApiException("Cannot reach " + server(request) + " (" + detail + "). " + CHECK_URL_HINT, e);
@@ -272,6 +312,51 @@ public class ApiClient {
             Thread.currentThread().interrupt();
             throw new MiniLeetCodeApiException("Request was interrupted", e);
         }
+    }
+
+    private <T> HttpResponse<T> tryLocalhostFallback(HttpRequest request, HttpResponse.BodyHandler<T> handler) {
+        try {
+            URI uri = request.uri();
+            String host = uri.getHost();
+            if (host == null || (!host.equals("localhost") && !host.equals("127.0.0.1"))) {
+                return null;
+            }
+            int port = uri.getPort();
+            int[] fallbackPorts = (port == 3100 || port == 3000)
+                    ? new int[]{8088, 8080}
+                    : ((port == 8080) ? new int[]{8088} : new int[]{});
+
+            for (int fallbackPort : fallbackPorts) {
+                try {
+                    URI fallbackUri = new URI(
+                            uri.getScheme(),
+                            uri.getUserInfo(),
+                            host,
+                            fallbackPort,
+                            uri.getPath(),
+                            uri.getQuery(),
+                            uri.getFragment()
+                    );
+                    HttpRequest.Builder fb = HttpRequest.newBuilder(fallbackUri)
+                            .timeout(requestTimeout)
+                            .method(request.method(), request.bodyPublisher().orElse(HttpRequest.BodyPublishers.noBody()));
+                    request.headers().map().forEach((k, vals) -> {
+                        if (!k.equalsIgnoreCase("host") && !k.equalsIgnoreCase("content-length")) {
+                            for (String v : vals) {
+                                fb.header(k, v);
+                            }
+                        }
+                    });
+                    HttpResponse<T> resp = httpClient.send(fb.build(), handler);
+                    if (resp != null) {
+                        return resp;
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     private static final String CHECK_URL_HINT = "Check the Server URL in Settings › Tools › Mini LeetCode.";

@@ -1,0 +1,9 @@
+0
+OPEN S 70000 Lê Thị Hồng Nhung
+OPEN X 1 Nobody
+OPEN C 5000 Phạm Quang
+DEPOSIT 1 -5
+FOO
+BALANCE 3
+LIST
+EXIT

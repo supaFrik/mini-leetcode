@@ -1,0 +1,8 @@
+=== Mini Bank ===
+Số tài khoản cần mở: Lệnh: OPEN <S|C> <số dư> <tên> | DEPOSIT <id> <tiền> | WITHDRAW <id> <tiền>
+      TRANSFER <từ> <đến> <tiền> | BALANCE <id> | LIST | MONTH | REPORT <n> | EXIT [mã]
+> -> Đã mở #1 SAVINGS      Lê Thị Hồng Nhung          70,000
+> > -> Đã mở #2 CHECKING     Phạm Quang           5,000
+> > > > #1 SAVINGS      Lê Thị Hồng Nhung          70,000
+#2 CHECKING     Phạm Quang           5,000
+> Bye!

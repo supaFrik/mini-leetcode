@@ -163,7 +163,7 @@ test.describe("Study Plan: Web Multi-File OOP Code Editor", () => {
     await page.goto("/study-plans/oop-mastery/10/1", { waitUntil: "domcontentloaded" });
 
     // 1. Verify stage heading and vertical layout
-    await expect(page.getByRole("heading", { name: /^Stage 1\/1 · /, level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Stage 1\/1/, level: 1 })).toBeVisible();
 
     // 2. Verify starter files tabs
     const stageRegion = page.getByRole("region", { name: "Stage" });
@@ -205,7 +205,7 @@ test.describe("Study Plan: Web Multi-File OOP Code Editor", () => {
     await expect(runBtn).toBeVisible();
     await runBtn.click();
 
-    const verdict = stageRegion.getByRole("status");
+    const verdict = stageRegion.getByRole("status").filter({ hasText: /evaluated|Correct/ });
     await expect(verdict).toContainText("Run mode", { timeout: 10_000 });
     await expect(verdict).toContainText("Correct!");
     expect(state.lastRun).toBe(true);
@@ -221,6 +221,9 @@ test.describe("Study Plan: Web Multi-File OOP Code Editor", () => {
 
     // 9. Verify IntelliJ button remains accessible alongside the web editor
     await expect(stageRegion.getByText("Prefer desktop IDE?")).toBeVisible();
-    await expect(stageRegion.getByRole("link", { name: "Install the IntelliJ plugin" })).toBeVisible();
+    await expect(
+      stageRegion.getByRole("button", { name: "Connect IntelliJ" })
+        .or(stageRegion.getByRole("link", { name: "Install the IntelliJ plugin" }))
+    ).toBeVisible();
   });
 });

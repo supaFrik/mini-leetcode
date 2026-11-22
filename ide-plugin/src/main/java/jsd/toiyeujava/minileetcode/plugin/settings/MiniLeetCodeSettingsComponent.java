@@ -27,7 +27,7 @@ import java.time.Duration;
  */
 public class MiniLeetCodeSettingsComponent {
 
-    public static final String DEFAULT_SERVER_URL = "http://localhost:8080";
+    public static final String DEFAULT_SERVER_URL = "http://localhost:8088";
 
     private final JPanel mainPanel;
     private final JBTextField serverUrlField = new JBTextField();

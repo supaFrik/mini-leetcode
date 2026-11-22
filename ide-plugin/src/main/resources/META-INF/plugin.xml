@@ -77,16 +77,31 @@
             description="Initialize local workspace and open study plan stage"
             icon="AllIcons.Actions.Execute"/>
 
-        <!-- Milestone 3: Check Stage Action (R3, Features 13 & 14) -->
+        <!-- Run Stage Action (FR-RN-01): Run public sample test cases -->
+        <action
+            id="MiniLeetCode.RunStage"
+            class="jsd.toiyeujava.minileetcode.plugin.actions.RunStageAction"
+            text="Run Samples"
+            description="Run public test cases against sample inputs"
+            icon="AllIcons.Actions.Execute">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>
+            <add-to-group group-id="MainToolBar" anchor="last"/>
+            <keyboard-shortcut first-keystroke="control alt R" keymap="$default"/>
+        </action>
+
+        <!-- Check Stage Action (Submit): Submit src/main/java for official grading -->
         <action
             id="MiniLeetCode.CheckAction"
             class="jsd.toiyeujava.minileetcode.plugin.actions.CheckAction"
             text="Check Stage"
             description="Submit src/main/java to the Mini LeetCode server and show the verdict"
             icon="AllIcons.Actions.Commit">
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-            <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>
-            <add-to-group group-id="MainToolBar" anchor="last"/>        </action>
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="MiniLeetCode.RunStage"/>
+            <add-to-group group-id="EditorTabPopupMenu" anchor="after" relative-to-action="MiniLeetCode.RunStage"/>
+            <add-to-group group-id="MainToolBar" anchor="after" relative-to-action="MiniLeetCode.RunStage"/>
+            <keyboard-shortcut first-keystroke="control alt ENTER" keymap="$default"/>
+        </action>
 
         <!-- PL-6: Next stage into the same project folder (never overwrites student files) -->
         <action
@@ -97,5 +112,6 @@
             icon="AllIcons.Actions.Forward">
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="MiniLeetCode.CheckAction"/>
             <add-to-group group-id="MainToolBar" anchor="after" relative-to-action="MiniLeetCode.CheckAction"/>
-        </action>    </actions>
+        </action>
+    </actions>
 </idea-plugin>

@@ -6,7 +6,7 @@ import time
 API_BASE = "http://localhost:8088/api/v1"
 
 # 1. Login to get Admin JWT
-login_res = requests.post(f"{API_BASE}/auth/login", json={"usernameOrEmail": "live_admin", "password": "Password123!"})
+login_res = requests.post(f"{API_BASE}/auth/login", json={"usernameOrEmail": "admin", "password": "Password123!"})
 login_res.raise_for_status()
 tok = login_res.json().get("accessToken") or login_res.json().get("token")
 headers = {"Authorization": f"Bearer {tok}"}
@@ -775,29 +775,30 @@ if old_items and len(old_items.split("\n")) > 1:
         run_mysql(f"DELETE FROM study_plan_item_stages WHERE item_id IN ({ids_str});")
         run_mysql(f"DELETE FROM study_plan_items WHERE id IN ({ids_str});")
 
-# Insert 8 items into study_plan_items
-plan_items_def = [
-    (0, "Stage 1: Employee Payroll (Encapsulation)", 140),
-    (1, "Stage 1: Digital Wallet (Strict Immutability)", 141),
-    (2, "Stage 2: Shape Hierarchy (Inheritance & Polymorphism)", 145),
-    (3, "Stage 2: Discount Engine (Composition over Inheritance)", 146),
-    (4, "Stage 3: Payment Gateway (Polymorphism & Strategy)", 142),
-    (5, "Stage 3: Cloud Storage (Interface Abstraction)", 147),
-    (6, "Stage 4: Shopping Cart (Rich Domain Model)", 143),
-    (7, "Stage 5: Notification Dispatcher (Clean Code & Low Coupling)", 144)
+# Insert 1 Project item with 8 sequential stages into study_plan_items
+run_mysql(f"""
+INSERT INTO study_plan_items (plan_id, sort_order, kind, title, description)
+VALUES ({plan_id}, 0, 'PROJECT', 'Mastering Java OOP Curriculum', 'A progressive 8-stage mastery curriculum covering Core Java OOP principles.');
+""")
+last_item_id = int(run_mysql("SELECT LAST_INSERT_ID();").strip().split("\n")[1].strip())
+
+stages_def = [
+    (0, 140), # Stage 1: Employee Payroll (Encapsulation)
+    (1, 141), # Stage 2: Digital Wallet (Strict Immutability)
+    (2, 145), # Stage 3: Shape Hierarchy (Inheritance & Polymorphism)
+    (3, 146), # Stage 4: Discount Engine (Composition over Inheritance)
+    (4, 142), # Stage 5: Payment Gateway (Polymorphism & Strategy)
+    (5, 147), # Stage 6: Cloud Storage (Interface Abstraction)
+    (6, 143), # Stage 7: Shopping Cart (Rich Domain Model)
+    (7, 144)  # Stage 8: Notification Dispatcher (Clean Code & Low Coupling)
 ]
 
-for sort_order, item_title, prob_id in plan_items_def:
-    run_mysql(f"""
-    INSERT INTO study_plan_items (plan_id, sort_order, kind, title, description)
-    VALUES ({plan_id}, {sort_order}, 'PROBLEM', '{sql_esc(item_title)}', 'Mastery exercise for {sql_esc(item_title)}');
-    """)
-    last_item_id = int(run_mysql("SELECT LAST_INSERT_ID();").strip().split("\n")[1].strip())
+for stage_no, prob_id in stages_def:
     run_mysql(f"""
     INSERT INTO study_plan_item_stages (item_id, stage_no, problem_id)
-    VALUES ({last_item_id}, 0, {prob_id});
+    VALUES ({last_item_id}, {stage_no}, {prob_id});
     """)
-    print(f"Linked Stage {sort_order + 1}: '{item_title}' -> Problem {prob_id}")
+    print(f"Linked Stage {stage_no + 1} -> Problem {prob_id}")
 
 print("\n==========================================")
 print("ALL 8 PROBLEMS AND STUDY PLAN SUCCESSFULLY SEEDED AND PUBLISHED!")

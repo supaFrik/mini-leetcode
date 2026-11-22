@@ -66,7 +66,7 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
             </div>
             <h2 className="text-lg font-semibold text-ink">Stage {stage.stageNo} is locked</h2>
             <p className="mt-1 max-w-md text-sm text-mute">
-              Finish stage {stage.stageNo - 1} to unlock it.
+              Finish stage {stage.stageNo - 1} first.
             </p>
             {active && (
               <Button asChild className="mt-4">

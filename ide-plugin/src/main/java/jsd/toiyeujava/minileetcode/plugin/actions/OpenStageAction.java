@@ -34,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.Component;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -118,7 +119,8 @@ public class OpenStageAction extends DumbAwareAction {
         TreeNode selectedNode = getSelectedTreeNode(targetTree);
 
         if (selectedNode instanceof StageTreeNode stageNode) {
-            e.getPresentation().setEnabled(true);
+            boolean canOpen = !stageNode.isLocked() && stageNode.isPublished();
+            e.getPresentation().setEnabled(canOpen);
             e.getPresentation().setText("Open Stage " + stageNode.getStageNo() + ": " + stageNode.getTitle());
             e.getPresentation().setDescription(stageNode.isLocked() ? "Stage is locked" : "Open stage " + stageNode.getStageNo());
         } else if (selectedNode instanceof ItemTreeNode itemNode) {
@@ -161,7 +163,7 @@ public class OpenStageAction extends DumbAwareAction {
         // Guard: stage đang bảo trì (đề không PUBLISHED) — không tải được starter / đề (spec Error Handling)
         if (!targetStage.isPublished()) {
             notificationPresenter.showNotification(project, "Mini LeetCode",
-                    "Stage " + targetStage.getStageNo() + " đang được cập nhật, thử lại sau.",
+                    "Stage " + targetStage.getStageNo() + " is being updated. Please try again later. (đang được cập nhật)",
                     NotificationType.WARNING);
             return;
         }
@@ -243,8 +245,32 @@ public class OpenStageAction extends DumbAwareAction {
         // Resolve target IDE project instance
         Project targetProject = resolveOpenedProject(currentProject, targetDir);
 
-        // Open Markdown preview on EDT (PL-4)
-        markdownOpener.openMarkdown(targetProject, result.stageMarkdownPath());
+        // In-IDE solving: open primary source file (e.g. src/main/java/Main.java) if present
+        Path mainSource = targetDir.resolve("src/main/java/Main.java");
+        if (Files.exists(mainSource) && targetProject != null && !targetProject.isDisposed()) {
+            ApplicationManager.getApplication().invokeLater(() -> {
+                com.intellij.openapi.vfs.VirtualFile vf = com.intellij.openapi.vfs.LocalFileSystem.getInstance().refreshAndFindFileByPath(mainSource.toString());
+                if (vf != null) {
+                    com.intellij.openapi.fileEditor.FileEditorManager.getInstance(targetProject).openFile(vf, true);
+                }
+            });
+        }
+
+        // Switch Tool Window in target project to Problem View tab
+        if (targetProject != null && !targetProject.isDisposed()) {
+            jsd.toiyeujava.minileetcode.plugin.ui.ProblemViewPanel panel = targetProject.getUserData(jsd.toiyeujava.minileetcode.plugin.ui.MiniLeetCodeToolWindowFactory.PROBLEM_VIEW_KEY);
+            com.intellij.ui.components.JBTabbedPane pane = targetProject.getUserData(jsd.toiyeujava.minileetcode.plugin.ui.MiniLeetCodeToolWindowFactory.TABBED_PANE_KEY);
+            if (panel != null && pane != null) {
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    jsd.toiyeujava.minileetcode.plugin.ui.MiniLeetCodeToolWindowFactory.loadStageIntoProblemView(stageNode, panel, pane, true);
+                });
+            }
+        }
+
+        // Open Markdown preview only if file exists (legacy projects only)
+        if (result.stageMarkdownPath() != null && Files.exists(result.stageMarkdownPath())) {
+            markdownOpener.openMarkdown(targetProject, result.stageMarkdownPath());
+        }
 
         // Notify user of success
         notificationPresenter.showNotification(targetProject, "Mini LeetCode",
@@ -309,16 +335,16 @@ public class OpenStageAction extends DumbAwareAction {
         MiniLeetCodeApiException api = findCause(t, MiniLeetCodeApiException.class);
         if (auth != null) {
             notificationPresenter.showNotification(project, "Mini LeetCode",
-                    "Token hết hiệu lực, tạo token mới trên web rồi dán vào Settings › Tools › Mini LeetCode.",
+                    "Personal Access Token is invalid or expired. Please generate a new token on the web and configure it in Settings › Tools › Mini LeetCode. (Token hết hiệu lực)",
                     NotificationType.ERROR);
             ErrorMessages.openSettings(project);
             return;
         }
         String message;
         if (api != null && api.getStatusCode() == 403) {
-            message = "Thao tác này chỉ làm được trên web.";
+            message = "This operation can only be performed on the web.";
         } else if (api != null && api.getStatusCode() == 404) {
-            message = "Stage đang được cập nhật hoặc đã bị gỡ, bấm Refresh rồi thử lại.";
+            message = "This stage is being updated or has been removed. Please click Refresh and try again.";
         } else if (t instanceof WorkspaceException we) {
             message = we.getMessage();
         } else {
