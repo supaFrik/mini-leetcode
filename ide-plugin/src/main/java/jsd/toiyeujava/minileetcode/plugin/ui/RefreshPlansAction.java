@@ -179,8 +179,13 @@ public class RefreshPlansAction extends DumbAwareAction {
             for (int i = 0; i < total; i++) {
                 PlanSummary summary = summaries.get(i);
                 if (indicator != null) {
-                    indicator.setText("Loading study plan: " + summary.title());
-                    indicator.setFraction((double) (i + 1) / total);
+                    try {
+                        indicator.setIndeterminate(false);
+                        indicator.setFraction((double) (i + 1) / total);
+                    } catch (Throwable ignored) {}
+                    try {
+                        indicator.setText("Loading study plan: " + summary.title());
+                    } catch (Throwable ignored) {}
                 }
 
                 try {
@@ -195,7 +200,7 @@ public class RefreshPlansAction extends DumbAwareAction {
                         continue; // plan vừa bị gỡ / chuyển về DRAFT giữa hai lần gọi: bỏ khỏi cây
                     }
                     details.add(fallbackDetail(summary));
-                } catch (Exception detailEx) {
+                } catch (Throwable detailEx) {
                     // Lỗi mạng tạm thời: giữ plan với thông tin tóm tắt
                     details.add(fallbackDetail(summary));
                 }

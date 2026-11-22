@@ -2,6 +2,7 @@ package jsd.toiyeujava.minileetcode.plugin.ui;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.notification.NotificationType;
+import com.intellij.openapi.application.Application;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
@@ -56,6 +57,7 @@ public class ProblemViewPanel extends JPanel {
     private final JButton runButton = new JButton("Run", AllIcons.Actions.Execute);
     private final JButton submitButton = new JButton("Submit", AllIcons.Actions.Commit);
     private final JButton nextStageButton = new JButton("Next Stage →", AllIcons.Actions.Forward);
+    private final JLabel statusMessageLabel = new JLabel();
 
     // Result Section
     private final JPanel resultSection = new JPanel(new BorderLayout(5, 5));
@@ -114,6 +116,11 @@ public class ProblemViewPanel extends JPanel {
         nextStageButton.setToolTipText("Advance to next stage in this project");
         nextStageButton.addActionListener(e -> executeNextStage());
         actionBar.add(nextStageButton);
+
+        statusMessageLabel.setForeground(JBColor.GRAY);
+        statusMessageLabel.setFont(statusMessageLabel.getFont().deriveFont(Font.ITALIC, 11f));
+        statusMessageLabel.setVisible(false);
+        actionBar.add(statusMessageLabel);
 
         topPanel.add(actionBar);
 
@@ -328,9 +335,15 @@ public class ProblemViewPanel extends JPanel {
     private void setActionsEnabled(boolean enabled, @Nullable String tooltip) {
         runButton.setEnabled(enabled);
         submitButton.setEnabled(enabled);
+        runButton.setVisible(enabled);
+        submitButton.setVisible(enabled);
         if (tooltip != null) {
             runButton.setToolTipText(tooltip);
             submitButton.setToolTipText(tooltip);
+        }
+        if (statusMessageLabel != null) {
+            statusMessageLabel.setText(tooltip != null ? tooltip : "");
+            statusMessageLabel.setVisible(!enabled && tooltip != null && !tooltip.isBlank());
         }
     }
 
@@ -379,130 +392,152 @@ public class ProblemViewPanel extends JPanel {
             return;
         }
 
-        // 1. Resolve active project directory & validate matching stage
-        if (project == null || project.getBasePath() == null || project.isDisposed()) {
-            NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
-                    "No active project open in IntelliJ.",
-                    NotificationType.WARNING);
-            return;
-        }
-
-        Path projectRoot = Path.of(project.getBasePath());
-        String dirName = projectRoot.getFileName() != null ? projectRoot.getFileName().toString() : "";
-        String expectedSlug = currentStageNode.getSlug();
-
-        if (!dirName.equalsIgnoreCase(expectedSlug)) {
-            NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
-                    "Active project directory (" + dirName + ") does not match stage slug (" + expectedSlug + "). Open the matching stage folder to enable execution.",
-                    NotificationType.WARNING);
-            return;
-        }
-
-        if (!ProjectManifest.existsIn(projectRoot)) {
-            NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
-                    "Please open the Mini LeetCode project for this stage to run/submit.",
-                    NotificationType.WARNING);
-            return;
-        }
-
         try {
-            ProjectManifest manifest = ProjectManifest.readFromProject(projectRoot);
-            boolean matchesSlug = manifest.problemSlug() != null && manifest.problemSlug().equalsIgnoreCase(expectedSlug);
-            boolean matchesId = manifest.problemId() != null && manifest.problemId().equals(currentStageNode.getProblemId());
-            if (!matchesSlug && !matchesId) {
+            // 1. Resolve active project directory & validate matching stage
+            if (project == null || project.getBasePath() == null || project.isDisposed()) {
                 NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
-                        "The open project (" + manifest.problemSlug() + " Stage " + manifest.currentStage()
-                                + ") does not match this stage (" + currentStageNode.getTitle() + ").",
+                        "No active project open in IntelliJ.",
                         NotificationType.WARNING);
                 return;
             }
-        } catch (Exception ex) {
-            NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
-                    "Cannot read .mlc/project.yaml: " + ex.getMessage(),
-                    NotificationType.ERROR);
-            return;
-        }
-        Path projectDir = projectRoot;
 
-        // 2. Save all open documents in IDE
-        FileDocumentManager.getInstance().saveAllDocuments();
+            Path projectRoot = Path.of(project.getBasePath());
+            String dirName = projectRoot.getFileName() != null ? projectRoot.getFileName().toString() : "";
+            String expectedSlug = currentStageNode.getSlug();
 
-        // 3. Check and zip src/main/java
-        Path srcMainJava = projectDir.resolve("src/main/java");
-        if (!Files.isDirectory(srcMainJava)) {
-            NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
-                    "Directory src/main/java does not exist in project.",
-                    NotificationType.ERROR);
-            return;
-        }
-
-        byte[] zipBytes;
-        try {
-            zipBytes = SubmitCheckHandler.zipSources(srcMainJava);
-        } catch (Exception ex) {
-            NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
-                    ex.getMessage(),
-                    NotificationType.ERROR);
-            return;
-        }
-
-        // 4. Update UI to evaluating state
-        showEvaluating(isRun);
-        setActionsEnabled(false);
-
-        // 5. Run async on background thread
-        ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            try {
-                String serverUrl = MiniLeetCodeSettingsState.getInstance().getNormalizedServerUrl();
-                String pat = MiniLeetCodePasswordSafe.getInstance().getPassword();
-                if (serverUrl == null || serverUrl.isBlank()) {
-                    throw new IllegalStateException("Server URL not configured in Settings › Tools › Mini LeetCode.");
-                }
-                ApiClient client = new ApiClient(serverUrl, pat);
-
-                long problemId = currentStageNode.getProblemId();
-                SubmissionDto submitted = isRun ? client.runStage(problemId, zipBytes) : client.submitStage(problemId, zipBytes);
-
-                // Poll submission
-                SubmissionDto current = submitted;
-                long waited = 0;
-                while (!current.isFinished() && waited < 120_000) {
-                    Thread.sleep(1000);
-                    waited += 1000;
-                    current = client.getSubmission(submitted.id());
-                }
-
-                SubmissionDto finalResult = current;
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    showResult(finalResult, isRun);
-                    updateActionButtonsState();
-
-                    // If Submit passed (AC), unlock next stage
-                    if (!isRun && finalResult.isAccepted()) {
-                        nextStageButton.setVisible(true);
-                        if (onStagePassedCallback != null) {
-                            onStagePassedCallback.run();
-                        }
-                    }
-                });
-
-            } catch (AuthenticationException ae) {
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    showError("Session expired (PAT invalid/expired). Please update token in Settings.");
-                    updateActionButtonsState();
-                });
-            } catch (MiniLeetCodeApiException apiEx) {
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    showError("Server error (HTTP " + apiEx.getStatusCode() + "): " + apiEx.getMessage());
-                    updateActionButtonsState();
-                });
-            } catch (Throwable t) {
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    showError("Execution failed: " + (t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName()));
-                    updateActionButtonsState();
-                });
+            if (!dirName.equalsIgnoreCase(expectedSlug)) {
+                NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
+                        "Active project directory (" + dirName + ") does not match stage slug (" + expectedSlug + "). Open the matching stage folder to enable execution.",
+                        NotificationType.WARNING);
+                return;
             }
-        });
+
+            if (!ProjectManifest.existsIn(projectRoot)) {
+                NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
+                        "Please open the Mini LeetCode project for this stage to run/submit.",
+                        NotificationType.WARNING);
+                return;
+            }
+
+            try {
+                ProjectManifest manifest = ProjectManifest.readFromProject(projectRoot);
+                boolean matchesSlug = manifest.problemSlug() != null && manifest.problemSlug().equalsIgnoreCase(expectedSlug);
+                boolean matchesId = manifest.problemId() != null && manifest.problemId().equals(currentStageNode.getProblemId());
+                if (!matchesSlug && !matchesId) {
+                    NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
+                            "The open project (" + manifest.problemSlug() + " Stage " + manifest.currentStage()
+                                    + ") does not match this stage (" + currentStageNode.getTitle() + ").",
+                            NotificationType.WARNING);
+                    return;
+                }
+            } catch (Exception ex) {
+                NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
+                        "Cannot read .mlc/project.yaml: " + ex.getMessage(),
+                        NotificationType.ERROR);
+                return;
+            }
+            Path projectDir = projectRoot;
+
+            // 2. Save all open documents in IDE safely on write thread / try-catch
+            try {
+                Application app = ApplicationManager.getApplication();
+                if (app != null) {
+                    if (app.isWriteAccessAllowed()) {
+                        FileDocumentManager.getInstance().saveAllDocuments();
+                    } else {
+                        app.runWriteAction(() -> {
+                            try {
+                                FileDocumentManager.getInstance().saveAllDocuments();
+                            } catch (Throwable ignored) {}
+                        });
+                    }
+                } else {
+                    FileDocumentManager.getInstance().saveAllDocuments();
+                }
+            } catch (Throwable ignored) {}
+
+            // 3. Check and zip src/main/java
+            Path srcMainJava = projectDir.resolve("src/main/java");
+            if (!Files.isDirectory(srcMainJava)) {
+                NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
+                        "Directory src/main/java does not exist in project.",
+                        NotificationType.ERROR);
+                return;
+            }
+
+            byte[] zipBytes;
+            try {
+                zipBytes = SubmitCheckHandler.zipSources(srcMainJava);
+            } catch (Exception ex) {
+                NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
+                        ex.getMessage(),
+                        NotificationType.ERROR);
+                return;
+            }
+
+            // 4. Update UI to evaluating state
+            showEvaluating(isRun);
+            setActionsEnabled(false);
+
+            // 5. Run async on background thread
+            ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                try {
+                    String serverUrl = MiniLeetCodeSettingsState.getInstance().getNormalizedServerUrl();
+                    String pat = MiniLeetCodePasswordSafe.getInstance().getPassword();
+                    if (serverUrl == null || serverUrl.isBlank()) {
+                        throw new IllegalStateException("Server URL not configured in Settings › Tools › Mini LeetCode.");
+                    }
+                    ApiClient client = new ApiClient(serverUrl, pat);
+
+                    long problemId = currentStageNode.getProblemId();
+                    SubmissionDto submitted = isRun ? client.runStage(problemId, zipBytes) : client.submitStage(problemId, zipBytes);
+
+                    // Poll submission
+                    SubmissionDto current = submitted;
+                    long waited = 0;
+                    while (!current.isFinished() && waited < 120_000) {
+                        Thread.sleep(1000);
+                        waited += 1000;
+                        current = client.getSubmission(submitted.id());
+                    }
+
+                    SubmissionDto finalResult = current;
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        showResult(finalResult, isRun);
+                        updateActionButtonsState();
+
+                        // If Submit passed (AC), unlock next stage
+                        if (!isRun && finalResult.isAccepted()) {
+                            nextStageButton.setVisible(true);
+                            if (onStagePassedCallback != null) {
+                                onStagePassedCallback.run();
+                            }
+                        }
+                    });
+
+                } catch (AuthenticationException ae) {
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        showError("Session expired (PAT invalid/expired). Please update token in Settings.");
+                        updateActionButtonsState();
+                    });
+                } catch (MiniLeetCodeApiException apiEx) {
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        showError("Server error (HTTP " + apiEx.getStatusCode() + "): " + apiEx.getMessage());
+                        updateActionButtonsState();
+                    });
+                } catch (Throwable t) {
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        showError("Execution failed: " + (t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName()));
+                        updateActionButtonsState();
+                    });
+                }
+            });
+        } catch (Throwable t) {
+            NotificationPresenter.DEFAULT.showNotification(project, "Mini LeetCode",
+                    "Evaluation failed to start: " + (t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName()),
+                    NotificationType.ERROR);
+            updateActionButtonsState();
+        }
     }
 
     private void showEvaluating(boolean isRun) {

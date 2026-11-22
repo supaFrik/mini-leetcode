@@ -143,8 +143,18 @@ public class StudyPlanTreeCellRenderer extends ColoredTreeCellRenderer {
         setIcon(MiniLeetCodeIcons.getStatusIcon(status));
 
         int stageNo = stageNode.getStageNo();
-        append("Stage " + stageNo + ": ", SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES);
-        append(stageNode.getTitle(), SimpleTextAttributes.REGULAR_ATTRIBUTES);
+        if (status == StageStatus.LOCKED) {
+            append("Stage " + stageNo + ": ", SimpleTextAttributes.GRAYED_BOLD_ATTRIBUTES);
+            append(stageNode.getTitle(), SimpleTextAttributes.GRAYED_ATTRIBUTES);
+            append(" (Locked)", SimpleTextAttributes.GRAYED_ITALIC_ATTRIBUTES);
+        } else if (status == StageStatus.DONE) {
+            append("Stage " + stageNo + ": ", SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES);
+            append(stageNode.getTitle(), SimpleTextAttributes.REGULAR_ATTRIBUTES);
+            append(" (Done)", SimpleTextAttributes.GRAYED_ITALIC_ATTRIBUTES);
+        } else {
+            append("Stage " + stageNo + ": ", SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES);
+            append(stageNode.getTitle(), SimpleTextAttributes.REGULAR_ATTRIBUTES);
+        }
 
         setToolTipText("Stage " + stageNo + ": " + stageNode.getTitle() + " (" + status + ")");
     }
@@ -154,8 +164,18 @@ public class StudyPlanTreeCellRenderer extends ColoredTreeCellRenderer {
         setIcon(MiniLeetCodeIcons.getStatusIcon(status));
 
         int stageNo = stageDto.stageNo();
-        append("Stage " + stageNo + ": ", SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES);
-        append(stageDto.title(), SimpleTextAttributes.REGULAR_ATTRIBUTES);
+        if (status == StageStatus.LOCKED) {
+            append("Stage " + stageNo + ": ", SimpleTextAttributes.GRAYED_BOLD_ATTRIBUTES);
+            append(stageDto.title(), SimpleTextAttributes.GRAYED_ATTRIBUTES);
+            append(" (Locked)", SimpleTextAttributes.GRAYED_ITALIC_ATTRIBUTES);
+        } else if (status == StageStatus.DONE) {
+            append("Stage " + stageNo + ": ", SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES);
+            append(stageDto.title(), SimpleTextAttributes.REGULAR_ATTRIBUTES);
+            append(" (Done)", SimpleTextAttributes.GRAYED_ITALIC_ATTRIBUTES);
+        } else {
+            append("Stage " + stageNo + ": ", SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES);
+            append(stageDto.title(), SimpleTextAttributes.REGULAR_ATTRIBUTES);
+        }
 
         setToolTipText("Stage " + stageNo + ": " + stageDto.title() + " (" + status + ")");
     }
