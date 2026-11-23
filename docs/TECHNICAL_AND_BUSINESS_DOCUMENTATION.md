@@ -16,6 +16,7 @@
    - 3.2. Phòng thi & Giám sát Liêm chính (Server-Side Proctoring)
    - 3.3. Quy chế Chấm thi & Bảng xếp hạng (Contest Leaderboard)
    - 3.4. Vòng đời Chấm bài & Bộ 7 Mã Phán quyết (Judge Verdicts)
+   - 3.5. Hệ thống Bài học Tương tác (Interactive Topics & Exercises)
 4. [Kiến trúc Kỹ thuật Hệ thống (System Architecture)](#4-kiến-trúc-kỹ-thuật-hệ-thống-system-architecture)
    - 4.1. Cấu trúc Maven Multi-Module Monolith
    - 4.2. Chiến lược Đóng gói Dual-Target (Web API vs Judge Worker)
@@ -162,6 +163,28 @@ stateDiagram-v2
         [*] --> SV : Security Violation (Gọi System Call cấm)
     }
 ```
+
+---
+
+### 3.5. Hệ thống Bài học Tương tác (Interactive Topics & Exercises)
+
+Để bổ trợ cho các bài tập lớn theo từng Stage của Study Plan, hệ thống tích hợp công cụ học tập vi mô (**Micro-learning Topics**) với 6 dạng tương tác:
+
+1. **THEORY:** Đọc lý thuyết phân đoạn có mục lục động, hỗ trợ mở rộng tuần tự (*Read more*) hoặc xem toàn bộ (*Expand all*).
+2. **CHOICE:** Trắc nghiệm đơn lựa chọn (**Single Choice / Radio**) và đa lựa chọn (**Multiple Choice / Checkbox**). Hỗ trợ xem gợi ý (*Hint*) và xem giải thích sư phạm sau khi trả lời đúng (*Explanation*).
+3. **MATCHING:** Ghép cặp khái niệm tương ứng bằng kéo thả chuột (*Drag-and-Drop*) hoặc nút điều hướng bàn phím (*↑/↓*). Server tự động xáo trộn ổn định cột đáp án để chống gian lận.
+4. **ORDERING:** Sắp xếp danh sách phần tử/câu lệnh theo đúng trình tự logic.
+5. **FILL_BLANK:** Điền từ khóa hoặc biểu thức vào các vị trí khuyết `[[id]]` ngay trong khối mã nguồn.
+6. **CODE:** Liên kết trực tiếp tới bài tập lập trình; tự động hoàn thành khi bài tập đạt verdict `Accepted` trên hệ thống chấm Docker Sandbox.
+
+#### Luật Sư phạm: Khóa Luyện tập 3 lần sai (3-Strike Practice Lockout)
+- **Mục tiêu:** Ngăn chặn học viên đoán mò ngẫu nhiên (brute-force).
+- **Quy tắc:** Nếu học viên trả lời sai 3 lần liên tiếp tại cùng một Step luyện tập:
+  - Hệ thống tự động kích hoạt **khóa 5 phút** đối với phần luyện tập của chủ đề (`topic_locks`).
+  - Mọi Step lý thuyết (`THEORY`) của chủ đề bị đánh dấu là **chưa đọc**.
+  - **Điều kiện mở khóa:** Hết thời gian đếm ngược 5 phút VÀ học viên phải đọc lại toàn bộ nội dung lý thuyết.
+
+*(Xem tài liệu chi tiết đầy đủ về UI/UX walkthrough và công cụ soạn thảo tại: [docs/INTERACTIVE_TOPICS_AND_EXERCISES.md](INTERACTIVE_TOPICS_AND_EXERCISES.md))*
 
 ---
 
