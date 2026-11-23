@@ -1,7 +1,7 @@
 "use client";
 import { Reorder, useDragControls } from "framer-motion";
 import { BookOpen, ChevronDown, ChevronRight, Code2, FolderKanban, GripVertical, Plus, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -87,6 +87,9 @@ function SessionBox({ session, index, prefix, props }: { session: SessionNode; i
   const controls = useDragControls();
   const [open, setOpen] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isEditing = editing !== null;
+  useEffect(() => { if (isEditing) inputRef.current?.focus(); }, [isEditing]);
   const id = `session:${session.key}`;
   const full = session.title || `Session ${index + 1}`;
   const title = prefix ? full.slice(prefix.length) : full;
@@ -110,7 +113,7 @@ function SessionBox({ session, index, prefix, props }: { session: SessionNode; i
           <span className="hidden group-hover:inline">{open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</span>
         </button>
         {editing !== null ? (
-          <input autoFocus value={editing} aria-label="Session title" onChange={(e) => setEditing(e.target.value)} onBlur={commit}
+          <input ref={inputRef} value={editing} aria-label="Session title" onChange={(e) => setEditing(e.target.value)} onBlur={commit}
             onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(null); }}
             className="min-w-0 flex-1 border-b border-border bg-transparent py-0.5 text-body-md font-semibold text-ink outline-none" />
         ) : (

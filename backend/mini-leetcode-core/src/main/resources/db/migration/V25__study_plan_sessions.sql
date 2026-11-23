@@ -25,7 +25,7 @@ ALTER TABLE study_plan_items ADD COLUMN src_stage_no INT NULL;
 ALTER TABLE study_plan_items ADD COLUMN src_kind VARCHAR(20) NULL;
 
 -- Chừa chỗ để chèn session của stage 2, 3... ngay sau project của nó (thứ tự chỉ cần tăng dần).
-UPDATE study_plan_items SET sort_order = sort_order * 1000, src_item_id = id, src_stage_no = 0, src_kind = kind;
+UPDATE study_plan_items SET sort_order = sort_order * 1000, src_item_id = id, src_stage_no = 0, src_kind = kind WHERE src_item_id IS NULL;
 
 INSERT INTO study_plan_items (plan_id, sort_order, kind, title, description, src_item_id, src_stage_no, src_kind)
 SELECT i.plan_id, i.sort_order + s.stage_no, 'SESSION', LEFT(CONCAT(i.title, ' · Stage ', s.stage_no + 1), 200),
@@ -44,7 +44,7 @@ INSERT INTO study_plan_entries (session_id, sort_order, type, topic_id, problem_
 SELECT n.id, 1000000, CASE WHEN n.src_kind = 'PROJECT' THEN 'STAGE' ELSE 'PROBLEM' END, NULL, s.problem_id
 FROM study_plan_items n JOIN study_plan_item_stages s ON s.item_id = n.src_item_id AND s.stage_no = n.src_stage_no;
 
-UPDATE study_plan_items SET kind = 'SESSION';
+UPDATE study_plan_items SET kind = 'SESSION' WHERE kind <> 'SESSION';
 
 ALTER TABLE study_plan_items DROP COLUMN src_item_id;
 ALTER TABLE study_plan_items DROP COLUMN src_stage_no;
