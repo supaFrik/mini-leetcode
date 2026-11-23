@@ -81,7 +81,7 @@ export function StageView({ slug, itemId, stageNo }: { slug: string; itemId: num
     );
   }
 
-  const project = item.kind === "PROJECT";
+  const project = item.entries.some((e) => e.stageNo === stage.stageNo && e.type === "STAGE");
   const count = item.stages.length;
   const title = project ? `Stage ${stage.stageNo}/${count} · ${stageName(stage)}` : stage.title ?? item.title;
   const stageHref = (n: number) => `/study-plans/${plan.slug}/${item.id}/${n}`;

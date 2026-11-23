@@ -7,12 +7,6 @@ export interface AuthUser { id: number; username: string; role: Role }
 
 const safe = <T,>(fn: () => T, fallback: T): T => { try { return fn(); } catch { return fallback; } };
 
-// ADMIN bấm "View site" thì được xem trang học viên tới hết session tab; không có cờ thì bị đưa về /admin.
-const VIEW_SITE = "admin_view_site";
-export const isViewingSite = () => safe(() => sessionStorage.getItem(VIEW_SITE) === "1", false);
-export const setViewingSite = (on: boolean) =>
-  safe(() => (on ? sessionStorage.setItem(VIEW_SITE, "1") : sessionStorage.removeItem(VIEW_SITE)), undefined);
-
 export const getToken = () => (typeof window === "undefined" ? null : safe(() => localStorage.getItem(ACCESS), null));
 export const getRefreshToken = () => (typeof window === "undefined" ? null : safe(() => localStorage.getItem(REFRESH), null));
 
@@ -28,7 +22,7 @@ export function setTokens(access: string, refresh?: string) {
   emitAuthChanged();
 }
 export function clearTokens() {
-  safe(() => { localStorage.removeItem(ACCESS); localStorage.removeItem(REFRESH); sessionStorage.removeItem(VIEW_SITE); }, undefined);
+  safe(() => { localStorage.removeItem(ACCESS); localStorage.removeItem(REFRESH); }, undefined);
   emitAuthChanged();
 }
 

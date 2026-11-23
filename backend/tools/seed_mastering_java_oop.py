@@ -766,21 +766,13 @@ else:
     plan_id = int(plan_id_res.split("\n")[1].strip())
     print(f"Created new Study Plan {plan_id}.")
 
-# Remove old items for this plan
-old_items = run_mysql(f"SELECT id FROM study_plan_items WHERE plan_id = {plan_id};").strip()
-if old_items and len(old_items.split("\n")) > 1:
-    item_ids = [line.strip() for line in old_items.split("\n")[1:] if line.strip()]
-    if item_ids:
-        ids_str = ",".join(item_ids)
-        run_mysql(f"DELETE FROM study_plan_item_stages WHERE item_id IN ({ids_str});")
-        run_mysql(f"DELETE FROM study_plan_items WHERE id IN ({ids_str});")
+# Remove old sessions for this plan (study_plan_entries go with them: ON DELETE CASCADE)
+run_mysql(f"DELETE FROM study_plan_items WHERE plan_id = {plan_id};")
 
-# Insert 1 Project item with 8 sequential stages into study_plan_items
-run_mysql(f"""
-INSERT INTO study_plan_items (plan_id, sort_order, kind, title, description)
-VALUES ({plan_id}, 0, 'PROJECT', 'Mastering Java OOP Curriculum', 'A progressive 8-stage mastery curriculum covering Core Java OOP principles.');
-""")
-last_item_id = int(run_mysql("SELECT LAST_INSERT_ID();").strip().split("\n")[1].strip())
+# 1 project with 8 sequential stages. Since V25 each project stage is its own session
+# "<project> · Stage N" holding one STAGE entry (same shape V25 gives migrated projects).
+project_title = "Mastering Java OOP Curriculum"
+project_desc = "A progressive 8-stage mastery curriculum covering Core Java OOP principles."
 
 stages_def = [
     (0, 140), # Stage 1: Employee Payroll (Encapsulation)
@@ -794,9 +786,16 @@ stages_def = [
 ]
 
 for stage_no, prob_id in stages_def:
+    session_title = f"{project_title} \u00b7 Stage {stage_no + 1}"
+    session_desc = f"'{sql_esc(project_desc)}'" if stage_no == 0 else "NULL"
     run_mysql(f"""
-    INSERT INTO study_plan_item_stages (item_id, stage_no, problem_id)
-    VALUES ({last_item_id}, {stage_no}, {prob_id});
+    INSERT INTO study_plan_items (plan_id, sort_order, kind, title, description)
+    VALUES ({plan_id}, {stage_no}, 'SESSION', '{sql_esc(session_title)}', {session_desc});
+    """)
+    last_item_id = int(run_mysql("SELECT LAST_INSERT_ID();").strip().split("\n")[1].strip())
+    run_mysql(f"""
+    INSERT INTO study_plan_entries (session_id, sort_order, type, topic_id, problem_id)
+    VALUES ({last_item_id}, 0, 'STAGE', NULL, {prob_id});
     """)
     print(f"Linked Stage {stage_no + 1} -> Problem {prob_id}")
 

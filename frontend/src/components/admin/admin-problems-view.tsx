@@ -13,9 +13,10 @@ import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useCanEdit } from "@/hooks/use-can-edit";
-import { useUser } from "@/hooks/use-user";
+import { usePermissions } from "@/hooks/use-permissions";
 import { PROBLEM_STATUS_TONE } from "./status";
-import { deleteProblem, fetchAdminProblems } from "@/lib/services";
+import { applyTagToProblems, deleteProblem, fetchAdminProblems } from "@/lib/services";
+import { useTagOptions } from "./tag-picker";
 import type { Page, ProblemFull, ProblemLifecycle, ProblemType } from "@/types/api";
 
 const LIFECYCLES: { value: ProblemLifecycle; label: string }[] = [
@@ -46,10 +47,17 @@ export function AdminProblemsView() {
   const [difficulty, setDifficulty] = useState("");
   const [type, setType] = useState<ProblemType | "">("");
   const [pending, setPending] = useState<number | null>(null);
-  const { user } = useUser();
   // Server only allows ADMIN to delete (DELETE /api/v1/problems/** hasRole ADMIN)
-  const canDelete = user?.role === "ADMIN";
+  const perms = usePermissions();
+  const canDelete = perms.includes("PROBLEM_DELETE");
+  // Gắn/gỡ tag hàng loạt đi qua /api/v1/admin/tags/** nên cần TAG_MANAGE.
+  const canTag = perms.includes("TAG_MANAGE");
   const canEdit = useCanEdit();
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkTag, setBulkTag] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const tagOptions = useTagOptions();
+  const cols = canTag ? "md:grid-cols-[24px_56px_minmax(0,1fr)_104px_110px_60px_72px]" : "md:grid-cols-[56px_minmax(0,1fr)_104px_110px_60px_72px]";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,6 +94,29 @@ export function AdminProblemsView() {
   };
 
   const rows = useMemo(() => res?.content ?? [], [res]);
+  const toggle = (id: number) => setSelected((cur) => {
+    const next = new Set(cur);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const allOnPage = rows.length > 0 && rows.every((p) => selected.has(p.id));
+
+  const bulk = async (remove: boolean) => {
+    const name = bulkTag.trim();
+    if (!name) { toast("Enter a tag name.", "error"); return; }
+    setBulkBusy(true);
+    try {
+      const n = await applyTagToProblems(name, Array.from(selected), remove);
+      toast(`${remove ? "Removed" : "Added"} "${name}" ${remove ? "from" : "to"} ${n} problem${n === 1 ? "" : "s"}.`, "success");
+      setSelected(new Set());
+      setBulkTag("");
+      await load();
+    } catch (e) {
+      toast(errorMessage(e), "error");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
   const filter = <T,>(set: (v: T) => void) => (v: T) => { set(v); setPage(1); };
 
   return (
@@ -115,12 +146,34 @@ export function AdminProblemsView() {
         </Button>
       </div>
 
+      {canTag && selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-body-md" role="region" aria-label="Bulk tag actions">
+          <span className="text-ink">{selected.size} selected</span>
+          <Input value={bulkTag} onChange={(e) => setBulkTag(e.target.value)} list="bulk-tag-options" placeholder="Tag name"
+            aria-label="Tag name" className="h-9 w-48 bg-card" />
+          <datalist id="bulk-tag-options">
+            {tagOptions.map((t) => <option key={t.name} value={t.name} />)}
+          </datalist>
+          <Button size="sm" variant="outline" disabled={bulkBusy} onClick={() => bulk(false)}>Add tag</Button>
+          <Button size="sm" variant="outline" disabled={bulkBusy} onClick={() => bulk(true)}>Remove tag</Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
+        </div>
+      )}
+
       {error && (
         <p role="alert" className="rounded-sm border border-destructive/25 bg-destructive/5 px-3 py-2 text-body-md text-destructive">{error}</p>
       )}
 
       <section aria-label="Problem administration" className="overflow-hidden rounded-xl border border-border bg-card">
-        <div className="hidden items-center gap-3 border-b border-border bg-muted/30 px-5 py-3 font-sans text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 md:grid md:grid-cols-[56px_minmax(0,1fr)_104px_110px_60px_72px]">
+        <div className={`hidden items-center gap-3 border-b border-border bg-muted/30 px-5 py-3 font-sans text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 md:grid ${cols}`}>
+          {canTag && (
+            <input type="checkbox" aria-label="Select all on this page" checked={allOnPage}
+              onChange={() => setSelected((cur) => {
+                const next = new Set(cur);
+                rows.forEach((p) => (allOnPage ? next.delete(p.id) : next.add(p.id)));
+                return next;
+              })} />
+          )}
           <span>ID</span><span>Title</span><span>Status</span><span>Difficulty</span><span>Tests</span><span />
         </div>
 
@@ -134,7 +187,10 @@ export function AdminProblemsView() {
           const s = (p.status ?? "DRAFT") as ProblemLifecycle;
           return (
             <div key={p.id}
-              className="grid grid-cols-1 items-center gap-2 border-t border-border px-5 py-3.5 transition-colors hover:bg-hairline-soft/60 md:grid-cols-[56px_minmax(0,1fr)_104px_110px_60px_72px] md:gap-3">
+              className={cn("grid grid-cols-1 items-center gap-2 border-t border-border px-5 py-3.5 transition-colors hover:bg-hairline-soft/60 md:gap-3", cols)}>
+              {canTag && (
+                <input type="checkbox" aria-label={`Select ${p.title}`} checked={selected.has(p.id)} onChange={() => toggle(p.id)} />
+              )}
               <span className="font-sans text-sm font-medium text-zinc-500">{p.id}</span>
               <span className="min-w-0">
                 <span className="flex min-w-0 items-center gap-2">
@@ -164,7 +220,7 @@ export function AdminProblemsView() {
                 <Button size="icon-sm" variant="ghost" asChild>
                   <Link href={`/problems/${p.slug}`} target="_blank" aria-label={`View ${p.title}`} title="View"><ExternalLink className="h-3.5 w-3.5" /></Link>
                 </Button>
-                {canDelete && (
+                {canDelete && canEdit(p.createdById) && (
                   <Button size="icon-sm" variant="ghost" disabled={pending === p.id} onClick={() => remove(p)}
                     aria-label={`Delete ${p.title}`} title="Delete" className="text-zinc-400 hover:text-destructive">
                     <Trash2 className="h-3.5 w-3.5" />

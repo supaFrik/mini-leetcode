@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
-import { useUser } from "@/hooks/use-user";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useCanEdit } from "@/hooks/use-can-edit";
 import { createProblem, deleteProblem, transitionProblem } from "@/lib/services";
 import { PROBLEM_EDGES } from "@/lib/problem-lifecycle";
 import type { ProblemFull, ProblemLifecycle } from "@/types/api";
@@ -28,7 +29,10 @@ const SAVE_TEXT: Record<SaveState, string> = {
 export function AdminProblemPage({ id }: { id: number }) {
   const router = useRouter();
   const ask = useConfirm();
-  const { user } = useUser();
+  const canEdit = useCanEdit();
+  const perms = usePermissions();
+  const canDelete = perms.includes("PROBLEM_DELETE");
+  const canPublish = perms.includes("PROBLEM_PUBLISH");
   const [problem, setProblem] = useState<ProblemFull | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [busy, setBusy] = useState(false);
@@ -85,7 +89,7 @@ export function AdminProblemPage({ id }: { id: number }) {
           <span className={saveState === "error" || saveState === "invalid" ? "text-destructive" : undefined}>{SAVE_TEXT[saveState]}</span>
         </span>
         <span className="ml-auto flex flex-wrap items-center gap-1.5">
-          {problem && PROBLEM_EDGES[status].map((t) => (
+          {problem && canPublish && PROBLEM_EDGES[status].map((t) => (
             <Button key={t} size="sm" variant={t === "PUBLISHED" ? "default" : "outline"} disabled={busy} onClick={() => move(t)}>
               {t === "PUBLISHED" ? <Check className="h-3.5 w-3.5" /> : t === "ARCHIVED" ? <Archive className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
               {MOVE_LABEL[t]}
@@ -96,7 +100,7 @@ export function AdminProblemPage({ id }: { id: number }) {
               <Link href={`/problems/${problem.slug}`} target="_blank"><ExternalLink className="h-3.5 w-3.5" />View</Link>
             </Button>
           )}
-          {problem && user?.role === "ADMIN" && (
+          {problem && canDelete && canEdit(problem.createdById) && (
             <Button size="icon-sm" variant="ghost" disabled={busy} onClick={remove} aria-label={`Delete ${problem.title}`}
               className="text-mute hover:text-destructive">
               <Trash2 className="h-3.5 w-3.5" />

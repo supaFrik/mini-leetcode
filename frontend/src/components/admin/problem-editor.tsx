@@ -14,6 +14,7 @@ import type { Difficulty, ProblemAuthoring, ProblemFull, ProblemType, Submission
 import { DIFFICULTY_LEVELS } from "@/components/problems/difficulty";
 import { GradingPanel, ReferencePanel, SourceFilesEditor, TestCasesPanel, parseSourceFiles } from "./problem-authoring";
 import type { SaveState } from "./save-state";
+import { TagPicker } from "./tag-picker";
 
 /*
  * Soạn một đề trên cả trang: đề bài tự lưu 1 s sau lần sửa cuối, các tab Tests / Grading / Reference
@@ -57,31 +58,6 @@ function DsaStarterField({ value, onChange, disabled }: { value: string | null |
         </label>
       ))}
     </div>
-  );
-}
-
-/** Cùng luật chuẩn hoá tag với server: bỏ trống, gộp trùng không phân biệt hoa/thường. */
-function normalizeTags(raw: string): string[] {
-  const seen = new Map<string, string>();
-  for (const part of raw.split(",")) {
-    const t = part.trim();
-    if (t && !seen.has(t.toLowerCase())) seen.set(t.toLowerCase(), t);
-  }
-  return Array.from(seen.values());
-}
-
-function TagsField({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
-  const [text, setText] = useState(value.join(", "));
-  const joined = value.join(", ");
-  useEffect(() => {
-    // Chỉ đồng bộ từ ngoài vào khi khác nội dung đang gõ (giữ nguyên dấu phẩy cuối khi đang nhập).
-    if (normalizeTags(text).join(", ") !== joined) setText(joined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [joined]);
-  return (
-    <label className={`block ${field}`}>Tags
-      <Input value={text} placeholder="Array, Hash Table" onChange={(e) => { setText(e.target.value); onChange(normalizeTags(e.target.value)); }} />
-    </label>
   );
 }
 
@@ -219,7 +195,7 @@ export function ProblemEditor({ problemId, label, canEdit, learners = 0, current
                 <Input type="number" min={16} value={draft.memoryLimitMb} onChange={(e) => set("memoryLimitMb", Number(e.target.value))} />
               </label>
             </div>
-            <TagsField value={draft.tags} onChange={(tags) => set("tags", tags)} />
+            <TagPicker value={draft.tags} onChange={(tags) => set("tags", tags)} />
             {draft.type !== "OOP_GRINDING" && (
               <DsaStarterField value={draft.starterTemplates} onChange={(v) => set("starterTemplates", v)} disabled={!canEdit} />
             )}

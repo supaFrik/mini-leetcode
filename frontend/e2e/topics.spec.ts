@@ -50,9 +50,10 @@ async function serve(page: Page) {
 
   await page.route(/\/api\/v1\/study-plans\/oop$/, (route) => route.fulfill(json({
     id: 1, slug: "oop", title: "OOP", status: "PUBLISHED", stageCount: 2, doneStages: 0,
-    items: [{ id: 1, position: 0, kind: "PROJECT", title: "Mini Bank", done: false,
-      stages: [stage(1, "NEVER", [ref(), { ...ref(), id: 8, slug: "oop-ke-thua", title: "Kế thừa", progress: "NEW", doneSteps: 0 }]),
-        stage(2, "LOCKED")] }],
+    items: [{ id: 1, position: 0, kind: "SESSION", title: "Mini Bank", done: false, entries: [{ type: "STAGE", stageNo: 1 }],
+      stages: [stage(1, "NEVER", [ref(), { ...ref(), id: 8, slug: "oop-ke-thua", title: "Kế thừa", progress: "NEW", doneSteps: 0 }])] },
+    { id: 2, position: 1, kind: "SESSION", title: "Mini Bank 2", done: false, entries: [{ type: "STAGE", stageNo: 1 }],
+      stages: [{ ...stage(2, "LOCKED"), stageNo: 1 }] }],
   })));
   await page.route(/\/api\/v1\/topics\/oop-dong-goi(\/.*)?$/, async (route) => {
     const req = route.request();
@@ -118,7 +119,7 @@ test.describe("Topics: theory, quiz and drag-and-drop steps on project stages", 
   test("the current stage shows a topic timeline with Start and Skip; skip is reversible", async ({ page }) => {
     const api = await serve(page);
     await page.goto("/study-plans/oop", { waitUntil: "domcontentloaded" });
-    const toggle = page.getByRole("button", { name: /Stage 1\/2 · Stage 1/ });
+    const toggle = page.getByRole("button", { name: /Stage 1\/1 · Stage 1/ });
     await expect(toggle).toHaveAttribute("aria-expanded", "true");
     await expect(toggle).toContainText("Step 1/2");
     const timeline = page.getByRole("list", { name: "Stage 1 topics" });
@@ -144,7 +145,7 @@ test.describe("Topics: theory, quiz and drag-and-drop steps on project stages", 
     await expect.poll(api.isSkipped).toBe(false);
 
     // Stage không có chủ đề vẫn là một dòng như cũ
-    await expect(page.getByText("Finish stage 1 first")).toBeVisible();
+    await expect(page.getByText("Finish the previous session first")).toBeVisible();
   });
 
   test("theory opens section by section and is marked as read at the end", async ({ page }) => {

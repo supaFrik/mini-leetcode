@@ -15,6 +15,7 @@ import jsd.toiyeujava.mini_leetcode.entity.Difficulty;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.entity.Role;
+import jsd.toiyeujava.mini_leetcode.ownership.OwnershipInterceptor;
 import jsd.toiyeujava.mini_leetcode.entity.UserProgress;
 import jsd.toiyeujava.mini_leetcode.auth.entity.User;
 import jsd.toiyeujava.mini_leetcode.auth.repository.UserRepository;
@@ -80,7 +81,7 @@ public class ProblemController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('PROBLEM_EDIT')")
     @Operation(summary = "Create a new problem", description = "Allows INSTRUCTOR and ADMIN to create a problem with auto-generated unique slug",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
@@ -149,7 +150,8 @@ public class ProblemController {
         Page<ProblemResponse> page = problemService.getProblems(
                 difficulty, status, search, tags, progress,
                 currentUser != null ? currentUser.getId() : null,
-                pageable, isStaff(currentUser), type, scope);
+                pageable, isStaff(currentUser), type, scope,
+                OwnershipInterceptor.seesOnlyOwnDrafts(currentUser) ? currentUser.getId() : null);
         return ResponseEntity.ok(page);
     }
 
@@ -213,7 +215,7 @@ public class ProblemController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('PROBLEM_EDIT')")
     @Operation(summary = "Update problem metadata",
             description = "Updates an existing problem's metadata (title, description, difficulty, limits, tags). "
                     + "Lifecycle status is NOT changed here - use POST /{id}/transitions for status changes.",
@@ -232,7 +234,7 @@ public class ProblemController {
     }
 
     @PostMapping("/{id}/transitions")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('PROBLEM_PUBLISH')")
     @Operation(summary = "Transition problem lifecycle status",
             description = "Moves a problem along the DRAFT -> REVIEWING -> PUBLISHED -> ARCHIVED lifecycle. "
                     + "Server-side validation only: illegal transitions and publishing without a public test case are rejected.",
@@ -252,7 +254,7 @@ public class ProblemController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('PROBLEM_DELETE')")
     @Operation(summary = "Delete problem", description = "Deletes a problem (ADMIN only)",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({

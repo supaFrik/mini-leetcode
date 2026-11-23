@@ -1,8 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Loader2, Plus } from "lucide-react";
+import { Archive, Eye, FileEdit, Loader2, Rocket, Settings, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,55 +9,44 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useCanEdit } from "@/hooks/use-can-edit";
-import { slugify } from "@/lib/slug";
-import {
-  cloneProblem, createProblem, fetchStudyPlan, publishStudyPlan, transitionStudyPlan, updateStudyPlan,
-} from "@/lib/services";
-import type { ProblemFull, PublishIssue, StudyPlanDetail, StudyPlanStatus } from "@/types/api";
-import { ProblemPicker } from "../problem-picker";
+import { fetchProblem, fetchStudyPlan, publishStudyPlan, transitionStudyPlan, updateStudyPlan } from "@/lib/services";
+import type { AuthoringTopic, ProblemFull, PublishIssue, StudyPlanDetail, StudyPlanStatus } from "@/types/api";
 import { TopicEditor } from "../admin-topics";
 import type { SaveState } from "../save-state";
 import { PLAN_STATUS_VARIANT } from "../status";
 import {
-  findStage, fromDetail, newKey, parseNode, signature, toDraft,
-  type ItemNode, type NodeId, type PlanModel, type StageNode, type TopicNode,
+  findEntry, fromDetail, newKey, parseNode, signature, toDraft,
+  type EntryNode, type NodeId, type PlanModel, type SessionNode, type StageNode, type TopicNode,
 } from "./model";
-import { Outline } from "./outline";
+import { Outline, entryLabel } from "./outline";
 import { PublishDialog } from "./publish-dialog";
-import { StagePanel } from "./stage-panel";
+import { AddPanel, StagePanel } from "./stage-panel";
 import { useConfirm } from "@/components/ui/confirm";
 
-/* /admin/study-plans/[slug] — Course Builder (specs/course-builder.spec.md). */
+/* /admin/study-plans/[slug] — Course Builder: outline session / mục bên trái, form soạn mục đang chọn bên phải. */
 
 const field = "space-y-1 text-body-sm text-mute";
 
-function ago(t: number | null, now: number) {
-  if (!t) return "";
-  const s = Math.max(0, Math.round((now - t) / 1000));
-  return s < 60 ? `${s}s ago` : `${Math.round(s / 60)}m ago`;
-}
-
-/** Áp trạng thái đề / topic mới từ server lên model mà giữ key của item (lựa chọn trên outline không đổi). */
+/** Áp trạng thái đề / topic mới từ server lên model mà giữ key (lựa chọn trên outline không đổi). */
 function mergeStatuses(model: PlanModel, detail: StudyPlanDetail): PlanModel {
-  const fresh = fromDetail(detail);
-  const stages = new Map(fresh.items.flatMap((it) => it.stages).map((s) => [s.problemId, s]));
+  const fresh = fromDetail(detail).sessions.flatMap((s) => s.entries);
+  const problems = new Map(fresh.flatMap((e) => (e.problem ? [[e.problem.problemId, e.problem] as const] : [])));
+  const topics = new Map(fresh.flatMap((e) => (e.topic ? [[e.topic.id, e.topic] as const] : [])));
   return {
-    ...model, status: fresh.status,
-    items: model.items.map((it) => ({
-      ...it,
-      stages: it.stages.map((s) => {
-        const f = stages.get(s.problemId);
-        if (!f) return s;
-        const topicStatus = new Map(f.topics.map((t) => [t.id, t.status]));
-        return { ...s, status: f.status, learners: f.learners, title: f.title ?? s.title,
-          topics: s.topics.map((t) => ({ ...t, status: topicStatus.get(t.id) ?? t.status })) };
+    ...model, status: detail.status, slug: detail.slug,
+    sessions: model.sessions.map((s) => ({
+      ...s,
+      entries: s.entries.map((e) => {
+        const p = e.problem && problems.get(e.problem.problemId);
+        if (p) return { ...e, problem: { ...e.problem!, status: p.status, learners: p.learners, title: p.title ?? e.problem!.title } };
+        const t = e.topic && topics.get(e.topic.id);
+        return t ? { ...e, topic: { ...e.topic!, status: t.status } } : e;
       }),
     })),
   };
 }
 
 export function CourseBuilder({ slug }: { slug: string }) {
-  const params = useSearchParams();
   const canEditBy = useCanEdit();
   const [detail, setDetail] = useState<StudyPlanDetail | null>(null);
   const ask = useConfirm();
@@ -66,28 +54,41 @@ export function CourseBuilder({ slug }: { slug: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [planState, setPlanState] = useState<SaveState>("idle");
   const [childState, setChildState] = useState<SaveState>("idle");
-  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [now, setNow] = useState(Date.now());
   const [publishing, setPublishing] = useState(false);
-  const [issues, setIssues] = useState<Set<NodeId>>(new Set());
-  const [focusTopics, setFocusTopics] = useState(0);
-  const [slugTouched, setSlugTouched] = useState(false);
+  const [settings, setSettings] = useState(false);
+  // Số test của từng đề (nhãn "No tests"); đọc lại khi rời đề để thấy test vừa thêm ở panel.
+  const [tests, setTests] = useState<Map<number, number>>(new Map());
+  const requested = useRef(new Set<number>());
+  const loadTests = useCallback((id: number) => {
+    requested.current.add(id);
+    fetchProblem(String(id)).then((p) => setTests((m) => new Map(m).set(id, p.testCaseCount ?? 0)),
+      () => requested.current.delete(id));
+  }, []);
+  useEffect(() => {
+    model?.sessions.forEach((s) => s.entries.forEach((e) => {
+      if (e.problem && !requested.current.has(e.problem.problemId)) loadTests(e.problem.problemId);
+    }));
+  }, [model, loadTests]);
   const savedSig = useRef("");
   const detailRef = useRef<StudyPlanDetail | null>(null);
   const modelRef = useRef<PlanModel | null>(null);
   detailRef.current = detail;
   modelRef.current = model;
 
-  const selected: NodeId = params.get("node") ?? "plan";
+  // Lựa chọn giữ ở state; URL chỉ phản chiếu (?node=) — key session / mục sinh lại mỗi lần tải nên mở lại thì chọn session đầu.
+  const [selected, setSelected] = useState<NodeId>("none");
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
-  // Đổi URL bằng history API (Next 14.2 đồng bộ useSearchParams): router.replace sang slug khác sẽ remount trang và
-  // tải lại plan từ server, làm mất thay đổi chưa lưu. Slug có thể đổi khi lưu ⇒ luôn dựng từ slug hiện tại.
+  // Đổi URL bằng history API: router.replace sang slug khác sẽ remount trang và làm mất thay đổi chưa lưu.
   const select = useCallback((id: NodeId) => {
+    const prev = selectedRef.current;
+    const left = prev.startsWith("entry:") && modelRef.current?.sessions.flatMap((s) => s.entries).find((e) => `entry:${e.key}` === prev);
+    if (left && left.problem && prev !== id) loadTests(left.problem.problemId);
+    setSelected(id);
     const current = detailRef.current?.slug ?? slug;
     window.history.replaceState(null, "", `/admin/study-plans/${current}?node=${encodeURIComponent(id)}`);
-  }, [slug]);
+  }, [slug, loadTests]);
 
   useEffect(() => {
     fetchStudyPlan(slug)
@@ -96,12 +97,10 @@ export function CourseBuilder({ slug }: { slug: string }) {
         const m = fromDetail(p);
         setModel(m);
         savedSig.current = signature(m);
-        setSlugTouched(!p.slug.startsWith("untitled-"));
+        setSelected(m.sessions[0] ? `session:${m.sessions[0].key}` : "none");
       })
       .catch((e) => setLoadError(errorMessage(e)));
-  }, [slug]);
-
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 5000); return () => clearInterval(t); }, []);
+  }, [slug, loadTests]);
 
   const canEdit = !!detail && canEditBy(detail.createdById);
   const dirty = !!model && signature(model) !== savedSig.current;
@@ -121,7 +120,6 @@ export function CourseBuilder({ slug }: { slug: string }) {
       setDetail(saved);
       setModel((cur) => (cur ? mergeStatuses(cur, saved) : cur));
       setPlanState("saved");
-      setSavedAt(Date.now());
       setSaveError(null);
       if (saved.slug !== d.slug) {
         detailRef.current = saved;
@@ -165,115 +163,64 @@ export function CourseBuilder({ slug }: { slug: string }) {
     };
   }, [pending, ask]);
 
-  const childSaveState = useCallback((s: SaveState) => {
-    setChildState(s);
-    if (s === "saved") setSavedAt(Date.now());
-  }, []);
-
   if (loadError) return <div className="mx-auto max-w-container px-4 py-6 text-destructive" role="alert">{loadError}</div>;
   if (!detail || !model) return <div className="mx-auto max-w-container px-4 py-6 text-mute">Loading study plan…</div>;
 
   // Cập nhật theo hàm: callback bất đồng bộ (đề / topic vừa lưu) không được ghi đè thay đổi mới hơn.
   const update = (m: PlanModel) => setModel(m);
-  const patchItem = (key: string, patch: Partial<ItemNode>) => setModel((cur) => cur && ({
-    ...cur, items: cur.items.map((it) => (it.key === key ? { ...it, ...patch } : it)) }));
-  const patchStage = (problemId: number, patch: Partial<StageNode>) => setModel((cur) => cur && ({
-    ...cur, items: cur.items.map((it) => ({ ...it, stages: it.stages.map((s) => (s.problemId === problemId ? { ...s, ...patch } : s)) })) }));
+  const patchSession = (key: string, patch: Partial<SessionNode>) => setModel((cur) => cur && ({
+    ...cur, sessions: cur.sessions.map((s) => (s.key === key ? { ...s, ...patch } : s)) }));
+  const patchEntries = (fn: (e: EntryNode) => EntryNode) => setModel((cur) => cur && ({
+    ...cur, sessions: cur.sessions.map((s) => ({ ...s, entries: s.entries.map(fn) })) }));
 
-  const addItem = (kind: ItemNode["kind"]) => {
-    const item: ItemNode = { key: newKey(), kind, title: "", description: "", stages: [] };
-    update({ ...model, items: [...model.items, item] });
-    select(`item:${item.key}`);
+  const addSession = () => {
+    const session: SessionNode = { key: newKey(), title: `Session ${model.sessions.length + 1}`, description: "", entries: [] };
+    update({ ...model, sessions: [...model.sessions, session] });
+    select(`session:${session.key}`);
   };
 
-  const appendStage = (item: ItemNode, p: ProblemFull) => {
-    const stage: StageNode = { problemId: p.id, slug: p.slug, title: p.title, difficulty: p.difficulty,
-      status: (p.status ?? "DRAFT"), learners: 0, topics: [] };
-    setModel((cur) => cur && ({ ...cur, items: cur.items.map((it) => (it.key === item.key ? { ...it, stages: [...it.stages, stage] } : it)) }));
-    select(`stage:${p.id}`);
-  };
-
-  /** + stage: nhân bản stage cuối (B3); project trống ⇒ hỏi đề trống / đề có sẵn. */
-  const addStage = async (item: ItemNode) => {
-    const last = item.stages[item.stages.length - 1];
-    if (!last) {
-      select(`item:${item.key}`);
-      return;
-    }
-    try {
-      const n = item.stages.length + 1;
-      const title = `${(item.title || last.title || "Stage").replace(/\s+\d+\/\d+.*$/, "")} ${n}`;
-      appendStage(item, await cloneProblem(last.problemId, title));
-      toast(`Stage ${n} created from stage ${n - 1}`, "success");
-    } catch (e) {
-      toast(errorMessage(e), "error");
-    }
-  };
-
-  const blankStage = async (item: ItemNode) => {
-    try {
-      const n = item.stages.length + 1;
-      appendStage(item, await createProblem({
-        title: item.kind === "PROJECT" ? `${item.title || "Project"} ${n}` : item.title || "Practice problem",
-        description: "Describe the task.", difficulty: "EASY", timeLimitMs: 1000, memoryLimitMb: 256, tags: [], type: "OOP_GRINDING",
-        starterTemplates: null,
-      }));
-    } catch (e) {
-      toast(errorMessage(e), "error");
-    }
+  const addEntry = (sessionKey: string, entry: Omit<EntryNode, "key">) => {
+    const key = newKey();
+    setModel((cur) => cur && ({ ...cur, sessions: cur.sessions.map((s) => (s.key === sessionKey ? { ...s, entries: [...s.entries, { ...entry, key }] } : s)) }));
+    select(`entry:${key}`);
   };
 
   const remove = async (id: NodeId) => {
     const n = parseNode(id);
-    if (n.kind === "item") {
-      const item = model.items.find((it) => it.key === n.key);
-      const learners = item?.stages.reduce((s, x) => s + x.learners, 0) ?? 0;
-      if (!(await ask({ title: `Remove "${item?.title || "this item"}"?`, description: `${learners ? `${learners} learners have submissions on it. ` : ""}Its problems are kept.`, action: "Remove", destructive: true }))) return;
-      update({ ...model, items: model.items.filter((it) => it.key !== n.key) });
-      select("plan");
-    } else if (n.kind === "stage") {
-      const found = findStage(model, n.problemId);
+    if (n.kind === "session") {
+      const session = model.sessions.find((s) => s.key === n.key);
+      const learners = session?.entries.reduce((sum, e) => sum + (e.problem?.learners ?? 0), 0) ?? 0;
+      if (!(await ask({ title: `Remove "${session?.title || "this session"}"?`, description: `${learners ? `${learners} learners have submissions on it. ` : ""}Its lessons and problems are kept.`, action: "Remove", destructive: true }))) return;
+      update({ ...model, sessions: model.sessions.filter((s) => s.key !== n.key) });
+      select("none");
+    } else if (n.kind === "entry") {
+      const found = findEntry(model, n.key);
       if (!found) return;
-      const { stage, item } = found;
-      if (!(await ask({ title: `Remove "${stage.title}"?`, description: `${stage.learners ? `${stage.learners} learners are on this stage. ` : ""}The problem itself is kept.`, action: "Remove", destructive: true }))) return;
-      update({ ...model, items: model.items.map((it) => ({ ...it, stages: it.stages.filter((s) => s.problemId !== n.problemId) })) });
-      select(`item:${item.key}`);
-    } else if (n.kind === "topic") {
-      const found = findStage(model, n.problemId);
-      if (found) patchStage(n.problemId, { topics: found.stage.topics.filter((t) => t.id !== n.topicId) });
-      select(`stage:${n.problemId}`);
+      const { entry, session } = found;
+      const learners = entry.problem?.learners ?? 0;
+      if (entry.problem && !(await ask({ title: `Remove "${entryLabel(entry)}"?`, description: `${learners ? `${learners} learners are on it. ` : ""}The problem itself is kept.`, action: "Remove", destructive: true }))) return;
+      update({ ...model, sessions: model.sessions.map((s) => ({ ...s, entries: s.entries.filter((e) => e.key !== n.key) })) });
+      select(`session:${session.key}`);
     }
   };
 
+  /** Nút outline ứng với một lỗi publish. */
+  const issueNode = (issue: PublishIssue): NodeId | null => {
+    if (issue.node === "item" && issue.itemIndex != null && model.sessions[issue.itemIndex]) return `session:${model.sessions[issue.itemIndex].key}`;
+    const e = model.sessions.flatMap((s) => s.entries).find((x) =>
+      (issue.node === "stage" && x.problem?.problemId === issue.problemId) || (issue.node === "topic" && x.topic?.id === issue.topicId));
+    return e ? `entry:${e.key}` : null;
+  };
   const goTo = (issue: PublishIssue) => {
     setPublishing(false);
-    if (issue.node === "item" && issue.itemIndex != null && model.items[issue.itemIndex]) select(`item:${model.items[issue.itemIndex].key}`);
-    else if (issue.node === "stage" && issue.problemId) select(`stage:${issue.problemId}`);
-    else if (issue.node === "topic" && issue.topicId) {
-      const st = model.items.flatMap((it) => it.stages).find((s) => s.topics.some((t) => t.id === issue.topicId));
-      if (st) select(`topic:${issue.topicId}@${st.problemId}`);
-    }
-  };
-
-  const markIssues = (errors: PublishIssue[]) => {
-    const ids = new Set<NodeId>();
-    errors.forEach((e) => {
-      if (e.node === "plan") ids.add("plan");
-      if (e.node === "item" && e.itemIndex != null && model.items[e.itemIndex]) ids.add(`item:${model.items[e.itemIndex].key}`);
-      if (e.node === "stage" && e.problemId) ids.add(`stage:${e.problemId}`);
-      if (e.node === "topic" && e.topicId) {
-        model.items.flatMap((it) => it.stages).filter((s) => s.topics.some((t) => t.id === e.topicId))
-          .forEach((s) => ids.add(`topic:${e.topicId}@${s.problemId}`));
-      }
-    });
-    setIssues(ids);
+    const id = issueNode(issue);
+    if (id) select(id);
   };
 
   const doPublish = async () => {
     const published = await publishStudyPlan(detail.slug);
     setDetail(published);
     setModel((cur) => (cur ? mergeStatuses(cur, published) : cur));
-    setIssues(new Set());
     setPublishing(false);
     toast("Published — learners can see this plan", "success");
   };
@@ -288,99 +235,83 @@ export function CourseBuilder({ slug }: { slug: string }) {
     }
   };
 
-  const onProblem = (p: ProblemFull) => patchStage(p.id, { title: p.title, slug: p.slug, difficulty: p.difficulty, status: p.status ?? null });
-  const onTopicSaved = (problemId: number) => (t: { id: number; slug: string; title: string; status: StudyPlanStatus }) => {
-    const found = findStage(modelRef.current ?? model, problemId);
-    if (found) patchStage(problemId, { topics: found.stage.topics.map((x) => (x.id === t.id ? { ...x, title: t.title, slug: t.slug, status: t.status } : x)) });
-  };
+  const onProblem = (p: ProblemFull) => patchEntries((e) => (e.problem?.problemId === p.id
+    ? { ...e, problem: { ...e.problem, title: p.title, slug: p.slug, difficulty: p.difficulty, status: p.status ?? null } } : e));
+  const onTopicSaved = (t: AuthoringTopic) => patchEntries((e) => (e.topic?.id === t.id
+    ? { ...e, topic: { id: t.id, slug: t.slug, title: t.title, status: t.status, stepCount: t.steps.length } } : e));
+  // Nhãn cảnh báo trên outline, tính ngay từ dữ liệu đang có.
+  const issues = new Map<NodeId, string>();
+  model.sessions.forEach((s) => {
+    s.entries.forEach((e) => {
+      if (e.topic?.stepCount === 0) issues.set(`entry:${e.key}`, "Empty");
+      if (e.problem && tests.get(e.problem.problemId) === 0) issues.set(`entry:${e.key}`, "No tests");
+    });
+  });
+  const usedProblems = new Set(model.sessions.flatMap((s) => s.entries.flatMap((e) => (e.problem ? [e.problem.problemId] : []))));
 
   // ── Cột phải ──────────────────────────────────────────────────────────
   const node = parseNode(selected);
   let panel: React.ReactNode = null;
-  let heading = "";
-  if (node.kind === "plan") {
-    heading = "Plan";
-    panel = (
+  if (node.kind === "session") {
+    const session = model.sessions.find((s) => s.key === node.key);
+    if (session) panel = (
       <fieldset disabled={!canEdit} className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className={field}>Title
-            <Input value={model.title} onChange={(e) => update({ ...model, title: e.target.value,
-              slug: slugTouched || live ? model.slug : slugify(e.target.value) || model.slug })} />
-          </label>
-          <label className={field}>Slug (URL)
-            <Input value={model.slug} className="font-mono" onChange={(e) => { setSlugTouched(true); update({ ...model, slug: e.target.value }); }} />
-          </label>
-        </div>
+        <label className={`block ${field}`}>Session title
+          <Input value={session.title} onChange={(e) => patchSession(session.key, { title: e.target.value })} />
+        </label>
         <div className={`block ${field}`}>Description
-          <RichTextEditor variant="compact" label="Description" disabled={!canEdit} className="mt-1"
-            value={model.description} onChange={(description) => update({ ...model, description })} />
+          <RichTextEditor variant="compact" label="Session description" disabled={!canEdit} className="mt-1"
+            value={session.description} onChange={(description) => patchSession(session.key, { description })} />
         </div>
+        <p className="text-body-sm text-mute">{session.entries.length} item{session.entries.length === 1 ? "" : "s"}. Use “+” next to the session name to add lessons and problems.</p>
       </fieldset>
     );
-  } else if (node.kind === "item") {
-    const item = model.items.find((it) => it.key === node.key);
-    if (item) {
-      heading = item.kind === "PROJECT" ? "Project" : "Practice problem";
-      panel = (
-        <fieldset disabled={!canEdit} className="space-y-4">
-          <label className={`block ${field}`}>Title
-            <Input value={item.title} onChange={(e) => patchItem(item.key, { title: e.target.value })} />
-          </label>
-          <div className={`block ${field}`}>Description
-            <RichTextEditor variant="compact" label="Description" disabled={!canEdit} className="mt-1"
-              value={item.description} onChange={(description) => patchItem(item.key, { description })} />
-          </div>
-          {item.stages.length === 0 && (
-            <section className="space-y-2 rounded-sm border border-border p-3" aria-label="First stage">
-              <p className="text-body-sm text-ink">{item.kind === "PROJECT" ? "Add the first stage" : "Choose the problem"}</p>
-              <Button size="sm" variant="outline" onClick={() => blankStage(item)}><Plus className="h-4 w-4" />Blank problem</Button>
-              <ProblemPicker exclude={new Set(model.items.flatMap((it) => it.stages.map((s) => s.problemId)))}
-                onPick={(p) => appendStage(item, p)} />
-            </section>
-          )}
-          {item.kind === "PROJECT" && item.stages.length > 0 && (
-            <p className="text-body-sm text-mute">{item.stages.length} stage{item.stages.length === 1 ? "" : "s"}.
-              {" "}<button type="button" className="text-link hover:underline" onClick={() => addStage(item)}>Add a stage</button> copies the last one.</p>
-          )}
-        </fieldset>
-      );
+  } else if (node.kind === "entry") {
+    const found = findEntry(model, node.key);
+    const entry = found?.entry;
+    if (entry?.topic) {
+      panel = <TopicEditor key={entry.key} slug={entry.topic.slug} embedded onSaveState={setChildState} onSaved={onTopicSaved} />;
+    } else if (found && entry?.problem) {
+      const stage: StageNode = entry.problem;
+      const label = entry.type === "STAGE" ? `${found.session.title} · stage` : "Problem";
+      panel = <StagePanel key={entry.key} stage={stage} label={label} live={live} canEdit={canEdit} onProblem={onProblem} onSaveState={setChildState} />;
     }
-  } else if (node.kind === "stage") {
-    const found = findStage(model, node.problemId);
-    if (found) {
-      const { item, index, stage } = found;
-      const label = item.kind === "PROJECT" ? `Stage ${index + 1}` : "Problem";
-      heading = `${label} · ${stage.title ?? ""}`;
-      panel = (
-        <StagePanel key={stage.problemId} stage={stage} label={label} live={live} canEdit={canEdit}
-          onProblem={onProblem} onSaveState={childSaveState} focusTopics={focusTopics}
-          onTopics={(topics: TopicNode[]) => patchStage(stage.problemId, { topics })}
-          onOpenTopic={(t) => select(`topic:${t.id}@${stage.problemId}`)} />
-      );
-    }
-  } else if (node.kind === "topic") {
-    const found = findStage(model, node.problemId);
-    const topic = found?.stage.topics.find((t) => t.id === node.topicId);
-    if (topic) {
-      heading = `Topic · ${topic.title}`;
-      panel = <TopicEditor key={topic.id} slug={topic.slug} embedded onSaveState={childSaveState} onSaved={onTopicSaved(node.problemId)} />;
-    }
+  } else if (node.kind === "add" && canEdit) {
+    const session = model.sessions.find((s) => s.key === node.key);
+    if (session) panel = (
+      <AddPanel key={selected} mode={node.mode} session={session.title} exclude={usedProblems}
+        onTopic={(topic: TopicNode) => addEntry(session.key, { type: "LESSON", topic })}
+        onProblem={(p) => addEntry(session.key, { type: p.type === "OOP_GRINDING" ? "STAGE" : "PROBLEM", problem: {
+          problemId: p.id, slug: p.slug, title: p.title, difficulty: p.difficulty, status: p.status ?? "DRAFT", learners: 0 } })} />
+    );
   }
-  if (!panel) {
-    heading = "Not found";
-    panel = <p className="text-body-sm text-mute">This node no longer exists. <button type="button" className="text-link" onClick={() => select("plan")}>Back to the plan</button></p>;
-  }
+  if (!panel) panel = <p className="text-body-sm text-mute">Select a session or an item in the outline.</p>;
 
-  const stageCount = model.items.reduce((n, it) => n + it.stages.length, 0);
-  const unlocked = model.items.flatMap((it) => it.stages).filter((s) => s.status !== "PUBLISHED").length;
+  const stageCount = usedProblems.size;
+  const unlocked = model.sessions.flatMap((s) => s.entries).filter((e) => e.problem && e.problem.status !== "PUBLISHED").length;
   const state = planState === "saving" || childState === "saving" ? "saving"
     : planState === "error" || childState === "error" ? "error" : childState === "invalid" ? "invalid" : dirty ? "pending" : "saved";
 
   return (
-    <div className="mx-auto flex w-full max-w-container flex-col gap-4 px-4 py-6 pb-24 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-container flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
       <header className="flex flex-wrap items-center gap-3">
         <Link href="/admin/study-plans" className="text-body-sm text-link hover:underline">← Study plans</Link>
+        <h1 className="min-w-0 truncate text-heading-md text-ink">{model.title}</h1>
         <Badge variant={PLAN_STATUS_VARIANT[detail.status]}>{detail.status}</Badge>
+        <span className="text-body-sm text-mute" role="status" aria-live="polite">
+          {state === "saving" && <span className="flex items-center gap-1"><Loader2 className="h-3.5 w-3.5 animate-spin" />Saving…</span>}
+          {state === "saved" && "All changes saved"}
+          {state === "pending" && "Unsaved changes"}
+          {state === "invalid" && "Fix the highlighted fields to save"}
+          {state === "error" && <>Save failed{saveError ? `: ${saveError}` : ""} · <button type="button" className="text-link underline"
+            onClick={() => (saveError?.includes("another tab") ? window.location.reload() : void savePlan().catch(() => undefined))}>
+            {saveError?.includes("another tab") ? "Reload" : "Retry"}</button></>}
+          {issues.size > 0 && ` · ${issues.size} issue${issues.size === 1 ? "" : "s"}`}
+        </span>
+        <span className="ml-auto flex items-center gap-2">
+          <Button asChild size="sm" variant="outline"><Link href={`/study-plans/${detail.slug}`}><Eye className="h-4 w-4" />Preview</Link></Button>
+          <Button size="sm" variant="outline" onClick={() => setSettings(true)}><Settings className="h-4 w-4" />Plan settings</Button>
+        </span>
       </header>
       {!canEdit && (
         <p role="note" className="rounded-sm border border-border bg-hairline-soft px-3 py-2 text-body-sm text-mute">
@@ -389,63 +320,64 @@ export function CourseBuilder({ slug }: { slug: string }) {
       {live && (
         <p role="status" className="rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-body-sm text-amber-900">
           Live · {detail.learnerCount ?? 0} learner{detail.learnerCount === 1 ? "" : "s"}. Changes are visible immediately.
-          {unlocked > 0 && <> {unlocked} stage{unlocked === 1 ? "" : "s"} unlocked · <button type="button" className="font-medium underline"
+          {unlocked > 0 && canEdit && <> {unlocked} problem{unlocked === 1 ? "" : "s"} unlocked · <button type="button" className="font-medium underline"
             onClick={() => setPublishing(true)}>Publish changes</button></>}
         </p>
       )}
 
-      <div className="grid gap-6 md:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="rounded-sm border border-border bg-card p-2 md:sticky md:top-4 md:self-start">
-          <Outline model={model} selected={selected} issues={issues} onSelect={select} onChange={update}
-            onAddItem={addItem} onAddStage={addStage} onRemove={remove}
-            onAddTopic={(stage) => { select(`stage:${stage.problemId}`); setFocusTopics((n) => n + 1); }} />
+      <div className="grid gap-6 md:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="md:sticky md:top-4 md:self-start">
+          <Outline model={model} selected={selected} issues={issues} canEdit={canEdit} onSelect={select} onChange={update}
+            onAddSession={addSession} onRemove={remove} />
         </aside>
-        <section className="min-w-0 rounded-sm border border-border bg-card p-5" aria-label={`Editor: ${heading}`}>
+        <section className="min-w-0 rounded-sm border border-border bg-card p-5" aria-label="Editor">
           {panel}
         </section>
       </div>
 
-      <footer className="fixed bottom-0 left-56 right-0 z-40 border-t border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-container flex-wrap items-center gap-3 px-4 py-2 sm:px-6 lg:px-8">
-          <span className="text-body-sm text-mute" role="status" aria-live="polite">
-            {state === "saving" && <span className="flex items-center gap-1"><Loader2 className="h-3.5 w-3.5 animate-spin" />Saving…</span>}
-            {state === "saved" && (savedAt ? `Saved ${ago(savedAt, now)}` : "All changes saved")}
-            {state === "pending" && "Unsaved changes"}
-            {state === "invalid" && "Fix the highlighted fields to save"}
-            {state === "error" && <>Save failed{saveError ? `: ${saveError}` : ""} · <button type="button" className="text-link underline"
-              onClick={() => (saveError?.includes("another tab") ? window.location.reload() : void savePlan().catch(() => undefined))}>
-              {saveError?.includes("another tab") ? "Reload" : "Retry"}</button></>}
-            {issues.size > 0 && ` · ${issues.size} issue${issues.size === 1 ? "" : "s"}`}
-          </span>
-          <span className="ml-auto flex items-center gap-2">
-            <Link href={`/study-plans/${detail.slug}`} className="text-body-sm text-link hover:underline">Preview</Link>
-            {canEdit && (live ? (
-              <>
-                {unlocked > 0 ? <Button size="sm" onClick={() => setPublishing(true)}>Publish changes</Button>
-                  : <span className="text-body-sm text-solved">Published</span>}
-                <details className="relative">
-                  <summary className="flex cursor-pointer list-none items-center gap-1 rounded-sm border border-border px-2 py-1 text-body-sm">
-                    Unpublish <ChevronDown className="h-3.5 w-3.5" /></summary>
-                  <div className="absolute bottom-full right-0 mb-1 w-40 rounded-sm border border-border bg-card py-1 shadow">
-                    <button type="button" className="block w-full px-3 py-1.5 text-left text-body-sm hover:bg-hairline-soft" onClick={() => transition("DRAFT")}>Move to draft</button>
-                    <button type="button" className="block w-full px-3 py-1.5 text-left text-body-sm hover:bg-hairline-soft" onClick={() => transition("ARCHIVED")}>Archive</button>
-                  </div>
-                </details>
-              </>
-            ) : (
-              <Button size="sm" onClick={() => setPublishing(true)}>Publish…</Button>
-            ))}
-          </span>
+      {settings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/20 p-4" role="dialog" aria-modal="true" aria-label="Plan settings"
+          onKeyDown={(e) => e.key === "Escape" && setSettings(false)}>
+          <div className="w-full max-w-lg space-y-4 rounded-sm border border-border bg-background p-5 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h2 className="text-heading-md text-ink">Plan settings</h2>
+              <Button size="icon-sm" variant="ghost" aria-label="Close" onClick={() => setSettings(false)}><X className="h-4 w-4" /></Button>
+            </div>
+            <fieldset disabled={!canEdit} className="space-y-4">
+              <label className={`block ${field}`}>Title
+                <Input autoFocus value={model.title} onChange={(e) => update({ ...model, title: e.target.value })} />
+              </label>
+              <p className="text-body-sm text-mute">URL: <span className="font-mono text-ink">/study-plans/{detail.slug}</span>
+                {!live && " · follows the title"}</p>
+              <div className={`block ${field}`}>Description
+                <RichTextEditor variant="compact" label="Description" disabled={!canEdit} className="mt-1"
+                  value={model.description} onChange={(description) => update({ ...model, description })} />
+              </div>
+            </fieldset>
+            {canEdit && (
+              <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+                <span className="text-body-sm text-mute">Status:</span><Badge variant={PLAN_STATUS_VARIANT[detail.status]}>{detail.status}</Badge>
+                <span className="ml-auto flex gap-2">
+                  {live && <Button size="sm" variant="outline" onClick={() => transition("DRAFT")}><FileEdit className="h-4 w-4" />Move to draft</Button>}
+                  {live && <Button size="sm" variant="outline" onClick={() => transition("ARCHIVED")}><Archive className="h-4 w-4" />Archive</Button>}
+                  {(!live || unlocked > 0) && (
+                    <Button size="sm" onClick={() => { setSettings(false); setPublishing(true); }}>
+                      <Rocket className="h-4 w-4" />{live ? "Publish changes" : "Publish…"}</Button>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-      </footer>
+      )}
 
       {publishing && (
-        <PublishDialog slug={detail.slug} title={model.title || "Untitled plan"} itemCount={model.items.length} stageCount={stageCount}
+        <PublishDialog slug={detail.slug} title={model.title} itemCount={model.sessions.length} stageCount={stageCount}
           beforeCheck={async () => {
             await savePlan();
             return detailRef.current?.slug ?? detail.slug;
           }}
-          onChecked={(c) => markIssues(c.errors)}
+          onChecked={() => undefined}
           onGoTo={goTo} onPublish={doPublish} onClose={() => setPublishing(false)} />
       )}
     </div>

@@ -23,4 +23,8 @@ public class Tag {
     /** Tên nhóm trong {@code tag_categories}; null = "Other". */
     @Column(name = "category_name", length = 50)
     private String category;
+
+    /** Màu riêng dạng #rrggbb; null = dùng màu của category. */
+    @Column(length = 7)
+    private String color;
 }

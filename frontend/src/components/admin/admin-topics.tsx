@@ -12,6 +12,7 @@ import { errorMessage } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useLoad } from "@/hooks/use-load";
 import { useCanEdit } from "@/hooks/use-can-edit";
+import { usePermissions } from "@/hooks/use-permissions";
 import { isSlug, slugify } from "@/lib/slug";
 import { deleteTopic, fetchTopicForAuthoring, fetchTopics, saveTopic, transitionTopic } from "@/lib/services";
 import type { AuthoringStep, AuthoringTopic, StudyPlanStatus, TopicStepType, TopicSummary } from "@/types/api";
@@ -46,26 +47,25 @@ export function AdminTopicsView() {
   const [query, setQuery] = useState("");
   useEffect(() => { const t = setTimeout(() => setQuery(q.trim()), 250); return () => clearTimeout(t); }, [q]);
   const load = useLoad(() => fetchTopics(query), [query]);
-  const canEdit = useCanEdit();
 
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 max-w-sm flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-mute" aria-hidden="true" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="pl-8" aria-label="Search topics" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search lessons" className="pl-8" aria-label="Search lessons" />
         </div>
-        <Button asChild className="ml-auto"><Link href="/admin/topics/new"><Plus className="h-4 w-4" />New topic</Link></Button>
+        <Button asChild className="ml-auto"><Link href="/admin/topics/new"><Plus className="h-4 w-4" />New lesson</Link></Button>
       </div>
-      <div className="overflow-hidden rounded-sm border border-border bg-card" aria-label="Topics" role="region">
-        {load.state === "loading" && <p className="p-6 text-body-md text-mute">Loading topics…</p>}
+      <div className="overflow-hidden rounded-sm border border-border bg-card" aria-label="Lesson library" role="region">
+        {load.state === "loading" && <p className="p-6 text-body-md text-mute">Loading lessons…</p>}
         {load.state === "error" && <p className="p-6 text-body-md text-destructive" role="alert">{load.message}</p>}
-        {load.state === "ok" && load.data.length === 0 && <p className="p-6 text-body-md text-mute">No topics yet. Create the first one.</p>}
+        {load.state === "ok" && load.data.length === 0 && <p className="p-6 text-body-md text-mute">No lessons yet. Create lessons inside a study plan.</p>}
         {load.state === "ok" && load.data.length > 0 && (
           <table className="w-full text-left text-body-md">
             <thead className="border-b border-border text-body-sm text-mute">
               <tr>
-                <th className="px-4 py-2 font-medium">Topic</th>
+                <th className="px-4 py-2 font-medium">Lesson</th>
                 <th className="px-4 py-2 font-medium">Status</th>
                 <th className="hidden px-4 py-2 font-medium sm:table-cell">Steps</th>
                 <th className="hidden px-4 py-2 font-medium md:table-cell">Author</th>
@@ -76,14 +76,13 @@ export function AdminTopicsView() {
               {load.data.map((t: TopicSummary) => (
                 <tr key={t.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">
-                    <Link href={`/admin/topics/${t.slug}`} className="font-medium text-ink hover:underline">{t.title}</Link>
+                    <span className="font-medium text-ink">{t.title}</span>
                     <div className="font-mono text-body-sm text-mute">{t.slug}</div>
                   </td>
                   <td className="px-4 py-3"><Badge variant={PLAN_STATUS_VARIANT[t.status]}>{t.status}</Badge></td>
                   <td className="hidden px-4 py-3 text-mute sm:table-cell">{t.stepCount} steps · {t.estMinutes} min</td>
                   <td className="hidden px-4 py-3 text-mute md:table-cell">{t.createdByUsername}</td>
                   <td className="px-4 py-3 text-right">
-                    {!canEdit(t.createdById) && <span className="mr-3 text-body-sm text-mute">Read-only</span>}
                     <Link href={`/topics/${t.slug}`} className="text-body-sm text-link hover:underline">Preview</Link>
                   </td>
                 </tr>
@@ -345,6 +344,7 @@ export function TopicEditor({ slug, embedded = false, onSaved, onSaveState }: {
   const router = useRouter();
   const lastSaved = useRef<string>("");
   const canEditFn = useCanEdit();
+  const canDelete = usePermissions().includes("COURSE_DELETE");
   const [loaded, setLoaded] = useState<AuthoringTopic | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -535,7 +535,7 @@ export function TopicEditor({ slug, embedded = false, onSaved, onSaveState }: {
           {status && status !== "PUBLISHED" && <Button type="button" variant="outline" onClick={() => transition("PUBLISHED")}>Publish</Button>}
           {status && status !== "DRAFT" && <Button type="button" variant="outline" onClick={() => transition("DRAFT")}>Move to draft</Button>}
           {status === "PUBLISHED" && <Button type="button" variant="outline" onClick={() => transition("ARCHIVED")}>Archive</Button>}
-          {slug && <Button type="button" variant="ghost" className="ml-auto text-destructive" onClick={remove}><Trash2 className="h-4 w-4" />Delete</Button>}
+          {slug && canDelete && <Button type="button" variant="ghost" className="ml-auto text-destructive" onClick={remove}><Trash2 className="h-4 w-4" />Delete</Button>}
           {slug && <Link href={`/topics/${slug}`} className="text-body-sm text-link hover:underline">Preview as student</Link>}
         </footer>
       )}

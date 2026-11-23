@@ -244,7 +244,7 @@ public class ProblemService {
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with id: " + id));
         assertVisible(problem, staff);
         assertStageOpen(problem, userId, staff);
-        return ProblemResponse.fromEntity(problem, resolveProgress(userId, List.of(problem), solvedIds(userId), attemptedIds(userId)).get(id));
+        return ProblemResponse.fromEntity(problem, countOfTestCases(id), resolveProgress(userId, List.of(problem), solvedIds(userId), attemptedIds(userId)).get(id));
     }
 
     @Transactional(readOnly = true)
@@ -263,7 +263,7 @@ public class ProblemService {
                 .orElseThrow(() -> new ResourceNotFoundException("Problem not found with slug: " + slug));
         assertVisible(problem, staff);
         assertStageOpen(problem, userId, staff);
-        return ProblemResponse.fromEntity(problem, resolveProgress(userId, List.of(problem), solvedIds(userId), attemptedIds(userId)).get(problem.getId()));
+        return ProblemResponse.fromEntity(problem, countOfTestCases(problem.getId()), resolveProgress(userId, List.of(problem), solvedIds(userId), attemptedIds(userId)).get(problem.getId()));
     }
 
     /**
@@ -323,8 +323,10 @@ public class ProblemService {
                                       jakarta.persistence.criteria.CriteriaBuilder cb) {
         var planProblems = query.subquery(Long.class);
         var item = planProblems.from(jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem.class);
-        planProblems.select(item.<jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem, Long>join("problemIds"))
-                .where(cb.notEqual(item.get("plan").get("status"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus.ARCHIVED));
+        var entry = item.join("entries");
+        planProblems.select(entry.<Long>get("problemId"))
+                .where(cb.isNotNull(entry.get("problemId")),
+                        cb.notEqual(item.get("plan").get("status"), jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus.ARCHIVED));
         var topicProblems = query.subquery(Long.class);
         var step = topicProblems.from(jsd.toiyeujava.mini_leetcode.topic.entity.TopicStep.class);
         topicProblems.select(step.get("problemId"))
@@ -338,6 +340,15 @@ public class ProblemService {
                                              List<String> tags, UserProgress progress, Long userId,
                                              Pageable pageable, boolean staff, ProblemType problemType,
                                              ProblemScope scope) {
+        return getProblems(difficulty, status, search, tags, progress, userId, pageable, staff, problemType, scope, null);
+    }
+
+    /** @param draftOwnerId khác null: bài chưa publish chỉ hiện nếu do người này tạo (giảng viên thiếu PROBLEM_VIEW_ALL) */
+    @Transactional(readOnly = true)
+    public Page<ProblemResponse> getProblems(Difficulty difficulty, ProblemStatus status, String search,
+                                             List<String> tags, UserProgress progress, Long userId,
+                                             Pageable pageable, boolean staff, ProblemType problemType,
+                                             ProblemScope scope, Long draftOwnerId) {
         Set<Long> solvedIds = Set.of();
         Set<Long> attemptedIds = Set.of();
         if (userId != null && submissionRepository != null) {
@@ -352,6 +363,9 @@ public class ProblemService {
 
             if (!staff) {
                 predicates.add(cb.equal(root.get("status"), ProblemStatus.PUBLISHED));
+            } else if (draftOwnerId != null) {
+                predicates.add(cb.or(cb.equal(root.get("status"), ProblemStatus.PUBLISHED),
+                        cb.equal(root.get("createdBy").get("id"), draftOwnerId)));
             }
             // Trang Problems chỉ có đề lẻ; đề của khoá học vào qua plan / chủ đề. Học viên không bao giờ thấy ALL / COURSE.
             ProblemScope effective = staff && scope != null ? scope : ProblemScope.STANDALONE;

@@ -27,7 +27,14 @@ public class AdminTagController {
     public record CreateTagRequest(@NotBlank String name, @NotBlank String category) {
     }
 
-    public record UpdateTagRequest(@NotBlank String category) {
+    /** Trường null thì giữ nguyên; {@code color} rỗng = dùng màu category. */
+    public record UpdateTagRequest(String name, String category, String color) {
+    }
+
+    public record ApplyRequest(List<Long> problemIds, boolean remove) {
+    }
+
+    public record ApplyResult(int changed) {
     }
 
     @GetMapping
@@ -43,13 +50,23 @@ public class AdminTagController {
     }
 
     @PutMapping("/{name}")
-    @Operation(summary = "Change a tag's category")
-    public AdminTag update(@PathVariable String name, @Valid @RequestBody UpdateTagRequest request) {
-        return tagService.updateCategory(name, request.category());
+    @Operation(summary = "Rename a tag and/or change its category")
+    public AdminTag update(@PathVariable String name, @RequestBody UpdateTagRequest request) {
+        String current = request.name() == null ? name : tagService.rename(name, request.name()).name();
+        if (request.category() != null) {
+            tagService.updateCategory(current, request.category());
+        }
+        return request.color() == null ? tagService.find(current) : tagService.updateColor(current, request.color());
+    }
+
+    @PostMapping("/{name}/problems")
+    @Operation(summary = "Add the tag to, or remove it from, several problems")
+    public ApplyResult apply(@PathVariable String name, @RequestBody ApplyRequest request) {
+        return new ApplyResult(tagService.applyToProblems(name, request.problemIds(), request.remove()));
     }
 
     @DeleteMapping("/{name}")
-    @Operation(summary = "Delete a tag that no problem uses")
+    @Operation(summary = "Delete a tag and remove it from its problems")
     public ResponseEntity<Void> delete(@PathVariable String name) {
         tagService.delete(name);
         return ResponseEntity.noContent().build();

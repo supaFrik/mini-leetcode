@@ -205,40 +205,42 @@ def cmd_sql():
     plan = meta["plan"]
     out += [
         "",
-        "-- 2. Plan mẫu. Xoá rồi tạo lại các mục (stage xoá theo ON DELETE CASCADE).",
+        "-- 2. Plan mẫu. Xoá rồi tạo lại các session (entry xoá theo ON DELETE CASCADE).",
         "INSERT INTO study_plans (slug, title, description, status, created_by, created_at, updated_at) VALUES ("
         f"{sql_str(plan['slug'])}, {sql_str(plan['title'])}, {sql_str(plan['description'])}, 'PUBLISHED', @seed_author, NOW(), NOW())"
         " ON DUPLICATE KEY UPDATE title = VALUES(title), description = VALUES(description), status = 'PUBLISHED', updated_at = NOW();",
         f"SET @plan := (SELECT id FROM study_plans WHERE slug = {sql_str(plan['slug'])});",
         "DELETE FROM study_plan_items WHERE plan_id = @plan;",
     ]
-    for pos, item in enumerate(plan["items"]):
-        slugs = ", ".join(sql_str(s) for s in item["problems"])
-        out += [
-            f"-- mục {pos}: {item['title']} (bỏ qua nếu thiếu đề)",
-            "INSERT INTO study_plan_items (plan_id, sort_order, kind, title, description)"
-            f" SELECT @plan, {pos}, {sql_str(item['kind'])}, {sql_str(item['title'])}, {sql_str(item.get('description', ''))}"
-            f" FROM DUAL WHERE (SELECT COUNT(*) FROM problems WHERE slug IN ({slugs})) = {len(item['problems'])};",
-            "SET @item := IF(ROW_COUNT() > 0, LAST_INSERT_ID(), NULL);",
-        ]
-        out += [
-            f"INSERT INTO study_plan_item_stages (item_id, stage_no, problem_id)"
-            f" SELECT @item, {k}, id FROM problems WHERE slug = {sql_str(slug)} AND @item IS NOT NULL;"
-            for k, slug in enumerate(item["problems"])
-        ]
-        order = 0
-        for k, topic_slugs in enumerate(item.get("stageTopics", [])):
-            for topic_slug in topic_slugs:
-                out.append(f"INSERT INTO study_plan_stage_topics (item_id, sort_order, stage_no, topic_id)"
-                           f" SELECT @item, {order}, {k}, id FROM topics WHERE slug = {sql_str(topic_slug)} AND @item IS NOT NULL;")
+    # Giống V25: mỗi stage là 1 session "<tên> · Stage N" gồm các lesson rồi tới đề.
+    pos = 0
+    for item in plan["items"]:
+        project = item["kind"] == "PROJECT"
+        topics_by_stage = item.get("stageTopics", [])
+        for k, slug in enumerate(item["problems"]):
+            title = f"{item['title']} · Stage {k + 1}" if project else item["title"]
+            out += [
+                f"-- session {pos}: {title} (bỏ qua nếu thiếu đề)",
+                "INSERT INTO study_plan_items (plan_id, sort_order, kind, title, description)"
+                f" SELECT @plan, {pos}, 'SESSION', {sql_str(title)}, {sql_str(item.get('description', '') if k == 0 else '')}"
+                f" FROM DUAL WHERE EXISTS (SELECT 1 FROM problems WHERE slug = {sql_str(slug)});",
+                "SET @item := IF(ROW_COUNT() > 0, LAST_INSERT_ID(), NULL);",
+            ]
+            order = 0
+            for topic_slug in (topics_by_stage[k] if k < len(topics_by_stage) else []):
+                out.append("INSERT INTO study_plan_entries (session_id, sort_order, type, topic_id, problem_id)"
+                           f" SELECT @item, {order}, 'LESSON', id, NULL FROM topics WHERE slug = {sql_str(topic_slug)} AND @item IS NOT NULL;")
                 order += 1
+            out.append("INSERT INTO study_plan_entries (session_id, sort_order, type, topic_id, problem_id)"
+                       f" SELECT @item, {order}, {sql_str('STAGE' if project else 'PROBLEM')}, NULL, id"
+                       f" FROM problems WHERE slug = {sql_str(slug)} AND @item IS NOT NULL;")
+            pos += 1
     out += [
         "",
-        "-- 3. Kiểm tra nhanh: mục nào bị bỏ qua sẽ không có dòng ở đây.",
-        "SELECT i.sort_order, i.kind, i.title, COUNT(DISTINCT s.problem_id) AS stages, COUNT(DISTINCT t.topic_id) AS topics"
-        " FROM study_plan_items i LEFT JOIN study_plan_item_stages s ON s.item_id = i.id"
-        " LEFT JOIN study_plan_stage_topics t ON t.item_id = i.id WHERE i.plan_id = @plan"
-        " GROUP BY i.id, i.sort_order, i.kind, i.title ORDER BY i.sort_order;",
+        "-- 3. Kiểm tra nhanh: session nào bị bỏ qua sẽ không có dòng ở đây.",
+        "SELECT i.sort_order, i.title, SUM(e.type = 'LESSON') AS lessons, SUM(e.type <> 'LESSON') AS problems"
+        " FROM study_plan_items i LEFT JOIN study_plan_entries e ON e.session_id = i.id WHERE i.plan_id = @plan"
+        " GROUP BY i.id, i.sort_order, i.title ORDER BY i.sort_order;",
     ]
     target = TOOLS / "seed-mini-bank-project.sql"
     target.write_text("\n".join(out) + "\n", encoding="utf-8", newline="\n")

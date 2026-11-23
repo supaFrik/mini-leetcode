@@ -594,6 +594,17 @@ const quickRunIds = new Set<number>();
       return json({ success: true, statusCode: 200, message: "Logged out successfully" });
     }
 
+    // GET /api/v1/auth/me/permissions: ADMIN đủ quyền; giảng viên giả có mọi quyền trừ xoá và SYSTEM_MANAGE.
+    if (path === "/api/v1/auth/me/permissions" && method === "GET") {
+      const tok = (request.headers()["authorization"] || "").replace(/^Bearer /, "").split(".")[1] || "";
+      let role = "USER";
+      try { role = JSON.parse(Buffer.from(tok, "base64url").toString("utf8")).role ?? "USER"; } catch {}
+      const all = ["PROBLEM_VIEW_ALL", "PROBLEM_EDIT", "PROBLEM_PUBLISH", "PROBLEM_DELETE", "CONTEST_EDIT", "CONTEST_PARTICIPANTS",
+        "CONTEST_REPORTS", "CONTEST_DELETE", "COURSE_EDIT", "COURSE_DELETE", "TAG_MANAGE", "PAGE_MANAGE", "ANNOUNCEMENT_SEND", "SYSTEM_MANAGE"];
+      if (role === "ADMIN") return json(all);
+      return json(role === "INSTRUCTOR" ? all.filter((p) => !p.endsWith("_DELETE") && p !== "SYSTEM_MANAGE") : []);
+    }
+
     // GET /api/v1/auth/me
     if (path === "/api/v1/auth/me" && method === "GET") {
       const student = users.get("student")!;
@@ -677,6 +688,13 @@ const quickRunIds = new Set<number>();
         { id: 1, name: "DSA", color: "#2563eb", sortOrder: 10 },
         { id: 9, name: "Other", color: "#64748b", sortOrder: 1000 },
       ]);
+    }
+
+    // GET /api/v1/admin/tags: tag picker / bulk tag on admin pages. Unmocked, a real backend's 401 logs the user out.
+    if (path === "/api/v1/admin/tags" && method === "GET") {
+      const counts = new Map<string, number>();
+      for (const p of problems) for (const t of p.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+      return json(Array.from(counts.entries()).map(([name, problemCount]) => ({ name, category: "Other", problemCount })));
     }
 
     // GET /api/v1/problems/tags

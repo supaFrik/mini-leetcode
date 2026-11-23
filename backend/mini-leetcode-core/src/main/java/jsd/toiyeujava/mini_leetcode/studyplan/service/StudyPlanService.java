@@ -5,7 +5,7 @@ import jsd.toiyeujava.mini_leetcode.auth.repository.UserRepository;
 import jsd.toiyeujava.mini_leetcode.entity.ProblemStatus;
 import jsd.toiyeujava.mini_leetcode.entity.Role;
 import jsd.toiyeujava.mini_leetcode.entity.StageStatus;
-import jsd.toiyeujava.mini_leetcode.entity.StudyPlanItemKind;
+import jsd.toiyeujava.mini_leetcode.entity.StudyPlanEntryType;
 import jsd.toiyeujava.mini_leetcode.entity.StudyPlanStatus;
 import jsd.toiyeujava.mini_leetcode.entity.SubmissionVerdict;
 import jsd.toiyeujava.mini_leetcode.exception.DuplicateResourceException;
@@ -20,7 +20,7 @@ import jsd.toiyeujava.mini_leetcode.entity.ProblemType;
 import jsd.toiyeujava.mini_leetcode.entity.TopicStepType;
 import jsd.toiyeujava.mini_leetcode.studyplan.dto.StudyPlanDtos.*;
 import jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlan;
-import jsd.toiyeujava.mini_leetcode.studyplan.entity.StageTopic;
+import jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanEntry;
 import jsd.toiyeujava.mini_leetcode.studyplan.entity.StudyPlanItem;
 import jsd.toiyeujava.mini_leetcode.studyplan.repository.StudyPlanRepository;
 import jsd.toiyeujava.mini_leetcode.submission.repository.SubmissionRepository;
@@ -93,20 +93,20 @@ public class StudyPlanService {
         List<Long> ids = plan.getItems().stream().flatMap(i -> i.getProblemIds().stream()).toList();
         Map<Long, Problem> problems = problemRepository.findAllById(ids).stream()
                 .collect(Collectors.toMap(Problem::getId, Function.identity()));
-        List<Long> topicIds = plan.getItems().stream()
-                .flatMap(i -> i.getStageTopics().stream()).map(StageTopic::getTopicId).toList();
+        List<Long> topicIds = plan.getItems().stream().flatMap(i -> i.getTopicIds().stream()).toList();
         return toDetail(plan, progressOf(userId, staff), problems, topicService.refs(topicIds, userId, staff),
                 staff ? learnersOf(ids) : null);
     }
 
     @Transactional
     public PlanDetail create(UpsertPlanRequest request, Long userId) {
-        if (planRepository.existsBySlug(request.slug())) {
-            throw new DuplicateResourceException("Study plan slug already exists: " + request.slug());
+        String slug = request.slug() == null || request.slug().isBlank() ? uniqueSlug(request.title()) : request.slug();
+        if (planRepository.existsBySlug(slug)) {
+            throw new DuplicateResourceException("Study plan slug already exists: " + slug);
         }
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-        StudyPlan plan = StudyPlan.builder().slug(request.slug()).createdBy(author).build();
+        StudyPlan plan = StudyPlan.builder().slug(slug).createdBy(author).build();
         apply(plan, request);
         planRepository.save(plan);
         return get(plan.getSlug(), userId, true);
@@ -116,8 +116,14 @@ public class StudyPlanService {
     @Transactional
     public PlanDetail update(String slug, UpsertPlanRequest request, Long userId, Role role) {
         StudyPlan plan = findOwned(slug, userId, role);
-        if (!plan.getSlug().equals(request.slug()) && planRepository.existsBySlug(request.slug())) {
-            throw new DuplicateResourceException("Study plan slug already exists: " + request.slug());
+        String newSlug = request.slug() == null || request.slug().isBlank() ? plan.getSlug() : request.slug();
+        // Plan chưa published và không gửi slug: slug đi theo title (giữ slug hiện tại nếu đã khớp, kể cả hậu tố -N).
+        if ((request.slug() == null || request.slug().isBlank()) && plan.getStatus() != StudyPlanStatus.PUBLISHED
+                && !plan.getSlug().matches(java.util.regex.Pattern.quote(slugify(request.title())) + "(-\\d+)?")) {
+            newSlug = uniqueSlug(request.title());
+        }
+        if (!plan.getSlug().equals(newSlug) && planRepository.existsBySlug(newSlug)) {
+            throw new DuplicateResourceException("Study plan slug already exists: " + newSlug);
         }
         if (request.expectedUpdatedAt() != null && plan.getUpdatedAt() != null
                 && !sameVersion(request.expectedUpdatedAt(), plan.getUpdatedAt())) {
@@ -126,7 +132,7 @@ public class StudyPlanService {
         if (plan.getStatus() == StudyPlanStatus.PUBLISHED) {
             requireCompleteItems(request);
         }
-        plan.setSlug(request.slug());
+        plan.setSlug(newSlug);
         plan.getItems().clear();
         planRepository.flush(); // xoá stage cũ trước để UNIQUE(problem_id) không chặn chính các đề này
         apply(plan, request);
@@ -140,11 +146,11 @@ public class StudyPlanService {
     public PlanDetail transition(String slug, StudyPlanStatus target, Long userId, Role role) {
         StudyPlan plan = findOwned(slug, userId, role);
         if (target == StudyPlanStatus.PUBLISHED && plan.getItems().isEmpty()) {
-            throw new StateConflictException("A study plan needs at least one item before it can be published");
+            throw new StateConflictException("A study plan needs at least one session before it can be published");
         }
         if (target == StudyPlanStatus.PUBLISHED) {
-            plan.getItems().stream().filter(i -> i.getProblemIds().isEmpty()).findFirst().ifPresent(i -> {
-                throw new StateConflictException("Item \"" + i.getTitle() + "\" needs at least one problem before publishing");
+            plan.getItems().stream().filter(i -> i.getEntries().isEmpty()).findFirst().ifPresent(i -> {
+                throw new StateConflictException("Session \"" + i.getTitle() + "\" needs at least one item before publishing");
             });
         }
         plan.setStatus(target);
@@ -200,7 +206,7 @@ public class StudyPlanService {
         List<PublishIssue> errors = new ArrayList<>();
         List<PublishIssue> warnings = new ArrayList<>();
         if (plan.getItems().isEmpty()) {
-            errors.add(new PublishIssue("plan", null, null, null, "Add at least one project or practice problem"));
+            errors.add(new PublishIssue("plan", null, null, null, "Add at least one session"));
         }
         List<Long> problemIds = plan.getItems().stream().flatMap(i -> i.getProblemIds().stream()).toList();
         Map<Long, Problem> problems = problemRepository.findAllById(problemIds).stream()
@@ -208,14 +214,12 @@ public class StudyPlanService {
         Set<Long> problemsToPublish = new LinkedHashSet<>();
         for (int index = 0; index < plan.getItems().size(); index++) {
             StudyPlanItem item = plan.getItems().get(index);
-            boolean project = item.getKind() == StudyPlanItemKind.PROJECT;
-            if (item.getProblemIds().isEmpty()) {
-                errors.add(new PublishIssue("item", index, null, null,
-                        "\"" + item.getTitle() + "\" has no " + (project ? "stage" : "problem")));
+            if (item.getEntries().isEmpty()) {
+                errors.add(new PublishIssue("item", index, null, null, "Session \"" + item.getTitle() + "\" is empty"));
             }
             for (int stage = 0; stage < item.getProblemIds().size(); stage++) {
                 Problem p = problems.get(item.getProblemIds().get(stage));
-                String where = project ? item.getTitle() + " · stage " + (stage + 1) : item.getTitle();
+                String where = item.getTitle() + " · " + p.getTitle();
                 if (p.getStatus() != ProblemStatus.PUBLISHED) {
                     problemsToPublish.add(p.getId());
                 }
@@ -234,8 +238,8 @@ public class StudyPlanService {
             }
         }
 
-        Set<Long> topicIds = plan.getItems().stream().flatMap(i -> i.getStageTopics().stream())
-                .map(StageTopic::getTopicId).collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Long> topicIds = plan.getItems().stream().flatMap(i -> i.getTopicIds().stream())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         List<Topic> topics = topicIds.isEmpty() ? List.of() : topicRepository.findAllById(topicIds);
         Set<Long> topicsToPublish = new LinkedHashSet<>();
         for (Topic topic : topics) {
@@ -271,11 +275,11 @@ public class StudyPlanService {
     }
 
     private static void requireCompleteItems(UpsertPlanRequest request) {
-        if (request.items().isEmpty()) {
-            throw new StateConflictException("A published study plan must keep at least one item");
+        if (request.sessions().isEmpty()) {
+            throw new StateConflictException("A published study plan must keep at least one session");
         }
-        request.items().stream().filter(i -> i.problemIds().isEmpty()).findFirst().ifPresent(i -> {
-            throw new StateConflictException("Item \"" + i.title() + "\" of a published study plan needs at least one problem");
+        request.sessions().stream().filter(i -> i.entries().isEmpty()).findFirst().ifPresent(i -> {
+            throw new StateConflictException("Session \"" + i.title() + "\" of a published study plan needs at least one item");
         });
     }
 
@@ -316,27 +320,35 @@ public class StudyPlanService {
         plan.setTitle(request.title());
         plan.setDescription(request.description());
 
-        List<Long> allIds = request.items().stream().flatMap(i -> i.problemIds().stream()).toList();
+        for (SessionRequest session : request.sessions()) {
+            for (EntryRequest e : session.entries()) {
+                boolean lesson = e.type() == StudyPlanEntryType.LESSON;
+                if (lesson ? e.topicId() == null || e.problemId() != null : e.problemId() == null || e.topicId() != null) {
+                    throw new IllegalArgumentException(lesson ? "A lesson needs a topicId and no problemId"
+                            : "A problem or project stage needs a problemId and no topicId");
+                }
+            }
+        }
+        List<Long> allIds = request.sessions().stream().flatMap(i -> i.entries().stream())
+                .map(EntryRequest::problemId).filter(java.util.Objects::nonNull).toList();
         if (new HashSet<>(allIds).size() != allIds.size()) {
             throw new IllegalArgumentException("A problem can appear only once in a study plan");
         }
         Map<Long, Problem> problems = problemRepository.findAllById(allIds).stream()
                 .collect(Collectors.toMap(Problem::getId, Function.identity()));
         for (Long id : allIds) {
-            Problem p = problems.get(id);
-            if (p == null) {
+            if (!problems.containsKey(id)) {
                 throw new ResourceNotFoundException("Problem not found with id: " + id);
             }
         }
         List<Number> taken = allIds.isEmpty() ? List.of() : planRepository.findProblemIdsAlreadyInPlans(allIds);
         if (!taken.isEmpty()) {
-            throw new StateConflictException("Problem already belongs to another study plan item: "
+            throw new StateConflictException("Problem already belongs to another study plan: "
                     + problems.get(taken.get(0).longValue()).getSlug());
         }
 
-        Set<Long> topicIds = request.items().stream().filter(i -> i.stageTopics() != null)
-                .flatMap(i -> i.stageTopics().stream()).filter(java.util.Objects::nonNull)
-                .flatMap(List::stream).collect(Collectors.toSet());
+        Set<Long> topicIds = request.sessions().stream().flatMap(i -> i.entries().stream())
+                .map(EntryRequest::topicId).filter(java.util.Objects::nonNull).collect(Collectors.toSet());
         Set<Long> existingTopics = topicIds.isEmpty() ? Set.of() : topicRepository.findAllById(topicIds).stream()
                 .map(Topic::getId).collect(Collectors.toSet());
         topicIds.stream().filter(id -> !existingTopics.contains(id)).findFirst().ifPresent(id -> {
@@ -344,39 +356,43 @@ public class StudyPlanService {
         });
 
         int position = 0;
-        for (ItemRequest itemRequest : request.items()) {
-            if (itemRequest.kind() == StudyPlanItemKind.PROBLEM && itemRequest.problemIds().size() > 1) {
-                throw new IllegalArgumentException("A PROBLEM item must contain exactly one problem");
+        for (SessionRequest session : request.sessions()) {
+            List<Long> lessons = session.entries().stream().map(EntryRequest::topicId).filter(java.util.Objects::nonNull).toList();
+            if (new HashSet<>(lessons).size() != lessons.size()) {
+                throw new IllegalArgumentException("A lesson can appear only once in a session: " + session.title());
             }
-            List<StageTopic> stageTopics = new ArrayList<>();
-            if (itemRequest.stageTopics() != null) {
-                if (itemRequest.stageTopics().size() > itemRequest.problemIds().size()) {
-                    throw new IllegalArgumentException("stageTopics has more entries than the item has stages: "
-                            + itemRequest.title());
-                }
-                for (int stage = 0; stage < itemRequest.stageTopics().size(); stage++) {
-                    List<Long> ids = itemRequest.stageTopics().get(stage);
-                    if (ids == null) {
-                        continue;
-                    }
-                    if (new HashSet<>(ids).size() != ids.size()) {
-                        throw new IllegalArgumentException("A topic can appear only once in a stage: " + itemRequest.title());
-                    }
-                    for (Long id : ids) {
-                        stageTopics.add(new StageTopic(stage, id));
-                    }
-                }
+            List<StudyPlanEntry> entries = new ArrayList<>();
+            for (EntryRequest e : session.entries()) {
+                entries.add(new StudyPlanEntry(entries.size(), e.type(), e.topicId(), e.problemId()));
             }
             plan.getItems().add(StudyPlanItem.builder()
                     .plan(plan)
                     .sortOrder(position++)
-                    .kind(itemRequest.kind())
-                    .title(itemRequest.title())
-                    .description(itemRequest.description())
-                    .problemIds(new ArrayList<>(itemRequest.problemIds()))
-                    .stageTopics(stageTopics)
+                    .title(session.title())
+                    .description(session.description())
+                    .entries(entries)
                     .build());
         }
+    }
+
+    /** "OOP in Java: Mini Bank" -> oop-in-java-mini-bank; trùng thì thêm -2, -3... */
+    static String slugify(String title) {
+        String base = java.text.Normalizer.normalize(title, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").replace('đ', 'd').replace('Đ', 'D')
+                .toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
+        if (base.length() > 190) {
+            base = base.substring(0, 190).replaceAll("-+$", "");
+        }
+        return base.isEmpty() ? "study-plan" : base;
+    }
+
+    private String uniqueSlug(String title) {
+        String base = slugify(title);
+        String slug = base;
+        for (int n = 2; planRepository.existsBySlug(slug); n++) {
+            slug = base + "-" + n;
+        }
+        return slug;
     }
 
     private StudyPlan findVisible(String slug, boolean staff) {
@@ -412,37 +428,48 @@ public class StudyPlanService {
         List<Item> items = new ArrayList<>();
         int stageCount = 0;
         int done = 0;
+        boolean previousSessionsDone = true;
         for (StudyPlanItem item : plan.getItems()) {
+            List<TopicRef> lessons = item.getTopicIds().stream().map(topics::get).filter(java.util.Objects::nonNull).toList();
             List<Stage> stages = new ArrayList<>();
-            boolean previousDone = true;
-            for (int i = 0; i < item.getProblemIds().size(); i++) {
-                Long problemId = item.getProblemIds().get(i);
+            List<Entry> entries = new ArrayList<>();
+            boolean previousStageDone = true;
+            for (StudyPlanEntry entry : item.getEntries()) {
+                if (entry.getType() == StudyPlanEntryType.LESSON) {
+                    TopicRef topic = topics.get(entry.getTopicId());
+                    if (topic != null) {
+                        entries.add(new Entry(entry.getType(), topic, null));
+                    }
+                    continue;
+                }
+                Long problemId = entry.getProblemId();
+                boolean stageEntry = entry.getType() == StudyPlanEntryType.STAGE;
                 StageStatus status;
                 if (progress.solved().contains(problemId)) {
                     status = StageStatus.DONE;
-                } else if (!previousDone && !progress.staff()) {
-                    status = StageStatus.LOCKED; // khớp với khoá trong SubmissionServiceImpl
+                } else if (!progress.staff() && (!previousSessionsDone || (stageEntry && !previousStageDone))) {
+                    status = StageStatus.LOCKED; // khớp với StageGate
                 } else {
                     status = progress.attempted().contains(problemId) ? StageStatus.IN_PROGRESS : StageStatus.NEVER;
                 }
-                previousDone = status == StageStatus.DONE;
+                if (stageEntry) {
+                    previousStageDone = status == StageStatus.DONE;
+                }
                 Problem p = problems.get(problemId);
-                int stageNo = i;
-                List<TopicRef> stageTopics = item.getStageTopics().stream()
-                        .filter(t -> t.getStageNo() == stageNo).map(t -> topics.get(t.getTopicId()))
-                        .filter(java.util.Objects::nonNull).toList();
-                stages.add(new Stage(i + 1, problemId,
+                stages.add(new Stage(stages.size() + 1, problemId,
                         p == null ? null : p.getSlug(), p == null ? null : p.getTitle(),
                         p == null ? null : p.getDifficulty(), p == null ? null : p.getProblemType(),
-                        p != null && p.getStatus() == ProblemStatus.PUBLISHED, status, stageTopics,
+                        p != null && p.getStatus() == ProblemStatus.PUBLISHED, status, lessons,
                         p == null || !progress.staff() ? null : p.getStatus(),
                         learners == null ? null : learners.onStage().getOrDefault(problemId, 0)));
+                entries.add(new Entry(entry.getType(), null, stages.size()));
             }
             long itemDone = stages.stream().filter(s -> s.status() == StageStatus.DONE).count();
+            previousSessionsDone = previousSessionsDone && itemDone == stages.size();
             stageCount += stages.size();
             done += (int) itemDone;
             items.add(new Item(item.getId(), item.getSortOrder(), item.getKind(), item.getTitle(),
-                    item.getDescription(), !stages.isEmpty() && itemDone == stages.size(), stages));
+                    item.getDescription(), !stages.isEmpty() && itemDone == stages.size(), stages, entries));
         }
         return new PlanDetail(plan.getId(), plan.getSlug(), plan.getTitle(), plan.getDescription(),
                 plan.getStatus(), stageCount, done, items,

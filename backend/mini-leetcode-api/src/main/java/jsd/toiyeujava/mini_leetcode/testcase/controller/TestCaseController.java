@@ -32,7 +32,7 @@ public class TestCaseController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('PROBLEM_EDIT')")
     @Operation(summary = "Upload a testcase pair (input and output files)",
             description = "Streams testcase input and expected output directly to MinIO and records metadata. Requires INSTRUCTOR or ADMIN role.",
             security = @SecurityRequirement(name = "bearerAuth"))
@@ -79,7 +79,7 @@ public class TestCaseController {
     }
 
     @PutMapping(value = "/{testCaseId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('PROBLEM_EDIT')")
     @Operation(summary = "Update a test case",
             description = "Replaces the input/output files and/or the visibility and order of a test case. "
                     + "Object keys are immutable: new files are written under new keys and the old objects are "
@@ -117,7 +117,7 @@ public class TestCaseController {
     }
 
     @DeleteMapping("/{testCaseId}")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAuthority('PROBLEM_EDIT')")
     @Operation(summary = "Delete a test case", description = "Removes a test case by ID. Requires INSTRUCTOR or ADMIN role.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({

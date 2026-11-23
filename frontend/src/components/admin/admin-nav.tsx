@@ -2,14 +2,17 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BookOpen, ExternalLink, FileText, FolderTree, GraduationCap, LayoutDashboard, LogOut, Map, Medal, Megaphone, Settings,
+  BookOpen, ExternalLink, FileText, GraduationCap, LayoutDashboard, LogOut, Map, Medal, Megaphone, Settings,
   ShieldAlert, Tag, Trophy, Users, type LucideIcon,
 } from "lucide-react";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useUser } from "@/hooks/use-user";
-import { clearTokens, setViewingSite } from "@/lib/auth";
+import { clearTokens } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import type { Permission } from "@/types/api";
 
-type Item = { href: string; label: string; icon: LucideIcon };
+// `perm`: chỉ hiện khi user có quyền đó (backend cũng check). Không có `perm` thì ai vào được console cũng thấy.
+type Item = { href: string; label: string; icon: LucideIcon; perm?: Permission };
 type Section = { heading?: string; items: Item[] };
 
 // Menu đầy đủ của ADMIN; giảng viên dùng TEACHING bên dưới.
@@ -21,7 +24,6 @@ const SECTIONS: Section[] = [
     items: [
       { href: "/admin/problems", label: "Problems", icon: BookOpen },
       { href: "/admin/study-plans", label: "Study plans", icon: Map },
-      { href: "/admin/topics", label: "Topics", icon: FolderTree },
       { href: "/admin/tags", label: "Tags", icon: Tag },
     ],
   },
@@ -49,17 +51,19 @@ const TEACHING: Section[] = [
   {
     heading: "My content",
     items: [
-      { href: "/admin/problems", label: "My problems", icon: BookOpen },
-      { href: "/admin/study-plans", label: "My study plans", icon: Map },
-      { href: "/admin/contests", label: "My contests", icon: Trophy },
-      { href: "/admin/reports", label: "Reports", icon: ShieldAlert },
+      { href: "/admin/problems", label: "My problems", icon: BookOpen, perm: "PROBLEM_EDIT" },
+      { href: "/admin/study-plans", label: "My study plans", icon: Map, perm: "COURSE_EDIT" },
+      { href: "/admin/contests", label: "My contests", icon: Trophy, perm: "CONTEST_EDIT" },
+      { href: "/admin/tags", label: "Tags", icon: Tag, perm: "TAG_MANAGE" },
+      { href: "/admin/policies", label: "Policies", icon: FileText, perm: "PAGE_MANAGE" },
+      { href: "/admin/reports", label: "Reports", icon: ShieldAlert, perm: "CONTEST_REPORTS" },
     ],
   },
   {
     heading: "Learners",
     items: [
       { href: "/teaching/progress", label: "Student progress", icon: GraduationCap },
-      { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
+      { href: "/admin/announcements", label: "Announcements", icon: Megaphone, perm: "ANNOUNCEMENT_SEND" },
     ],
   },
 ];
@@ -76,7 +80,11 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const { user } = useUser();
   const isAdmin = user?.role === "ADMIN";
-  const sections = isAdmin ? SECTIONS : TEACHING;
+  // ADMIN luôn đủ quyền; giảng viên lọc menu theo quyền thật từ server.
+  const perms = usePermissions();
+  const sections = isAdmin ? SECTIONS : TEACHING
+    .map((s) => ({ ...s, items: s.items.filter((i) => !i.perm || perms.includes(i.perm)) }))
+    .filter((s) => s.items.length > 0);
   const active = activeHref(pathname, sections);
   const router = useRouter();
   const signOut = () => { clearTokens(); router.push("/login"); };
@@ -84,9 +92,11 @@ export function AdminSidebar() {
     <aside className="flex h-full w-56 shrink-0 flex-col border-r border-border bg-card">
       <div className="flex items-center justify-between gap-2 px-6 pb-2 pt-5">
         <span className="text-body-md font-semibold text-ink">{isAdmin ? "Admin" : "Teaching"}</span>
-        <Link href="/problems" onClick={() => setViewingSite(true)} className="flex items-center gap-1 text-body-sm text-mute hover:text-ink">
-          View site <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-        </Link>
+        {!isAdmin && (
+          <Link href="/problems" className="flex items-center gap-1 text-body-sm text-mute hover:text-ink">
+            View site <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        )}
       </div>
       <nav aria-label={isAdmin ? "Admin" : "Teaching"} className="min-h-0 flex-1 space-y-4 overflow-auto px-3 py-3">
         {sections.map((section) => {

@@ -10,9 +10,10 @@ const PLAN = {
   id: 1, slug: "oop-voi-java", title: "OOP với Java", description: "Lộ trình OOP", status: "PUBLISHED",
   stageCount: 4, doneStages: 1,
   items: [
-    { id: 1, position: 0, kind: "PROBLEM", title: "Luyện: lớp & đóng gói", done: true,
+    { id: 1, position: 0, kind: "SESSION", title: "Luyện: lớp & đóng gói", done: true, entries: [{ type: "PROBLEM", stageNo: 1 }],
       stages: [{ ...stage(1, "DONE"), slug: "bank-account-class", title: "Bank Account Class", problemType: "ALGORITHMIC" }] },
-    { id: 2, position: 1, kind: "PROJECT", title: "Project: Mini Bank Console", done: false,
+    { id: 2, position: 1, kind: "SESSION", title: "Project: Mini Bank Console", done: false,
+      entries: [1, 2, 3].map((stageNo) => ({ type: "STAGE", stageNo })),
       stages: [stage(1, "IN_PROGRESS"), stage(2, "LOCKED"), stage(3, "NEVER", false)] },
   ],
 };
@@ -67,7 +68,7 @@ test.describe("/study-plans", () => {
     await page.goto("/study-plans");
 
     const card = page.getByRole("link", { name: /OOP với Java/ });
-    await expect(card).toContainText("2 items · 4 stages");
+    await expect(card).toContainText("2 sessions · 4 problems");
     await expect(card).toContainText("1/4 stages · 25%");
     await card.click();
     await expect(page).toHaveURL(/\/study-plans\/oop-voi-java$/);

@@ -121,14 +121,14 @@ class CourseBuilderIntegrationTest {
     @DisplayName("A draft plan saves an empty project; publish-check lists errors and publish changes nothing")
     void publishCheckBlocks() throws Exception {
         Problem noTests = problem("cb-no-tests", ProblemStatus.DRAFT);
-        createPlan("cb-plan", List.of(item("PROJECT", "Bank", noTests.getId()), item("PROJECT", "Empty")))
+        createPlan("cb-plan", List.of(session("STAGE", "Bank", noTests.getId()), session("STAGE", "Empty")))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(get("/api/v1/study-plans/cb-plan/publish-check").header("Authorization", instructorJwt))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ok").value(false))
-                .andExpect(jsonPath("$.errors[*].message", hasItem("Bank · stage 1: add at least one public test case")))
-                .andExpect(jsonPath("$.errors[*].message", hasItem("\"Empty\" has no stage")))
+                .andExpect(jsonPath("$.errors[*].message", hasItem("Bank · cb-no-tests: add at least one public test case")))
+                .andExpect(jsonPath("$.errors[*].message", hasItem("Session \"Empty\" is empty")))
                 .andExpect(jsonPath("$.problemsToPublish[0]").value(noTests.getId()));
         mockMvc.perform(post("/api/v1/study-plans/cb-plan/publish").header("Authorization", instructorJwt))
                 .andExpect(status().isConflict());
@@ -146,8 +146,7 @@ class CourseBuilderIntegrationTest {
             testCase(p, false, null);
         }
         long topicId = createTopic("cb-topic");
-        Map<String, Object> project = new HashMap<>(item("PROJECT", "Bank", draft.getId(), reviewing.getId(), archived.getId()));
-        project.put("stageTopics", List.of(List.of(topicId)));
+        Map<String, Object> project = withLesson(session("STAGE", "Bank", draft.getId(), reviewing.getId(), archived.getId()), topicId);
         createPlan("cb-live", List.of(project)).andExpect(status().isCreated());
 
         mockMvc.perform(get("/api/v1/study-plans/cb-live/publish-check").header("Authorization", instructorJwt))
@@ -170,8 +169,7 @@ class CourseBuilderIntegrationTest {
         testCase(p, false, null);
         String otherJwt = bearer(user("cb_other", Role.INSTRUCTOR));
         long topicId = createTopic("cb-foreign-topic", otherJwt);
-        Map<String, Object> project = new HashMap<>(item("PROJECT", "Bank", p.getId()));
-        project.put("stageTopics", List.of(List.of(topicId)));
+        Map<String, Object> project = withLesson(session("STAGE", "Bank", p.getId()), topicId);
         createPlan("cb-foreign-plan", List.of(project)).andExpect(status().isCreated());
         mockMvc.perform(get("/api/v1/study-plans/cb-foreign-plan/publish-check").header("Authorization", instructorJwt))
                 .andExpect(jsonPath("$.errors[0].node").value("topic"))
@@ -183,7 +181,7 @@ class CourseBuilderIntegrationTest {
     void unlockLiveStage() throws Exception {
         Problem s1 = problem("cb-u-1", ProblemStatus.PUBLISHED);
         Problem s2 = problem("cb-u-2", ProblemStatus.PUBLISHED);
-        createPlan("cb-unlock", List.of(item("PROJECT", "Bank", s1.getId(), s2.getId()))).andExpect(status().isCreated());
+        createPlan("cb-unlock", List.of(session("STAGE", "Bank", s1.getId(), s2.getId()))).andExpect(status().isCreated());
         mockMvc.perform(post("/api/v1/study-plans/cb-unlock/transitions").header("Authorization", instructorJwt)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"PUBLISHED\"}")).andExpect(status().isOk());
         submission(s1, SubmissionVerdict.WA);
@@ -258,18 +256,29 @@ class CourseBuilderIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isCreated())).get("id").asLong();
     }
 
-    private Map<String, Object> item(String kind, String title, Long... problemIds) {
-        return Map.of("kind", kind, "title", title, "problemIds", List.of(problemIds));
+    /** Một session chứa các đề cùng loại ({@code STAGE} hoặc {@code PROBLEM}) theo thứ tự. */
+    private Map<String, Object> session(String type, String title, Long... problemIds) {
+        List<Map<String, Object>> entries = new java.util.ArrayList<>();
+        for (Long id : problemIds) {
+            entries.add(Map.of("type", type, "problemId", id));
+        }
+        return new java.util.HashMap<>(Map.of("title", title, "entries", entries));
+    }
+    /** Thêm lesson vào đầu session. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> withLesson(Map<String, Object> session, long topicId) {
+        ((List<Map<String, Object>>) session.get("entries")).add(0, Map.of("type", "LESSON", "topicId", topicId));
+        return session;
     }
 
     private ResultActions createPlan(String slug, List<Map<String, Object>> items) throws Exception {
         return mockMvc.perform(post("/api/v1/study-plans").header("Authorization", instructorJwt)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("slug", slug, "title", slug, "items", items))));
+                .content(objectMapper.writeValueAsString(Map.of("slug", slug, "title", slug, "sessions", items))));
     }
 
     private ResultActions save(String slug, String title, String expectedUpdatedAt) throws Exception {
-        Map<String, Object> body = new HashMap<>(Map.of("slug", slug, "title", title, "items", List.of()));
+        Map<String, Object> body = new HashMap<>(Map.of("slug", slug, "title", title, "sessions", List.of()));
         if (expectedUpdatedAt != null) {
             body.put("expectedUpdatedAt", expectedUpdatedAt);
         }

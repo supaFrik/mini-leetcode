@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Một mục trong lộ trình. Stage = một {@code Problem}; vị trí trong {@link #problemIds}
- * chính là {@code stage_no} (0-based), giống cách {@code problem_tags} lưu thứ tự.
+ * Một session của lộ trình: danh sách mục (lesson / problem / project stage) có thứ tự.
+ * Stage N trong URL học viên = mục problem/stage thứ N của session.
  */
 @Entity
 @Table(name = "study_plan_items")
@@ -33,7 +33,8 @@ public class StudyPlanItem {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private StudyPlanItemKind kind;
+    @Builder.Default
+    private StudyPlanItemKind kind = StudyPlanItemKind.SESSION;
 
     @Column(nullable = false, length = 200)
     private String title;
@@ -41,17 +42,19 @@ public class StudyPlanItem {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    /** sort_order có thể có khoảng trống (dữ liệu chuyển từ V25) nên dùng @OrderBy, không dùng @OrderColumn. */
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "study_plan_item_stages", joinColumns = @JoinColumn(name = "item_id"))
-    @OrderColumn(name = "stage_no")
-    @Column(name = "problem_id", nullable = false)
+    @CollectionTable(name = "study_plan_entries", joinColumns = @JoinColumn(name = "session_id"))
+    @OrderBy("sortOrder ASC")
     @Builder.Default
-    private List<Long> problemIds = new ArrayList<>();
+    private List<StudyPlanEntry> entries = new ArrayList<>();
 
-    /** Chủ đề học gắn vào từng stage, theo thứ tự hiển thị (specs/topics.spec.md). */
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "study_plan_stage_topics", joinColumns = @JoinColumn(name = "item_id"))
-    @OrderColumn(name = "sort_order")
-    @Builder.Default
-    private List<StageTopic> stageTopics = new ArrayList<>();
+    /** Đề của session (problem + stage) theo thứ tự. */
+    public List<Long> getProblemIds() {
+        return entries.stream().filter(e -> e.getProblemId() != null).map(StudyPlanEntry::getProblemId).toList();
+    }
+
+    public List<Long> getTopicIds() {
+        return entries.stream().filter(e -> e.getTopicId() != null).map(StudyPlanEntry::getTopicId).toList();
+    }
 }

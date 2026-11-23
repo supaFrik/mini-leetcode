@@ -6,7 +6,7 @@ import "@fontsource/ibm-plex-sans/500.css";
 import "@fontsource/ibm-plex-sans/600.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
-import { AuthGuard } from "@/components/layout/auth-guard";
+import { AuthGuard, PreviewBanner, useAdminPreview } from "@/components/layout/auth-guard";
 import { MaintenanceBanner } from "@/components/layout/maintenance-banner";
 import { OfflineBanner } from "@/components/layout/offline-banner";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -18,14 +18,17 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   // Khu quản trị có khung riêng (sidebar có "View site"), không dùng header/footer học viên.
   const inConsole = pathname.startsWith("/admin") || pathname.startsWith("/teaching");
-  const showFooter = pathname !== "/problems" && !inConsole;
+  // Admin xem trước: chỉ có thanh Preview, không header/footer học viên.
+  const preview = useAdminPreview();
+  const showFooter = pathname !== "/problems" && !inConsole && !preview;
 
   return (
     <AuthGuard>
       <div className="flex h-dvh flex-col">
         <OfflineBanner />
         <MaintenanceBanner />
-        {!inConsole && <SiteHeader />}
+        <PreviewBanner />
+        {!inConsole && !preview && <SiteHeader />}
         <main className="min-h-0 flex-1 overflow-auto">{children}</main>
         {showFooter && (
           <footer className="flex h-12 shrink-0 items-center border-t border-border bg-background px-6 text-body-sm font-medium text-zinc-600 dark:text-zinc-400">

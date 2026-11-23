@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { decodeUser, getToken, isViewingSite } from "@/lib/auth";
+import { decodeUser, getToken } from "@/lib/auth";
 import { USE_MOCK } from "@/lib/api";
 import { ensureMockSession } from "@/lib/services";
+import { useUser } from "@/hooks/use-user";
 
 /**
  * Các trang công khai: xem danh sách bài và chi tiết bài không cần đăng nhập.
@@ -14,6 +16,28 @@ import { ensureMockSession } from "@/lib/services";
  * nên chặn nó ở đây sẽ đẩy khách về `/login` trước khi kịp chuyển hướng.
  */
 const PUBLIC_PATHS = [/^\/$/, /^\/problems(\/|$)/, /^\/login(\/|$)/, /^\/register(\/|$)/, /^\/ranking$/, /^\/policies\//];
+
+/** Trang học viên ADMIN được mở để xem trước (nút View / Preview trong khu quản trị). */
+const PREVIEW_PATHS = [/^\/problems\/[^/]+$/, /^\/study-plans\/[^/]+(\/[^/]+\/[^/]+)?$/, /^\/topics\/[^/]+$/];
+const isPreviewPath = (pathname: string) => PREVIEW_PATHS.some((p) => p.test(pathname));
+
+/** ADMIN đang xem trước trang học viên. */
+export function useAdminPreview() {
+  const pathname = usePathname();
+  const { user } = useUser();
+  return user?.role === "ADMIN" && isPreviewPath(pathname);
+}
+
+/** Thanh báo đang xem trước, thay cho header học viên. */
+export function PreviewBanner() {
+  if (!useAdminPreview()) return null;
+  return (
+    <div role="status" className="flex shrink-0 items-center justify-center gap-3 bg-primary px-4 py-2 text-body-sm font-medium text-primary-foreground">
+      Preview mode — this is what students see
+      <Link href="/admin" className="underline underline-offset-2 hover:opacity-80">Back to admin</Link>
+    </div>
+  );
+}
 
 /**
  * Chưa đăng nhập → về /login. Ngoại trừ /register cho phép tạo tài khoản mới.
@@ -36,7 +60,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       }
     }
     const inConsole = pathname.startsWith("/admin") || pathname.startsWith("/teaching");
-    if (!inConsole && decodeUser(getToken())?.role === "ADMIN" && !isViewingSite()) {
+    // ADMIN chỉ ở trong khu quản trị, kể cả khi gõ thẳng URL trang học viên; trừ các trang xem trước.
+    if (!inConsole && !isPreviewPath(pathname) && decodeUser(getToken())?.role === "ADMIN") {
       router.replace("/admin");
       return;
     }

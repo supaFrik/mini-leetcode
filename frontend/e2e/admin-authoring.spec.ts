@@ -191,7 +191,12 @@ test.describe("Admin: console problem authoring", () => {
     await page.goto(`/admin/problems/${problem.id}`, { waitUntil: "domcontentloaded" });
     const editor = page.getByRole("region", { name: "Problem editor" });
     await editor.getByLabel("Title").fill("Mini Bank Console v2");
-    await editor.getByLabel("Tags").fill("OOP, oop, Classes");
+    const tagsInput = editor.getByLabel("Tags");
+    // "oop" duplicates the existing "OOP" (case-insensitive) and is ignored; "Classes" is new.
+    await tagsInput.fill("oop");
+    await tagsInput.press("Enter");
+    await tagsInput.fill("Classes");
+    await tagsInput.press("Enter");
     await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible({ timeout: 10_000 });
     expect(puts.at(-1)).toMatchObject({ title: "Mini Bank Console v2", tags: ["OOP", "Classes"] });
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(0);

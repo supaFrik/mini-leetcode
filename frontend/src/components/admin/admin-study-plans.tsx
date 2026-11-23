@@ -6,18 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLoad } from "@/hooks/use-load";
 import { useCanEdit } from "@/hooks/use-can-edit";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useConfirm } from "@/components/ui/confirm";
 import { errorMessage } from "@/lib/api";
 import { deleteStudyPlan, fetchStudyPlans } from "@/lib/services";
 import { toast } from "@/lib/toast";
 import type { StudyPlanSummary } from "@/types/api";
 import { PLAN_STATUS_VARIANT } from "./status";
+import { NewPlanDialog } from "./course-builder/new-plan";
 
 /** /admin/study-plans: danh sách plan; soạn plan ở Course Builder (/admin/study-plans/[slug]). */
 export function AdminStudyPlansView() {
   const [version, setVersion] = useState(0);
+  const [creating, setCreating] = useState(false);
   const load = useLoad(fetchStudyPlans, [version]);
   const canEdit = useCanEdit();
+  const canDelete = usePermissions().includes("COURSE_DELETE");
   const confirm = useConfirm();
 
   async function remove(plan: StudyPlanSummary) {
@@ -40,10 +44,9 @@ export function AdminStudyPlansView() {
   return (
     <div className="mx-auto w-full max-w-container space-y-5 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex justify-end">
-        <Button asChild>
-          <Link href="/admin/study-plans/new"><Plus className="h-4 w-4" />New plan</Link>
-        </Button>
+        <Button onClick={() => setCreating(true)}><Plus className="h-4 w-4" />New study plan</Button>
       </div>
+      {creating && <NewPlanDialog onClose={() => setCreating(false)} />}
 
       <div className="overflow-hidden rounded-sm border border-border bg-card" aria-label="Study plans" role="region">
         {load.state === "loading" && <p className="p-6 text-body-md text-mute">Loading study plans…</p>}
@@ -70,12 +73,12 @@ export function AdminStudyPlansView() {
                     <div className="font-mono text-body-sm text-mute">{plan.slug}</div>
                   </td>
                   <td className="px-4 py-3"><Badge variant={PLAN_STATUS_VARIANT[plan.status]}>{plan.status}</Badge></td>
-                  <td className="hidden px-4 py-3 text-mute sm:table-cell">{plan.itemCount} items · {plan.stageCount} stages</td>
+                  <td className="hidden px-4 py-3 text-mute sm:table-cell">{plan.itemCount} sessions · {plan.stageCount} problems</td>
                   <td className="hidden px-4 py-3 text-mute md:table-cell">{plan.createdByUsername ?? "—"}</td>
                   <td className="px-4 py-3 text-right">
                     {!canEdit(plan.createdById) && <span className="mr-3 text-body-sm text-mute">Read-only</span>}
                     <Link href={`/study-plans/${plan.slug}`} className="text-body-sm text-link hover:underline">Preview</Link>
-                    {canEdit(plan.createdById) && (
+                    {canDelete && canEdit(plan.createdById) && (
                       <Button variant="ghost" size="icon-sm" className="ml-2" aria-label={`Delete ${plan.title}`} onClick={() => void remove(plan)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
